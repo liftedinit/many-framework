@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "omni",
+    "omni-ledger",
+    "omni-ledger-abci",
+]
