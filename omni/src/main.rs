@@ -2,13 +2,29 @@ mod cbor;
 mod identity;
 
 use cbor::cose::CoseSign1;
-use cbor::message::MessageBuilder;
+use cbor::message::RequestMessageBuilder;
+use cbor::value::CborValue;
 use clap::Clap;
 use identity::Identity;
 use minicbor::Encoder;
 use ring::signature::KeyPair;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::path::PathBuf;
+
+fn to_der(key: Vec<u8>) -> Vec<u8> {
+    use simple_asn1::{
+        oid, to_der,
+        ASN1Block::{BitString, ObjectIdentifier, Sequence},
+    };
+
+    let public_key = key;
+    let id_ed25519 = oid!(1, 3, 101, 112);
+    let algorithm = Sequence(0, vec![ObjectIdentifier(0, id_ed25519)]);
+    let subject_public_key = BitString(0, public_key.len() * 8, public_key);
+    let subject_public_key_info = Sequence(0, vec![algorithm, subject_public_key]);
+    to_der(&subject_public_key_info).unwrap()
+}
 
 #[derive(Clap)]
 struct Opt {
@@ -64,27 +80,13 @@ struct MessageOpt {
     data: Option<String>,
 }
 
-fn to_der(key: Vec<u8>) -> Vec<u8> {
-    use simple_asn1::{
-        oid, to_der,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let public_key = key;
-    let id_ed25519 = oid!(1, 3, 101, 112);
-    let algorithm = Sequence(0, vec![ObjectIdentifier(0, id_ed25519)]);
-    let subject_public_key = BitString(0, public_key.len() * 8, public_key);
-    let subject_public_key_info = Sequence(0, vec![algorithm, subject_public_key]);
-    to_der(&subject_public_key_info).unwrap()
-}
-
 fn main() {
     let opt: Opt = Opt::parse();
 
     match opt.subcommand {
         SubCommand::Id(o) => {
             if let Ok(data) = hex::decode(&o.arg) {
-                if let Ok(i) = Identity::try_from(data.clone()) {
+                if let Ok(i) = Identity::try_from(data.as_slice()) {
                     println!("{}", i);
                 } else {
                     eprintln!("Invalid hexadecimal.");
@@ -107,6 +109,7 @@ fn main() {
             println!("{}", id);
         }
         SubCommand::Message(o) => {
+            // If `pem` is not provided, use anonymous and don't sign.
             let (from_identity, keypair) = o.pem.map_or_else(
                 || (Identity::anonymous(), None),
                 |pem| {
@@ -129,7 +132,7 @@ fn main() {
             let data = o
                 .data
                 .map_or(vec![], |d| cbor_diag::parse_diag(&d).unwrap().to_bytes());
-            let message = MessageBuilder::default()
+            let message = RequestMessageBuilder::default()
                 .version(1)
                 .from(from_identity)
                 .to(to_identity)
@@ -138,32 +141,10 @@ fn main() {
                 .build()
                 .unwrap();
 
-            let mut payload = vec![];
-            Encoder::new(&mut payload).encode(message).unwrap();
-            eprintln!("{}", hex::encode(&payload));
-
-            // Create the identity from the public key hash.
-            let mut cose = cbor::cose::CoseSign1Builder::default()
-                .protected(
-                    cbor::cose::ProtectedHeadersBuilder::default()
-                        .algorithm(cbor::cose::Algorithms::EdDSA(
-                            cbor::cose::AlgorithmicCurve::Ed25519,
-                        ))
-                        .build()
-                        .unwrap(),
-                )
-                .payload(payload)
-                .build()
-                .unwrap();
-
-            if let Some(kp) = keypair {
-                let signature_bytes = cose.signature_bytes();
-                cose.set_signature_bytes(kp.sign(&signature_bytes).as_ref().to_vec());
-            }
-
+            let cose = message.to_cose(keypair.as_ref());
             let mut bytes = Vec::<u8>::new();
             minicbor::encode(cose, &mut bytes).unwrap();
-            eprintln!("{}", hex::encode(&bytes));
+            eprintln!("tx: {}", hex::encode(&bytes));
             println!("{}", base64::encode(&bytes));
         }
     }

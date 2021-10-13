@@ -1,16 +1,15 @@
 use minicbor::encode::Write;
-use minicbor::{Encode, Encoder};
+use minicbor::{Decode, Decoder, Encode, Encoder};
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
-use std::fmt::Formatter;
+use std::fmt::{Debug, Formatter};
+use std::str::FromStr;
 
 const MAX_IDENTITY_BYTE_LEN: usize = 32;
 const SHA_OUTPUT_SIZE: usize = <Sha3_224 as Digest>::OutputSize::USIZE;
-
-pub type DerEncodedPublicKey = Vec<u8>;
 
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
 pub enum Error {
@@ -18,22 +17,47 @@ pub enum Error {
     UnknownError(),
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Identity(pub(self) InnerIdentity);
 
 impl Identity {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        InnerIdentity::try_from(bytes).map(Self)
+    }
+
     pub const fn anonymous() -> Self {
         Self(InnerIdentity::Anonymous())
     }
 
-    pub fn public_key(key: DerEncodedPublicKey) -> Self {
+    pub fn public_key(key: Vec<u8>) -> Self {
         let pk = Sha3_224::digest(&key);
         Self(InnerIdentity::PublicKey(pk.into()))
     }
 
-    pub fn addressable(key: DerEncodedPublicKey) -> Self {
+    pub fn addressable(key: Vec<u8>) -> Self {
         let pk = Sha3_224::digest(&key);
         Self(InnerIdentity::Addressable(pk.into()))
+    }
+
+    pub const fn is_anonymous(&self) -> bool {
+        match self.0 {
+            InnerIdentity::Anonymous() => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_public_key(&self) -> bool {
+        match self.0 {
+            InnerIdentity::PublicKey(_) => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_addressable(&self) -> bool {
+        match self.0 {
+            InnerIdentity::Addressable(_) => true,
+            _ => false,
+        }
     }
 
     pub const fn can_sign(&self) -> bool {
@@ -68,6 +92,20 @@ impl Identity {
     }
 }
 
+impl Debug for Identity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Identity")
+            .field(&match self.0 {
+                InnerIdentity::Anonymous() => "anonymous".to_string(),
+                InnerIdentity::PublicKey(_) => "public-key".to_string(),
+                InnerIdentity::Addressable(_) => "addressable".to_string(),
+                InnerIdentity::_Private(_) => "??".to_string(),
+            })
+            .field(&self.to_string())
+            .finish()
+    }
+}
+
 impl Default for Identity {
     fn default() -> Self {
         Identity::anonymous()
@@ -85,17 +123,33 @@ impl Encode for Identity {
         &self,
         e: &mut Encoder<W>,
     ) -> Result<(), minicbor::encode::Error<W::Error>> {
-        use minicbor::data::Tag;
-        e.tag(Tag::Unassigned(10000))?.bytes(&self.to_vec())?;
+        e.tag(minicbor::data::Tag::Unassigned(10000))?
+            .bytes(&self.to_vec())?;
         Ok(())
     }
 }
 
-impl TryFrom<Vec<u8>> for Identity {
+impl<'b> Decode<'b> for Identity {
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
+        let mut is_tagged = false;
+        // Check all the tags.
+        while !is_tagged {
+            let tag = d.tag()?;
+            if tag == minicbor::data::Tag::Unassigned(10000) {
+                is_tagged = true;
+            }
+        }
+
+        Self::try_from(d.bytes()?)
+            .map_err(|_e| minicbor::decode::Error::Message("Could not decode identity from bytes"))
+    }
+}
+
+impl TryFrom<&[u8]> for Identity {
     type Error = Error;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        InnerIdentity::try_from(value).map(Self)
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
     }
 }
 
@@ -104,6 +158,14 @@ impl TryFrom<String> for Identity {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         InnerIdentity::try_from(value).map(Self)
+    }
+}
+
+impl FromStr for Identity {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        InnerIdentity::from_str(s).map(Self)
     }
 }
 
@@ -149,10 +211,12 @@ impl<'de> Deserialize<'de> for Identity {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Ord, PartialOrd)]
+#[non_exhaustive]
 enum InnerIdentity {
     Anonymous(),
     PublicKey([u8; SHA_OUTPUT_SIZE]),
     Addressable([u8; SHA_OUTPUT_SIZE]),
+
     // Force the size to be 256 bits.
     _Private([u8; MAX_IDENTITY_BYTE_LEN - 1]),
 }
@@ -169,6 +233,26 @@ impl Default for InnerIdentity {
 }
 
 impl InnerIdentity {
+    pub fn from_str(value: &str) -> Result<Self, Error> {
+        if !value.starts_with('o') {
+            return Err(Error::UnknownError());
+        }
+
+        if &value[1..] == "a" {
+            Ok(Self::Anonymous())
+        } else {
+            let (_crc, data) = value[1..].split_at(2);
+            let data = base32::decode(base32::Alphabet::RFC4648 { padding: false }, data).unwrap();
+            let result = Self::try_from(data.as_slice())?;
+
+            if result.to_string() != value {
+                Err(Error::UnknownError())
+            } else {
+                Ok(result)
+            }
+        }
+    }
+
     pub const fn to_bytes(&self) -> [u8; MAX_IDENTITY_BYTE_LEN] {
         let mut bytes = [0; MAX_IDENTITY_BYTE_LEN];
         match self {
@@ -228,7 +312,7 @@ impl InnerIdentity {
                     pk[24], pk[25], pk[26], pk[27],
                 ]
             }
-            InnerIdentity::_Private(_) => vec![],
+            InnerIdentity::_Private(_) => unreachable!(),
         }
     }
 }
@@ -258,57 +342,42 @@ impl TryFrom<String> for InnerIdentity {
     type Error = Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if !value.starts_with('o') {
-            return Err(Error::UnknownError());
-        }
-        let v = value.to_lowercase();
-        if &value[1..] == "a" {
-            Ok(Self::Anonymous())
-        } else {
-            let (crc, data) = value[1..].split_at(2);
-            let data = base32::decode(base32::Alphabet::RFC4648 { padding: false }, data).unwrap();
-            let result = Self::try_from(data)?;
-
-            if result.to_string() != value {
-                Err(Error::UnknownError())
-            } else {
-                Ok(result)
-            }
-        }
+        InnerIdentity::from_str(value.as_str())
     }
 }
 
-impl TryFrom<Vec<u8>> for InnerIdentity {
+impl TryFrom<&[u8]> for InnerIdentity {
     type Error = Error;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if value.len() < 1 {
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let bytes = bytes.as_ref();
+        if bytes.len() < 1 {
             return Err(Error::UnknownError());
         }
 
-        match value[0] {
+        match bytes[0] {
             0 => {
-                if value.len() > 1 {
+                if bytes.len() > 1 {
                     Err(Error::UnknownError())
                 } else {
                     Ok(Self::Anonymous())
                 }
             }
             1 => {
-                if value.len() != 29 {
+                if bytes.len() != 29 {
                     Err(Error::UnknownError())
                 } else {
                     let mut slice = [0; 28];
-                    slice.copy_from_slice(&value[1..29]);
+                    slice.copy_from_slice(&bytes[1..29]);
                     Ok(Self::PublicKey(slice))
                 }
             }
             2 => {
-                if value.len() != 29 {
+                if bytes.len() != 29 {
                     Err(Error::UnknownError())
                 } else {
                     let mut slice = [0; 28];
-                    slice.copy_from_slice(&value[1..29]);
+                    slice.copy_from_slice(&bytes[1..29]);
                     Ok(Self::Addressable(slice))
                 }
             }
@@ -345,7 +414,7 @@ impl Visitor<'_> for InnerIdentityVisitor {
     where
         E: serde::de::Error,
     {
-        InnerIdentity::try_from(v.to_vec()).map_err(E::custom)
+        InnerIdentity::try_from(v).map_err(E::custom)
     }
 }
 

@@ -37,32 +37,25 @@ impl KeyValueStoreDriver {
                     send(result_tx, (self.height, self.hash()))?;
                 }
                 Command::Mint {
-                    ticker,
                     account,
                     amount,
                     result_tx,
                 } => {
                     debug!(
-                        "Minting {} {} for account 0x{}",
+                        "Minting {} for account 0x{}",
                         amount,
-                        ticker,
                         hex::encode(&account.to_vec())
                     );
 
                     *self.balances.entry(account).or_default() += amount;
                     send(result_tx, ())?;
                 }
-                Command::QueryBalance {
-                    ticker,
-                    account,
-                    result_tx,
-                } => {
+                Command::QueryBalance { account, result_tx } => {
                     let balance = self.balances.get(&account).map_or(0, |e| *e);
-                    send(result_tx, (balance,))?;
+                    send(result_tx, (balance, self.height))?;
                 }
 
                 Command::SendTokens {
-                    ticker,
                     from,
                     to,
                     amount,
@@ -123,7 +116,6 @@ pub enum Command {
     },
 
     SendTokens {
-        ticker: String,
         from: Identity,
         to: Identity,
         amount: u128,
@@ -131,13 +123,11 @@ pub enum Command {
     },
 
     QueryBalance {
-        ticker: String,
         account: Identity,
-        result_tx: Sender<(u128,)>,
+        result_tx: Sender<(u128, u64)>,
     },
 
     Mint {
-        ticker: String,
         account: Identity,
         amount: u128,
         result_tx: Sender<()>,

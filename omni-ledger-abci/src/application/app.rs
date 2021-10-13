@@ -1,5 +1,10 @@
 //! In-memory OMNI Ledger Registry as an ABCI application.
 use crate::application::{Command, KeyValueStoreDriver};
+use omni::cbor::cose::CoseSign1;
+use omni::cbor::message::RequestMessage;
+use omni::cbor::value::CborValue;
+use omni::Identity;
+use std::convert::TryFrom;
 use std::sync::mpsc::{channel, Sender};
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
@@ -7,6 +12,38 @@ use tendermint_proto::abci::{
     ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };
 use tracing::{debug, info};
+
+fn from_der(der: &[u8]) -> Result<Vec<u8>, String> {
+    use simple_asn1::{
+        from_der, oid,
+        ASN1Block::{BitString, ObjectIdentifier, Sequence},
+    };
+
+    let object = from_der(der).map_err(|e| format!("asn error: {:?}", e))?;
+    let first = object.first().ok_or(format!("empty object"))?;
+
+    match first {
+        Sequence(_, blocks) => {
+            let algorithm = blocks.get(0).ok_or(format!("Invalid ASN1"))?;
+            let bytes = blocks.get(1).ok_or(format!("Invalid ASN1"))?;
+            let id_ed25519 = oid!(1, 3, 101, 112);
+            match (algorithm, bytes) {
+                (Sequence(_, oid_sequence), BitString(_, _, bytes)) => match oid_sequence.first() {
+                    Some(ObjectIdentifier(_, oid)) => {
+                        if oid == id_ed25519 {
+                            Ok(bytes.clone())
+                        } else {
+                            Err(format!("Invalid oid."))
+                        }
+                    }
+                    _ => Err(format!("Invalid oid.")),
+                },
+                _ => Err(format!("Invalid oid.")),
+            }
+        }
+        _ => Err(format!("Invalid root type."))?,
+    }
+}
 
 /// In-memory, hashmap-backed key/value store ABCI application.
 ///
@@ -22,6 +59,105 @@ impl KeyValueStoreApp {
     pub fn new() -> (Self, KeyValueStoreDriver) {
         let (cmd_tx, cmd_rx) = channel();
         (Self { cmd_tx }, KeyValueStoreDriver::new(cmd_rx))
+    }
+
+    fn get_key_for_identity(
+        &self,
+        cose_sign1: &CoseSign1,
+        kid: Vec<u8>,
+    ) -> Option<ring::signature::UnparsedPublicKey<Vec<u8>>> {
+        let v = cose_sign1
+            .protected
+            .custom_headers
+            .get(&CborValue::TextString("keys".to_string()))?;
+
+        let key_bytes = match v {
+            CborValue::Map(ref m) => {
+                let value = m.get(&CborValue::ByteString(kid.clone()))?;
+                match value {
+                    CborValue::ByteString(value) => Some(value),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }?;
+
+        // Verify the keybytes matches the identity.
+        let id = Identity::try_from(kid.as_slice()).ok()?;
+        if id.is_anonymous() {
+            return None;
+        } else if id.is_public_key() {
+            let other = Identity::public_key(key_bytes.to_vec());
+            if other == id {
+                Some(ring::signature::UnparsedPublicKey::new(
+                    &ring::signature::ED25519,
+                    from_der(key_bytes).ok()?,
+                ))
+            } else {
+                None
+            }
+        } else if id.is_addressable() {
+            if Identity::addressable(key_bytes.to_vec()) == id {
+                Some(ring::signature::UnparsedPublicKey::new(
+                    &ring::signature::ED25519,
+                    key_bytes.to_owned(),
+                ))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    // TODO: add verification of the `to` fields.
+    fn verify(&self, cose_sign1: &CoseSign1) -> bool {
+        if let Some(ref kid) = cose_sign1.protected.key_identifier {
+            if let Ok(id) = Identity::from_bytes(kid) {
+                if id.is_anonymous() {
+                    // TODO: allow anonymous requests IF THEY MATCH the message's from field.
+                    return false;
+                }
+            }
+
+            self.get_key_for_identity(cose_sign1, kid.clone())
+                .map(|key| {
+                    cose_sign1
+                        .verify_with(|content, sig| key.verify(content, sig).is_ok())
+                        .unwrap_or(false)
+                })
+                .unwrap_or(false)
+        } else {
+            false
+        }
+    }
+
+    fn decode_and_verify(&self, bytes: &[u8]) -> Result<RequestMessage, String> {
+        let cose_sign1 = minicbor::decode::<CoseSign1>(bytes)
+            .map_err(|e| format!("Invalid COSE CBOR message: {}", e))?;
+
+        if !self.verify(&cose_sign1) {
+            return Err("Could not verify the signature.".to_string());
+        }
+
+        if let Some(payload) = cose_sign1.payload {
+            let mut message = RequestMessage::from_bytes(&payload)?;
+
+            // Update `from` and `to` if they're missing.
+            message.from = match message.from {
+                None => Some(
+                    Identity::from_bytes(&cose_sign1.protected.key_identifier.unwrap_or_default())
+                        .map_err(|e| format!("{:?}", e))?,
+                ),
+                Some(from) => Some(from),
+            };
+
+            // TODO: add `to` overload with the threshold key from this blockchain.
+
+            Ok(message)
+        } else {
+            Err("payload missing".to_string())
+        }
     }
 }
 
@@ -46,46 +182,62 @@ impl Application for KeyValueStoreApp {
     }
 
     fn query(&self, request: RequestQuery) -> ResponseQuery {
-        // let key = match String::from_utf8(request.data.clone()) {
-        //     Ok(s) => s,
-        //     Err(e) => panic!("Failed to intepret key as UTF-8: {}", e),
-        // };
-        // debug!("Attempting to get key: {}", key);
-        // match self.get(key.clone()) {
-        //     Ok((height, value_opt)) => match value_opt {
-        //         Some(value) =>
-        ResponseQuery {
-            code: 0,
-            log: "exists".to_string(),
-            info: "".to_string(),
-            index: 0,
-            key: request.data,
-            value: vec![], // value.into_bytes(),
-            proof_ops: None,
-            height: 0,
-            codespace: "".to_string(),
+        let message = match self.decode_and_verify(&request.data) {
+            Ok(message) => message,
+            Err(e) => {
+                return ResponseQuery {
+                    code: 1,
+                    ..Default::default()
+                }
+            }
+        };
+        let from = match message.from {
+            Some(f) => f,
+            None => {
+                return ResponseQuery {
+                    code: 2,
+                    ..Default::default()
+                }
+            }
+        };
+
+        match message.method.as_str() {
+            "balance" => {
+                let (result_tx, result_rx) = channel();
+                let account = message.from.unwrap();
+
+                self.cmd_tx
+                    .send(Command::QueryBalance {
+                        account: account.clone(),
+                        result_tx,
+                    })
+                    .unwrap();
+                let (amount, height) = result_rx.recv().unwrap();
+                ResponseQuery {
+                    code: 0,
+                    key: account.to_vec(),
+                    value: amount.to_be_bytes().to_vec(),
+                    height: height as i64,
+                    ..Default::default()
+                }
+            }
+            _ => ResponseQuery {
+                code: 2,
+                ..Default::default()
+            },
         }
-        //     None => ResponseQuery {
-        //         code: 0,
-        //         log: "does not exist".to_string(),
-        //         info: "".to_string(),
-        //         index: 0,
-        //         key: request.data,
-        //         value: vec![],
-        //         proof_ops: None,
-        //         height,
-        //         codespace: "".to_string(),
-        //     },
-        // },
-        // Err(e) => panic!("Failed to get key \"{}\": {:?}", key, e),
-        // }
     }
 
-    fn check_tx(&self, _request: RequestCheckTx) -> ResponseCheckTx {
+    fn check_tx(&self, request: RequestCheckTx) -> ResponseCheckTx {
+        let (code, log) = match self.decode_and_verify(&request.tx) {
+            Ok(_) => (0, "".to_string()),
+            Err(e) => (1, e),
+        };
+
         ResponseCheckTx {
-            code: 0,
+            code,
             data: vec![],
-            log: "".to_string(),
+            log,
             info: "".to_string(),
             gas_wanted: 1,
             gas_used: 0,
@@ -95,54 +247,27 @@ impl Application for KeyValueStoreApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let tx = serde_cose::from_slice(&request.tx);
-        let mut tx1 = cose::sign::CoseSign::new();
-        tx1.bytes = request.tx.clone();
-        tx1.init_decoder(None).unwrap();
-        // tx1.key(&key).unwrap();
-        let mut key = cose::keys::CoseKey::new();
-        key.kty(cose::keys::EC2);
-        key.alg(cose::algs::EDDSA);
-        key.crv(cose::keys::ED25519);
-
-        key.x(
-            hex::decode("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-                .unwrap(),
-        );
-        key.d(
-            hex::decode("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .unwrap(),
-        );
-        key.key_ops(vec![cose::keys::KEY_OPS_VERIFY]);
-        tx1.key(&key);
-        let tx1_result = tx1.decode(None, None);
+        let message = match self.decode_and_verify(&request.tx) {
+            Ok(message) => message,
+            Err(e) => {
+                return ResponseDeliverTx {
+                    code: 1,
+                    log: e,
+                    ..Default::default()
+                };
+            }
+        };
 
         ResponseDeliverTx {
             code: 0,
             data: vec![],
-            log: format!("{:?}", tx1_result),
-            info: format!("{:?}", tx1.header.kid.map(hex::encode)),
+            log: format!("{:?}", message),
+            info: format!(""),
             gas_wanted: 0,
             gas_used: 0,
             events: vec![Event {
                 r#type: "app".to_string(),
-                attributes: vec![
-                    // EventAttribute {
-                    //     key: "key".as_bytes().to_owned(),
-                    //     value: key.as_bytes().to_owned(),
-                    //     index: true,
-                    // },
-                    EventAttribute {
-                        key: "index_key".as_bytes().to_owned(),
-                        value: "index is working".as_bytes().to_owned(),
-                        index: true,
-                    },
-                    EventAttribute {
-                        key: "noindex_key".as_bytes().to_owned(),
-                        value: "index is working".as_bytes().to_owned(),
-                        index: false,
-                    },
-                ],
+                attributes: vec![],
             }],
             codespace: "".to_string(),
         }
