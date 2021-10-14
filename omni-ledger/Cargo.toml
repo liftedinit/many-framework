@@ -10,6 +10,7 @@ anyhow = "1.0.44"
 base64 = "0.13.0"
 clap = "3.0.0-beta.4"
 hex = "0.4.3"
+minicbor = "0.11.3"
 omni = { path = "../omni" }
 pem = "0.8.3"
 ring = "0.17.0-alpha.10"

@@ -1,3 +1,4 @@
+use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
 use serde::de::Visitor;
@@ -133,15 +134,25 @@ impl<'b> Decode<'b> for Identity {
     fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
         let mut is_tagged = false;
         // Check all the tags.
-        while !is_tagged {
-            let tag = d.tag()?;
-            if tag == minicbor::data::Tag::Unassigned(10000) {
+        while d.datatype()? == Type::Tag {
+            if d.tag()? == minicbor::data::Tag::Unassigned(10000) {
                 is_tagged = true;
             }
         }
 
-        Self::try_from(d.bytes()?)
-            .map_err(|_e| minicbor::decode::Error::Message("Could not decode identity from bytes"))
+        match d.datatype()? {
+            Type::String => Self::from_str(d.str()?),
+            _ => {
+                if !is_tagged {
+                    return Err(minicbor::decode::Error::Message(
+                        "identities need to be tagged",
+                    ));
+                } else {
+                    Self::try_from(d.bytes()?)
+                }
+            }
+        }
+        .map_err(|_e| minicbor::decode::Error::Message("Could not decode identity from bytes"))
     }
 }
 

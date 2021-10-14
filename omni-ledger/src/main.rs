@@ -44,11 +44,31 @@ struct Opt {
 #[derive(Clap)]
 enum SubCommand {
     Balance(BalanceOpt),
+    Mint(MintOpt),
+    Send(SendOpt),
 }
 
 #[derive(Clap)]
 struct BalanceOpt {
     account: Option<Identity>,
+}
+
+#[derive(Clap)]
+struct MintOpt {
+    /// Account to mint the tokens into.
+    account: Identity,
+
+    /// Amount of tokens to mint.
+    amount: u128,
+}
+
+#[derive(Clap)]
+struct SendOpt {
+    /// The account to send to.
+    to: Identity,
+
+    /// Amount of tokens to send.
+    amount: u128,
 }
 
 fn main() {
@@ -85,6 +105,44 @@ fn main() {
                 .version(1)
                 .from(from_identity)
                 .method("balance".to_string())
+                .build()
+                .unwrap();
+
+            let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
+            println!("{}", hex::encode(&bytes));
+        }
+        SubCommand::Mint(o) => {
+            let mut data = Vec::new();
+            let mut e = minicbor::Encoder::new(&mut data);
+            e.array(3).unwrap();
+            e.encode(o.account).unwrap();
+            e.encode((o.amount >> 64) as u64).unwrap();
+            e.encode(o.amount as u64).unwrap();
+
+            let message = RequestMessageBuilder::default()
+                .version(1)
+                .from(from_identity)
+                .method("mint".to_string())
+                .data(data)
+                .build()
+                .unwrap();
+
+            let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
+            println!("{}", base64::encode(&bytes));
+        }
+        SubCommand::Send(o) => {
+            let mut data = Vec::new();
+            let mut e = minicbor::Encoder::new(&mut data);
+            e.array(3).unwrap();
+            e.encode(o.to).unwrap();
+            e.encode((o.amount >> 64) as u64).unwrap();
+            e.encode(o.amount as u64).unwrap();
+
+            let message = RequestMessageBuilder::default()
+                .version(1)
+                .from(from_identity)
+                .method("send".to_string())
+                .data(data)
                 .build()
                 .unwrap();
 

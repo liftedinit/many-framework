@@ -1143,6 +1143,7 @@ dependencies = [
  "base64 0.13.0",
  "clap 3.0.0-beta.4",
  "hex",
+ "minicbor",
  "omni",
  "pem 0.8.3",
  "ring",

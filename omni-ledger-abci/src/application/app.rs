@@ -187,6 +187,7 @@ impl Application for KeyValueStoreApp {
             Err(e) => {
                 return ResponseQuery {
                     code: 1,
+                    log: e,
                     ..Default::default()
                 }
             }
@@ -258,18 +259,116 @@ impl Application for KeyValueStoreApp {
             }
         };
 
-        ResponseDeliverTx {
-            code: 0,
-            data: vec![],
-            log: format!("{:?}", message),
-            info: format!(""),
-            gas_wanted: 0,
-            gas_used: 0,
-            events: vec![Event {
-                r#type: "app".to_string(),
-                attributes: vec![],
-            }],
-            codespace: "".to_string(),
+        match message.method.as_str() {
+            "mint" => {
+                // TODO: limit this to an owner public key that's passed during initialization.
+                if message.from().to_string()
+                    != "ozhagjlfre6vtu7aucntdddtijmfp2x4cmplhmodn2y6b3upyi"
+                {
+                    return ResponseDeliverTx {
+                        code: 3,
+                        log: "unauthorized".to_string(),
+                        ..Default::default()
+                    };
+                }
+
+                let account = message.from.unwrap();
+                let data = message.data.unwrap_or_default();
+                let mut d = minicbor::Decoder::new(&data);
+                let args = d
+                    .array()
+                    .and_then(|_| {
+                        d.decode::<Identity>().and_then(|id| {
+                            d.decode::<u64>().and_then(|amount_big| {
+                                d.decode::<u64>().and_then(|amount_little| {
+                                    Ok((id, (amount_big as u128) << 64 + (amount_little as u128)))
+                                })
+                            })
+                        })
+                    })
+                    .map_err(|e| ResponseDeliverTx {
+                        code: 5,
+                        log: format!("invalid data: {:?}", e),
+                        ..Default::default()
+                    });
+
+                let (account, amount) = match args {
+                    Ok(x) => x,
+                    Err(e) => {
+                        return e;
+                    }
+                };
+
+                let (result_tx, result_rx) = channel();
+                self.cmd_tx
+                    .send(Command::Mint {
+                        account,
+                        amount,
+                        result_tx,
+                    })
+                    .unwrap();
+                result_rx.recv().unwrap();
+                ResponseDeliverTx {
+                    code: 0,
+                    ..Default::default()
+                }
+            }
+            "send" => {
+                let from = message.from();
+                if from.is_anonymous() {
+                    return ResponseDeliverTx {
+                        code: 5,
+                        ..Default::default()
+                    };
+                }
+
+                let data = message.data.unwrap_or_default();
+                let mut d = minicbor::Decoder::new(&data);
+                let args = d
+                    .array()
+                    .and_then(|_| {
+                        d.decode::<Identity>().and_then(|id| {
+                            d.decode::<u64>().and_then(|amount_big| {
+                                d.decode::<u64>().and_then(|amount_little| {
+                                    Ok((id, (amount_big as u128) << 64 + (amount_little as u128)))
+                                })
+                            })
+                        })
+                    })
+                    .map_err(|e| ResponseDeliverTx {
+                        code: 5,
+                        log: format!("invalid data: {:?}", e),
+                        ..Default::default()
+                    });
+
+                let (to, amount) = match args {
+                    Ok(x) => x,
+                    Err(e) => {
+                        return e;
+                    }
+                };
+
+                let (result_tx, result_rx) = channel();
+                self.cmd_tx
+                    .send(Command::SendTokens {
+                        from,
+                        to,
+                        amount,
+                        result_tx,
+                    })
+                    .unwrap();
+
+                result_rx.recv().unwrap();
+                ResponseDeliverTx {
+                    code: 0,
+                    ..Default::default()
+                }
+            }
+            _ => ResponseDeliverTx {
+                code: 2,
+                log: "not found".to_string(),
+                ..Default::default()
+            },
         }
     }
 

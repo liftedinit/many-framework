@@ -83,6 +83,10 @@ impl RequestMessage {
 
         cose
     }
+
+    pub fn from(&self) -> Identity {
+        self.from.unwrap_or_default()
+    }
 }
 
 impl Encode for RequestMessage {
@@ -94,20 +98,25 @@ impl Encode for RequestMessage {
             e.u8(*v)?;
         }
 
+        // No need to send the anonymous identity.
         if let Some(ref i) = self.from {
-            e.str("from")?;
-            e.encode(&i)?;
+            if !i.is_anonymous() {
+                e.str("from")?;
+                e.encode(&i)?;
+            }
         }
 
-        e.str("to")?;
-        e.encode(&self.to)?;
+        if let Some(to) = self.to {
+            e.str("to")?;
+            e.encode(to)?;
+        }
 
         e.str("method")?;
         e.encode(&self.method)?;
 
         if let Some(ref d) = self.data {
             e.str("data")?;
-            e.encode(&d)?;
+            e.bytes(&d)?;
         }
 
         e.str("timestamp")?;
@@ -143,7 +152,7 @@ impl<'b> Decode<'b> for RequestMessage {
                 "from" => builder.from(d.decode()?),
                 "to" => builder.to(d.decode()?),
                 "method" => builder.method(d.decode()?),
-                "data" => builder.data(d.decode()?),
+                "data" => builder.data(d.bytes()?.to_vec()),
                 "timestamp" => {
                     // Some logic applies.
                     let t = d.tag()?;
