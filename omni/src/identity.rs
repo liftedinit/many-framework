@@ -1,8 +1,6 @@
 use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
-use serde::de::Visitor;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
@@ -198,29 +196,6 @@ impl AsRef<[u8; MAX_IDENTITY_BYTE_LEN]> for Identity {
     }
 }
 
-impl Serialize for Identity {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.serialize_str(&self.0.to_string())
-        } else {
-            serializer.serialize_bytes(&self.0.to_vec())
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Identity {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let inner = InnerIdentity::deserialize(deserializer)?;
-        Ok(Self(inner))
-    }
-}
-
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Ord, PartialOrd)]
 #[non_exhaustive]
 enum InnerIdentity {
@@ -397,47 +372,75 @@ impl TryFrom<&[u8]> for InnerIdentity {
     }
 }
 
-struct HumanReadableInnerIdentityVisitor;
-impl Visitor<'_> for HumanReadableInnerIdentityVisitor {
-    type Value = InnerIdentity;
-
-    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
-        formatter.write_str("a textual OMNI identity")
+#[cfg(feature = "serde")]
+mod serde {
+    impl serde::ser::Serialize for Identity {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::ser::Serializer,
+        {
+            if serializer.is_human_readable() {
+                serializer.serialize_str(&self.0.to_string())
+            } else {
+                serializer.serialize_bytes(&self.0.to_vec())
+            }
+        }
     }
 
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        InnerIdentity::try_from(v).map_err(E::custom)
-    }
-}
-
-struct InnerIdentityVisitor;
-impl Visitor<'_> for InnerIdentityVisitor {
-    type Value = InnerIdentity;
-
-    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
-        formatter.write_str("a byte buffer")
+    impl<'de> serde::ser::Deserialize<'de> for Identity {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::ser::Deserializer<'de>,
+        {
+            let inner = InnerIdentity::deserialize(deserializer)?;
+            Ok(Self(inner))
+        }
     }
 
-    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        InnerIdentity::try_from(v).map_err(E::custom)
-    }
-}
+    struct HumanReadableInnerIdentityVisitor;
 
-impl<'de> Deserialize<'de> for InnerIdentity {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            deserializer.deserialize_string(HumanReadableInnerIdentityVisitor)
-        } else {
-            deserializer.deserialize_bytes(InnerIdentityVisitor)
+    impl serde::de::Visitor<'_> for HumanReadableInnerIdentityVisitor {
+        type Value = InnerIdentity;
+
+        fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            formatter.write_str("a textual OMNI identity")
+        }
+
+        fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            InnerIdentity::try_from(v).map_err(E::custom)
+        }
+    }
+
+    struct InnerIdentityVisitor;
+
+    impl serde::de::Visitor<'_> for InnerIdentityVisitor {
+        type Value = InnerIdentity;
+
+        fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            formatter.write_str("a byte buffer")
+        }
+
+        fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            InnerIdentity::try_from(v).map_err(E::custom)
+        }
+    }
+
+    impl<'de> serde::de::Deserialize<'de> for InnerIdentity {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::de::Deserializer<'de>,
+        {
+            if deserializer.is_human_readable() {
+                deserializer.deserialize_string(HumanReadableInnerIdentityVisitor)
+            } else {
+                deserializer.deserialize_bytes(InnerIdentityVisitor)
+            }
         }
     }
 }

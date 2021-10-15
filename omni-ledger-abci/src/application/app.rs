@@ -239,11 +239,7 @@ impl Application for KeyValueStoreApp {
             code,
             data: vec![],
             log,
-            info: "".to_string(),
-            gas_wanted: 1,
-            gas_used: 0,
-            events: vec![],
-            codespace: "".to_string(),
+            ..Default::default()
         }
     }
 

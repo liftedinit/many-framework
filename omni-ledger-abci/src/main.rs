@@ -7,13 +7,9 @@ use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Debug, Clap)]
 struct Opt {
-    /// Bind the TCP server to this host.
-    #[clap(long, default_value = "127.0.0.1")]
-    abci_host: String,
-
-    /// Bind the TCP server to this port.
-    #[clap(long, default_value = "26658")]
-    abci_port: u16,
+    /// The interface and port to bind the abci server to.
+    #[clap(long, default_value = "127.0.0.1:26658")]
+    abci: String,
 
     /// The default server read buffer size, in bytes, for each incoming client
     /// connection.
@@ -28,13 +24,9 @@ struct Opt {
     #[clap(short, long)]
     quiet: bool,
 
-    // OMNI Protocol Host interface to listen to.
-    #[clap(long, default_value = "127.0.0.1")]
-    omni_host: String,
-
-    // OMNI Protocol Port interface to listen to.
-    #[clap(long, default_value = "8000")]
-    omni_port: u16,
+    // OMNI Protocol Host interface and port to listen to.
+    #[clap(long, default_value = "127.0.0.1:8000")]
+    omni: String,
 }
 
 fn main() {
@@ -50,21 +42,17 @@ fn main() {
 
     let (app, driver) = application::KeyValueStoreApp::new();
     let abci_server = ServerBuilder::new(opt.read_buf_size)
-        .bind(format!("{}:{}", opt.abci_host, opt.abci_port), app)
+        .bind(opt.abci.clone(), app)
         .unwrap();
 
     let j1 = std::thread::spawn(move || driver.run().unwrap());
     // let j2 = std::thread::spawn(move || {
     //     let rt = tokio::runtime::Runtime::new().unwrap();
-    //     rt.block_on(http::launch((opt.omni_host, opt.omni_port)))
-    //         .unwrap();
+    //     rt.block_on(http::launch(opt.omni, opt.abci)).unwrap();
     // });
     let j3 = std::thread::spawn(move || abci_server.listen().unwrap());
 
-    print!("1");
     j1.join().unwrap();
-    // print!("2");
     // j2.join().unwrap();
-    print!("3");
     j3.join().unwrap();
 }

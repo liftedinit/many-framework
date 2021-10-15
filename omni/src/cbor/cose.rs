@@ -198,6 +198,10 @@ impl CoseSign1 {
         })?;
         Ok(bytes)
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error<String>> {
+        minicbor::decode(bytes).map_err(|_| Error::Message("Could not decode CoseSign1."))
+    }
 }
 
 impl Encode for CoseSign1 {

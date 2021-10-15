@@ -7,6 +7,7 @@ use cbor::value::CborValue;
 use clap::Clap;
 use identity::Identity;
 use minicbor::Encoder;
+use omni::cbor::message::ResponseMessage;
 use ring::signature::KeyPair;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
@@ -69,6 +70,18 @@ struct MessageOpt {
     /// Timestamp.
     #[clap(long)]
     timestamp: Option<String>,
+
+    /// If true, prints out the hex value of the message bytes.
+    #[clap(long, conflicts_with("base64"))]
+    hex: bool,
+
+    /// If true, prints out the base64 value of the message bytes.
+    #[clap(long, conflicts_with("hex"))]
+    base64: bool,
+
+    /// The server to connect to.
+    #[clap(long)]
+    server: Option<String>,
 
     /// The identity to send it to.
     to: String,
@@ -144,8 +157,30 @@ fn main() {
             let cose = message.to_cose(keypair.as_ref());
             let mut bytes = Vec::<u8>::new();
             minicbor::encode(cose, &mut bytes).unwrap();
-            eprintln!("tx: {}", hex::encode(&bytes));
-            println!("{}", base64::encode(&bytes));
+
+            if o.hex {
+                println!("tx: {}", hex::encode(&bytes));
+            } else if o.base64 {
+                println!("{}", base64::encode(&bytes));
+            } else if let Some(s) = o.server {
+                let client = reqwest::blocking::Client::new();
+                let response = client.post(s).body(bytes).send().unwrap();
+
+                let body = response.bytes().unwrap();
+                let bytes = body.to_vec();
+                let cose_sign1 = CoseSign1::from_bytes(&bytes).unwrap();
+
+                let response =
+                    ResponseMessage::from_bytes(&cose_sign1.payload.unwrap_or_default()).unwrap();
+                println!(
+                    "{}",
+                    cbor_diag::parse_bytes(&response.data.unwrap_or_default())
+                        .unwrap()
+                        .to_diag()
+                );
+            } else {
+                panic!("Must specify one of hex, base64 or server...");
+            }
         }
     }
 }
