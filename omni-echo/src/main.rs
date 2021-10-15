@@ -6,12 +6,8 @@ use omni::Identity;
 struct EchoHandler;
 
 impl RequestHandler for EchoHandler {
-    fn handle(&self, message: RequestMessage) -> ResponseMessage {
-        ResponseMessageBuilder::default()
-            .from(Identity::anonymous())
-            .data(message.data.unwrap_or(vec![]))
-            .build()
-            .unwrap()
+    fn handle(&self, method: String, payload: Option<Vec<u8>>) -> Result<Option<Vec<u8>>, Vec<u8>> {
+        Ok(payload)
     }
 }
 

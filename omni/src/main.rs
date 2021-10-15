@@ -159,7 +159,7 @@ fn main() {
             minicbor::encode(cose, &mut bytes).unwrap();
 
             if o.hex {
-                println!("tx: {}", hex::encode(&bytes));
+                println!("{}", hex::encode(&bytes));
             } else if o.base64 {
                 println!("{}", base64::encode(&bytes));
             } else if let Some(s) = o.server {

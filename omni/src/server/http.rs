@@ -1,5 +1,5 @@
 use crate::cbor::cose::CoseSign1;
-use crate::cbor::message::{RequestMessage, ResponseMessage};
+use crate::cbor::message::{RequestMessage, ResponseMessage, ResponseMessageBuilder};
 use crate::cbor::value::CborValue;
 use crate::server::RequestHandler;
 use crate::Identity;
@@ -150,13 +150,17 @@ impl<H: RequestHandler> Server<H> {
         }
     }
 
-    fn encode_and_sign(&self, response: ResponseMessage) -> Result<CoseSign1, String> {
+    fn encode_and_sign(
+        &self,
+        public_key: Option<Vec<u8>>,
+        response: ResponseMessage,
+    ) -> Result<CoseSign1, String> {
         let payload = response.to_bytes()?;
         let this = self;
 
         let sign = |bytes: &[u8]| this.handler.sign(bytes);
 
-        response.to_cose(self.handler.public_key().map(|pk| (pk, sign)))
+        response.to_cose(public_key.map(|pk| (pk, sign)))
     }
 
     fn handle_request(
@@ -173,17 +177,52 @@ impl<H: RequestHandler> Server<H> {
 
         let actual_len = request.as_reader().read(buffer)?;
         let bytes = &buffer[..actual_len];
+        eprintln!("  bytes: {}", hex::encode(bytes));
 
         let message = self
             .decode_and_verify(bytes)
             .map_err(|e| anyhow!("{}", e))?;
-        let response = self.handler.handle(message);
+
+        let RequestMessage {
+            method,
+            data,
+            to,
+            id,
+            ..
+        } = message;
+
+        let public_key = self.handler.public_key();
+        let mut response_builder = ResponseMessageBuilder::default();
+        response_builder.version(1).from(
+            public_key
+                .clone()
+                .map_or(Identity::anonymous(), Identity::addressable),
+        );
+
+        if let Some(to) = to {
+            response_builder.to(to);
+        }
+        if let Some(id) = id {
+            response_builder.id(id);
+        }
+        match self.handler.handle(method, data) {
+            Ok(Some(data)) => {
+                response_builder.data(data);
+            }
+            Ok(None) => {}
+            Err(err) => {
+                response_builder.error(err);
+            }
+        };
+
+        let response = response_builder.build()?;
+
         let cose_sign1 = self
-            .encode_and_sign(response)
+            .encode_and_sign(public_key, response)
             .map_err(|e| anyhow!("{}", e))?;
         let bytes = cose_sign1.encode().map_err(|e| anyhow!("{}", e))?;
 
-        eprintln!("answering with: {}", hex::encode(&bytes));
+        eprintln!("  reply: {}", hex::encode(&bytes));
         Ok(Response::from_data(bytes))
     }
 
