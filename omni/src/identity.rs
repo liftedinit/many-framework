@@ -281,6 +281,7 @@ impl InnerIdentity {
         }
     }
 
+    #[allow(dead_code)]
     pub const fn to_byte_array(&self) -> [u8; MAX_IDENTITY_BYTE_LEN] {
         let mut bytes = [0; MAX_IDENTITY_BYTE_LEN];
         match self {
@@ -465,7 +466,22 @@ mod serde {
 
 #[cfg(test)]
 mod tests {
+    use crate::identity::MAX_IDENTITY_BYTE_LEN;
     use crate::Identity;
+
+    fn identity(seed: u32) -> Identity {
+        #[rustfmt::skip]
+        let bytes = [
+            1u8, 0, 0, 0, 
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            seed >> 24, seed >> 16, seed >> 8, seed & 0xFF
+        ];
+        Identity::from_bytes(&bytes).unwrap()
+    }
 
     #[test]
     fn can_read_anonymous() {
@@ -474,5 +490,23 @@ mod tests {
         let a2 = Identity::from_str(&a_str).unwrap();
 
         assert_eq!(a, a2);
+    }
+
+    #[test]
+    fn byte_array_conversion() {
+        let a = Identity::anonymous();
+        let b = identity(1);
+        let c = identity(2);
+
+        assert_ne!(a.to_string(), b.to_string());
+        assert_ne!(b.to_string(), c.to_string());
+        assert_ne!(a.to_vec(), b.to_vec());
+        assert_ne!(b.to_vec(), c.to_vec());
+
+        assert_eq!(Identity::from_str(&a.to_string()), a);
+        assert_eq!(Identity::from_str(&b.to_string()), b);
+        assert_eq!(Identity::from_str(&c.to_string()), c);
+
+        assert_eq!(a.0.to_byte_array(), MAX_IDENTITY_BYTE_LEN);
     }
 }

@@ -8,20 +8,6 @@ use minicbor::{Decode, Decoder, Encode, Encoder};
 use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-fn to_der(key: Vec<u8>) -> Vec<u8> {
-    use simple_asn1::{
-        oid, to_der,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let public_key = key;
-    let id_ed25519 = oid!(1, 3, 101, 112);
-    let algorithm = Sequence(0, vec![ObjectIdentifier(0, id_ed25519)]);
-    let subject_public_key = BitString(0, public_key.len() * 8, public_key);
-    let subject_public_key_info = Sequence(0, vec![algorithm, subject_public_key]);
-    to_der(&subject_public_key_info).unwrap()
-}
-
 /// An OMNI message response.
 #[derive(Debug, Default, Builder)]
 #[builder(setter(strip_option), default)]
@@ -29,7 +15,7 @@ pub struct ResponseMessage {
     pub version: Option<u8>,
     pub from: Identity,
     pub to: Option<Identity>,
-    pub data: Option<Result<Vec<u8>, super::Error>>,
+    pub data: Option<Result<Vec<u8>, super::OmniError>>,
     pub timestamp: Option<SystemTime>,
     pub id: Option<u64>,
 }
@@ -105,13 +91,13 @@ impl Encode for ResponseMessage {
 
         match &self.data {
             Some(Ok(d)) => {
-                e.str("data")?.bytes(&d)?;
+                e.str("data")?.bytes(d)?;
             }
-            Some(Err(e)) => {
-                unreachable!();
+            Some(Err(err)) => {
+                e.str("error")?.encode(err)?;
             }
             None => {
-                unreachable!();
+                Err(Error::Message("must either have a result or an error"))?;
             }
         }
         // if let Some(ref d) = self.data {

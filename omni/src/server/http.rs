@@ -5,8 +5,9 @@ use crate::server::RequestHandler;
 use crate::Identity;
 use anyhow::anyhow;
 use std::convert::TryFrom;
+use std::io::Cursor;
 use std::net::ToSocketAddrs;
-use tiny_http::{Request, Response, ServerConfig, StatusCode};
+use tiny_http::{Request, Response, StatusCode};
 
 const READ_BUFFER_LEN: usize = 1024 * 1024 * 10;
 
@@ -155,12 +156,7 @@ impl<H: RequestHandler> Server<H> {
         public_key: Option<Vec<u8>>,
         response: ResponseMessage,
     ) -> Result<CoseSign1, String> {
-        let payload = response.to_bytes()?;
-        let this = self;
-
-        let sign = |bytes: &[u8]| this.handler.sign(bytes);
-
-        response.to_cose(public_key.map(|pk| (pk, sign)))
+        response.to_cose(public_key.map(|pk| (pk, |bytes: &[u8]| self.handler.sign(bytes))))
     }
 
     fn handle_request(
@@ -234,16 +230,16 @@ impl<H: RequestHandler> Server<H> {
         for mut request in server.incoming_requests() {
             eprintln!("request: {:?}", &request);
 
-            match self.handle_request(&mut request, buffer.as_mut_slice()) {
-                Ok(response) => {
-                    request.respond(response);
-                }
-                Err(err) => {
+            let response = self
+                .handle_request(&mut request, buffer.as_mut_slice())
+                .unwrap_or_else(|err| {
                     eprintln!("err: {:?}", err);
-                    let response = Response::new(StatusCode(500), vec![], &[] as &[u8], None, None);
-                    request.respond(response);
-                }
-            }
+                    Response::new(StatusCode(500), vec![], Cursor::default(), None, None)
+                });
+
+            // If there's a transport error (e.g. connection closed) on the response itself,
+            // we don't actually care and just continue waiting for the next request.
+            let _ = request.respond(response);
         }
 
         Ok(())

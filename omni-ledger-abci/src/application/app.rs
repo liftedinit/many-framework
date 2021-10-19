@@ -1,5 +1,4 @@
-//! In-memory OMNI Ledger Registry as an ABCI application.
-use crate::application::{Command, KeyValueStoreDriver};
+use crate::application::{Command, LedgerApplicationDriver};
 use omni::cbor::cose::CoseSign1;
 use omni::cbor::message::RequestMessage;
 use omni::cbor::value::CborValue;
@@ -8,8 +7,8 @@ use std::convert::TryFrom;
 use std::sync::mpsc::{channel, Sender};
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
-    Event, EventAttribute, RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery,
-    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
+    RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery, ResponseCheckTx, ResponseCommit,
+    ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };
 use tracing::{debug, info};
 
@@ -56,9 +55,9 @@ pub struct KeyValueStoreApp {
 
 impl KeyValueStoreApp {
     /// Constructor.
-    pub fn new() -> (Self, KeyValueStoreDriver) {
+    pub fn new() -> (Self, LedgerApplicationDriver) {
         let (cmd_tx, cmd_rx) = channel();
-        (Self { cmd_tx }, KeyValueStoreDriver::new(cmd_rx))
+        (Self { cmd_tx }, LedgerApplicationDriver::new(cmd_rx))
     }
 
     fn get_key_for_identity(
@@ -192,15 +191,12 @@ impl Application for KeyValueStoreApp {
                 }
             }
         };
-        let from = match message.from {
-            Some(f) => f,
-            None => {
-                return ResponseQuery {
-                    code: 2,
-                    ..Default::default()
-                }
-            }
-        };
+        if message.from.is_none() {
+            return ResponseQuery {
+                code: 2,
+                ..Default::default()
+            };
+        }
 
         match message.method.as_str() {
             "balance" => {
@@ -268,7 +264,6 @@ impl Application for KeyValueStoreApp {
                     };
                 }
 
-                let account = message.from.unwrap();
                 let data = message.data.unwrap_or_default();
                 let mut d = minicbor::Decoder::new(&data);
                 let args = d
@@ -354,10 +349,16 @@ impl Application for KeyValueStoreApp {
                     })
                     .unwrap();
 
-                result_rx.recv().unwrap();
-                ResponseDeliverTx {
-                    code: 0,
-                    ..Default::default()
+                match result_rx.recv().unwrap() {
+                    Ok(()) => ResponseDeliverTx {
+                        code: 0,
+                        ..Default::default()
+                    },
+                    Err(msg) => ResponseDeliverTx {
+                        code: 6,
+                        log: msg,
+                        ..Default::default()
+                    },
                 }
             }
             _ => ResponseDeliverTx {

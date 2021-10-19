@@ -100,7 +100,7 @@ fn main() {
     );
 
     match opt.subcommand {
-        SubCommand::Balance(o) => {
+        SubCommand::Balance(_o) => {
             let message = RequestMessageBuilder::default()
                 .version(1)
                 .from(from_identity)

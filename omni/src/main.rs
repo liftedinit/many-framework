@@ -1,15 +1,12 @@
-mod cbor;
-mod identity;
+pub mod cbor;
+pub mod identity;
 
 use cbor::cose::CoseSign1;
 use cbor::message::RequestMessageBuilder;
-use cbor::value::CborValue;
 use clap::Clap;
 use identity::Identity;
-use minicbor::Encoder;
 use omni::cbor::message::ResponseMessage;
 use ring::signature::KeyPair;
-use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 

@@ -1,3 +1,6 @@
+use derive_builder::Builder;
+use minicbor::encode::{Error, Write};
+use minicbor::{Decode, Decoder, Encode, Encoder};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::iter::FromIterator;
@@ -13,35 +16,76 @@ macro_rules! define_error_method {
         }
     };
     ($name: ident, $enum: ident, $message: literal, ($( $fieldname: ident, )+)) => {
-        pub fn $name( $($fieldname: String,?)+ ) -> Self {
+        pub fn $name( $($fieldname: String,)+ ) -> Self {
             Self {
                 code: ErrorCode::$enum,
                 message: ($message).to_string(),
                 fields: BTreeMap::from_iter(vec![
-                    $( (stringify!($fieldname), $fieldname) )+
+                    $( (stringify!($fieldname).to_string(), $fieldname) )+
                 ]),
             }
         }
     };
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug)]
 pub enum ErrorCode {
+    /// Unknown error.
     Unknown,
 
+    /// Invalid method name in the RPC message.
     InvalidMethodName,
-    UnknownIdentity,
-    Custom(u32),
+
+    /// Invalid identity (cannot be decoded properly). This is not the same as a signature
+    /// mismatch.
+    InvalidIdentity,
+
+    /// Application specific codes. Must be 1000 or higher.
+    ApplicationSpecific(u32),
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct Error {
+impl Into<u32> for ErrorCode {
+    fn into(self) -> u32 {
+        match self {
+            ErrorCode::Unknown => 0,
+            ErrorCode::InvalidMethodName => 1,
+            ErrorCode::InvalidIdentity => 2,
+            ErrorCode::ApplicationSpecific(x) => x,
+        }
+    }
+}
+
+impl From<u32> for ErrorCode {
+    fn from(v: u32) -> Self {
+        match v {
+            0 => ErrorCode::Unknown,
+            1 => ErrorCode::InvalidMethodName,
+            2 => ErrorCode::InvalidIdentity,
+
+            // Application specific error code.
+            x if x >= 1000 => Self::ApplicationSpecific(x),
+
+            // Unassociated error code, we just return unknown.
+            _ => ErrorCode::Unknown,
+        }
+    }
+}
+
+impl Default for ErrorCode {
+    fn default() -> Self {
+        ErrorCode::Unknown
+    }
+}
+
+#[derive(Clone, Debug, Default, Builder)]
+#[builder(default)]
+pub struct OmniError {
     code: ErrorCode,
     message: String,
     fields: BTreeMap<String, String>,
 }
 
-impl Error {
+impl OmniError {
     define_error_method!(unknown, Unknown, "Unknown error");
     define_error_method!(
         invalid_method_name,
@@ -51,10 +95,9 @@ impl Error {
     );
 }
 
-impl Display for Error {
+impl Display for OmniError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let message = self.message.as_str();
-        let mut i = 0;
 
         let re = regex::Regex::new(r"\{\{|\}\}|\{[^\}]*\}").unwrap();
         let mut current = 0;
@@ -78,7 +121,52 @@ impl Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for OmniError {}
+
+impl Encode for OmniError {
+    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        if self.fields.is_empty() {
+            e.array(2)?
+                .u32(self.code.into())?
+                .str(self.message.as_str())?;
+        } else {
+            e.array(3)?
+                .u32(self.code.into())?
+                .str(self.message.as_str())?
+                .encode(&self.fields)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'b> Decode<'b> for OmniError {
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
+        let mut builder = OmniErrorBuilder::default();
+        match d.array()? {
+            None => {
+                Err(minicbor::decode::Error::Message(
+                    "invalid error array length, need 2 or 3",
+                ))?;
+            }
+            Some(2) => {
+                builder.code(d.u32()?.into()).message(d.str()?.to_string());
+            }
+            Some(3) => {
+                builder
+                    .code(d.u32()?.into())
+                    .message(d.str()?.to_string())
+                    .fields(d.decode()?);
+            }
+            Some(_) => {
+                Err(minicbor::decode::Error::Message(
+                    "invalid error array length, need 2 or 3",
+                ))?;
+            }
+        }
+
+        Ok(builder.build().unwrap())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -92,7 +180,7 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::Error {
+        let e = super::OmniError {
             code: ErrorCode::Unknown,
             message: "Hello {0} and {2}.".to_string(),
             fields,
@@ -108,7 +196,7 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::Error {
+        let e = super::OmniError {
             code: ErrorCode::Unknown,
             message: "{2}".to_string(),
             fields,
@@ -124,7 +212,7 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::Error {
+        let e = super::OmniError {
             code: ErrorCode::Unknown,
             message: "@{a}{b}{c}.".to_string(),
             fields,
@@ -140,7 +228,7 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::Error {
+        let e = super::OmniError {
             code: ErrorCode::Unknown,
             message: "/{{}}{{{0}}}{{{a}}}{b}}}{{{2}.".to_string(),
             fields,

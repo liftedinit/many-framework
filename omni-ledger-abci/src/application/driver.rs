@@ -7,13 +7,13 @@ use tracing::debug;
 
 /// Manages key/value store state.
 #[derive(Debug)]
-pub struct KeyValueStoreDriver {
+pub struct LedgerApplicationDriver {
     balances: BTreeMap<Identity, u128>,
     height: u64,
     cmd_rx: Receiver<Command>,
 }
 
-impl KeyValueStoreDriver {
+impl LedgerApplicationDriver {
     pub fn new(cmd_rx: Receiver<Command>) -> Self {
         Self {
             balances: Default::default(),
@@ -76,7 +76,7 @@ impl KeyValueStoreDriver {
                             Some(new_to) => {
                                 self.balances.insert(from, new_from);
                                 self.balances.insert(to, new_to);
-                                send(result_tx, Ok(()));
+                                send(result_tx, Ok(()))?;
                             }
                         },
                     }
@@ -95,14 +95,6 @@ impl KeyValueStoreDriver {
         }
 
         hasher.finalize().to_vec()
-    }
-
-    fn commit(&mut self, result_tx: Sender<(u64, Vec<u8>)>) -> Result<()> {
-        self.height += 1;
-
-        Ok(result_tx
-            .send((self.height, self.hash()))
-            .map_err(|e| Error::ChannelSend(e.to_string()))?)
     }
 }
 
