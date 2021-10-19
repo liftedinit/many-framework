@@ -14,6 +14,9 @@ const SHA_OUTPUT_SIZE: usize = <Sha3_224 as Digest>::OutputSize::USIZE;
 pub enum Error {
     #[error("Unknown error.")]
     UnknownError(),
+
+    #[error("Invalid prefix, expected 'o'.")]
+    InvalidPrefix(),
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -22,6 +25,10 @@ pub struct Identity(pub(self) InnerIdentity);
 impl Identity {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         InnerIdentity::try_from(bytes).map(Self)
+    }
+
+    pub fn from_str<S: AsRef<str>>(str: S) -> Result<Self, Error> {
+        InnerIdentity::from_str(str.as_ref()).map(Self)
     }
 
     pub const fn anonymous() -> Self {
@@ -209,8 +216,7 @@ enum InnerIdentity {
 
 // Identity needs to be bound to 32 bytes maximum.
 static_assertions::assert_eq_size!([u8; MAX_IDENTITY_BYTE_LEN], InnerIdentity);
-
-static_assertions::const_assert_eq!(InnerIdentity::Anonymous().to_bytes()[0], 0);
+static_assertions::const_assert_eq!(InnerIdentity::Anonymous().to_byte_array()[0], 0);
 
 impl Default for InnerIdentity {
     fn default() -> Self {
@@ -219,12 +225,48 @@ impl Default for InnerIdentity {
 }
 
 impl InnerIdentity {
-    pub fn from_str(value: &str) -> Result<Self, Error> {
-        if !value.starts_with('o') {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        let bytes = bytes.as_ref();
+        if bytes.len() < 1 {
             return Err(Error::UnknownError());
         }
 
-        if &value[1..] == "a" {
+        match bytes[0] {
+            0 => {
+                if bytes.len() > 1 {
+                    Err(Error::UnknownError())
+                } else {
+                    Ok(Self::Anonymous())
+                }
+            }
+            1 => {
+                if bytes.len() != 29 {
+                    Err(Error::UnknownError())
+                } else {
+                    let mut slice = [0; 28];
+                    slice.copy_from_slice(&bytes[1..29]);
+                    Ok(Self::PublicKey(slice))
+                }
+            }
+            2 => {
+                if bytes.len() != 29 {
+                    Err(Error::UnknownError())
+                } else {
+                    let mut slice = [0; 28];
+                    slice.copy_from_slice(&bytes[1..29]);
+                    Ok(Self::Addressable(slice))
+                }
+            }
+            _ => Err(Error::UnknownError()),
+        }
+    }
+
+    pub fn from_str(value: &str) -> Result<Self, Error> {
+        if !value.starts_with('o') {
+            return Err(Error::InvalidPrefix());
+        }
+
+        if &value[1..] == "aa" {
             Ok(Self::Anonymous())
         } else {
             let (_crc, data) = value[1..].split_at(2);
@@ -239,7 +281,7 @@ impl InnerIdentity {
         }
     }
 
-    pub const fn to_bytes(&self) -> [u8; MAX_IDENTITY_BYTE_LEN] {
+    pub const fn to_byte_array(&self) -> [u8; MAX_IDENTITY_BYTE_LEN] {
         let mut bytes = [0; MAX_IDENTITY_BYTE_LEN];
         match self {
             InnerIdentity::Anonymous() => {}
@@ -301,10 +343,8 @@ impl InnerIdentity {
             InnerIdentity::_Private(_) => unreachable!(),
         }
     }
-}
 
-impl ToString for InnerIdentity {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let data = self.to_vec();
         let mut crc = crc_any::CRCu16::crc16();
         crc.digest(&data);
@@ -324,6 +364,12 @@ impl ToString for InnerIdentity {
     }
 }
 
+impl ToString for InnerIdentity {
+    fn to_string(&self) -> String {
+        self.to_string()
+    }
+}
+
 impl TryFrom<String> for InnerIdentity {
     type Error = Error;
 
@@ -336,44 +382,16 @@ impl TryFrom<&[u8]> for InnerIdentity {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes = bytes.as_ref();
-        if bytes.len() < 1 {
-            return Err(Error::UnknownError());
-        }
-
-        match bytes[0] {
-            0 => {
-                if bytes.len() > 1 {
-                    Err(Error::UnknownError())
-                } else {
-                    Ok(Self::Anonymous())
-                }
-            }
-            1 => {
-                if bytes.len() != 29 {
-                    Err(Error::UnknownError())
-                } else {
-                    let mut slice = [0; 28];
-                    slice.copy_from_slice(&bytes[1..29]);
-                    Ok(Self::PublicKey(slice))
-                }
-            }
-            2 => {
-                if bytes.len() != 29 {
-                    Err(Error::UnknownError())
-                } else {
-                    let mut slice = [0; 28];
-                    slice.copy_from_slice(&bytes[1..29]);
-                    Ok(Self::Addressable(slice))
-                }
-            }
-            _ => Err(Error::UnknownError()),
-        }
+        Self::from_bytes(bytes)
     }
 }
 
 #[cfg(feature = "serde")]
 mod serde {
+    use crate::identity::{Identity, InnerIdentity};
+    use serde::Deserialize;
+    use std::fmt::Formatter;
+
     impl serde::ser::Serialize for Identity {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
@@ -410,7 +428,7 @@ mod serde {
         where
             E: serde::de::Error,
         {
-            InnerIdentity::try_from(v).map_err(E::custom)
+            InnerIdentity::from_str(v.as_str()).map_err(E::custom)
         }
     }
 
@@ -427,7 +445,7 @@ mod serde {
         where
             E: serde::de::Error,
         {
-            InnerIdentity::try_from(v).map_err(E::custom)
+            InnerIdentity::from_bytes(v).map_err(E::custom)
         }
     }
 
@@ -442,5 +460,19 @@ mod serde {
                 deserializer.deserialize_bytes(InnerIdentityVisitor)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Identity;
+
+    #[test]
+    fn can_read_anonymous() {
+        let a = Identity::anonymous();
+        let a_str = a.to_string();
+        let a2 = Identity::from_str(&a_str).unwrap();
+
+        assert_eq!(a, a2);
     }
 }
