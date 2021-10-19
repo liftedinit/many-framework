@@ -1,7 +1,31 @@
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
+use std::iter::FromIterator;
 
-#[derive(Clone, Debug)]
+macro_rules! define_error_method {
+    ($name: ident, $enum: ident, $message: literal) => {
+        pub fn $name() -> Self {
+            Self {
+                code: ErrorCode::$enum,
+                message: ($message).to_string(),
+                ..Default::default()
+            }
+        }
+    };
+    ($name: ident, $enum: ident, $message: literal, ($( $fieldname: ident, )+)) => {
+        pub fn $name( $($fieldname: String,?)+ ) -> Self {
+            Self {
+                code: ErrorCode::$enum,
+                message: ($message).to_string(),
+                fields: BTreeMap::from_iter(vec![
+                    $( (stringify!($fieldname), $fieldname) )+
+                ]),
+            }
+        }
+    };
+}
+
+#[derive(Clone, Debug, Default)]
 pub enum ErrorCode {
     Unknown,
 
@@ -10,11 +34,21 @@ pub enum ErrorCode {
     Custom(u32),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Error {
     code: ErrorCode,
     message: String,
     fields: BTreeMap<String, String>,
+}
+
+impl Error {
+    define_error_method!(unknown, Unknown, "Unknown error");
+    define_error_method!(
+        invalid_method_name,
+        InvalidMethodName,
+        r#"Invalid method name: "{method}""#,
+        (method,)
+    );
 }
 
 impl Display for Error {

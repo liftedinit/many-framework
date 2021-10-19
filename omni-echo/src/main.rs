@@ -10,7 +10,7 @@ impl RequestHandler for EchoHandler {
         if method == "echo" {
             Ok(payload)
         } else {
-            panic!()
+            Err(Error::invalid_method_name(method))
         }
     }
 }
