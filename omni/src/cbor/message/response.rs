@@ -5,7 +5,6 @@ use derive_builder::Builder;
 use minicbor::data::Type;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
-use ring::signature::KeyPair;
 use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -23,14 +22,14 @@ fn to_der(key: Vec<u8>) -> Vec<u8> {
     to_der(&subject_public_key_info).unwrap()
 }
 
+/// An OMNI message response.
 #[derive(Debug, Default, Builder)]
 #[builder(setter(strip_option), default)]
 pub struct ResponseMessage {
     pub version: Option<u8>,
     pub from: Identity,
     pub to: Option<Identity>,
-    pub data: Option<Vec<u8>>,
-    pub error: Option<Vec<u8>>,
+    pub data: Option<Result<Vec<u8>, super::Error>>,
     pub timestamp: Option<SystemTime>,
     pub id: Option<u64>,
 }
@@ -104,11 +103,21 @@ impl Encode for ResponseMessage {
             e.str("to")?.encode(to)?;
         }
 
-        if let Some(ref d) = self.data {
-            e.str("data")?.bytes(d)?;
-        } else if let Some(ref err) = self.error {
-            e.str("error")?.bytes(err)?;
+        match &self.data {
+            Some(Ok(d)) => {
+                e.str("data")?.bytes(&d)?;
+            }
+            Some(Err(e)) => {
+                unreachable!();
+            }
+            None => {
+                unreachable!();
+            }
         }
+        // if let Some(ref d) = self.data {
+        // } else if let Some(ref err) = self.error {
+        //     e.str("error")?.bytes(err)?;
+        // }
 
         e.str("timestamp")?;
         let timestamp = self.timestamp.unwrap_or(SystemTime::now());
@@ -146,7 +155,8 @@ impl<'b> Decode<'b> for ResponseMessage {
                 "version" => builder.version(d.decode()?),
                 "from" => builder.from(d.decode()?),
                 "to" => builder.to(d.decode()?),
-                "data" => builder.data(d.bytes()?.to_vec()),
+                "data" => builder.data(Ok(d.bytes()?.to_vec())),
+                // "error" => builder.data(Err(d.bytes()?.to_vec())),
                 "timestamp" => {
                     // Some logic applies.
                     let t = d.tag()?;

@@ -207,11 +207,11 @@ impl<H: RequestHandler> Server<H> {
         }
         match self.handler.handle(method, data) {
             Ok(Some(data)) => {
-                response_builder.data(data);
+                response_builder.data(Ok(data));
             }
             Ok(None) => {}
             Err(err) => {
-                response_builder.error(err);
+                response_builder.data(Err(err));
             }
         };
 

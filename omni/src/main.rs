@@ -172,12 +172,20 @@ fn main() {
 
                 let response =
                     ResponseMessage::from_bytes(&cose_sign1.payload.unwrap_or_default()).unwrap();
-                println!(
-                    "{}",
-                    cbor_diag::parse_bytes(&response.data.unwrap_or_default())
-                        .unwrap()
-                        .to_diag()
-                );
+
+                match response.data {
+                    Some(Ok(payload)) => {
+                        println!("{}", cbor_diag::parse_bytes(&payload).unwrap().to_diag());
+                        std::process::exit(0);
+                    }
+                    None => {
+                        std::process::exit(0);
+                    }
+                    Some(Err(err)) => {
+                        eprintln!("An error happened:\n{}\n", err);
+                        std::process::exit(1);
+                    }
+                }
             } else {
                 panic!("Must specify one of hex, base64 or server...");
             }
