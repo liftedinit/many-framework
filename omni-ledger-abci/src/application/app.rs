@@ -1,7 +1,7 @@
 use crate::application::{Command, LedgerApplicationDriver};
 use omni::cbor::cose::CoseSign1;
-use omni::cbor::message::RequestMessage;
 use omni::cbor::value::CborValue;
+use omni::message::RequestMessage;
 use omni::Identity;
 use std::convert::TryFrom;
 use std::sync::mpsc::{channel, Sender};

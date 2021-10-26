@@ -1,11 +1,9 @@
-use crate::cbor::cose;
-use crate::cbor::value::CborValue;
+use crate::message::RequestMessage;
 use crate::Identity;
 use derive_builder::Builder;
-use minicbor::data::Type;
+use minicbor::data::{Tag, Type};
 use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
-use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// An OMNI message response.
@@ -21,6 +19,32 @@ pub struct ResponseMessage {
 }
 
 impl ResponseMessage {
+    pub fn from_request(
+        request: &RequestMessage,
+        from: &Identity,
+        data: Result<Vec<u8>, super::OmniError>,
+    ) -> Self {
+        Self {
+            version: Some(1),
+            from: *from,
+            to: request.from, // We're sending back to the same requester.
+            data: Some(data),
+            timestamp: None, // To be filled.
+            id: request.id,
+        }
+    }
+
+    pub fn error(from: &Identity, data: super::OmniError) -> Self {
+        Self {
+            version: Some(1),
+            from: *from,
+            to: None,
+            data: Some(Err(data)),
+            timestamp: None, // To be filled.
+            id: None,
+        }
+    }
+
     pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
         minicbor::to_vec(self).map_err(|e| format!("{}", e))
     }
@@ -28,54 +52,11 @@ impl ResponseMessage {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
         minicbor::decode(bytes).map_err(|e| format!("{}", e))
     }
-
-    pub fn to_cose<SignFn>(
-        &self,
-        keypair: Option<(Vec<u8>, SignFn)>,
-    ) -> Result<cose::CoseSign1, String>
-    where
-        SignFn: Fn(&'_ [u8]) -> Result<Vec<u8>, String>,
-    {
-        let from_identity = self.from;
-
-        let mut payload = vec![];
-        Encoder::new(&mut payload).encode(self).unwrap();
-
-        // Create the identity from the public key hash.
-        let mut cose = cose::CoseSign1Builder::default()
-            .protected(
-                cose::ProtectedHeadersBuilder::default()
-                    .algorithm(cose::Algorithms::EdDSA(cose::AlgorithmicCurve::Ed25519))
-                    .key_identifier(from_identity.to_vec())
-                    .content_type("application/cbor".to_string())
-                    .build()
-                    .unwrap(),
-            )
-            .payload(payload)
-            .build()
-            .unwrap();
-
-        if let Some((public_key, sign_fn)) = keypair {
-            let mut key_map = BTreeMap::new();
-            key_map.insert(
-                CborValue::ByteString(from_identity.to_vec()),
-                CborValue::ByteString(public_key),
-            );
-            cose.protected.add_custom(
-                CborValue::TextString("keys".to_string()),
-                CborValue::Map(key_map),
-            );
-
-            cose.sign_with(sign_fn)
-                .map_err(|e| format!("error while signing: {}", e))?;
-        }
-
-        Ok(cose)
-    }
 }
 
 impl Encode for ResponseMessage {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        e.tag(Tag::Unassigned(10002))?;
         e.begin_map()?;
 
         if let Some(ref v) = self.version {
@@ -100,10 +81,6 @@ impl Encode for ResponseMessage {
                 Err(Error::Message("must either have a result or an error"))?;
             }
         }
-        // if let Some(ref d) = self.data {
-        // } else if let Some(ref err) = self.error {
-        //     e.str("error")?.bytes(err)?;
-        // }
 
         e.str("timestamp")?;
         let timestamp = self.timestamp.unwrap_or(SystemTime::now());
@@ -126,6 +103,12 @@ impl Encode for ResponseMessage {
 
 impl<'b> Decode<'b> for ResponseMessage {
     fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
+        if d.tag()? != Tag::Unassigned(10002) {
+            return Err(minicbor::decode::Error::Message(
+                "Invalid tag, expected 10001 for a message.",
+            ));
+        };
+
         let mut builder = ResponseMessageBuilder::default();
 
         let mut i = 0;
@@ -142,7 +125,7 @@ impl<'b> Decode<'b> for ResponseMessage {
                 "from" => builder.from(d.decode()?),
                 "to" => builder.to(d.decode()?),
                 "data" => builder.data(Ok(d.bytes()?.to_vec())),
-                // "error" => builder.data(Err(d.bytes()?.to_vec())),
+                "error" => builder.data(Err(d.decode()?)),
                 "timestamp" => {
                     // Some logic applies.
                     let t = d.tag()?;

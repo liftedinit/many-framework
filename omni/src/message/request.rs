@@ -1,27 +1,10 @@
-use crate::cbor::cose;
-use crate::cbor::value::CborValue;
 use crate::Identity;
+
 use derive_builder::Builder;
-use minicbor::data::Type;
+use minicbor::data::{Tag, Type};
 use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
-use ring::signature::KeyPair;
-use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-fn to_der(key: Vec<u8>) -> Vec<u8> {
-    use simple_asn1::{
-        oid, to_der,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let public_key = key;
-    let id_ed25519 = oid!(1, 3, 101, 112);
-    let algorithm = Sequence(0, vec![ObjectIdentifier(0, id_ed25519)]);
-    let subject_public_key = BitString(0, public_key.len() * 8, public_key);
-    let subject_public_key_info = Sequence(0, vec![algorithm, subject_public_key]);
-    to_der(&subject_public_key_info).unwrap()
-}
 
 #[derive(Debug, Default, Builder)]
 #[builder(setter(strip_option), default)]
@@ -47,44 +30,6 @@ impl RequestMessage {
         minicbor::decode(bytes).map_err(|e| format!("{}", e))
     }
 
-    pub fn to_cose(&self, keypair: Option<&ring::signature::Ed25519KeyPair>) -> cose::CoseSign1 {
-        let from_identity = self.from.unwrap_or(Identity::anonymous());
-
-        let mut payload = vec![];
-        Encoder::new(&mut payload).encode(self).unwrap();
-
-        // Create the identity from the public key hash.
-        let mut cose = cose::CoseSign1Builder::default()
-            .protected(
-                cose::ProtectedHeadersBuilder::default()
-                    .algorithm(cose::Algorithms::EdDSA(cose::AlgorithmicCurve::Ed25519))
-                    .key_identifier(from_identity.to_vec())
-                    .content_type("application/cbor".to_string())
-                    .build()
-                    .unwrap(),
-            )
-            .payload(payload)
-            .build()
-            .unwrap();
-
-        if let Some(kp) = keypair {
-            let mut key_map = BTreeMap::new();
-            key_map.insert(
-                CborValue::ByteString(from_identity.to_vec()),
-                CborValue::ByteString(to_der(kp.public_key().as_ref().to_vec())),
-            );
-            cose.protected.add_custom(
-                CborValue::TextString("keys".to_string()),
-                CborValue::Map(key_map),
-            );
-
-            cose.sign_with(|bytes| Ok(kp.sign(bytes).as_ref().to_vec()))
-                .unwrap();
-        }
-
-        cose
-    }
-
     pub fn from(&self) -> Identity {
         self.from.unwrap_or_default()
     }
@@ -92,6 +37,7 @@ impl RequestMessage {
 
 impl Encode for RequestMessage {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        e.tag(Tag::Unassigned(10001))?;
         e.begin_map()?;
 
         if let Some(ref v) = self.version {
@@ -137,6 +83,12 @@ impl Encode for RequestMessage {
 
 impl<'b> Decode<'b> for RequestMessage {
     fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
+        if d.tag()? != Tag::Unassigned(10001) {
+            return Err(minicbor::decode::Error::Message(
+                "Invalid tag, expected 10001 for a message.",
+            ));
+        };
+
         let mut builder = RequestMessageBuilder::default();
 
         let mut i = 0;

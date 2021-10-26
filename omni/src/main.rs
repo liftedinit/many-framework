@@ -1,28 +1,13 @@
-pub mod cbor;
 pub mod identity;
+pub mod message;
 
-use cbor::cose::CoseSign1;
-use cbor::message::RequestMessageBuilder;
-use clap::Clap;
-use identity::Identity;
-use omni::cbor::message::ResponseMessage;
+use clap::Parser as Clap;
+use minicose::{CoseKey, CoseSign1, Ed25519CoseKey, Ed25519CoseKeyBuilder};
+use omni::message::{encode_cose_sign1_from_request, RequestMessage, RequestMessageBuilder};
+use omni::Identity;
 use ring::signature::KeyPair;
 use std::convert::TryFrom;
 use std::path::PathBuf;
-
-fn to_der(key: Vec<u8>) -> Vec<u8> {
-    use simple_asn1::{
-        oid, to_der,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let public_key = key;
-    let id_ed25519 = oid!(1, 3, 101, 112);
-    let algorithm = Sequence(0, vec![ObjectIdentifier(0, id_ed25519)]);
-    let subject_public_key = BitString(0, public_key.len() * 8, public_key);
-    let subject_public_key_info = Sequence(0, vec![algorithm, subject_public_key]);
-    to_der(&subject_public_key_info).unwrap()
-}
 
 #[derive(Clap)]
 struct Opt {
@@ -56,6 +41,10 @@ struct IdOfOpt {
     /// Whether or not this public key is addressable (e.g. a Network).
     #[clap(long)]
     addressable: bool,
+
+    /// Whether to display the key in hexadecimal.
+    #[clap(long)]
+    hex: bool,
 }
 
 #[derive(Clap)]
@@ -114,9 +103,26 @@ fn main() {
             let keypair =
                 ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
                     .unwrap();
+
+            let x = keypair.public_key().as_ref().to_vec();
+            let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
+                .x(x)
+                .build()
+                .unwrap()
+                .into();
+
             // Create the identity from the public key hash.
-            let id = Identity::public_key(to_der(keypair.public_key().as_ref().to_vec()));
-            println!("{}", id);
+            let id = if o.addressable {
+                Identity::addressable(&cose_key)
+            } else {
+                Identity::public_key(&cose_key)
+            };
+
+            if o.hex {
+                println!("{}", hex::encode(id.to_vec()));
+            } else {
+                println!("{}", id);
+            }
         }
         SubCommand::Message(o) => {
             // If `pem` is not provided, use anonymous and don't sign.
@@ -131,8 +137,15 @@ fn main() {
                     )
                     .unwrap();
 
+                    let x = keypair.public_key().as_ref().to_vec();
+                    let cose_key: Ed25519CoseKey = Ed25519CoseKeyBuilder::default()
+                        .x(x)
+                        .build()
+                        .unwrap()
+                        .into();
+
                     (
-                        Identity::public_key(to_der(keypair.public_key().as_ref().to_vec())),
+                        Identity::public_key(&cose_key.to_public_key().unwrap().into()),
                         Some(keypair),
                     )
                 },
@@ -142,7 +155,7 @@ fn main() {
             let data = o
                 .data
                 .map_or(vec![], |d| cbor_diag::parse_diag(&d).unwrap().to_bytes());
-            let message = RequestMessageBuilder::default()
+            let message: RequestMessage = RequestMessageBuilder::default()
                 .version(1)
                 .from(from_identity)
                 .to(to_identity)
@@ -151,9 +164,8 @@ fn main() {
                 .build()
                 .unwrap();
 
-            let cose = message.to_cose(keypair.as_ref());
-            let mut bytes = Vec::<u8>::new();
-            minicbor::encode(cose, &mut bytes).unwrap();
+            let cose = encode_cose_sign1_from_request(message, from_identity, &keypair).unwrap();
+            let bytes = cose.to_bytes().unwrap();
 
             if o.hex {
                 println!("{}", hex::encode(&bytes));
@@ -166,9 +178,7 @@ fn main() {
                 let body = response.bytes().unwrap();
                 let bytes = body.to_vec();
                 let cose_sign1 = CoseSign1::from_bytes(&bytes).unwrap();
-
-                let response =
-                    ResponseMessage::from_bytes(&cose_sign1.payload.unwrap_or_default()).unwrap();
+                let response = message::decode_response_from_cose_sign1(cose_sign1, None).unwrap();
 
                 match response.data {
                     Some(Ok(payload)) => {
@@ -179,7 +189,13 @@ fn main() {
                         std::process::exit(0);
                     }
                     Some(Err(err)) => {
-                        eprintln!("An error happened:\n{}\n", err);
+                        eprintln!(
+                            "Error returned by server:\n|  {}\n",
+                            err.to_string()
+                                .split('\n')
+                                .collect::<Vec<&str>>()
+                                .join("\n|  ")
+                        );
                         std::process::exit(1);
                     }
                 }

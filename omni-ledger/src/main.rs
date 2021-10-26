@@ -1,24 +1,10 @@
-use clap::Clap;
-use omni::cbor::message::RequestMessageBuilder;
+use clap::Parser as Clap;
+use omni::message::RequestMessageBuilder;
 use omni::Identity;
 use ring::signature::KeyPair;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use tracing_subscriber::filter::LevelFilter;
-
-fn to_der(key: Vec<u8>) -> Vec<u8> {
-    use simple_asn1::{
-        oid, to_der,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let public_key = key;
-    let id_ed25519 = oid!(1, 3, 101, 112);
-    let algorithm = Sequence(0, vec![ObjectIdentifier(0, id_ed25519)]);
-    let subject_public_key = BitString(0, public_key.len() * 8, public_key);
-    let subject_public_key_info = Sequence(0, vec![algorithm, subject_public_key]);
-    to_der(&subject_public_key_info).unwrap()
-}
 
 #[derive(Clap)]
 struct Opt {

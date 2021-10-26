@@ -1,6 +1,6 @@
-pub mod cbor;
 pub mod identity;
+pub mod message;
 pub mod server;
 
-pub use cbor::message::OmniError;
 pub use identity::Identity;
+pub use message::OmniError;

@@ -1,6 +1,7 @@
 use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
+use minicose::CoseKey;
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
@@ -20,7 +21,7 @@ pub enum Error {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Identity(pub(self) InnerIdentity);
+pub struct Identity(InnerIdentity);
 
 impl Identity {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
@@ -35,13 +36,13 @@ impl Identity {
         Self(InnerIdentity::Anonymous())
     }
 
-    pub fn public_key(key: Vec<u8>) -> Self {
-        let pk = Sha3_224::digest(&key);
+    pub fn public_key(key: &CoseKey) -> Self {
+        let pk = Sha3_224::digest(&key.to_public_key().unwrap().to_bytes_stable().unwrap());
         Self(InnerIdentity::PublicKey(pk.into()))
     }
 
-    pub fn addressable(key: Vec<u8>) -> Self {
-        let pk = Sha3_224::digest(&key);
+    pub fn addressable(key: &CoseKey) -> Self {
+        let pk = Sha3_224::digest(&key.to_public_key().unwrap().to_bytes_stable().unwrap());
         Self(InnerIdentity::Addressable(pk.into()))
     }
 
@@ -95,6 +96,25 @@ impl Identity {
 
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+
+    pub fn matches(&self, key: &Option<CoseKey>) -> bool {
+        match &self.0 {
+            InnerIdentity::Anonymous() => key.is_none(),
+            InnerIdentity::PublicKey(hash) | InnerIdentity::Addressable(hash) => {
+                if let Some(ref cose_key) = key {
+                    let key_hash: [u8; SHA_OUTPUT_SIZE] = Sha3_224::digest(
+                        &cose_key.to_public_key().unwrap().to_bytes_stable().unwrap(),
+                    )
+                    .into();
+
+                    &key_hash == hash
+                } else {
+                    false
+                }
+            }
+            InnerIdentity::_Private(_) => false,
+        }
     }
 }
 
@@ -466,19 +486,19 @@ mod serde {
 
 #[cfg(test)]
 mod tests {
-    use crate::identity::MAX_IDENTITY_BYTE_LEN;
     use crate::Identity;
 
     fn identity(seed: u32) -> Identity {
         #[rustfmt::skip]
         let bytes = [
-            1u8, 0, 0, 0, 
+            1u8,
+            0, 0, 0, 0, 
             0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,
-            seed >> 24, seed >> 16, seed >> 8, seed & 0xFF
+            (seed >> 24) as u8, (seed >> 16) as u8, (seed >> 8) as u8, (seed & 0xFF) as u8
         ];
         Identity::from_bytes(&bytes).unwrap()
     }
@@ -503,10 +523,8 @@ mod tests {
         assert_ne!(a.to_vec(), b.to_vec());
         assert_ne!(b.to_vec(), c.to_vec());
 
-        assert_eq!(Identity::from_str(&a.to_string()), a);
-        assert_eq!(Identity::from_str(&b.to_string()), b);
-        assert_eq!(Identity::from_str(&c.to_string()), c);
-
-        assert_eq!(a.0.to_byte_array(), MAX_IDENTITY_BYTE_LEN);
+        assert_eq!(Identity::from_str(&a.to_string()), Ok(a));
+        assert_eq!(Identity::from_str(&b.to_string()), Ok(b));
+        assert_eq!(Identity::from_str(&c.to_string()), Ok(c));
     }
 }

@@ -1,27 +1,12 @@
-use crate::cbor::message::OmniError;
+use crate::message::OmniError;
+use async_trait::async_trait;
 
+#[async_trait]
 pub trait RequestHandler {
     /// Handle an incoming request message, and returns the response message.
     /// This cannot fail. It should instead responds with a proper error response message.
     /// See the spec.
-    fn handle(
-        &self,
-        method: String,
-        payload: Option<Vec<u8>>,
-    ) -> Result<Option<Vec<u8>>, OmniError>;
-
-    /// Returns the DER encoded public key of this server.
-    /// Returns `None` if this server should act anonymously.
-    fn public_key(&self) -> Option<Vec<u8>> {
-        Default::default()
-    }
-
-    /// Sign a series of bytes with a key that matches the public_key.
-    /// The default behaviour only works if the identity is anonymous (public_key() returns None).
-    fn sign(&self, _bytes: &[u8]) -> Result<Vec<u8>, String> {
-        debug_assert!(self.public_key() == None);
-        Ok(vec![])
-    }
+    async fn handle(&self, method: &str, payload: &[u8]) -> Result<Vec<u8>, OmniError>;
 }
 
 pub mod http;

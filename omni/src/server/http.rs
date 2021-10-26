@@ -1,225 +1,129 @@
-use crate::cbor::cose::CoseSign1;
-use crate::cbor::message::{RequestMessage, ResponseMessage, ResponseMessageBuilder};
-use crate::cbor::value::CborValue;
+use crate::message::{RequestMessage, ResponseMessage};
 use crate::server::RequestHandler;
 use crate::Identity;
 use anyhow::anyhow;
-use std::convert::TryFrom;
+use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
+use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::io::Cursor;
 use std::net::ToSocketAddrs;
-use tiny_http::{Request, Response, StatusCode};
+use tiny_http::{Request, Response};
 
 const READ_BUFFER_LEN: usize = 1024 * 1024 * 10;
 
-fn from_der(der: &[u8]) -> Result<Vec<u8>, String> {
-    use simple_asn1::{
-        from_der, oid,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let object = from_der(der).map_err(|e| format!("asn error: {:?}", e))?;
-    let first = object.first().ok_or(format!("empty object"))?;
-
-    match first {
-        Sequence(_, blocks) => {
-            let algorithm = blocks.get(0).ok_or(format!("Invalid ASN1"))?;
-            let bytes = blocks.get(1).ok_or(format!("Invalid ASN1"))?;
-            let id_ed25519 = oid!(1, 3, 101, 112);
-            match (algorithm, bytes) {
-                (Sequence(_, oid_sequence), BitString(_, _, bytes)) => match oid_sequence.first() {
-                    Some(ObjectIdentifier(_, oid)) => {
-                        if oid == id_ed25519 {
-                            Ok(bytes.clone())
-                        } else {
-                            Err(format!("Invalid oid."))
-                        }
-                    }
-                    _ => Err(format!("Invalid oid.")),
-                },
-                _ => Err(format!("Invalid oid.")),
-            }
-        }
-        _ => Err(format!("Invalid root type."))?,
-    }
-}
-
-pub struct Server<H: RequestHandler> {
+#[derive(Debug)]
+pub struct Server<H: RequestHandler + Sync + Send> {
     handler: H,
+    keypair: Option<Ed25519KeyPair>,
+    identity: Identity,
 }
 
-impl<H: RequestHandler> Server<H> {
-    pub fn new(handler: H) -> Self {
-        Self { handler }
+impl<H: RequestHandler + Sync + Send> Server<H> {
+    pub fn new(handler: H, identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
+        let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
+            let x = kp.public_key().as_ref().to_vec();
+            Ed25519CoseKeyBuilder::default()
+                .x(x)
+                .kid(identity.to_vec())
+                .build()
+                .unwrap()
+                .into()
+        });
+        if !identity.matches(&cose_key) {
+            unreachable!("Identity does not match keypair.");
+        }
+        if !identity.is_addressable() {
+            unreachable!("Identity is not addressable.");
+        }
+
+        Self {
+            handler,
+            keypair,
+            identity,
+        }
     }
 
-    fn get_key_for_identity(
+    async fn handle_request_inner(
         &self,
-        cose_sign1: &CoseSign1,
-        kid: Vec<u8>,
-    ) -> Option<ring::signature::UnparsedPublicKey<Vec<u8>>> {
-        let v = cose_sign1
-            .protected
-            .custom_headers
-            .get(&CborValue::TextString("keys".to_string()))?;
+        request: &RequestMessage,
+    ) -> Result<ResponseMessage, anyhow::Error> {
+        let RequestMessage { method, data, .. } = request;
 
-        let key_bytes = match v {
-            CborValue::Map(ref m) => {
-                let value = m.get(&CborValue::ByteString(kid.clone()))?;
-                match value {
-                    CborValue::ByteString(value) => Some(value),
-                    _ => None,
-                }
-            }
-            _ => None,
-        }?;
-
-        // Verify the keybytes matches the identity.
-        let id = Identity::try_from(kid.as_slice()).ok()?;
-        if id.is_anonymous() {
-            return None;
-        } else if id.is_public_key() {
-            let other = Identity::public_key(key_bytes.to_vec());
-            if other == id {
-                Some(ring::signature::UnparsedPublicKey::new(
-                    &ring::signature::ED25519,
-                    from_der(key_bytes).ok()?,
-                ))
-            } else {
-                None
-            }
-        } else if id.is_addressable() {
-            if Identity::addressable(key_bytes.to_vec()) == id {
-                Some(ring::signature::UnparsedPublicKey::new(
-                    &ring::signature::ED25519,
-                    key_bytes.to_owned(),
-                ))
-            } else {
-                None
-            }
-        } else {
-            None
+        match self
+            .handler
+            .handle(method, data.as_ref().unwrap_or(&vec![]))
+            .await
+        {
+            Ok(data) => Ok(ResponseMessage::from_request(
+                request,
+                &self.identity,
+                Ok(data),
+            )),
+            Err(err) => Ok(ResponseMessage::from_request(
+                request,
+                &self.identity,
+                Err(err),
+            )),
         }
     }
 
-    // TODO: add verification of the `to` fields.
-    fn verify(&self, cose_sign1: &CoseSign1) -> bool {
-        if let Some(ref kid) = cose_sign1.protected.key_identifier {
-            if let Ok(id) = Identity::from_bytes(kid) {
-                if id.is_anonymous() {
-                    // TODO: allow anonymous requests IF THEY MATCH the message's from field.
-                    return false;
-                }
-            }
-
-            self.get_key_for_identity(cose_sign1, kid.clone())
-                .map(|key| {
-                    cose_sign1
-                        .verify_with(|content, sig| key.verify(content, sig).is_ok())
-                        .unwrap_or(false)
-                })
-                .unwrap_or(false)
-        } else {
-            false
-        }
-    }
-
-    fn decode_and_verify(&self, bytes: &[u8]) -> Result<RequestMessage, String> {
-        let cose_sign1 = minicbor::decode::<CoseSign1>(bytes)
-            .map_err(|e| format!("Invalid COSE CBOR message: {}", e))?;
-
-        if !self.verify(&cose_sign1) {
-            return Err("Could not verify the signature.".to_string());
-        }
-
-        if let Some(payload) = cose_sign1.payload {
-            let mut message = RequestMessage::from_bytes(&payload)?;
-
-            // Update `from` and `to` if they're missing.
-            message.from = match message.from {
-                None => Some(
-                    Identity::from_bytes(&cose_sign1.protected.key_identifier.unwrap_or_default())
-                        .map_err(|e| format!("{:?}", e))?,
-                ),
-                Some(from) => Some(from),
-            };
-
-            // TODO: add `to` overload with the threshold key from this blockchain.
-
-            Ok(message)
-        } else {
-            Err("payload missing".to_string())
-        }
-    }
-
-    fn encode_and_sign(
-        &self,
-        public_key: Option<Vec<u8>>,
-        response: ResponseMessage,
-    ) -> Result<CoseSign1, String> {
-        response.to_cose(public_key.map(|pk| (pk, |bytes: &[u8]| self.handler.sign(bytes))))
-    }
-
-    fn handle_request(
+    async fn handle_request(
         &self,
         request: &mut Request,
         buffer: &mut [u8],
-    ) -> Result<Response<std::io::Cursor<Vec<u8>>>, anyhow::Error> {
+    ) -> Response<std::io::Cursor<Vec<u8>>> {
         match request.body_length() {
             Some(x) if x > READ_BUFFER_LEN => {
-                return Err(anyhow!("body too long"));
+                // This is a transport error, and as such an HTTP error.
+                return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
             _ => {}
         }
 
-        let actual_len = request.as_reader().read(buffer)?;
-        let bytes = &buffer[..actual_len];
-        eprintln!("  bytes: {}", hex::encode(bytes));
-
-        let message = self
-            .decode_and_verify(bytes)
-            .map_err(|e| anyhow!("{}", e))?;
-
-        let RequestMessage {
-            method,
-            data,
-            to,
-            id,
-            ..
-        } = message;
-
-        let public_key = self.handler.public_key();
-        let mut response_builder = ResponseMessageBuilder::default();
-        response_builder.version(1).from(
-            public_key
-                .clone()
-                .map_or(Identity::anonymous(), Identity::addressable),
-        );
-
-        if let Some(to) = to {
-            response_builder.to(to);
-        }
-        if let Some(id) = id {
-            response_builder.id(id);
-        }
-        match self.handler.handle(method, data) {
-            Ok(Some(data)) => {
-                response_builder.data(Ok(data));
-            }
-            Ok(None) => {}
-            Err(err) => {
-                response_builder.data(Err(err));
+        let actual_len = match request.as_reader().read(buffer) {
+            Ok(x) => x,
+            Err(_e) => {
+                return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
         };
 
-        let response = response_builder.build()?;
+        let bytes = &buffer[..actual_len];
+        eprintln!("  bytes: {}", hex::encode(bytes));
 
-        let cose_sign1 = self
-            .encode_and_sign(public_key, response)
-            .map_err(|e| anyhow!("{}", e))?;
-        let bytes = cose_sign1.encode().map_err(|e| anyhow!("{}", e))?;
+        let server_id = &self.identity;
+        let envelope = match CoseSign1::from_bytes(bytes) {
+            Ok(cs) => cs,
+            Err(_e) => {
+                return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
+            }
+        };
+
+        let response =
+            match crate::message::decode_request_from_cose_sign1(envelope, Some(server_id.clone()))
+            {
+                Ok(message) => match self.handle_request_inner(&message).await {
+                    Ok(message) => message,
+                    Err(_e) => {
+                        return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
+                    }
+                },
+                Err(err) => ResponseMessage::error(server_id, err),
+            };
+
+        let bytes = match crate::message::encode_cose_sign1_from_response(
+            response,
+            server_id.clone(),
+            &self.keypair,
+        )
+        .and_then(|r| r.to_bytes().map_err(|e| e.to_string()))
+        {
+            Ok(bytes) => bytes,
+            Err(_e) => {
+                return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
+            }
+        };
 
         eprintln!("  reply: {}", hex::encode(&bytes));
-        Ok(Response::from_data(bytes))
+        Response::from_data(bytes)
     }
 
     pub fn bind<A: ToSocketAddrs>(&self, addr: A) -> Result<(), anyhow::Error> {
@@ -227,19 +131,20 @@ impl<H: RequestHandler> Server<H> {
         buffer.resize(READ_BUFFER_LEN, 0);
         let server = tiny_http::Server::http(addr).map_err(|e| anyhow!("{}", e))?;
 
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
         for mut request in server.incoming_requests() {
             eprintln!("request: {:?}", &request);
 
-            let response = self
-                .handle_request(&mut request, buffer.as_mut_slice())
-                .unwrap_or_else(|err| {
-                    eprintln!("err: {:?}", err);
-                    Response::new(StatusCode(500), vec![], Cursor::default(), None, None)
-                });
+            runtime.block_on(async {
+                let response = self
+                    .handle_request(&mut request, buffer.as_mut_slice())
+                    .await;
 
-            // If there's a transport error (e.g. connection closed) on the response itself,
-            // we don't actually care and just continue waiting for the next request.
-            let _ = request.respond(response);
+                // If there's a transport error (e.g. connection closed) on the response itself,
+                // we don't actually care and just continue waiting for the next request.
+                let _ = request.respond(response);
+            });
         }
 
         Ok(())
