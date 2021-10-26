@@ -1,12 +1,14 @@
 use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
-use minicose::CoseKey;
+use minicose::{CoseKey, Ed25519CoseKeyBuilder};
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
+
+use ring::signature::{Ed25519KeyPair, KeyPair};
 
 const MAX_IDENTITY_BYTE_LEN: usize = 32;
 const SHA_OUTPUT_SIZE: usize = <Sha3_224 as Digest>::OutputSize::USIZE;
@@ -30,6 +32,24 @@ impl Identity {
 
     pub fn from_str<S: AsRef<str>>(str: S) -> Result<Self, Error> {
         InnerIdentity::from_str(str.as_ref()).map(Self)
+    }
+
+    #[cfg(feature = "pem")]
+    pub fn from_pem_addressable(
+        bytes: Vec<u8>,
+    ) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
+        let content = pem::parse(bytes)?;
+        let keypair =
+            Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
+                .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
+
+        let x = keypair.public_key().as_ref().to_vec();
+        let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
+            .x(x)
+            .build()
+            .unwrap()
+            .into();
+        Ok((Identity::addressable(&cose_key), keypair))
     }
 
     pub const fn anonymous() -> Self {

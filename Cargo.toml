@@ -2,6 +2,7 @@
 
 members = [
     "omni",
+    "omni-abci",
     "omni-echo",
     "omni-ledger",
     "omni-ledger-abci",

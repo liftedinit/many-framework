@@ -220,9 +220,9 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::OmniError {
+        let e = OmniError {
             code: ErrorCode::Unknown,
-            message: "Hello {0} and {2}.".to_string(),
+            message: Some("Hello {0} and {2}.".to_string()),
             fields,
         };
 
@@ -236,9 +236,9 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::OmniError {
+        let e = OmniError {
             code: ErrorCode::Unknown,
-            message: "{2}".to_string(),
+            message: Some("{2}".to_string()),
             fields,
         };
 
@@ -252,9 +252,9 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::OmniError {
+        let e = OmniError {
             code: ErrorCode::Unknown,
-            message: "@{a}{b}{c}.".to_string(),
+            message: Some("@{a}{b}{c}.".to_string()),
             fields,
         };
 
@@ -268,9 +268,9 @@ mod tests {
         fields.insert("1".to_string(), "ONE".to_string());
         fields.insert("2".to_string(), "TWO".to_string());
 
-        let e = super::OmniError {
+        let e = OmniError {
             code: ErrorCode::Unknown,
-            message: "/{{}}{{{0}}}{{{a}}}{b}}}{{{2}.".to_string(),
+            message: Some("/{{}}{{{0}}}{{{a}}}{b}}}{{{2}.".to_string()),
             fields,
         };
 

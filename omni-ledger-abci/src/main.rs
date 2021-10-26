@@ -1,11 +1,11 @@
 pub mod application;
 pub mod http;
 
-use clap::Clap;
+use clap::Parser;
 use tendermint_abci::ServerBuilder;
 use tracing_subscriber::filter::LevelFilter;
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 struct Opt {
     /// The interface and port to bind the abci server to.
     #[clap(long, default_value = "127.0.0.1:26658")]

@@ -20,7 +20,7 @@ serde_cose = "0.1.4"
 sha3 = "0.9.1"
 simple_asn1 = "0.5.4"
 static_assertions = "1.1.0"
-tendermint-abci = { version = "0.21.0", features = [ "binary", "kvstore-app" ] }
+tendermint-abci = { version = "0.21.0", features = [ "client" ] }
 tendermint-proto = "0.21.0"
 thiserror = "1.0.29"
 tiny_http = "0.9.0"

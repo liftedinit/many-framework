@@ -8,7 +8,8 @@ use std::io::Cursor;
 use std::net::ToSocketAddrs;
 use tiny_http::{Request, Response};
 
-const READ_BUFFER_LEN: usize = 1024 * 1024 * 10;
+/// Maximum of 2MB per HTTP request.
+const READ_BUFFER_LEN: usize = 1024 * 1024 * 2;
 
 #[derive(Debug)]
 pub struct Server<H: RequestHandler + Sync + Send> {
@@ -87,7 +88,7 @@ impl<H: RequestHandler + Sync + Send> Server<H> {
         };
 
         let bytes = &buffer[..actual_len];
-        eprintln!("  bytes: {}", hex::encode(bytes));
+        eprintln!(" request: {}", hex::encode(bytes));
 
         let server_id = &self.identity;
         let envelope = match CoseSign1::from_bytes(bytes) {
@@ -99,6 +100,7 @@ impl<H: RequestHandler + Sync + Send> Server<H> {
 
         let response =
             match crate::message::decode_request_from_cose_sign1(envelope, Some(server_id.clone()))
+                .and_then(|message| self.handler.validate(&message).map(|_| message))
             {
                 Ok(message) => match self.handle_request_inner(&message).await {
                     Ok(message) => message,

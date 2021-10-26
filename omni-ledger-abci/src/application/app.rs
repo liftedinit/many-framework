@@ -1,6 +1,4 @@
 use crate::application::{Command, LedgerApplicationDriver};
-use omni::cbor::cose::CoseSign1;
-use omni::cbor::value::CborValue;
 use omni::message::RequestMessage;
 use omni::Identity;
 use std::convert::TryFrom;
@@ -11,38 +9,6 @@ use tendermint_proto::abci::{
     ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };
 use tracing::{debug, info};
-
-fn from_der(der: &[u8]) -> Result<Vec<u8>, String> {
-    use simple_asn1::{
-        from_der, oid,
-        ASN1Block::{BitString, ObjectIdentifier, Sequence},
-    };
-
-    let object = from_der(der).map_err(|e| format!("asn error: {:?}", e))?;
-    let first = object.first().ok_or(format!("empty object"))?;
-
-    match first {
-        Sequence(_, blocks) => {
-            let algorithm = blocks.get(0).ok_or(format!("Invalid ASN1"))?;
-            let bytes = blocks.get(1).ok_or(format!("Invalid ASN1"))?;
-            let id_ed25519 = oid!(1, 3, 101, 112);
-            match (algorithm, bytes) {
-                (Sequence(_, oid_sequence), BitString(_, _, bytes)) => match oid_sequence.first() {
-                    Some(ObjectIdentifier(_, oid)) => {
-                        if oid == id_ed25519 {
-                            Ok(bytes.clone())
-                        } else {
-                            Err(format!("Invalid oid."))
-                        }
-                    }
-                    _ => Err(format!("Invalid oid.")),
-                },
-                _ => Err(format!("Invalid oid.")),
-            }
-        }
-        _ => Err(format!("Invalid root type."))?,
-    }
-}
 
 /// In-memory, hashmap-backed key/value store ABCI application.
 ///
@@ -58,105 +24,6 @@ impl KeyValueStoreApp {
     pub fn new() -> (Self, LedgerApplicationDriver) {
         let (cmd_tx, cmd_rx) = channel();
         (Self { cmd_tx }, LedgerApplicationDriver::new(cmd_rx))
-    }
-
-    fn get_key_for_identity(
-        &self,
-        cose_sign1: &CoseSign1,
-        kid: Vec<u8>,
-    ) -> Option<ring::signature::UnparsedPublicKey<Vec<u8>>> {
-        let v = cose_sign1
-            .protected
-            .custom_headers
-            .get(&CborValue::TextString("keys".to_string()))?;
-
-        let key_bytes = match v {
-            CborValue::Map(ref m) => {
-                let value = m.get(&CborValue::ByteString(kid.clone()))?;
-                match value {
-                    CborValue::ByteString(value) => Some(value),
-                    _ => None,
-                }
-            }
-            _ => None,
-        }?;
-
-        // Verify the keybytes matches the identity.
-        let id = Identity::try_from(kid.as_slice()).ok()?;
-        if id.is_anonymous() {
-            return None;
-        } else if id.is_public_key() {
-            let other = Identity::public_key(key_bytes.to_vec());
-            if other == id {
-                Some(ring::signature::UnparsedPublicKey::new(
-                    &ring::signature::ED25519,
-                    from_der(key_bytes).ok()?,
-                ))
-            } else {
-                None
-            }
-        } else if id.is_addressable() {
-            if Identity::addressable(key_bytes.to_vec()) == id {
-                Some(ring::signature::UnparsedPublicKey::new(
-                    &ring::signature::ED25519,
-                    key_bytes.to_owned(),
-                ))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    // TODO: add verification of the `to` fields.
-    fn verify(&self, cose_sign1: &CoseSign1) -> bool {
-        if let Some(ref kid) = cose_sign1.protected.key_identifier {
-            if let Ok(id) = Identity::from_bytes(kid) {
-                if id.is_anonymous() {
-                    // TODO: allow anonymous requests IF THEY MATCH the message's from field.
-                    return false;
-                }
-            }
-
-            self.get_key_for_identity(cose_sign1, kid.clone())
-                .map(|key| {
-                    cose_sign1
-                        .verify_with(|content, sig| key.verify(content, sig).is_ok())
-                        .unwrap_or(false)
-                })
-                .unwrap_or(false)
-        } else {
-            false
-        }
-    }
-
-    fn decode_and_verify(&self, bytes: &[u8]) -> Result<RequestMessage, String> {
-        let cose_sign1 = minicbor::decode::<CoseSign1>(bytes)
-            .map_err(|e| format!("Invalid COSE CBOR message: {}", e))?;
-
-        if !self.verify(&cose_sign1) {
-            return Err("Could not verify the signature.".to_string());
-        }
-
-        if let Some(payload) = cose_sign1.payload {
-            let mut message = RequestMessage::from_bytes(&payload)?;
-
-            // Update `from` and `to` if they're missing.
-            message.from = match message.from {
-                None => Some(
-                    Identity::from_bytes(&cose_sign1.protected.key_identifier.unwrap_or_default())
-                        .map_err(|e| format!("{:?}", e))?,
-                ),
-                Some(from) => Some(from),
-            };
-
-            // TODO: add `to` overload with the threshold key from this blockchain.
-
-            Ok(message)
-        } else {
-            Err("payload missing".to_string())
-        }
     }
 }
 

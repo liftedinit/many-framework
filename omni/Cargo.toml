@@ -20,8 +20,8 @@ crc-any = "2.4.0"
 derive_builder = "0.10.2"
 hex = "0.4.3"
 minicbor = { version = "0.11.3", features = ["derive", "std"] }
-minicose = { path = "/Volumes/Sources/l-1-labs/rust-minicose" } # { git = "https://github.com/l-1-labs/rust-minicose.git" }
-pem = "1.0.0"
+minicose = { git = "https://github.com/l-1-labs/rust-minicose.git" }
+pem = { version = "1.0.0", optional = true }
 regex = "1.5.4"
 reqwest = { version = "0.11.5", features = ["blocking"] }
 ring = "0.17.0-alpha.10"
