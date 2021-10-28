@@ -3,6 +3,7 @@ use crate::protocol::Status;
 use crate::transport::OmniRequestHandler;
 use crate::{Identity, OmniError};
 use async_trait::async_trait;
+use ring::signature::Ed25519KeyPair;
 
 pub mod module;
 pub mod namespace;
@@ -10,25 +11,41 @@ pub mod namespace;
 pub use module::ModuleRequestHandler;
 pub use namespace::NamespacedRequestHandler;
 
+#[derive(Debug)]
 struct BaseServerModule {
     pub status: Status,
     pub handler: ModuleRequestHandler,
 }
 
-#[derive(Debug)]
-pub struct Server {
-    handler: NamespacedRequestHandler,
-    identity: Identity,
-    keypair: ring::signature::Ed25519KeyPair,
+impl Default for BaseServerModule {
+    fn default() -> Self {}
 }
 
-impl Server {
+#[async_trait]
+impl OmniRequestHandler for BaseServerModule {
+    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
+        self.handler.validate(message)
+    }
+
+    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
+        self.handler.execute(message).await
+    }
+}
+
+#[derive(Debug)]
+pub struct OmniServer {
+    namespace: NamespacedRequestHandler,
+    identity: Identity,
+    keypair: Ed25519KeyPair,
+}
+
+impl OmniServer {
     pub fn new(identity: Identity, keypair: ring::signature::Ed25519KeyPair) -> Self {
         debug_assert!(identity.is_addressable());
         Self {
             identity,
             keypair,
-            handler: Default::default(),
+            namespace: NamespacedRequestHandler::new(BaseServerModule::default()),
         }
     }
 
@@ -37,13 +54,13 @@ impl Server {
         NS: ToString,
         H: OmniRequestHandler + 'static,
     {
-        self.handler.with_namespace(namespace, handler);
+        self.namespace.with_namespace(namespace, handler);
         self
     }
 }
 
 #[async_trait]
-impl OmniRequestHandler for Server {
+impl OmniRequestHandler for OmniServer {
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         let to = message.to;
         // Verify that the message is for this server.
@@ -53,11 +70,11 @@ impl OmniRequestHandler for Server {
                 self.identity.to_string(),
             ))
         } else {
-            self.handler.validate(message)
+            self.namespace.validate(message)
         }
     }
     async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
-        self.handler.execute(message).await.map(|mut r| {
+        self.namespace.execute(message).await.map(|mut r| {
             r.from = self.identity;
             r
         })

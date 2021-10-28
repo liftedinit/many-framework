@@ -14,13 +14,13 @@ use tiny_http::{Request, Response};
 const READ_BUFFER_LEN: usize = 1024 * 1024 * 2;
 
 #[derive(Debug)]
-pub struct Server {
-    handler: NamespacedRequestHandler,
+pub struct HttpServer<H: OmniRequestHandler> {
+    handler: H,
     keypair: Option<Ed25519KeyPair>,
     identity: Identity,
 }
 
-impl Server {
+impl<H: OmniRequestHandler> HttpServer<H> {
     pub fn new(identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
         let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
             let x = kp.public_key().as_ref().to_vec();
@@ -43,27 +43,6 @@ impl Server {
             keypair,
             identity,
         }
-    }
-
-    pub fn with_method<F>(mut self, method: &str, handler: F) -> Self
-    where
-        F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync + 'static,
-    {
-        struct Handler<F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync>(pub F);
-        #[async_trait]
-        impl<F> SimpleRequestHandler for Handler<F>
-        where
-            F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync,
-        {
-            async fn handle(&self, _method: &str, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-                self.0(payload)
-            }
-        }
-
-        let h = ModuleRequestHandler::empty()
-            .with_method(method, SimpleRequestHandlerAdapter(Handler(handler)));
-        self.handler.with_namespace("", h);
-        self
     }
 
     async fn execute_handler(&self, request: &RequestMessage) -> ResponseMessage {

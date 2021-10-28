@@ -1,5 +1,5 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::transport::OmniRequestHandler;
+use crate::transport::{OmniRequestHandler, SimpleRequestHandlerAdapter};
 use crate::OmniError;
 use async_trait::async_trait;
 use std::collections::BTreeMap;
@@ -16,7 +16,7 @@ impl ModuleRequestHandler {
         Default::default()
     }
 
-    pub fn with_method<NS, H>(mut self, method_name: NS, handler: H) -> Self
+    pub fn with_handler<NS, H>(mut self, method_name: NS, handler: H) -> Self
     where
         NS: ToString,
         H: OmniRequestHandler + 'static,
@@ -24,6 +24,24 @@ impl ModuleRequestHandler {
         self.handlers
             .insert(method_name.to_string(), Arc::new(handler));
         self
+    }
+
+    pub fn with_method<F>(mut self, method: &str, handler: F) -> Self
+    where
+        F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync + 'static,
+    {
+        struct Handler<F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync>(pub F);
+        #[async_trait]
+        impl<F> SimpleRequestHandler for Handler<F>
+        where
+            F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync,
+        {
+            async fn handle(&self, _method: &str, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+                self.0(payload)
+            }
+        }
+
+        self.with_handler(method, SimpleRequestHandlerAdapter(Handler(handler)))
     }
 }
 

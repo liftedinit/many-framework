@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use clap::Parser;
-use omni::transport::http::Server;
+use omni::transport::http::HttpServer;
 use omni::transport::{SimpleRequestHandler, SimpleRequestHandlerAdapter};
 use omni::{Identity, OmniError};
 use std::path::PathBuf;
@@ -23,7 +23,7 @@ fn main() {
     let bytes = std::fs::read(o.pem).unwrap();
     let (id, keypair) = Identity::from_pem_addressable(bytes).unwrap();
 
-    Server::new(id, Some(keypair))
+    HttpServer::new(id, Some(keypair))
         .with_method("echo", echo)
         .bind("0.0.0.0:8001")
         .unwrap();
