@@ -7,15 +7,28 @@ use minicbor::{Decode, Decoder, Encode, Encoder};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// An OMNI message response.
-#[derive(Debug, Default, Builder)]
+#[derive(Debug, Builder)]
 #[builder(setter(strip_option), default)]
 pub struct ResponseMessage {
     pub version: Option<u8>,
     pub from: Identity,
     pub to: Option<Identity>,
-    pub data: Option<Result<Vec<u8>, super::OmniError>>,
+    pub data: Result<Vec<u8>, super::OmniError>,
     pub timestamp: Option<SystemTime>,
     pub id: Option<u64>,
+}
+
+impl Default for ResponseMessage {
+    fn default() -> Self {
+        Self {
+            version: None,
+            from: Identity::anonymous(),
+            to: None,
+            data: Ok(vec![]),
+            timestamp: None,
+            id: None,
+        }
+    }
 }
 
 impl ResponseMessage {
@@ -28,7 +41,7 @@ impl ResponseMessage {
             version: Some(1),
             from: *from,
             to: request.from, // We're sending back to the same requester.
-            data: Some(data),
+            data,
             timestamp: None, // To be filled.
             id: request.id,
         }
@@ -39,7 +52,7 @@ impl ResponseMessage {
             version: Some(1),
             from: *from,
             to: None,
-            data: Some(Err(data)),
+            data: Err(data),
             timestamp: None, // To be filled.
             id: None,
         }
@@ -71,14 +84,11 @@ impl Encode for ResponseMessage {
         }
 
         match &self.data {
-            Some(Ok(d)) => {
+            Ok(d) => {
                 e.str("data")?.bytes(d)?;
             }
-            Some(Err(err)) => {
+            Err(err) => {
                 e.str("error")?.encode(err)?;
-            }
-            None => {
-                Err(Error::Message("must either have a result or an error"))?;
             }
         }
 

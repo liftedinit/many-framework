@@ -76,15 +76,17 @@ macro_rules! omni_error {
 }
 
 omni_error! {
-    // Range 0-999 is for unexpected unknown errors.
+    // Range 0-999 is for unexpected or transport errors.
        0: Unknown as unknown()
             => "Unknown error.",
+       1: MessageTooLong as message_too_long(max)
+            => "Message is too long. Max allowed size is {max} bytes.",
 
     // 1000-1999 is for request errors.
     1000: InvalidMethodName as invalid_method_name(method)
             => r#"Invalid method name: "{method}"."#,
     1001: InvalidFromIdentity as invalid_from_identity()
-            => "The identity of the from field does not match the envelope.",
+            => "The identity of the from field is invalid or unexpected.",
     1002: CouldNotVerifySignature as could_not_verify_signature()
             => "Signature does not match the public key.",
     1003: UnknownDestination as unknown_destination(to, this)

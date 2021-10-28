@@ -1,21 +1,14 @@
 use async_trait::async_trait;
 use clap::Parser;
-use omni::server::http::Server;
-use omni::server::RequestHandler;
+use omni::transport::http::Server;
+use omni::transport::{SimpleRequestHandler, SimpleRequestHandlerAdapter};
 use omni::{Identity, OmniError};
 use std::path::PathBuf;
 
 struct EchoHandler;
 
-#[async_trait]
-impl RequestHandler for EchoHandler {
-    async fn handle(&self, method: &str, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        if method == "echo" {
-            Ok(payload.to_vec())
-        } else {
-            Err(OmniError::invalid_method_name(method.to_string()))
-        }
-    }
+fn echo(payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+    Ok(payload.to_vec())
 }
 
 #[derive(Parser)]
@@ -30,7 +23,8 @@ fn main() {
     let bytes = std::fs::read(o.pem).unwrap();
     let (id, keypair) = Identity::from_pem_addressable(bytes).unwrap();
 
-    Server::new(EchoHandler, id, Some(keypair))
+    Server::new(id, Some(keypair))
+        .with_method("echo", echo)
         .bind("0.0.0.0:8001")
         .unwrap();
 }

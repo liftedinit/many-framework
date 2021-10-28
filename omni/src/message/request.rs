@@ -6,19 +6,24 @@ use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-#[derive(Debug, Default, Builder)]
+#[derive(Debug, Clone, Default, Builder)]
 #[builder(setter(strip_option), default)]
 pub struct RequestMessage {
     pub version: Option<u8>,
     pub from: Option<Identity>,
-    pub to: Option<Identity>,
+    pub to: Identity,
     pub method: String,
-    pub data: Option<Vec<u8>>,
+    pub data: Vec<u8>,
     pub timestamp: Option<SystemTime>,
     pub id: Option<u64>,
 }
 
 impl RequestMessage {
+    pub fn with_method(&mut self, method: String) -> &mut Self {
+        self.method = method;
+        self
+    }
+
     pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
         let mut bytes = Vec::<u8>::new();
         minicbor::encode(self, &mut bytes).map_err(|e| format!("{}", e))?;
@@ -41,30 +46,20 @@ impl Encode for RequestMessage {
         e.begin_map()?;
 
         if let Some(ref v) = self.version {
-            e.str("version")?;
-            e.u8(*v)?;
+            e.str("version")?.u8(*v)?;
         }
 
         // No need to send the anonymous identity.
         if let Some(ref i) = self.from {
             if !i.is_anonymous() {
-                e.str("from")?;
-                e.encode(&i)?;
+                e.str("from")?.encode(&i)?;
             }
         }
 
-        if let Some(to) = self.to {
-            e.str("to")?;
-            e.encode(to)?;
-        }
+        e.str("to")?.encode(&self.to)?;
+        e.str("method")?.encode(&self.method)?;
 
-        e.str("method")?;
-        e.encode(&self.method)?;
-
-        if let Some(ref d) = self.data {
-            e.str("data")?;
-            e.bytes(&d)?;
-        }
+        e.str("data")?.bytes(&self.data)?;
 
         e.str("timestamp")?;
         let timestamp = self.timestamp.unwrap_or(SystemTime::now());

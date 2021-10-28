@@ -2,10 +2,9 @@ pub mod identity;
 pub mod message;
 
 use clap::Parser as Clap;
-use minicose::{CoseKey, CoseSign1, Ed25519CoseKey, Ed25519CoseKeyBuilder};
+use minicose::CoseSign1;
 use omni::message::{encode_cose_sign1_from_request, RequestMessage, RequestMessageBuilder};
 use omni::Identity;
-use ring::signature::KeyPair;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 
@@ -98,24 +97,12 @@ fn main() {
         }
         SubCommand::IdOf(o) => {
             let bytes = std::fs::read(o.pem).unwrap();
-            let content = pem::parse(bytes).unwrap();
-
-            let keypair =
-                ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
-                    .unwrap();
-
-            let x = keypair.public_key().as_ref().to_vec();
-            let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
-                .x(x)
-                .build()
-                .unwrap()
-                .into();
 
             // Create the identity from the public key hash.
-            let id = if o.addressable {
-                Identity::addressable(&cose_key)
+            let (id, _) = if o.addressable {
+                Identity::from_pem_addressable(bytes).unwrap()
             } else {
-                Identity::public_key(&cose_key)
+                Identity::from_pem_public(bytes).unwrap()
             };
 
             if o.hex {
@@ -130,24 +117,8 @@ fn main() {
                 || (Identity::anonymous(), None),
                 |pem| {
                     let bytes = std::fs::read(pem).unwrap();
-                    let content = pem::parse(bytes).unwrap();
-
-                    let keypair = ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(
-                        &content.contents,
-                    )
-                    .unwrap();
-
-                    let x = keypair.public_key().as_ref().to_vec();
-                    let cose_key: Ed25519CoseKey = Ed25519CoseKeyBuilder::default()
-                        .x(x)
-                        .build()
-                        .unwrap()
-                        .into();
-
-                    (
-                        Identity::public_key(&cose_key.to_public_key().unwrap().into()),
-                        Some(keypair),
-                    )
+                    let (id, keypair) = Identity::from_pem_public(bytes).unwrap();
+                    (id, Some(keypair))
                 },
             );
             let to_identity = Identity::try_from(o.to).unwrap();
@@ -181,14 +152,11 @@ fn main() {
                 let response = message::decode_response_from_cose_sign1(cose_sign1, None).unwrap();
 
                 match response.data {
-                    Some(Ok(payload)) => {
+                    Ok(payload) => {
                         println!("{}", cbor_diag::parse_bytes(&payload).unwrap().to_diag());
                         std::process::exit(0);
                     }
-                    None => {
-                        std::process::exit(0);
-                    }
-                    Some(Err(err)) => {
+                    Err(err) => {
                         eprintln!(
                             "Error returned by server:\n|  {}\n",
                             err.to_string()

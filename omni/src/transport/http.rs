@@ -1,7 +1,9 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::server::RequestHandler;
-use crate::Identity;
+use crate::server::{ModuleRequestHandler, NamespacedRequestHandler};
+use crate::transport::{OmniRequestHandler, SimpleRequestHandler, SimpleRequestHandlerAdapter};
+use crate::{Identity, OmniError};
 use anyhow::anyhow;
+use async_trait::async_trait;
 use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::io::Cursor;
@@ -12,14 +14,14 @@ use tiny_http::{Request, Response};
 const READ_BUFFER_LEN: usize = 1024 * 1024 * 2;
 
 #[derive(Debug)]
-pub struct Server<H: RequestHandler + Sync + Send> {
-    handler: H,
+pub struct Server {
+    handler: NamespacedRequestHandler,
     keypair: Option<Ed25519KeyPair>,
     identity: Identity,
 }
 
-impl<H: RequestHandler + Sync + Send> Server<H> {
-    pub fn new(handler: H, identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
+impl Server {
+    pub fn new(identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
         let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
             let x = kp.public_key().as_ref().to_vec();
             Ed25519CoseKeyBuilder::default()
@@ -29,42 +31,46 @@ impl<H: RequestHandler + Sync + Send> Server<H> {
                 .unwrap()
                 .into()
         });
-        if !identity.matches(&cose_key) {
-            unreachable!("Identity does not match keypair.");
-        }
-        if !identity.is_addressable() {
-            unreachable!("Identity is not addressable.");
-        }
+
+        assert!(
+            identity.matches_key(&cose_key),
+            "Identity does not match keypair."
+        );
+        assert!(identity.is_addressable(), "Identity is not addressable.");
 
         Self {
-            handler,
+            handler: NamespacedRequestHandler::empty(),
             keypair,
             identity,
         }
     }
 
-    async fn handle_request_inner(
-        &self,
-        request: &RequestMessage,
-    ) -> Result<ResponseMessage, anyhow::Error> {
-        let RequestMessage { method, data, .. } = request;
-
-        match self
-            .handler
-            .handle(method, data.as_ref().unwrap_or(&vec![]))
-            .await
+    pub fn with_method<F>(mut self, method: &str, handler: F) -> Self
+    where
+        F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync + 'static,
+    {
+        struct Handler<F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync>(pub F);
+        #[async_trait]
+        impl<F> SimpleRequestHandler for Handler<F>
+        where
+            F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync,
         {
-            Ok(data) => Ok(ResponseMessage::from_request(
-                request,
-                &self.identity,
-                Ok(data),
-            )),
-            Err(err) => Ok(ResponseMessage::from_request(
-                request,
-                &self.identity,
-                Err(err),
-            )),
+            async fn handle(&self, _method: &str, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+                self.0(payload)
+            }
         }
+
+        let h = ModuleRequestHandler::empty()
+            .with_method(method, SimpleRequestHandlerAdapter(Handler(handler)));
+        self.handler.with_namespace("", h);
+        self
+    }
+
+    async fn execute_handler(&self, request: &RequestMessage) -> ResponseMessage {
+        self.handler
+            .execute(request)
+            .await
+            .unwrap_or_else(|err| ResponseMessage::from_request(request, &self.identity, Err(err)))
     }
 
     async fn handle_request(
@@ -102,12 +108,7 @@ impl<H: RequestHandler + Sync + Send> Server<H> {
             match crate::message::decode_request_from_cose_sign1(envelope, Some(server_id.clone()))
                 .and_then(|message| self.handler.validate(&message).map(|_| message))
             {
-                Ok(message) => match self.handle_request_inner(&message).await {
-                    Ok(message) => message,
-                    Err(_e) => {
-                        return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
-                    }
-                },
+                Ok(message) => self.execute_handler(&message).await,
                 Err(err) => ResponseMessage::error(server_id, err),
             };
 

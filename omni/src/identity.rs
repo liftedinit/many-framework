@@ -22,7 +22,7 @@ pub enum Error {
     InvalidPrefix(),
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub struct Identity(InnerIdentity);
 
 impl Identity {
@@ -51,6 +51,25 @@ impl Identity {
             .into();
         Ok((Identity::addressable(&cose_key), keypair))
     }
+
+    #[cfg(feature = "pem")]
+    pub fn from_pem_public(
+        bytes: Vec<u8>,
+    ) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
+        let content = pem::parse(bytes)?;
+        let keypair =
+            Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
+                .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
+
+        let x = keypair.public_key().as_ref().to_vec();
+        let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
+            .x(x)
+            .build()
+            .unwrap()
+            .into();
+        Ok((Identity::public_key(&cose_key), keypair))
+    }
+
 
     pub const fn anonymous() -> Self {
         Self(InnerIdentity::Anonymous())
@@ -118,7 +137,7 @@ impl Identity {
         self.0.to_vec()
     }
 
-    pub fn matches(&self, key: &Option<CoseKey>) -> bool {
+    pub fn matches_key(&self, key: &Option<CoseKey>) -> bool {
         match &self.0 {
             InnerIdentity::Anonymous() => key.is_none(),
             InnerIdentity::PublicKey(hash) | InnerIdentity::Addressable(hash) => {
@@ -243,7 +262,7 @@ impl AsRef<[u8; MAX_IDENTITY_BYTE_LEN]> for Identity {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Ord, PartialOrd)]
+#[derive(Copy, Clone,  Debug, PartialOrd)]
 #[non_exhaustive]
 enum InnerIdentity {
     Anonymous(),
@@ -257,6 +276,20 @@ enum InnerIdentity {
 // Identity needs to be bound to 32 bytes maximum.
 static_assertions::assert_eq_size!([u8; MAX_IDENTITY_BYTE_LEN], InnerIdentity);
 static_assertions::const_assert_eq!(InnerIdentity::Anonymous().to_byte_array()[0], 0);
+
+impl PartialEq for InnerIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO: When subresources are involved, this should not match the subresource ID itself.
+        use InnerIdentity::*;
+
+        match (self, other) {
+            (Anonymous(), Anonymous()) => true,
+            (PublicKey(key1), PublicKey(key2)) => key1 == key2,
+            (Addressable(key1), Addressable(key2)) => key1 == key2,
+            (_, _) => false,
+        }
+    }
+}
 
 impl Default for InnerIdentity {
     fn default() -> Self {

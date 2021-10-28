@@ -1,5 +1,5 @@
 use omni::message::decode_request_from_cose_sign1;
-use omni::server::RequestHandler;
+use omni::transport::RequestHandler;
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
     RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestDeliverTx, RequestEcho,

@@ -37,9 +37,9 @@ pub fn decode_request_from_cose_sign1(
 
     // Check the `to` field to make sure we have the right one.
     if let Some(ref to_id) = to {
-        if to_id != &message.to.unwrap_or_default() {
+        if to_id != &message.to {
             return Err(OmniError::unknown_destination(
-                message.to.unwrap_or_default().to_string(),
+                message.to.to_string(),
                 to_id.to_string(),
             ));
         }
@@ -91,7 +91,7 @@ fn encode_cose_sign1_from_payload(
             .into()
     });
 
-    if !id.matches(&maybe_cose_key) {
+    if !id.matches_key(&maybe_cose_key) {
         return Err("Identity did not match keypair.".to_string());
     }
 
