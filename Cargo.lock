@@ -1043,6 +1043,7 @@ dependencies = [
 name = "omni-abci"
 version = "0.1.0"
 dependencies = [
+ "ciborium",
  "minicose",
  "omni",
  "tendermint-abci",

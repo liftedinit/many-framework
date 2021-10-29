@@ -69,7 +69,8 @@ struct MessageOpt {
     server: Option<String>,
 
     /// The identity to send it to.
-    to: String,
+    #[clap(long)]
+    to: Option<Identity>,
 
     /// The method to call.
     method: String,
@@ -121,7 +122,7 @@ fn main() {
                     (id, Some(keypair))
                 },
             );
-            let to_identity = Identity::try_from(o.to).unwrap();
+            let to_identity = o.to.unwrap_or_default();
 
             let data = o
                 .data

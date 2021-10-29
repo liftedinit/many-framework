@@ -17,10 +17,7 @@ use minicose::{
 use ring::signature::KeyPair;
 use std::convert::TryFrom;
 
-pub fn decode_request_from_cose_sign1(
-    sign1: CoseSign1,
-    to: Option<Identity>,
-) -> Result<RequestMessage, OmniError> {
+pub fn decode_request_from_cose_sign1(sign1: CoseSign1) -> Result<RequestMessage, OmniError> {
     let request = CoseSign1RequestMessage { sign1 };
     let from_id = request
         .verify()
@@ -35,15 +32,9 @@ pub fn decode_request_from_cose_sign1(
         return Err(OmniError::invalid_from_identity());
     }
 
-    // Check the `to` field to make sure we have the right one.
-    if let Some(ref to_id) = to {
-        if to_id != &message.to {
-            return Err(OmniError::unknown_destination(
-                message.to.to_string(),
-                to_id.to_string(),
-            ));
-        }
-    }
+    // We don't check the `to` field, leave that to the server itself.
+    // Some servers might want to proxy messages that aren't for them, for example, or
+    // accept anonymous messages.
 
     Ok(message)
 }

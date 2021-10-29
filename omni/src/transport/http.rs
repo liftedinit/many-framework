@@ -1,5 +1,5 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::transport::{OmniRequestHandler, SimpleRequestHandlerAdapter};
+use crate::transport::OmniRequestHandler;
 use crate::Identity;
 use anyhow::anyhow;
 use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
@@ -81,13 +81,12 @@ impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
             }
         };
 
-        let response =
-            match crate::message::decode_request_from_cose_sign1(envelope, Some(server_id.clone()))
-                .and_then(|message| self.handler.validate(&message).map(|_| message))
-            {
-                Ok(message) => self.execute_handler(&message).await,
-                Err(err) => ResponseMessage::error(server_id, err),
-            };
+        let response = match crate::message::decode_request_from_cose_sign1(envelope)
+            .and_then(|message| self.handler.validate(&message).map(|_| message))
+        {
+            Ok(message) => self.execute_handler(&message).await,
+            Err(err) => ResponseMessage::error(server_id, err),
+        };
 
         let bytes = match crate::message::encode_cose_sign1_from_response(
             response,

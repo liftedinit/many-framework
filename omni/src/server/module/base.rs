@@ -13,11 +13,14 @@ pub struct BaseServerModule {
 impl BaseServerModule {
     pub fn new(status: Status) -> Self {
         Self {
-            handler: FunctionMapRequestHandler::empty().with_method("status", move |_message| {
-                status
-                    .to_bytes()
-                    .map_err(|_| OmniError::internal_server_error())
-            }),
+            handler: FunctionMapRequestHandler::empty()
+                .with_method("status", move |_message| {
+                    status
+                        .to_bytes()
+                        .map_err(|_| OmniError::internal_server_error())
+                })
+                .with_method("heartbeat", |_message| Ok(vec![]))
+                .with_method("echo", |message| Ok(message.to_vec())),
         }
     }
 }
