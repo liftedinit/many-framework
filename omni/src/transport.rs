@@ -3,8 +3,8 @@ use async_trait::async_trait;
 
 /// A simpler version of the [OmniRequestHandler] which only deals with methods and payloads.
 #[async_trait]
-pub trait SimpleRequestHandler: Send + Sync {
-    fn validate(&self, method: &str, payload: &[u8]) -> Result<(), OmniError> {
+pub trait SimpleRequestHandler: Send + Sync + std::fmt::Debug {
+    fn validate(&self, _method: &str, _payload: &[u8]) -> Result<(), OmniError> {
         Ok(())
     }
 
@@ -12,7 +12,7 @@ pub trait SimpleRequestHandler: Send + Sync {
 }
 
 #[async_trait]
-pub trait OmniRequestHandler: Send + Sync {
+pub trait OmniRequestHandler: Send + Sync + std::fmt::Debug {
     /// Validate that a message is okay with us.
     fn validate(&self, _message: &RequestMessage) -> Result<(), OmniError> {
         Ok(())
@@ -24,6 +24,7 @@ pub trait OmniRequestHandler: Send + Sync {
     async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError>;
 }
 
+#[derive(Debug)]
 pub struct SimpleRequestHandlerAdapter<I: SimpleRequestHandler>(pub I);
 
 #[async_trait]

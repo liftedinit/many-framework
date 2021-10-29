@@ -33,6 +33,7 @@ impl OmniServer {
         let status = StatusBuilder::default()
             .version(1)
             .public_key(public_key)
+            .identity(identity)
             .internal_version(vec![])
             .attributes(vec![])
             .build()

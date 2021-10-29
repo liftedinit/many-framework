@@ -1,3 +1,4 @@
+use crate::Identity;
 use derive_builder::Builder;
 use minicbor::encode::{Error, Write};
 use minicbor::{Encode, Encoder};
@@ -8,6 +9,7 @@ pub struct Status {
     version: u8,
     public_key: CoseKey,
     internal_version: Vec<u8>,
+    identity: Identity,
     attributes: Vec<u8>,
 }
 
@@ -25,11 +27,13 @@ impl Encode for Status {
         let public_key = self.public_key.to_public_key().unwrap().to_bytes().unwrap();
 
         #[rustfmt::skip]
-        e.map(4)?
+        e.begin_map()?
             .str("version")?.u8(self.version)?
             .str("public_key")?.bytes(public_key.as_slice())?
+            .str("identity")?.encode(&self.identity)?
             .str("internal_version")?.bytes(self.internal_version.as_slice())?
-            .str("attributes")?.bytes(self.attributes.as_slice())?;
+            .str("attributes")?.bytes(self.attributes.as_slice())?
+            .end()?;
 
         Ok(())
     }

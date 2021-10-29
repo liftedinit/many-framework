@@ -1,8 +1,7 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::transport::{OmniRequestHandler, SimpleRequestHandler, SimpleRequestHandlerAdapter};
-use crate::{Identity, OmniError};
+use crate::transport::{OmniRequestHandler, SimpleRequestHandlerAdapter};
+use crate::Identity;
 use anyhow::anyhow;
-use async_trait::async_trait;
 use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::io::Cursor;
@@ -13,13 +12,13 @@ use tiny_http::{Request, Response};
 const READ_BUFFER_LEN: usize = 1024 * 1024 * 2;
 
 #[derive(Debug)]
-pub struct HttpServer<H: OmniRequestHandler> {
+pub struct HttpServer<H: OmniRequestHandler + std::fmt::Debug> {
     handler: H,
     keypair: Option<Ed25519KeyPair>,
     identity: Identity,
 }
 
-impl<H: OmniRequestHandler> HttpServer<H> {
+impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
     pub fn new(identity: Identity, keypair: Option<Ed25519KeyPair>, handler: H) -> Self {
         let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
             let x = kp.public_key().as_ref().to_vec();
@@ -103,7 +102,7 @@ impl<H: OmniRequestHandler> HttpServer<H> {
             }
         };
 
-        eprintln!("  reply: {}", hex::encode(&bytes));
+        eprintln!("   reply: {}", hex::encode(&bytes));
         Response::from_data(bytes)
     }
 
@@ -115,8 +114,6 @@ impl<H: OmniRequestHandler> HttpServer<H> {
         let runtime = tokio::runtime::Runtime::new().unwrap();
 
         for mut request in server.incoming_requests() {
-            eprintln!("request: {:?}", &request);
-
             runtime.block_on(async {
                 let response = self
                     .handle_request(&mut request, buffer.as_mut_slice())

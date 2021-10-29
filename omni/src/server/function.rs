@@ -26,11 +26,17 @@ impl FunctionMapRequestHandler {
         self
     }
 
-    pub fn with_method<F>(mut self, method: &str, handler: F) -> Self
+    pub fn with_method<F>(self, method: &str, handler: F) -> Self
     where
         F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync + 'static,
     {
         struct Handler<F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync>(pub F);
+        impl<F: Fn(&[u8]) -> Result<Vec<u8>, OmniError> + Send + Sync> std::fmt::Debug for Handler<F> {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                f.write_str("Handler")
+            }
+        }
+
         #[async_trait]
         impl<F> SimpleRequestHandler for Handler<F>
         where
@@ -48,9 +54,9 @@ impl FunctionMapRequestHandler {
 impl std::fmt::Debug for FunctionMapRequestHandler {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("ModuleRequestHandler ")?;
-        let mut list = f.debug_list();
-        for (ns, _) in &self.handlers {
-            list.entry(ns);
+        let mut list = f.debug_map();
+        for (ns, h) in &self.handlers {
+            list.entry(ns, h);
         }
         list.finish()
     }

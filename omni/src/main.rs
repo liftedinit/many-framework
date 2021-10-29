@@ -153,7 +153,10 @@ fn main() {
 
                 match response.data {
                     Ok(payload) => {
-                        println!("{}", cbor_diag::parse_bytes(&payload).unwrap().to_diag());
+                        println!(
+                            "{}",
+                            cbor_diag::parse_bytes(&payload).unwrap().to_diag_pretty()
+                        );
                         std::process::exit(0);
                     }
                     Err(err) => {

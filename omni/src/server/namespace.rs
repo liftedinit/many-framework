@@ -48,9 +48,9 @@ impl NamespacedRequestHandler {
 impl Debug for NamespacedRequestHandler {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("NamespacedRequestHandler ")?;
-        let mut list = f.debug_list();
-        for (ns, _) in &self.namespaces {
-            list.entry(&ns);
+        let mut list = f.debug_map();
+        for (ns, v) in &self.namespaces {
+            list.entry(&ns, &v);
         }
         list.finish()
     }
@@ -62,7 +62,14 @@ impl OmniRequestHandler for NamespacedRequestHandler {
         let method = message.method.as_str();
         if let Some((m, h)) = self.resolve_namespace(method) {
             let mut message = message.clone();
-            h.validate(message.with_method(m.to_string()))
+            let result = h.validate(message.with_method(m.to_string()));
+            match result {
+                Err(OmniError {
+                    code: OmniErrorCode::InvalidMethodName,
+                    ..
+                }) => Err(OmniError::invalid_method_name(method.to_string())),
+                x => x,
+            }
         } else {
             Err(OmniError::invalid_method_name(method.to_string()))
         }
@@ -74,13 +81,19 @@ impl OmniRequestHandler for NamespacedRequestHandler {
 
         match maybe_method {
             None => Err(OmniError::invalid_method_name(method.to_string())),
-            Some((method, handler)) => match handler.execute(message).await {
-                Err(OmniError {
-                    code: OmniErrorCode::InvalidMethodName,
-                    ..
-                }) => Err(OmniError::invalid_method_name(method.to_string())),
-                x => x,
-            },
+            Some((method, handler)) => {
+                let result = handler
+                    .execute(message.clone().with_method(method.to_string()))
+                    .await;
+
+                match result {
+                    Err(OmniError {
+                        code: OmniErrorCode::InvalidMethodName,
+                        ..
+                    }) => Err(OmniError::invalid_method_name(method.to_string())),
+                    x => x,
+                }
+            }
         }
     }
 }
