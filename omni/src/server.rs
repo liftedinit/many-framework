@@ -1,55 +1,50 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::protocol::Status;
+use crate::protocol::StatusBuilder;
 use crate::transport::OmniRequestHandler;
 use crate::{Identity, OmniError};
 use async_trait::async_trait;
-use ring::signature::Ed25519KeyPair;
+use minicose::{CoseKey, Ed25519CoseKeyBuilder};
+use module::base::BaseServerModule;
+use ring::signature::{Ed25519KeyPair, KeyPair};
 
+pub mod function;
 pub mod module;
 pub mod namespace;
 
-pub use module::ModuleRequestHandler;
 pub use namespace::NamespacedRequestHandler;
-
-#[derive(Debug)]
-struct BaseServerModule {
-    pub status: Status,
-    pub handler: ModuleRequestHandler,
-}
-
-impl Default for BaseServerModule {
-    fn default() -> Self {}
-}
-
-#[async_trait]
-impl OmniRequestHandler for BaseServerModule {
-    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
-        self.handler.validate(message)
-    }
-
-    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
-        self.handler.execute(message).await
-    }
-}
 
 #[derive(Debug)]
 pub struct OmniServer {
     namespace: NamespacedRequestHandler,
     identity: Identity,
-    keypair: Ed25519KeyPair,
 }
 
 impl OmniServer {
-    pub fn new(identity: Identity, keypair: ring::signature::Ed25519KeyPair) -> Self {
+    pub fn new(identity: Identity, public_key: &Ed25519KeyPair) -> Self {
         debug_assert!(identity.is_addressable());
+
+        let x = public_key.public_key().as_ref().to_vec();
+        let public_key: CoseKey = Ed25519CoseKeyBuilder::default()
+            .x(x)
+            .build()
+            .unwrap()
+            .into();
+
+        let status = StatusBuilder::default()
+            .version(1)
+            .public_key(public_key)
+            .internal_version(vec![])
+            .attributes(vec![])
+            .build()
+            .unwrap();
+
         Self {
             identity,
-            keypair,
-            namespace: NamespacedRequestHandler::new(BaseServerModule::default()),
+            namespace: NamespacedRequestHandler::new(BaseServerModule::new(status)),
         }
     }
 
-    pub fn with_namespace<NS, H>(&mut self, namespace: NS, handler: H) -> &mut Self
+    pub fn with_namespace<NS, H>(mut self, namespace: NS, handler: H) -> Self
     where
         NS: ToString,
         H: OmniRequestHandler + 'static,

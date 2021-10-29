@@ -1,5 +1,4 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::server::{ModuleRequestHandler, NamespacedRequestHandler};
 use crate::transport::{OmniRequestHandler, SimpleRequestHandler, SimpleRequestHandlerAdapter};
 use crate::{Identity, OmniError};
 use anyhow::anyhow;
@@ -21,7 +20,7 @@ pub struct HttpServer<H: OmniRequestHandler> {
 }
 
 impl<H: OmniRequestHandler> HttpServer<H> {
-    pub fn new(identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
+    pub fn new(identity: Identity, keypair: Option<Ed25519KeyPair>, handler: H) -> Self {
         let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
             let x = kp.public_key().as_ref().to_vec();
             Ed25519CoseKeyBuilder::default()
@@ -39,7 +38,7 @@ impl<H: OmniRequestHandler> HttpServer<H> {
         assert!(identity.is_addressable(), "Identity is not addressable.");
 
         Self {
-            handler: NamespacedRequestHandler::empty(),
+            handler,
             keypair,
             identity,
         }

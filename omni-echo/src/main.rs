@@ -1,5 +1,7 @@
 use async_trait::async_trait;
 use clap::Parser;
+use omni::server::function::FunctionMapRequestHandler;
+use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::transport::{SimpleRequestHandler, SimpleRequestHandlerAdapter};
 use omni::{Identity, OmniError};
@@ -23,8 +25,12 @@ fn main() {
     let bytes = std::fs::read(o.pem).unwrap();
     let (id, keypair) = Identity::from_pem_addressable(bytes).unwrap();
 
-    HttpServer::new(id, Some(keypair))
-        .with_method("echo", echo)
+    let omni = OmniServer::new(id, &keypair).with_namespace(
+        "echo",
+        FunctionMapRequestHandler::empty().with_method("echo", echo),
+    );
+
+    HttpServer::new(id, Some(keypair), omni)
         .bind("0.0.0.0:8001")
         .unwrap();
 }
