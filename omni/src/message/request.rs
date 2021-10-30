@@ -19,7 +19,7 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
-    pub fn with_method(&mut self, method: String) -> &mut Self {
+    pub fn with_method(mut self, method: String) -> Self {
         self.method = method;
         self
     }

@@ -73,7 +73,7 @@ impl OmniRequestHandler for FunctionMapRequestHandler {
         }
     }
 
-    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
         let method = message.method.as_str();
         if let Some(h) = self.handlers.get(method) {
             h.execute(message).await

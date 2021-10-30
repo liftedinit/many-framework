@@ -1,3 +1,4 @@
+use minicose::CoseSign1;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::server::function::FunctionMapRequestHandler;
 use omni::transport::OmniRequestHandler;
@@ -24,16 +25,20 @@ impl AbciRequestHandler {
 }
 
 impl OmniRequestHandler for AbciRequestHandler {
+    async fn handle(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
+        let request = omni::message::decode_request_from_cose_sign1(envelope)?;
+
+        match request.method.as_str() {
+            "echo" => Err(OmniError::internal_server_error()),
+            m => Err(OmniError::invalid_method_name(m.to_string())),
+        }
+    }
+
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         Ok(())
     }
 
     async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let payload: Vec<u8> = match message.method.as_str() {
-            "echo" => self.echo(message.data.as_slice()),
-            m => Err(OmniError::invalid_method_name(m.to_string())),
-        }?;
-
-        Ok(ResponseMessage::from_request(message))
+        Err(OmniError::internal_server_error())
     }
 }

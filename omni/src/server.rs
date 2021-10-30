@@ -59,7 +59,7 @@ impl OmniServer {
 impl OmniRequestHandler for OmniServer {
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         let to = message.to;
-        eprintln!("to: {} is_anon: {}", to, to.is_anonymous());
+
         // Verify that the message is for this server, if it's not anonymous.
         if to.is_anonymous() || &self.identity == &to {
             self.namespace.validate(message)
@@ -70,7 +70,7 @@ impl OmniRequestHandler for OmniServer {
             ))
         }
     }
-    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
         self.namespace.execute(message).await.map(|mut r| {
             r.from = self.identity;
             r

@@ -31,7 +31,7 @@ impl OmniRequestHandler for BaseServerModule {
         self.handler.validate(message)
     }
 
-    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
         self.handler.execute(message).await
     }
 }

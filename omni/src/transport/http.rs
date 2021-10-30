@@ -43,13 +43,6 @@ impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
         }
     }
 
-    async fn execute_handler(&self, request: &RequestMessage) -> ResponseMessage {
-        self.handler
-            .execute(request)
-            .await
-            .unwrap_or_else(|err| ResponseMessage::from_request(request, &self.identity, Err(err)))
-    }
-
     async fn handle_request(
         &self,
         request: &mut Request,
@@ -81,12 +74,11 @@ impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
             }
         };
 
-        let response = match crate::message::decode_request_from_cose_sign1(envelope)
-            .and_then(|message| self.handler.validate(&message).map(|_| message))
-        {
-            Ok(message) => self.execute_handler(&message).await,
-            Err(err) => ResponseMessage::error(server_id, err),
-        };
+        let response = self
+            .handler
+            .handle(envelope)
+            .await
+            .unwrap_or_else(|err| ResponseMessage::error(server_id, err));
 
         let bytes = match crate::message::encode_cose_sign1_from_response(
             response,

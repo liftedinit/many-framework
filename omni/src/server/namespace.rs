@@ -61,8 +61,8 @@ impl OmniRequestHandler for NamespacedRequestHandler {
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         let method = message.method.as_str();
         if let Some((m, h)) = self.resolve_namespace(method) {
-            let mut message = message.clone();
-            let result = h.validate(message.with_method(m.to_string()));
+            let mut message = message.clone().with_method(m.to_string());
+            let result = h.validate(&message);
             match result {
                 Err(OmniError {
                     code: OmniErrorCode::InvalidMethodName,
@@ -75,15 +75,15 @@ impl OmniRequestHandler for NamespacedRequestHandler {
         }
     }
 
-    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let method = message.method.as_str();
-        let maybe_method = self.resolve_namespace(method);
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let method = message.method.clone();
+        let maybe_method = self.resolve_namespace(method.as_str());
 
         match maybe_method {
             None => Err(OmniError::invalid_method_name(method.to_string())),
             Some((method, handler)) => {
                 let result = handler
-                    .execute(message.clone().with_method(method.to_string()))
+                    .execute(message.with_method(method.to_string()))
                     .await;
 
                 match result {
