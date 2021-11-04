@@ -1,44 +1,82 @@
+use async_trait::async_trait;
 use minicose::CoseSign1;
 use omni::message::{RequestMessage, ResponseMessage};
+use omni::protocol::Attribute;
 use omni::server::function::FunctionMapRequestHandler;
+use omni::server::module::{OmniModule, OmniModuleInfo};
 use omni::transport::OmniRequestHandler;
-use omni::OmniError;
+use omni::{Identity, OmniError};
+use std::collections::BTreeMap;
+use std::fmt::{Debug, Formatter};
+use std::iter::FromIterator;
 use std::net::ToSocketAddrs;
-use tendermint_abci::{Client as AbciClient, ClientBuilder as AbciClientBuilder};
-use tendermint_proto::abci::RequestEcho;
+use std::sync::{Arc, Mutex};
+use tendermint_abci::Client as AbciClient;
+use tendermint_proto::abci::{RequestCheckTx, RequestEcho, ResponseCheckTx};
 
 pub mod application;
 
-#[derive(Clone, Debug)]
-pub struct AbciRequestHandler {
-    client: AbciClient,
+pub const ABCI_SERVER: Attribute = Attribute {
+    id: 1000,
+    endpoints: &["abci.check_tx"],
+};
+
+#[derive(Clone)]
+pub struct AbciModule {
+    client: Arc<Mutex<AbciClient>>,
+    identity: Identity,
 }
 
-impl AbciRequestHandler {
-    pub fn new<Addr: ToSocketAddrs>(server: Addr) -> Self {
-        let mut client = AbciClientBuilder::default().connect(server).unwrap();
-
-        Self { client }
+impl Debug for AbciModule {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AbciModule")
+            .field("client", &"...")
+            .field("identity", &self.identity)
+            .finish()
     }
-
-    fn echo(&self, payload: &[u8]) -> Result<Vec<u8>, OmniError> {}
 }
 
-impl OmniRequestHandler for AbciRequestHandler {
-    async fn handle(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
-        let request = omni::message::decode_request_from_cose_sign1(envelope)?;
+impl AbciModule {
+    pub fn new(client: Arc<Mutex<AbciClient>>, identity: Identity) -> Self {
+        Self { client, identity }
+    }
+}
 
-        match request.method.as_str() {
-            "echo" => Err(OmniError::internal_server_error()),
-            m => Err(OmniError::invalid_method_name(m.to_string())),
+#[async_trait]
+impl OmniModule for AbciModule {
+    #[inline]
+    fn info(&self) -> OmniModuleInfo {
+        OmniModuleInfo {
+            name: "AbciModule".to_string(),
+            attributes: vec![ABCI_SERVER],
         }
     }
 
-    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
-        Ok(())
-    }
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let tx = message.data.clone();
+        let mut client = self.client.lock().unwrap();
 
-    async fn execute(&self, message: &RequestMessage) -> Result<ResponseMessage, OmniError> {
-        Err(OmniError::internal_server_error())
+        match message.method.as_str() {
+            "abci.check_tx" => {
+                let response = client.check_tx(RequestCheckTx {
+                    tx: message.data.clone(),
+                    r#type: 0,
+                });
+
+                match response {
+                    Ok(ResponseCheckTx { code, data, .. }) if code == 0 => Ok(
+                        ResponseMessage::from_request(&message, &self.identity, Ok(data)),
+                    ),
+                    Ok(ResponseCheckTx { code, data, .. }) => Err(OmniError::application_specific(
+                        1000 * 10000 + code,
+                        "ABCI Response Error: {msg}".to_string(),
+                        BTreeMap::from_iter(vec![("msg".to_string(), hex::encode(&data))]),
+                    )),
+                    Err(_) => Err(OmniError::internal_server_error()),
+                }
+            }
+
+            _ => Err(OmniError::internal_server_error()),
+        }
     }
 }

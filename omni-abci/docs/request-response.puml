@@ -1,0 +1,23 @@
+@startuml
+title Request - Response Sequence for the OMNI - ABCI bridge.
+
+actor user as "User"
+participant omni as "OMNI Frontend (ABCI Bridge)"
+participant tendermint
+participant abci_app as "ABCI App"
+participant omni_app as "OMNI App"
+
+user -> omni : \
+    omni::RequestMessage\nmethod: "ledger.mint"
+omni -> tendermint : \
+    deliver_tx (signed envelope)
+
+tendermint -> abci_app : \
+    deliver_tx
+
+abci_app -> omni_app : \
+    omni::RequestMessage
+
+activate omni_app
+
+@enduml

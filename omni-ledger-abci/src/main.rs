@@ -1,7 +1,13 @@
-pub mod application;
-pub mod http;
+mod application;
+mod omni_frontend;
 
+use crate::omni_frontend::OmniFrontend;
 use clap::Parser;
+use omni::Identity;
+use omni_abci::application::AbciHttpServer;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use tendermint_abci::ClientBuilder;
 use tendermint_abci::ServerBuilder;
 use tracing_subscriber::filter::LevelFilter;
 
@@ -27,6 +33,10 @@ struct Opt {
     // OMNI Protocol Host interface and port to listen to.
     #[clap(long, default_value = "127.0.0.1:8000")]
     omni: String,
+
+    // OMNI PEM file for the identity.
+    #[clap(long)]
+    pem: PathBuf,
 }
 
 fn main() {
@@ -45,14 +55,25 @@ fn main() {
         .bind(opt.abci.clone(), app)
         .unwrap();
 
+    let abci_client = Arc::new(Mutex::new(
+        ClientBuilder::default().connect(opt.abci.clone()).unwrap(),
+    ));
+    let bytes = std::fs::read(opt.pem).unwrap();
+    let (id, keypair) = Identity::from_pem_addressable(bytes).unwrap();
+
+    let omni_server = omni::transport::http::HttpServer::new(AbciHttpServer::new(
+        abci_client,
+        OmniFrontend {},
+        id,
+        Some(keypair),
+    ));
+
+    let omni = opt.omni.clone();
     let j1 = std::thread::spawn(move || driver.run().unwrap());
-    // let j2 = std::thread::spawn(move || {
-    //     let rt = tokio::runtime::Runtime::new().unwrap();
-    //     rt.block_on(http::launch(opt.omni, opt.abci)).unwrap();
-    // });
+    let j2 = std::thread::spawn(move || omni_server.bind(omni).unwrap());
     let j3 = std::thread::spawn(move || abci_server.listen().unwrap());
 
     j1.join().unwrap();
-    // j2.join().unwrap();
+    j2.join().unwrap();
     j3.join().unwrap();
 }

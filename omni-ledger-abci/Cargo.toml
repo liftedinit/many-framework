@@ -11,8 +11,10 @@ anyhow = "1.0.44"
 clap = "3.0.0-beta.4"
 concat-arrays = "0.1.2"
 hex = "0.4.3"
-omni = { path = "../omni" }
+omni = { path = "../omni", features = [ "client" ] }
+omni-abci = { path = "../omni-abci" }
 minicbor = "0.11.3"
+minicose = { git = "https://github.com/l-1-labs/rust-minicose.git", features = [ "allow-unsigned" ] }
 ring = "0.17.0-alpha.10"
 serde = "1.0.130"
 serde_cbor = "0.11.2"

@@ -1,6 +1,7 @@
 use crate::message::{RequestMessage, ResponseMessage};
 use crate::protocol::Status;
 use crate::server::function::FunctionMapRequestHandler;
+use crate::server::module::{OmniModule, OmniModuleInfo};
 use crate::transport::OmniRequestHandler;
 use crate::OmniError;
 use async_trait::async_trait;
@@ -26,9 +27,12 @@ impl BaseServerModule {
 }
 
 #[async_trait]
-impl OmniRequestHandler for BaseServerModule {
-    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
-        self.handler.validate(message)
+impl OmniModule for BaseServerModule {
+    fn info(&self) -> OmniModuleInfo {
+        OmniModuleInfo {
+            name: "BaseServerModule".to_string(),
+            attributes: vec![crate::protocol::attributes::BASE_SERVER],
+        }
     }
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {

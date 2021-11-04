@@ -2,7 +2,6 @@ pub mod identity;
 pub mod message;
 
 use clap::Parser as Clap;
-use minicose::CoseSign1;
 use omni::message::{encode_cose_sign1_from_request, RequestMessage, RequestMessageBuilder};
 use omni::Identity;
 use std::convert::TryFrom;
@@ -127,32 +126,17 @@ fn main() {
             let data = o
                 .data
                 .map_or(vec![], |d| cbor_diag::parse_diag(&d).unwrap().to_bytes());
-            let message: RequestMessage = RequestMessageBuilder::default()
-                .version(1)
-                .from(from_identity)
-                .to(to_identity)
-                .method(o.method)
-                .data(data)
-                .build()
-                .unwrap();
 
-            let cose = encode_cose_sign1_from_request(message, from_identity, &keypair).unwrap();
-            let bytes = cose.to_bytes().unwrap();
+            if let Some(s) = o.server {
+                let response = omni::message::send_raw(
+                    s,
+                    keypair.map(|kp| (from_identity, kp)),
+                    to_identity,
+                    o.method,
+                    data,
+                );
 
-            if o.hex {
-                println!("{}", hex::encode(&bytes));
-            } else if o.base64 {
-                println!("{}", base64::encode(&bytes));
-            } else if let Some(s) = o.server {
-                let client = reqwest::blocking::Client::new();
-                let response = client.post(s).body(bytes).send().unwrap();
-
-                let body = response.bytes().unwrap();
-                let bytes = body.to_vec();
-                let cose_sign1 = CoseSign1::from_bytes(&bytes).unwrap();
-                let response = message::decode_response_from_cose_sign1(cose_sign1, None).unwrap();
-
-                match response.data {
+                match response {
                     Ok(payload) => {
                         println!(
                             "{}",
@@ -172,7 +156,25 @@ fn main() {
                     }
                 }
             } else {
-                panic!("Must specify one of hex, base64 or server...");
+                let message: RequestMessage = RequestMessageBuilder::default()
+                    .version(1)
+                    .from(from_identity)
+                    .to(to_identity)
+                    .method(o.method)
+                    .data(data)
+                    .build()
+                    .unwrap();
+
+                let cose =
+                    encode_cose_sign1_from_request(message, from_identity, &keypair).unwrap();
+                let bytes = cose.to_bytes().unwrap();
+                if o.hex {
+                    println!("{}", hex::encode(&bytes));
+                } else if o.base64 {
+                    println!("{}", base64::encode(&bytes));
+                } else {
+                    panic!("Must specify one of hex, base64 or server...");
+                }
             }
         }
     }

@@ -1,11 +1,72 @@
 use crate::message::{OmniError, RequestMessage, ResponseMessage};
 use crate::Identity;
 use async_trait::async_trait;
-use minicose::CoseSign1;
+use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
+use ring::signature::{Ed25519KeyPair, KeyPair};
+use std::fmt::Debug;
+
+#[async_trait]
+pub trait LowLevelOmniRequestHandler: Send + Sync + Debug {
+    async fn execute(&self, envelope: CoseSign1) -> Result<CoseSign1, String>;
+}
+
+#[derive(Debug)]
+pub struct HandlerExecutorAdapter<H: OmniRequestHandler + Debug> {
+    handler: H,
+    identity: Identity,
+    keypair: Option<Ed25519KeyPair>,
+}
+
+impl<H: OmniRequestHandler + Debug> HandlerExecutorAdapter<H> {
+    pub fn new(handler: H, identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
+        let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
+            let x = kp.public_key().as_ref().to_vec();
+            Ed25519CoseKeyBuilder::default()
+                .x(x)
+                .kid(identity.to_vec())
+                .build()
+                .unwrap()
+                .into()
+        });
+
+        assert!(
+            identity.matches_key(&cose_key),
+            "Identity does not match keypair."
+        );
+        assert!(identity.is_addressable(), "Identity is not addressable.");
+        Self {
+            handler,
+            identity,
+            keypair,
+        }
+    }
+}
+
+#[async_trait]
+impl<H: OmniRequestHandler + Debug> LowLevelOmniRequestHandler for HandlerExecutorAdapter<H> {
+    async fn execute(&self, envelope: CoseSign1) -> Result<CoseSign1, String> {
+        let request = crate::message::decode_request_from_cose_sign1(envelope)
+            .and_then(|message| self.handler.validate(&message).map(|_| message));
+
+        let response = match request {
+            Ok(x) => match self.handler.execute(x).await {
+                Err(e) => ResponseMessage::error(&self.identity, e),
+                Ok(x) => x,
+            },
+            Err(e) => ResponseMessage::error(&self.identity, e),
+        };
+
+        crate::message::encode_cose_sign1_from_response(
+            response,
+            self.identity.clone(),
+            &self.keypair,
+        )
+    }
+}
 
 /// A simpler version of the [OmniRequestHandler] which only deals with methods and payloads.
 #[async_trait]
-pub trait SimpleRequestHandler: Send + Sync + std::fmt::Debug {
+pub trait SimpleRequestHandler: Send + Sync + Debug {
     fn validate(&self, _method: &str, _payload: &[u8]) -> Result<(), OmniError> {
         Ok(())
     }
@@ -14,14 +75,7 @@ pub trait SimpleRequestHandler: Send + Sync + std::fmt::Debug {
 }
 
 #[async_trait]
-pub trait OmniRequestHandler: Send + Sync + std::fmt::Debug {
-    async fn handle(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
-        let request = crate::message::decode_request_from_cose_sign1(envelope)
-            .and_then(|message| self.validate(&message).map(|_| message))?;
-
-        self.execute(request).await
-    }
-
+pub trait OmniRequestHandler: Send + Sync + Debug {
     /// Validate that a message is okay with us.
     fn validate(&self, _message: &RequestMessage) -> Result<(), OmniError> {
         Ok(())

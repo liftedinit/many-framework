@@ -4,6 +4,13 @@ use minicbor::encode::{Error, Write};
 use minicbor::{Encode, Encoder};
 use minicose::CoseKey;
 
+pub mod attributes;
+
+pub struct Attribute {
+    pub id: u32,
+    pub endpoints: &'static [&'static str],
+}
+
 #[derive(Clone, Debug, Builder)]
 pub struct Status {
     version: u8,

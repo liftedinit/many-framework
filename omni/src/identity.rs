@@ -22,7 +22,7 @@ pub enum Error {
     InvalidPrefix(),
 }
 
-#[derive(Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Identity(InnerIdentity);
 
 impl Identity {
@@ -35,13 +35,10 @@ impl Identity {
     }
 
     #[cfg(feature = "pem")]
-    pub fn from_pem_addressable(
-        bytes: Vec<u8>,
-    ) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
+    pub fn from_pem_addressable(bytes: Vec<u8>) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
         let content = pem::parse(bytes)?;
-        let keypair =
-            Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
-                .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
+        let keypair = Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
+            .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
 
         let x = keypair.public_key().as_ref().to_vec();
         let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
@@ -53,13 +50,10 @@ impl Identity {
     }
 
     #[cfg(feature = "pem")]
-    pub fn from_pem_public(
-        bytes: Vec<u8>,
-    ) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
+    pub fn from_pem_public(bytes: Vec<u8>) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
         let content = pem::parse(bytes)?;
-        let keypair =
-            Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
-                .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
+        let keypair = Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
+            .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
 
         let x = keypair.public_key().as_ref().to_vec();
         let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
@@ -69,7 +63,6 @@ impl Identity {
             .into();
         Ok((Identity::public_key(&cose_key), keypair))
     }
-
 
     pub const fn anonymous() -> Self {
         Self(InnerIdentity::Anonymous())
@@ -262,7 +255,7 @@ impl AsRef<[u8; MAX_IDENTITY_BYTE_LEN]> for Identity {
     }
 }
 
-#[derive(Copy, Clone,  Debug, PartialOrd)]
+#[derive(Copy, Clone, Eq, Debug, Ord, PartialOrd)]
 #[non_exhaustive]
 enum InnerIdentity {
     Anonymous(),
@@ -545,7 +538,7 @@ mod tests {
         #[rustfmt::skip]
         let bytes = [
             1u8,
-            0, 0, 0, 0, 
+            0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,

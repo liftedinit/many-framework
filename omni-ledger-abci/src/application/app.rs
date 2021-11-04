@@ -1,7 +1,9 @@
 use crate::application::{Command, LedgerApplicationDriver};
+use minicose::CoseSign1;
 use omni::message::RequestMessage;
 use omni::Identity;
 use std::convert::TryFrom;
+use std::ops::Shl;
 use std::sync::mpsc::{channel, Sender};
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
@@ -48,12 +50,22 @@ impl Application for KeyValueStoreApp {
     }
 
     fn query(&self, request: RequestQuery) -> ResponseQuery {
-        let message = match self.decode_and_verify(&request.data) {
+        let cose_sign = match CoseSign1::from_bytes(&request.data) {
+            Ok(cose) => cose,
+            Err(e) => {
+                return ResponseQuery {
+                    code: 1,
+                    log: e.to_string(),
+                    ..Default::default()
+                }
+            }
+        };
+        let message = match omni::message::decode_request_from_cose_sign1(cose_sign) {
             Ok(message) => message,
             Err(e) => {
                 return ResponseQuery {
                     code: 1,
-                    log: e,
+                    log: e.to_string(),
                     ..Default::default()
                 }
             }
@@ -66,7 +78,7 @@ impl Application for KeyValueStoreApp {
         }
 
         match message.method.as_str() {
-            "balance" => {
+            "ledger.balance" => {
                 let (result_tx, result_rx) = channel();
                 let account = message.from.unwrap();
 
@@ -77,10 +89,20 @@ impl Application for KeyValueStoreApp {
                     })
                     .unwrap();
                 let (amount, height) = result_rx.recv().unwrap();
+                let mut bytes = Vec::<u8>::new();
+                let mut e = minicbor::Encoder::new(&mut bytes);
+                e.array(2)
+                    .unwrap()
+                    .u64((amount >> 64) as u64)
+                    .unwrap()
+                    .u64(amount as u64)
+                    .unwrap();
+                eprintln!("data: {}", hex::encode(&bytes));
+
                 ResponseQuery {
                     code: 0,
                     key: account.to_vec(),
-                    value: amount.to_be_bytes().to_vec(),
+                    value: bytes,
                     height: height as i64,
                     ..Default::default()
                 }
@@ -93,9 +115,20 @@ impl Application for KeyValueStoreApp {
     }
 
     fn check_tx(&self, request: RequestCheckTx) -> ResponseCheckTx {
-        let (code, log) = match self.decode_and_verify(&request.tx) {
+        let cose_sign = match CoseSign1::from_bytes(&request.tx) {
+            Ok(cose) => cose,
+            Err(e) => {
+                return ResponseCheckTx {
+                    code: 1,
+                    log: e.to_string(),
+                    ..Default::default()
+                }
+            }
+        };
+
+        let (code, log) = match omni::message::decode_request_from_cose_sign1(cose_sign) {
             Ok(_) => (0, "".to_string()),
-            Err(e) => (1, e),
+            Err(e) => (1, e.to_string()),
         };
 
         ResponseCheckTx {
@@ -107,22 +140,33 @@ impl Application for KeyValueStoreApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let message = match self.decode_and_verify(&request.tx) {
+        let cose_sign = match CoseSign1::from_bytes(&request.tx) {
+            Ok(cose) => cose,
+            Err(e) => {
+                return ResponseDeliverTx {
+                    code: 1,
+                    log: e.to_string(),
+                    ..Default::default()
+                }
+            }
+        };
+
+        let message = match omni::message::decode_request_from_cose_sign1(cose_sign) {
             Ok(message) => message,
             Err(e) => {
                 return ResponseDeliverTx {
                     code: 1,
-                    log: e,
+                    log: e.to_string(),
                     ..Default::default()
                 };
             }
         };
 
         match message.method.as_str() {
-            "mint" => {
+            "ledger.mint" => {
                 // TODO: limit this to an owner public key that's passed during initialization.
                 if message.from().to_string()
-                    != "ozhagjlfre6vtu7aucntdddtijmfp2x4cmplhmodn2y6b3upyi"
+                    != "oysahek5lid7ek7ckhq7j77nfwgk3vkspnyppm2u467ne5mwiq"
                 {
                     return ResponseDeliverTx {
                         code: 3,
@@ -131,7 +175,7 @@ impl Application for KeyValueStoreApp {
                     };
                 }
 
-                let data = message.data.unwrap_or_default();
+                let data = message.data;
                 let mut d = minicbor::Decoder::new(&data);
                 let args = d
                     .array()
@@ -139,7 +183,7 @@ impl Application for KeyValueStoreApp {
                         d.decode::<Identity>().and_then(|id| {
                             d.decode::<u64>().and_then(|amount_big| {
                                 d.decode::<u64>().and_then(|amount_little| {
-                                    Ok((id, (amount_big as u128) << 64 + (amount_little as u128)))
+                                    Ok((id, (amount_big as u128).shl(64) + (amount_little as u128)))
                                 })
                             })
                         })
@@ -171,7 +215,7 @@ impl Application for KeyValueStoreApp {
                     ..Default::default()
                 }
             }
-            "send" => {
+            "ledger.send" => {
                 let from = message.from();
                 if from.is_anonymous() {
                     return ResponseDeliverTx {
@@ -180,7 +224,7 @@ impl Application for KeyValueStoreApp {
                     };
                 }
 
-                let data = message.data.unwrap_or_default();
+                let data = message.data;
                 let mut d = minicbor::Decoder::new(&data);
                 let args = d
                     .array()

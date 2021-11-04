@@ -1,4 +1,5 @@
 use clap::Parser;
+use omni::server::module::base::BaseServerModule;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::Identity;
@@ -18,7 +19,7 @@ fn main() {
 
     let omni = OmniServer::new(id, &keypair);
 
-    HttpServer::new(id, Some(keypair), omni)
+    HttpServer::simple(id, Some(keypair), omni)
         .bind("0.0.0.0:8001")
         .unwrap();
 }

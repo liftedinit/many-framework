@@ -1,9 +1,9 @@
-use crate::message::{RequestMessage, ResponseMessage};
-use crate::transport::OmniRequestHandler;
+use crate::transport::{HandlerExecutorAdapter, LowLevelOmniRequestHandler, OmniRequestHandler};
 use crate::Identity;
 use anyhow::anyhow;
-use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
-use ring::signature::{Ed25519KeyPair, KeyPair};
+use minicose::CoseSign1;
+use ring::signature::Ed25519KeyPair;
+use std::fmt::Debug;
 use std::io::Cursor;
 use std::net::ToSocketAddrs;
 use tiny_http::{Request, Response};
@@ -12,35 +12,19 @@ use tiny_http::{Request, Response};
 const READ_BUFFER_LEN: usize = 1024 * 1024 * 2;
 
 #[derive(Debug)]
-pub struct HttpServer<H: OmniRequestHandler + std::fmt::Debug> {
-    handler: H,
-    keypair: Option<Ed25519KeyPair>,
-    identity: Identity,
+pub struct HttpServer<E: LowLevelOmniRequestHandler> {
+    executor: E,
 }
 
-impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
-    pub fn new(identity: Identity, keypair: Option<Ed25519KeyPair>, handler: H) -> Self {
-        let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
-            let x = kp.public_key().as_ref().to_vec();
-            Ed25519CoseKeyBuilder::default()
-                .x(x)
-                .kid(identity.to_vec())
-                .build()
-                .unwrap()
-                .into()
-        });
+impl<H: OmniRequestHandler> HttpServer<HandlerExecutorAdapter<H>> {
+    pub fn simple(identity: Identity, keypair: Option<Ed25519KeyPair>, handler: H) -> Self {
+        Self::new(HandlerExecutorAdapter::new(handler, identity, keypair))
+    }
+}
 
-        assert!(
-            identity.matches_key(&cose_key),
-            "Identity does not match keypair."
-        );
-        assert!(identity.is_addressable(), "Identity is not addressable.");
-
-        Self {
-            handler,
-            keypair,
-            identity,
-        }
+impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
+    pub fn new(executor: E) -> Self {
+        Self { executor }
     }
 
     async fn handle_request(
@@ -66,7 +50,6 @@ impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
         let bytes = &buffer[..actual_len];
         eprintln!(" request: {}", hex::encode(bytes));
 
-        let server_id = &self.identity;
         let envelope = match CoseSign1::from_bytes(bytes) {
             Ok(cs) => cs,
             Err(_e) => {
@@ -75,18 +58,11 @@ impl<H: OmniRequestHandler + std::fmt::Debug> HttpServer<H> {
         };
 
         let response = self
-            .handler
-            .handle(envelope)
+            .executor
+            .execute(envelope)
             .await
-            .unwrap_or_else(|err| ResponseMessage::error(server_id, err));
-
-        let bytes = match crate::message::encode_cose_sign1_from_response(
-            response,
-            server_id.clone(),
-            &self.keypair,
-        )
-        .and_then(|r| r.to_bytes().map_err(|e| e.to_string()))
-        {
+            .and_then(|r| r.to_bytes().map_err(|e| e.to_string()));
+        let bytes = match response {
             Ok(bytes) => bytes,
             Err(_e) => {
                 return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));

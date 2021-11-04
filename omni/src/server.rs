@@ -1,21 +1,22 @@
 use crate::message::{RequestMessage, ResponseMessage};
 use crate::protocol::StatusBuilder;
+use crate::server::module::{OmniModule, OmniModuleInfo};
 use crate::transport::OmniRequestHandler;
 use crate::{Identity, OmniError};
 use async_trait::async_trait;
 use minicose::{CoseKey, Ed25519CoseKeyBuilder};
-use module::base::BaseServerModule;
 use ring::signature::{Ed25519KeyPair, KeyPair};
+use std::collections::BTreeSet;
 
 pub mod function;
 pub mod module;
-pub mod namespace;
 
-pub use namespace::NamespacedRequestHandler;
+use crate::server::module::base::BaseServerModule;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct OmniServer {
-    namespace: NamespacedRequestHandler,
+    modules: Vec<Box<dyn OmniModule>>,
+    method_cache: BTreeSet<&'static str>,
     identity: Identity,
 }
 
@@ -41,16 +42,46 @@ impl OmniServer {
 
         Self {
             identity,
-            namespace: NamespacedRequestHandler::new(BaseServerModule::new(status)),
+            ..Default::default()
         }
+        .with_module(BaseServerModule::new(status))
     }
 
-    pub fn with_namespace<NS, H>(mut self, namespace: NS, handler: H) -> Self
+    pub fn with_module<M>(mut self, module: M) -> Self
     where
-        NS: ToString,
-        H: OmniRequestHandler + 'static,
+        M: OmniModule + 'static,
     {
-        self.namespace.with_namespace(namespace, handler);
+        let OmniModuleInfo { attributes, name } = module.info();
+        for a in &attributes {
+            let id = a.id;
+
+            if let Some(m) = self
+                .modules
+                .iter()
+                .find(|m| m.info().attributes.iter().any(|a| a.id == id))
+            {
+                panic!("Module {} already implements attribute {}.", name, id);
+            }
+        }
+
+        for a in &attributes {
+            for e in a.endpoints {
+                if self.method_cache.contains(e) {
+                    unreachable!(
+                        "Method '{}' already implemented, but there was no attribute conflict.",
+                        e
+                    );
+                }
+            }
+        }
+
+        // Update the cache.
+        for a in attributes {
+            for e in a.endpoints {
+                self.method_cache.insert(e);
+            }
+        }
+        self.modules.push(Box::new(module));
         self
     }
 }
@@ -59,10 +90,16 @@ impl OmniServer {
 impl OmniRequestHandler for OmniServer {
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         let to = message.to;
+        let method = message.method.as_str();
 
         // Verify that the message is for this server, if it's not anonymous.
         if to.is_anonymous() || &self.identity == &to {
-            self.namespace.validate(message)
+            // Verify the endpoint.
+            if self.method_cache.contains(method) {
+                Ok(())
+            } else {
+                Err(OmniError::invalid_method_name(method.to_string()))
+            }
         } else {
             Err(OmniError::unknown_destination(
                 to.to_string(),
@@ -71,9 +108,17 @@ impl OmniRequestHandler for OmniServer {
         }
     }
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        self.namespace.execute(message).await.map(|mut r| {
-            r.from = self.identity;
-            r
-        })
+        let method = &message.method.as_str();
+
+        for m in &self.modules {
+            let attrs = m.info().attributes;
+            if attrs.iter().any(|a| a.endpoints.contains(method)) {
+                return m.execute(message).await.map(|mut r| {
+                    r.from = self.identity;
+                    r
+                });
+            }
+        }
+        Err(OmniError::invalid_method_name(method.to_string()))
     }
 }

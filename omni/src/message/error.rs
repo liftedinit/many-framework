@@ -99,6 +99,7 @@ omni_error! {
             => "An internal server error happened.",
 
     // 10000+ are reserved for application codes and are defined separately.
+    // The method to use these is ATTRIBUTE_ID * 10000.
 }
 
 impl OmniErrorCode {
@@ -117,6 +118,35 @@ impl OmniError {
     #[inline]
     pub fn is_application_specific(&self) -> bool {
         self.code.is_application_specific()
+    }
+
+    #[inline]
+    pub fn application_specific(
+        code: u32,
+        message: String,
+        fields: BTreeMap<String, String>,
+    ) -> Self {
+        let code = OmniErrorCode::from(code);
+        if !code.is_application_specific() {
+            return OmniError::unknown();
+        }
+        OmniError {
+            code: code.into(),
+            message: Some(message),
+            fields,
+        }
+    }
+
+    #[inline]
+    pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
+        let mut bytes = Vec::new();
+        minicbor::encode(self, &mut bytes).map_err(|e| format!("{}", e))?;
+        Ok(bytes)
+    }
+
+    #[inline]
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+        minicbor::decode(bytes).map_err(|e| format!("{}", e))
     }
 }
 
@@ -211,8 +241,8 @@ impl<'b> Decode<'b> for OmniError {
 
 #[cfg(test)]
 mod tests {
+    use super::OmniError;
     use crate::message::error::OmniErrorCode as ErrorCode;
-    use crate::OmniError;
     use std::collections::BTreeMap;
 
     #[test]

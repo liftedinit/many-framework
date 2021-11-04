@@ -36,6 +36,7 @@ enum SubCommand {
 
 #[derive(Clap)]
 struct BalanceOpt {
+    server: String,
     account: Option<Identity>,
 }
 
@@ -72,68 +73,65 @@ fn main() {
         || (Identity::anonymous(), None),
         |pem| {
             let bytes = std::fs::read(pem).unwrap();
-            let content = pem::parse(bytes).unwrap();
-
-            let keypair =
-                ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
-                    .unwrap();
-
-            (
-                Identity::public_key(to_der(keypair.public_key().as_ref().to_vec())),
-                Some(keypair),
-            )
+            Identity::from_pem_public(bytes)
+                .map(|(i, kp)| (i, Some(kp)))
+                .unwrap()
         },
     );
 
     match opt.subcommand {
-        SubCommand::Balance(_o) => {
-            let message = RequestMessageBuilder::default()
-                .version(1)
-                .from(from_identity)
-                .method("balance".to_string())
-                .build()
-                .unwrap();
+        SubCommand::Balance(o) => {
+            let response = omni::message::send_raw(
+                o.server,
+                keypair.map(|kp| (from_identity, kp)),
+                Identity::anonymous(),
+                "ledger.balance",
+                Vec::<u8>::new(),
+            )
+            .unwrap();
 
-            let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
-            println!("{}", hex::encode(&bytes));
+            let (high, low): (u64, u64) = minicbor::decode(response.as_slice()).unwrap();
+            println!("{:?}", (high as u128) << 64 + (low as u128));
         }
         SubCommand::Mint(o) => {
-            let mut data = Vec::new();
-            let mut e = minicbor::Encoder::new(&mut data);
-            e.array(3).unwrap();
-            e.encode(o.account).unwrap();
-            e.encode((o.amount >> 64) as u64).unwrap();
-            e.encode(o.amount as u64).unwrap();
-
-            let message = RequestMessageBuilder::default()
-                .version(1)
-                .from(from_identity)
-                .method("mint".to_string())
-                .data(data)
-                .build()
-                .unwrap();
-
-            let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
-            println!("{}", base64::encode(&bytes));
+            // let mut data = Vec::new();
+            // let mut e = minicbor::Encoder::new(&mut data);
+            // e.array(3).unwrap();
+            // e.encode(o.account).unwrap();
+            // e.encode((o.amount >> 64) as u64).unwrap();
+            // e.encode(o.amount as u64).unwrap();
+            //
+            // let message = RequestMessageBuilder::default()
+            //     .version(1)
+            //     .from(from_identity)
+            //     .method("mint".to_string())
+            //     .data(data)
+            //     .build()
+            //     .unwrap();
+            //
+            // let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
+            // println!("{}", base64::encode(&bytes));
+            unreachable!()
         }
         SubCommand::Send(o) => {
-            let mut data = Vec::new();
-            let mut e = minicbor::Encoder::new(&mut data);
-            e.array(3).unwrap();
-            e.encode(o.to).unwrap();
-            e.encode((o.amount >> 64) as u64).unwrap();
-            e.encode(o.amount as u64).unwrap();
-
-            let message = RequestMessageBuilder::default()
-                .version(1)
-                .from(from_identity)
-                .method("send".to_string())
-                .data(data)
-                .build()
-                .unwrap();
-
-            let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
-            println!("{}", base64::encode(&bytes));
+            // let mut data = Vec::new();
+            // let mut e = minicbor::Encoder::new(&mut data);
+            // e.array(3).unwrap();
+            // e.encode(o.to).unwrap();
+            // e.encode((o.amount >> 64) as u64).unwrap();
+            // e.encode(o.amount as u64).unwrap();
+            //
+            // let message = RequestMessageBuilder::default()
+            //     .version(1)
+            //     .from(from_identity)
+            //     .method("send".to_string())
+            //     .data(data)
+            //     .build()
+            //     .unwrap();
+            //
+            // let bytes = message.to_cose(keypair.as_ref()).encode().unwrap();
+            // println!("{}", base64::encode(&bytes));
+            unreachable!()
         }
     }
 }
