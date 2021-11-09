@@ -13,7 +13,7 @@ macro_rules! omni_error {
             $v: literal: $name: ident $(as $snake_name: ident ( $($arg: ident),* ))? => $description: literal,
         )*
     } => {
-        #[derive(Copy, Clone, Debug)]
+        #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
         pub enum OmniErrorCode {
             $( $name, )*
             ApplicationSpecific(u32),
@@ -51,7 +51,7 @@ macro_rules! omni_error {
             }
         }
 
-        #[derive(Clone, Debug)]
+        #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
         pub struct OmniError {
             pub code: OmniErrorCode,
             pub message: Option<String>,
@@ -81,6 +81,15 @@ omni_error! {
             => "Unknown error.",
        1: MessageTooLong as message_too_long(max)
             => "Message is too long. Max allowed size is {max} bytes.",
+       2: DeserializationError as deserialization_error(details)
+            => "Deserialization error:\n{details}",
+       3: SerializationError as serialization_error(details)
+            => "Serialization error:\n{details}",
+
+     100: InvalidIdentity as invalid_identity()
+            => "Identity is invalid (does not follow the protocol).",
+     101: InvalidIdentityPrefix as invalid_identity_prefix(actual)
+            => "Identity string did not start with the right prefix. Expected 'o', was '{actual}'.",
 
     // 1000-1999 is for request errors.
     1000: InvalidMethodName as invalid_method_name(method)
@@ -101,6 +110,26 @@ omni_error! {
     // 10000+ are reserved for application codes and are defined separately.
     // The method to use these is ATTRIBUTE_ID * 10000.
 }
+
+/// Easily define OmniError for specific applications.
+#[macro_export]
+macro_rules! define_omni_error {
+    ( $module_id: literal => { $( $id: literal : $vis: vis fn $name: ident ($( , $var_name: ident )*) => $message: literal ),* $(,)? } ) => {
+        $(
+            $vis fn $name ( $($var_name: String),* ) -> OmniError {
+                OmniError::application_specific(
+                    $module_id * 10000 + $id,
+                    String::from($message),
+                    std::iter::FromIterator::from_iter(vec![
+                        $( (stringify!($var_name).to_string(), $var_name) ),*
+                    ]),
+                )
+            }
+        )*
+    }
+}
+
+pub use define_omni_error;
 
 impl OmniErrorCode {
     #[inline]

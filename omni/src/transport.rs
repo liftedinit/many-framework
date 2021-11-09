@@ -59,7 +59,7 @@ impl<H: OmniRequestHandler + Debug> LowLevelOmniRequestHandler for HandlerExecut
         crate::message::encode_cose_sign1_from_response(
             response,
             self.identity.clone(),
-            &self.keypair,
+            self.keypair.as_ref(),
         )
     }
 }

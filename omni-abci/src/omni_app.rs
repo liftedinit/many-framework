@@ -5,9 +5,10 @@ use omni::transport::LowLevelOmniRequestHandler;
 use omni::{Identity, OmniError};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::fmt::{Debug, Formatter};
+use std::ops::Deref;
 use std::sync::{Arc, Mutex};
-use tendermint_abci::Client as AbciClient;
 use tendermint_proto::abci::{RequestDeliverTx, RequestQuery};
+use tendermint_rpc::{Client, WebSocketClient};
 
 pub enum AbciMessageType {
     Query,
@@ -20,7 +21,7 @@ pub trait OmniAbciFrontend: Send + Sync + Debug {
 }
 
 pub struct AbciHttpServer {
-    client: Arc<Mutex<AbciClient>>,
+    client: WebSocketClient,
     identity: Identity,
     keypair: Option<Ed25519KeyPair>,
     frontend: Box<dyn OmniAbciFrontend>,
@@ -39,7 +40,7 @@ impl Debug for AbciHttpServer {
 
 impl AbciHttpServer {
     pub fn new<F: OmniAbciFrontend + 'static>(
-        client: Arc<Mutex<AbciClient>>,
+        client: tendermint_rpc::WebSocketClient,
         frontend: F,
         identity: Identity,
         keypair: Option<Ed25519KeyPair>,
@@ -68,24 +69,21 @@ impl AbciHttpServer {
         }
     }
 
-    fn execute_inner(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
+    async fn execute_inner(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
         let message = omni::message::decode_request_from_cose_sign1(envelope.clone())
             .and_then(|request| self.frontend.validate(&request).map(|_| request))?;
-
-        let mut client = self.client.lock().unwrap();
+        let client = self.client.clone();
 
         match self.frontend.message_type(&message) {
             AbciMessageType::Query => {
-                let response = client
-                    .query(RequestQuery {
-                        data: envelope
-                            .to_bytes()
-                            .map_err(|_| OmniError::internal_server_error())?,
-                        path: "".to_string(),
-                        height: 0,
-                        prove: false,
-                    })
-                    .map_err(|_| OmniError::internal_server_error())?;
+                let response = async move {
+                    let bytes = envelope.to_bytes().unwrap();
+                    client
+                        .abci_query(None, bytes, None, false)
+                        .await
+                        .map_err(|_| OmniError::internal_server_error())
+                }
+                .await?;
 
                 Ok(ResponseMessage::from_request(
                     &message,
@@ -95,18 +93,18 @@ impl AbciHttpServer {
             }
             AbciMessageType::Command => {
                 let response = client
-                    .deliver_tx(RequestDeliverTx {
-                        tx: envelope
+                    .broadcast_tx_async(tendermint::abci::Transaction::from(
+                        envelope
                             .to_bytes()
                             .map_err(|_| OmniError::internal_server_error())?,
-                    })
+                    ))
+                    .await
                     .map_err(|_| OmniError::internal_server_error())?;
-                eprintln!("command... {:?}", response);
 
                 Ok(ResponseMessage::from_request(
                     &message,
                     &self.identity,
-                    Ok(response.data),
+                    Ok(response.data.value().to_vec()),
                 ))
             }
         }
@@ -118,6 +116,7 @@ impl LowLevelOmniRequestHandler for AbciHttpServer {
     async fn execute(&self, envelope: CoseSign1) -> Result<CoseSign1, String> {
         let response = self
             .execute_inner(envelope)
+            .await
             .unwrap_or_else(|err| ResponseMessage::error(&self.identity, err));
 
         omni::message::encode_cose_sign1_from_response(

@@ -1,5 +1,4 @@
 use clap::Parser;
-use omni::server::module::base::BaseServerModule;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::Identity;
@@ -10,6 +9,10 @@ struct Opts {
     /// The location of a Ed25519 PEM file for the identity of this server.
     #[clap(long)]
     pem: PathBuf,
+
+    /// The port to bind to, locally.
+    #[clap(long, default_value = "8000")]
+    port: u16,
 }
 
 fn main() {
@@ -20,6 +23,6 @@ fn main() {
     let omni = OmniServer::new(id, &keypair);
 
     HttpServer::simple(id, Some(keypair), omni)
-        .bind("0.0.0.0:8001")
+        .bind(format!("127.0.0.1:{}", o.port))
         .unwrap();
 }

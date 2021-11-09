@@ -92,6 +92,7 @@ impl<'b> Decode<'b> for RequestMessage {
         // through items and break when we know the map is done.
         loop {
             if d.datatype()? == Type::Break {
+                d.skip()?;
                 break;
             }
 

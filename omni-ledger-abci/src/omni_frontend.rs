@@ -1,7 +1,7 @@
 use omni::message::RequestMessage;
 use omni::OmniError;
-use omni_abci::application::{AbciMessageType, OmniAbciFrontend};
-use std::fmt::{Debug, Formatter};
+use omni_abci::omni_app::{AbciMessageType, OmniAbciFrontend};
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct OmniFrontend {}

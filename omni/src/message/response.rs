@@ -127,6 +127,7 @@ impl<'b> Decode<'b> for ResponseMessage {
         // through items and break when we know the map is done.
         loop {
             if d.datatype()? == Type::Break {
+                d.skip()?;
                 break;
             }
 

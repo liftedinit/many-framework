@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 use std::path::PathBuf;
 
 #[derive(Clap)]
-struct Opt {
+struct Opts {
     #[clap(subcommand)]
     subcommand: SubCommand,
 }
@@ -79,7 +79,7 @@ struct MessageOpt {
 }
 
 fn main() {
-    let opt: Opt = Opt::parse();
+    let opt: Opts = Opts::parse();
 
     match opt.subcommand {
         SubCommand::Id(o) => {
@@ -130,7 +130,7 @@ fn main() {
             if let Some(s) = o.server {
                 let response = omni::message::send_raw(
                     s,
-                    keypair.map(|kp| (from_identity, kp)),
+                    keypair.as_ref().map(|kp| (from_identity, kp)),
                     to_identity,
                     o.method,
                     data,
@@ -138,10 +138,14 @@ fn main() {
 
                 match response {
                     Ok(payload) => {
-                        println!(
-                            "{}",
-                            cbor_diag::parse_bytes(&payload).unwrap().to_diag_pretty()
-                        );
+                        if payload.is_empty() {
+                            eprintln!("Empty response.");
+                        } else {
+                            println!(
+                                "{}",
+                                cbor_diag::parse_bytes(&payload).unwrap().to_diag_pretty()
+                            );
+                        }
                         std::process::exit(0);
                     }
                     Err(err) => {
@@ -165,8 +169,8 @@ fn main() {
                     .build()
                     .unwrap();
 
-                let cose =
-                    encode_cose_sign1_from_request(message, from_identity, &keypair).unwrap();
+                let cose = encode_cose_sign1_from_request(message, from_identity, keypair.as_ref())
+                    .unwrap();
                 let bytes = cose.to_bytes().unwrap();
                 if o.hex {
                     println!("{}", hex::encode(&bytes));

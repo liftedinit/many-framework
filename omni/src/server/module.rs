@@ -17,7 +17,7 @@ pub struct OmniModuleInfo {
 #[async_trait]
 pub trait OmniModule: Sync + Send + Debug {
     /// Returns the information of this module.
-    fn info(&self) -> OmniModuleInfo;
+    fn info(&self) -> &OmniModuleInfo;
 
     /// Execute a message and returns its response.
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError>;

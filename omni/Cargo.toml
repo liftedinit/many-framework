@@ -19,7 +19,8 @@ clap = "3.0.0-beta.5"
 crc-any = "2.4.0"
 derive_builder = "0.10.2"
 hex = "0.4.3"
-minicbor = { version = "0.11.3", features = ["derive", "std"] }
+lazy_static = "1.4.0"
+minicbor = { version = "0.11.3", features = ["derive", "half", "std"] }
 minicose = { git = "https://github.com/l-1-labs/rust-minicose.git", features = [ "allow-unsigned" ] }
 pem = { version = "1.0.0", optional = true }
 regex = "1.5.4"

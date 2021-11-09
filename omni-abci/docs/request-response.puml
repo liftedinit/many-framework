@@ -2,15 +2,35 @@
 title Request - Response Sequence for the OMNI - ABCI bridge.
 
 actor user as "User"
-participant omni as "OMNI Frontend (ABCI Bridge)"
+participant omni as "OMNI Frontend\n(ABCI Bridge)"
 participant tendermint
 participant abci_app as "ABCI App"
 participant omni_app as "OMNI App"
 
+== Initialization ==
+omni -> omni_app : \
+    abci.initializeFrontend
+omni_app -> omni : \
+    omni_abci::InitializationInfo
+
+== Commands ==
+
 user -> omni : \
     omni::RequestMessage\nmethod: "ledger.mint"
 omni -> tendermint : \
-    deliver_tx (signed envelope)
+    broadcast_tx\n(signed envelope)
+
+tendermint -> abci_app : \
+    check_tx
+
+abci_app -> omni_app : \
+    abci.checkTransaction
+
+omni_app -> abci_app : \
+    Ok
+
+abci_app -> tendermint : \
+    Ok
 
 tendermint -> abci_app : \
     deliver_tx
@@ -19,5 +39,34 @@ abci_app -> omni_app : \
     omni::RequestMessage
 
 activate omni_app
+omni_app -> abci_app : omni::ResponseMessage
+note left of abci_app
+  Message dropped
+end note
+deactivate
+
+' ---
+
+== Queries ==
+
+user -> omni : \
+    omni::RequestMessage\nmethod: "ledger.balance"
+omni -> tendermint : \
+    query\n(signed envelope)
+
+tendermint -> abci_app : \
+    query
+
+abci_app -> omni_app : \
+    omni::RequestMessage
+
+activate omni_app
+omni_app -> abci_app : omni::ResponseMessage
+deactivate
+
+abci_app -> tendermint
+tendermint -> omni
+omni -> user : \
+    omni::ResponseMessage
 
 @enduml

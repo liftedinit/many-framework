@@ -7,9 +7,11 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.44"
+async-trait = "0.1.51"
 base64 = "0.13.0"
 clap = "3.0.0-beta.4"
 hex = "0.4.3"
+lazy_static = "1.4.0"
 minicbor = "0.11.3"
 minicose = { git = "https://github.com/l-1-labs/rust-minicose.git", features = [ "allow-unsigned" ] }
 omni = { path = "../omni", features = [ "pem" ] }

@@ -1,36 +1,29 @@
+use crate::message::OmniError;
 use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
 use minicose::{CoseKey, Ed25519CoseKeyBuilder};
+use ring::signature::{Ed25519KeyPair, KeyPair};
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 
-use ring::signature::{Ed25519KeyPair, KeyPair};
-
 const MAX_IDENTITY_BYTE_LEN: usize = 32;
 const SHA_OUTPUT_SIZE: usize = <Sha3_224 as Digest>::OutputSize::USIZE;
 
-#[derive(Clone, Debug, thiserror::Error, PartialEq)]
-pub enum Error {
-    #[error("Unknown error.")]
-    UnknownError(),
-
-    #[error("Invalid prefix, expected 'o'.")]
-    InvalidPrefix(),
-}
-
+/// An identity in the Omniverse. This could be a server, network, user, DAO, automated
+/// process, etc.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Identity(InnerIdentity);
 
 impl Identity {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, OmniError> {
         InnerIdentity::try_from(bytes).map(Self)
     }
 
-    pub fn from_str<S: AsRef<str>>(str: S) -> Result<Self, Error> {
+    pub fn from_str<S: AsRef<str>>(str: S) -> Result<Self, OmniError> {
         InnerIdentity::from_str(str.as_ref()).map(Self)
     }
 
@@ -214,7 +207,7 @@ impl<'b> Decode<'b> for Identity {
 }
 
 impl TryFrom<&[u8]> for Identity {
-    type Error = Error;
+    type Error = OmniError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         Self::from_bytes(bytes)
@@ -222,7 +215,7 @@ impl TryFrom<&[u8]> for Identity {
 }
 
 impl TryFrom<String> for Identity {
-    type Error = Error;
+    type Error = OmniError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         InnerIdentity::try_from(value).map(Self)
@@ -230,7 +223,7 @@ impl TryFrom<String> for Identity {
 }
 
 impl FromStr for Identity {
-    type Err = Error;
+    type Err = OmniError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         InnerIdentity::from_str(s).map(Self)
@@ -291,23 +284,23 @@ impl Default for InnerIdentity {
 }
 
 impl InnerIdentity {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, OmniError> {
         let bytes = bytes.as_ref();
         if bytes.len() < 1 {
-            return Err(Error::UnknownError());
+            return Err(OmniError::invalid_identity());
         }
 
         match bytes[0] {
             0 => {
                 if bytes.len() > 1 {
-                    Err(Error::UnknownError())
+                    Err(OmniError::invalid_identity())
                 } else {
                     Ok(Self::Anonymous())
                 }
             }
             1 => {
                 if bytes.len() != 29 {
-                    Err(Error::UnknownError())
+                    Err(OmniError::invalid_identity())
                 } else {
                     let mut slice = [0; 28];
                     slice.copy_from_slice(&bytes[1..29]);
@@ -316,20 +309,20 @@ impl InnerIdentity {
             }
             2 => {
                 if bytes.len() != 29 {
-                    Err(Error::UnknownError())
+                    Err(OmniError::invalid_identity())
                 } else {
                     let mut slice = [0; 28];
                     slice.copy_from_slice(&bytes[1..29]);
                     Ok(Self::Addressable(slice))
                 }
             }
-            _ => Err(Error::UnknownError()),
+            _ => Err(OmniError::unknown()),
         }
     }
 
-    pub fn from_str(value: &str) -> Result<Self, Error> {
+    pub fn from_str(value: &str) -> Result<Self, OmniError> {
         if !value.starts_with('o') {
-            return Err(Error::InvalidPrefix());
+            return Err(OmniError::invalid_identity_prefix(value[0..0].to_string()));
         }
 
         if &value[1..] == "aa" {
@@ -340,7 +333,7 @@ impl InnerIdentity {
             let result = Self::try_from(data.as_slice())?;
 
             if result.to_string() != value {
-                Err(Error::UnknownError())
+                Err(OmniError::invalid_identity())
             } else {
                 Ok(result)
             }
@@ -438,7 +431,7 @@ impl ToString for InnerIdentity {
 }
 
 impl TryFrom<String> for InnerIdentity {
-    type Error = Error;
+    type Error = OmniError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         InnerIdentity::from_str(value.as_str())
@@ -446,7 +439,7 @@ impl TryFrom<String> for InnerIdentity {
 }
 
 impl TryFrom<&[u8]> for InnerIdentity {
-    type Error = Error;
+    type Error = OmniError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         Self::from_bytes(bytes)

@@ -1,8 +1,6 @@
 use crate::application::{Command, LedgerApplicationDriver};
 use minicose::CoseSign1;
-use omni::message::RequestMessage;
 use omni::Identity;
-use std::convert::TryFrom;
 use std::ops::Shl;
 use std::sync::mpsc::{channel, Sender};
 use tendermint_abci::Application;
@@ -17,11 +15,11 @@ use tracing::{debug, info};
 /// This structure effectively just serves as a handle to the actual key/value
 /// store - the [`KeyValueStoreDriver`].
 #[derive(Debug, Clone)]
-pub struct KeyValueStoreApp {
+pub struct LedgerAbciApp {
     cmd_tx: Sender<Command>,
 }
 
-impl KeyValueStoreApp {
+impl LedgerAbciApp {
     /// Constructor.
     pub fn new() -> (Self, LedgerApplicationDriver) {
         let (cmd_tx, cmd_rx) = channel();
@@ -29,7 +27,7 @@ impl KeyValueStoreApp {
     }
 }
 
-impl Application for KeyValueStoreApp {
+impl Application for LedgerAbciApp {
     fn info(&self, request: RequestInfo) -> ResponseInfo {
         debug!(
             "Got info request. Tendermint version: {}; Block version: {}; P2P version: {}",
@@ -229,13 +227,7 @@ impl Application for KeyValueStoreApp {
                 let args = d
                     .array()
                     .and_then(|_| {
-                        d.decode::<Identity>().and_then(|id| {
-                            d.decode::<u64>().and_then(|amount_big| {
-                                d.decode::<u64>().and_then(|amount_little| {
-                                    Ok((id, (amount_big as u128) << 64 + (amount_little as u128)))
-                                })
-                            })
-                        })
+                        Ok((d.decode::<Identity>()?, (d.u64()? as u128) << 64 + d.u64()?))
                     })
                     .map_err(|e| ResponseDeliverTx {
                         code: 5,
