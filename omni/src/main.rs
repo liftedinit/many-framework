@@ -3,7 +3,7 @@ pub mod message;
 
 use clap::Parser as Clap;
 use omni::message::{encode_cose_sign1_from_request, RequestMessage, RequestMessageBuilder};
-use omni::Identity;
+use omni::{Identity, OmniClient};
 use std::convert::TryFrom;
 use std::path::PathBuf;
 
@@ -128,13 +128,9 @@ fn main() {
                 .map_or(vec![], |d| cbor_diag::parse_diag(&d).unwrap().to_bytes());
 
             if let Some(s) = o.server {
-                let response = omni::message::send_raw(
-                    s,
-                    keypair.as_ref().map(|kp| (from_identity, kp)),
-                    to_identity,
-                    o.method,
-                    data,
-                );
+                let client =
+                    OmniClient::new(s, to_identity, from_identity, keypair.as_ref()).unwrap();
+                let response = client.call_raw(o.method, &data);
 
                 match response {
                     Ok(payload) => {

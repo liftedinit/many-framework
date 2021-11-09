@@ -143,7 +143,7 @@ pub fn send_raw<S, M>(
     from_identity: Option<(Identity, &Ed25519KeyPair)>,
     to_identity: Identity,
     method: M,
-    payload: Vec<u8>,
+    payload: &[u8],
 ) -> Result<Vec<u8>, OmniError>
 where
     S: IntoUrl,
@@ -157,7 +157,7 @@ where
         .from(from_identity.clone())
         .to(to_identity)
         .method(method.to_string())
-        .data(payload)
+        .data(payload.to_vec())
         .build()
         .unwrap();
 
