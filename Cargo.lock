@@ -1059,6 +1059,7 @@ dependencies = [
  "lazy_static",
  "minicose",
  "omni",
+ "reqwest",
  "ring 0.17.0-alpha.10",
  "tendermint",
  "tendermint-abci",

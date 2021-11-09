@@ -14,7 +14,6 @@ use minicose::{
     AlgorithmicCurve, Algorithms, CoseKey, CoseKeySet, CoseSign1, CoseSign1Builder, Ed25519CoseKey,
     Ed25519CoseKeyBuilder, ProtectedHeaders, ProtectedHeadersBuilder,
 };
-use reqwest::IntoUrl;
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::convert::TryFrom;
 
@@ -135,44 +134,6 @@ pub fn encode_cose_sign1_from_request(
     keypair: Option<&Ed25519KeyPair>,
 ) -> Result<CoseSign1, String> {
     encode_cose_sign1_from_payload(request.to_bytes().unwrap(), id, keypair)
-}
-
-#[cfg(feature = "client")]
-pub fn send_raw<S, M>(
-    server: S,
-    from_identity: Option<(Identity, &Ed25519KeyPair)>,
-    to_identity: Identity,
-    method: M,
-    payload: &[u8],
-) -> Result<Vec<u8>, OmniError>
-where
-    S: IntoUrl,
-    M: ToString,
-{
-    let (from_identity, keypair) =
-        from_identity.map_or_else(|| (Identity::anonymous(), None), |(i, kp)| (i, Some(kp)));
-
-    let message: RequestMessage = RequestMessageBuilder::default()
-        .version(1)
-        .from(from_identity.clone())
-        .to(to_identity)
-        .method(method.to_string())
-        .data(payload.to_vec())
-        .build()
-        .unwrap();
-
-    let cose = encode_cose_sign1_from_request(message, from_identity, keypair).unwrap();
-    let bytes = cose.to_bytes().unwrap();
-
-    let client = reqwest::blocking::Client::new();
-    let response = client.post(server).body(bytes).send().unwrap();
-    let body = response.bytes().unwrap();
-    let bytes = body.to_vec();
-    let cose_sign1 = CoseSign1::from_bytes(&bytes).unwrap();
-    let response = decode_response_from_cose_sign1(cose_sign1, None)
-        .map_err(|e| OmniError::deserialization_error(e))?;
-
-    response.data
 }
 
 /// Provide utility functions surrounding request and response messages.

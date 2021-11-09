@@ -45,7 +45,8 @@ pub enum Transaction {
 
 const LEDGER_ATTRIBUTE: Attribute = Attribute {
     id: 2,
-    endpoints: &["ledger.balance", "ledger.mint", "ledger.send"],
+    endpoints: Some(&["ledger.balance", "ledger.mint", "ledger.send"]),
+    arguments: Vec::new(),
 };
 lazy_static::lazy_static!(
 

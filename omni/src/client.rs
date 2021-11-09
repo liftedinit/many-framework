@@ -1,49 +1,82 @@
-use crate::message::send_raw;
+use crate::message::{
+    decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessage,
+    RequestMessageBuilder,
+};
 use crate::protocol::Status;
 use crate::{Identity, OmniError};
-use minicbor::{Encode, Encoder};
+use minicbor::Encode;
+use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
 use ring::signature::Ed25519KeyPair;
 use std::convert::TryInto;
+use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct OmniClient<'kp> {
+pub struct OmniClient {
     id: Identity,
-    keypair: Option<&'kp Ed25519KeyPair>,
+    keypair: Option<Rc<Ed25519KeyPair>>,
     to: Identity,
     url: Url,
 }
 
-impl<'kp> OmniClient<'kp> {
+impl OmniClient {
     pub fn new<S: IntoUrl, I: TryInto<Identity>>(
         url: S,
         to: Identity,
         identity: I,
-        keypair: Option<&'kp Ed25519KeyPair>,
+        keypair: Option<Ed25519KeyPair>,
     ) -> Result<Self, String> {
         Ok(Self {
             id: identity
                 .try_into()
                 .map_err(|_e| format!("Could not parse identity."))?,
-            keypair,
+            keypair: keypair.map(Rc::new),
             to,
             url: url.into_url().map_err(|e| format!("{}", e))?,
         })
+    }
+
+    pub fn send_envelope(&self, message: CoseSign1) -> Result<CoseSign1, OmniError> {
+        let bytes = message
+            .to_bytes()
+            .map_err(|_| OmniError::internal_server_error())?;
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.post(self.url.clone()).body(bytes).send().unwrap();
+        let body = response.bytes().unwrap();
+        let bytes = body.to_vec();
+        CoseSign1::from_bytes(&bytes).map_err(|e| OmniError::deserialization_error(e.to_string()))
+    }
+
+    pub fn send_message(&self, message: RequestMessage) -> Result<Vec<u8>, OmniError> {
+        let cose = encode_cose_sign1_from_request(
+            message,
+            self.id.clone(),
+            self.keypair.as_ref().map(|x| x.as_ref()),
+        )
+        .unwrap();
+        let cose_sign1 = self.send_envelope(cose)?;
+
+        let response = decode_response_from_cose_sign1(cose_sign1, None)
+            .map_err(|e| OmniError::deserialization_error(e))?;
+
+        response.data
     }
 
     pub fn call_raw<M>(&self, method: M, argument: &[u8]) -> Result<Vec<u8>, OmniError>
     where
         M: Into<String>,
     {
-        let from_identity = self.id.clone();
+        let message: RequestMessage = RequestMessageBuilder::default()
+            .version(1)
+            .from(self.id.clone())
+            .to(self.to.clone())
+            .method(method.into())
+            .data(argument.to_vec())
+            .build()
+            .map_err(|_| OmniError::internal_server_error())?;
 
-        send_raw(
-            self.url.clone(),
-            self.keypair.map(|kp| (from_identity, kp)),
-            self.to.clone(),
-            method.into(),
-            argument,
-        )
+        self.send_message(message)
     }
 
     pub fn call_<M, I>(&self, method: M, argument: I) -> Result<Vec<u8>, OmniError>
@@ -51,7 +84,7 @@ impl<'kp> OmniClient<'kp> {
         M: Into<String>,
         I: Encode,
     {
-        let mut bytes: Vec<u8> = minicbor::to_vec(argument)
+        let bytes: Vec<u8> = minicbor::to_vec(argument)
             .map_err(|e| OmniError::serialization_error(e.to_string()))?;
 
         self.call_raw(method, bytes.as_slice())

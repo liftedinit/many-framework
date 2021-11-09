@@ -128,8 +128,7 @@ fn main() {
                 .map_or(vec![], |d| cbor_diag::parse_diag(&d).unwrap().to_bytes());
 
             if let Some(s) = o.server {
-                let client =
-                    OmniClient::new(s, to_identity, from_identity, keypair.as_ref()).unwrap();
+                let client = OmniClient::new(s, to_identity, from_identity, keypair).unwrap();
                 let response = client.call_raw(o.method, &data);
 
                 match response {

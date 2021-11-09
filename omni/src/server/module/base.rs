@@ -1,19 +1,10 @@
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::protocol::Status;
-use crate::server::function::FunctionMapRequestHandler;
 use crate::server::module::{OmniModule, OmniModuleInfo};
-use crate::transport::OmniRequestHandler;
-use crate::{OmniError, OmniServer};
+use crate::OmniError;
 use async_trait::async_trait;
 
 #[derive(Debug)]
 pub struct BaseServerModule;
-
-impl BaseServerModule {
-    pub(crate) fn new() -> Self {
-        Self
-    }
-}
 
 lazy_static::lazy_static! {
     pub static ref BASE_SERVER_INFO: OmniModuleInfo = OmniModuleInfo {
@@ -28,7 +19,7 @@ impl OmniModule for BaseServerModule {
         &BASE_SERVER_INFO
     }
 
-    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+    async fn execute(&self, _message: RequestMessage) -> Result<ResponseMessage, OmniError> {
         Err(OmniError::internal_server_error())
     }
 }
