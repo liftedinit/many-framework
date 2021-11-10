@@ -1,26 +1,572 @@
 use async_trait::async_trait;
 use clap::Parser;
-use minicbor::data::Type;
+use crypto_bigint::Encoding;
+use minicbor::data::Tag;
+use minicbor::encode::{Error, Write};
+use minicbor::{decode, Decode, Decoder, Encode, Encoder};
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::{OmniModule, OmniModuleInfo};
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::{Identity, OmniError};
-use std::collections::BTreeMap;
-use std::hash::{Hash, Hasher};
+use sha3::Digest;
+use std::cell::Cell;
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Formatter;
+use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use omni::message::error::define_omni_error;
+use omni_abci::OmniAbciModuleBackend;
 
 define_omni_error!(
     2 => {
-        1: fn unauthorized() => "Unauthorized to do this operation.",
-        2: fn insufficient_funds() => "Insufficient funds.",
-        3: fn would_overflow() => "Doing this operation would overflow the account.",
+        1: fn unknown_symbol(symbol) => "Symbol not supported by this ledger: {symbol}.",
+        2: fn unauthorized() => "Unauthorized to do this operation.",
+        3: fn insufficient_funds() => "Insufficient funds.",
     }
 );
+
+type TokenAmountStorage = crypto_bigint::U512;
+
+#[repr(transparent)]
+#[derive(Default, Debug, Hash, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct TokenAmount(TokenAmountStorage);
+
+impl TokenAmount {
+    pub fn zero() -> Self {
+        Self(0u8.into())
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0u8.into()
+    }
+
+    pub(crate) fn hash<H: sha3::Digest>(&self, state: &mut H) {
+        state.update("amount\0");
+        state.update(self.0.to_be_bytes());
+    }
+}
+
+impl std::ops::AddAssign for TokenAmount {
+    fn add_assign(&mut self, rhs: Self) {
+        let (n, c) = self.0.adc(&rhs.0, crypto_bigint::Limb::ZERO);
+        if c == crypto_bigint::Limb::ZERO {
+            self.0 = n;
+        } else {
+            self.0 = TokenAmountStorage::MAX;
+        }
+    }
+}
+
+impl std::ops::SubAssign for TokenAmount {
+    fn sub_assign(&mut self, rhs: Self) {
+        let (n, c) = self.0.sbb(&rhs.0, crypto_bigint::Limb::ZERO);
+        if c == crypto_bigint::Limb::ZERO {
+            self.0 = n;
+        } else {
+            self.0 = TokenAmountStorage::ZERO;
+        }
+    }
+}
+
+impl Encode for TokenAmount {
+    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        e.tag(Tag::PosBignum)?.bytes(&self.0.to_be_bytes())?;
+        Ok(())
+    }
+}
+
+impl<'b> Decode<'b> for TokenAmount {
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
+        if d.tag()? != Tag::PosBignum {
+            return Err(minicbor::decode::Error::Message("Invalid tag."));
+        }
+
+        Ok(TokenAmount(TokenAmountStorage::from_be_slice(d.bytes()?)))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Transaction {
+    Mint(Identity, TokenAmount, String),
+    Burn(Identity, TokenAmount, String),
+    Send(Identity, Identity, TokenAmount, String),
+}
+
+impl Transaction {
+    pub(crate) fn hash<H: sha3::Digest>(&self, state: &mut H) {
+        match self {
+            Transaction::Mint(id, amount, symbol) => {
+                state.update("mint\0");
+                state.update(id.to_vec().as_slice());
+                state.update("\0");
+                amount.hash(state);
+                state.update("symbol\0");
+                state.update(symbol.as_bytes());
+                state.update("\0");
+            }
+            Transaction::Burn(id, amount, symbol) => {
+                state.update("burn\0");
+                state.update(id.to_vec().as_slice());
+                state.update("\0");
+                amount.hash(state);
+                state.update("symbol\0");
+                state.update(symbol.as_bytes());
+                state.update("\0");
+            }
+            Transaction::Send(from, to, amount, symbol) => {
+                state.update("send\0");
+                state.update(from.to_vec().as_slice());
+                state.update("\0");
+                state.update(to.to_vec().as_slice());
+                state.update("\0");
+                amount.hash(state);
+                state.update("symbol\0");
+                state.update(symbol.as_bytes());
+                state.update("\0");
+            }
+        }
+    }
+}
+
+const LEDGER_ATTRIBUTE: Attribute = Attribute::new(
+    2,
+    &[
+        "ledger.info",
+        "ledger.balance",
+        "ledger.mint",
+        "ledger.burn",
+        "ledger.send",
+    ],
+);
+
+lazy_static::lazy_static!(
+    pub static ref LEDGER_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
+        name: "LedgerModule".to_string(),
+        attributes: vec![LEDGER_ATTRIBUTE],
+    };
+);
+
+#[derive(Default)]
+struct LedgerStorage {
+    pub accounts: BTreeMap<Identity, BTreeMap<String, TokenAmount>>,
+    pub history: BTreeMap<u64, Vec<Transaction>>,
+    pub height: u64,
+
+    hash_cache: Cell<Option<Vec<u8>>>,
+}
+
+impl std::fmt::Debug for LedgerStorage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LedgerStorage")
+            .field("accounts", &self.accounts)
+            .field("history", &self.history)
+            .field("height", &self.height)
+            .finish()
+    }
+}
+
+impl LedgerStorage {
+    pub fn commit(&mut self) -> () {
+        self.hash_cache.take();
+        self.height += 1;
+    }
+
+    pub fn add_transaction(&mut self, tx: Transaction) {
+        self.hash_cache.take();
+        self.history.entry(self.height).or_default().push(tx);
+    }
+
+    pub fn get_balance(&self, identity: &Identity, symbol: &str) -> Option<&TokenAmount> {
+        self.accounts.get(identity)?.get(symbol).map(|x| x)
+    }
+
+    pub fn get_transactions_at(&self, index: u64) -> &[Transaction] {
+        if let Some(i) = self.history.get(&index) {
+            i.as_slice()
+        } else {
+            &[]
+        }
+    }
+
+    pub fn transactions_for(&self, account: &Identity) -> Vec<&Transaction> {
+        // Number of commits is probably a good enough metric for capacity.
+        let mut result = Vec::with_capacity(self.history.len() / 2 + 1);
+        for (_height, txs) in &self.history {
+            for tx in txs {
+                match tx {
+                    x @ Transaction::Mint(d, _, _) if d == account => {
+                        result.push(x);
+                    }
+                    x @ Transaction::Burn(d, _, _) if d == account => {
+                        result.push(x);
+                    }
+                    x @ Transaction::Send(f, _, _, _) if f == account => {
+                        result.push(x);
+                    }
+                    x @ Transaction::Send(_, t, _, _) if t == account => {
+                        result.push(x);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        result
+    }
+
+    pub fn mint(
+        &mut self,
+        to: &Identity,
+        symbol: &str,
+        amount: TokenAmount,
+    ) -> Result<(), OmniError> {
+        if amount.is_zero() {
+            // NOOP.
+            return Ok(());
+        }
+
+        *self
+            .accounts
+            .entry(to.clone())
+            .or_default()
+            .entry(symbol.to_string())
+            .or_default() += amount.clone();
+
+        self.add_transaction(Transaction::Mint(to.clone(), amount, symbol.to_string()));
+        Ok(())
+    }
+
+    pub fn burn(
+        &mut self,
+        to: &Identity,
+        symbol: &str,
+        amount: TokenAmount,
+    ) -> Result<(), OmniError> {
+        if amount.is_zero() {
+            // NOOP.
+            return Ok(());
+        }
+
+        *self
+            .accounts
+            .entry(to.clone())
+            .or_default()
+            .entry(symbol.to_string())
+            .or_default() -= amount.clone();
+
+        self.add_transaction(Transaction::Burn(
+            to.clone(),
+            amount.clone(),
+            symbol.to_string(),
+        ));
+        Ok(())
+    }
+
+    pub fn send(
+        &mut self,
+        from: &Identity,
+        to: &Identity,
+        symbol: &str,
+        amount: TokenAmount,
+    ) -> Result<(), OmniError> {
+        if amount.is_zero() {
+            // NOOP.
+            return Ok(());
+        }
+
+        let amount_from = self.get_balance(from, symbol).cloned().unwrap_or_default();
+        if amount > amount_from {
+            return Err(insufficient_funds());
+        }
+
+        *self
+            .accounts
+            .entry(*from)
+            .or_default()
+            .entry(symbol.to_string())
+            .or_default() -= amount.clone();
+        *self
+            .accounts
+            .entry(*to)
+            .or_default()
+            .entry(symbol.to_string())
+            .or_default() += amount.clone();
+
+        self.add_transaction(Transaction::Send(
+            from.clone(),
+            to.clone(),
+            amount,
+            symbol.to_string(),
+        ));
+
+        Ok(())
+    }
+
+    fn hash(&self) -> Vec<u8> {
+        let cache = self.hash_cache.as_ptr();
+
+        if let Some(cache) = unsafe { &*cache } {
+            cache.clone()
+        } else {
+            let mut hasher = sha3::Sha3_512::new();
+            self.hash_inner(&mut hasher);
+            let hash = hasher.finalize().to_vec();
+
+            self.hash_cache.set(Some(hash));
+            self.hash()
+        }
+    }
+
+    fn hash_inner<H: sha3::Digest>(&self, state: &mut H) {
+        state.update(b"height\0");
+        state.update(self.height.to_be_bytes());
+        state.update(b"accounts\0");
+        for (k, accounts) in &self.accounts {
+            state.update(b"a\0");
+            state.update(&k.to_vec());
+            state.update(b"t\0");
+
+            for (symbol, amount) in accounts {
+                state.update(symbol.as_bytes());
+                state.update(b"\0");
+                amount.hash(state);
+            }
+        }
+
+        state.update(b"history\0");
+        for (height, transactions) in &self.history {
+            state.update(b"height\0");
+            state.update(height.to_be_bytes());
+            state.update(b"transactions\0");
+            for t in transactions {
+                t.hash(state);
+                state.update(b"\0");
+            }
+        }
+    }
+}
+
+/// A simple ledger that keeps transactions in memory.
+#[derive(Default, Debug, Clone)]
+pub struct LedgerModule {
+    owner_id: Identity,
+    symbols: BTreeSet<String>,
+    default_symbol: String,
+    storage: Arc<Mutex<LedgerStorage>>,
+}
+
+impl LedgerModule {
+    pub fn new(owner_id: Identity, symbols: Vec<String>, default_symbol: String) -> Self {
+        Self {
+            owner_id,
+            symbols: BTreeSet::from_iter(symbols.iter().map(|x| x.to_string())),
+            default_symbol,
+            ..Default::default()
+        }
+    }
+
+    /// Checks whether an identity is the owner or not. Anonymous identities are forbidden.
+    pub fn is_owner(&self, identity: &Identity) -> bool {
+        &self.owner_id == identity && !identity.is_anonymous()
+    }
+
+    pub fn is_known_symbol(&self, symbol: &str) -> Result<(), OmniError> {
+        if self.symbols.contains(symbol) {
+            Ok(())
+        } else {
+            Err(unknown_symbol(symbol.to_string()))
+        }
+    }
+
+    fn info(&self, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        let mut bytes = Vec::with_capacity(512);
+        let mut e = Encoder::new(&mut bytes);
+        let storage = self.storage.lock().unwrap();
+
+        // Hash the storage.
+        let hash = storage.hash();
+
+        e.begin_map()
+            .and_then(move |e| {
+                e.str("height")?.u64(storage.height)?;
+                e.str("hash")?.bytes(hash.as_slice())?;
+                e.str("symbols")?.encode(&self.symbols)?;
+                e.str("default_symbol")?.str(self.default_symbol.as_str())?;
+
+                e.end()?;
+                Ok(())
+            })
+            .map_err(|e| OmniError::serialization_error(e.to_string()))?;
+
+        Ok(bytes)
+    }
+
+    fn commit(&self) -> Result<(), OmniError> {
+        let mut storage = self.storage.lock().unwrap();
+        storage.commit();
+        Ok(())
+    }
+
+    fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        let mut d = minicbor::Decoder::new(payload);
+        let (identity, symbol): (Option<Identity>, Option<&str>) = d
+            .decode()
+            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let symbol = symbol.unwrap_or_else(|| self.default_symbol.as_str());
+
+        let storage = self.storage.lock().unwrap();
+        if let Some(amount) = storage.get_balance(identity.as_ref().unwrap_or_else(|| from), symbol)
+        {
+            minicbor::to_vec(amount).map_err(|e| OmniError::serialization_error(e.to_string()))
+        } else {
+            minicbor::to_vec(TokenAmount::zero())
+                .map_err(|e| OmniError::serialization_error(e.to_string()))
+        }
+    }
+
+    fn send(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        let mut d = minicbor::Decoder::new(payload);
+        let (to, amount, symbol): (Identity, TokenAmount, Option<&str>) = d
+            .decode()
+            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let symbol = symbol.unwrap_or_else(|| self.default_symbol.as_str());
+
+        let mut storage = self.storage.lock().unwrap();
+        storage.send(&from, &to, symbol, amount.clone())?;
+
+        if let Some(amount) = storage.get_balance(&from, symbol) {
+            minicbor::to_vec(amount).map_err(|e| OmniError::serialization_error(e.to_string()))
+        } else {
+            minicbor::to_vec(TokenAmount::zero())
+                .map_err(|e| OmniError::serialization_error(e.to_string()))
+        }
+    }
+
+    fn mint(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        if !self.is_owner(from) {
+            return Err(unauthorized());
+        }
+
+        let mut d = minicbor::Decoder::new(payload);
+        let (to, amount, symbol): (Identity, TokenAmount, Option<&str>) = d
+            .decode()
+            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let symbol = symbol.unwrap_or_else(|| self.default_symbol.as_str());
+
+        let mut storage = self.storage.lock().unwrap();
+        storage.mint(&to, symbol, amount)?;
+
+        if let Some(amount) = storage.get_balance(&to, symbol) {
+            minicbor::to_vec(amount).map_err(|e| OmniError::serialization_error(e.to_string()))
+        } else {
+            minicbor::to_vec(TokenAmount::zero())
+                .map_err(|e| OmniError::serialization_error(e.to_string()))
+        }
+    }
+
+    fn burn(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        if !self.is_owner(from) {
+            return Err(unauthorized());
+        }
+
+        let mut d = minicbor::Decoder::new(payload);
+        let (to, amount, symbol): (Identity, TokenAmount, Option<String>) = d
+            .decode()
+            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+
+        let mut storage = self.storage.lock().unwrap();
+        storage.burn(
+            &to,
+            symbol.as_ref().unwrap_or_else(|| &self.default_symbol),
+            amount,
+        )?;
+
+        Ok(Vec::new())
+    }
+}
+
+impl OmniAbciModuleBackend for LedgerModule {
+    fn query_methods(&self) -> Result<Vec<String>, OmniError> {
+        Ok(vec![
+            "ledger.balance".to_string(),
+            "ledger.info".to_string(),
+        ])
+    }
+
+    fn height(&self) -> Result<u64, OmniError> {
+        let mut storage = self.storage.lock().unwrap();
+        Ok(storage.height)
+    }
+
+    fn hash(&self) -> Result<Vec<u8>, OmniError> {
+        let mut storage = self.storage.lock().unwrap();
+        Ok(storage.hash())
+    }
+
+    fn commit(&self) -> Result<(), OmniError> {
+        self.commit()
+    }
+}
+
+#[async_trait]
+impl OmniModule for LedgerModule {
+    fn info(&self) -> &OmniModuleInfo {
+        &LEDGER_MODULE_INFO
+    }
+
+    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
+        let symbol = match message.method.as_str() {
+            "abci.info" => return Ok(()),
+            "abci.commit" => return Ok(()),
+            "ledger.info" => return Ok(()),
+            "ledger.mint" => {
+                decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
+                    .2
+            }
+            "ledger.burn" => {
+                decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
+                    .2
+            }
+            "ledger.balance" => {
+                decode::<'_, (Option<Identity>, Option<&str>)>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
+                    .1
+            }
+            "ledger.send" => {
+                decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
+                    .2
+            }
+            _ => {
+                return Err(OmniError::internal_server_error());
+            }
+        };
+        symbol.map_or(Ok(()), |s| self.is_known_symbol(s))
+    }
+
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let data = match message.method.as_str() {
+            "ledger.info" => self.info(&message.data),
+            "ledger.balance" => self.balance(&message.from.unwrap_or_default(), &message.data),
+            "ledger.mint" => self.mint(&message.from.unwrap_or_default(), &message.data),
+            "ledger.burn" => self.burn(&message.from.unwrap_or_default(), &message.data),
+            "ledger.send" => self.send(&message.from.unwrap_or_default(), &message.data),
+            _ => Err(OmniError::internal_server_error()),
+        }?;
+
+        Ok(ResponseMessage::from_request(
+            &message,
+            &message.to,
+            Ok(data),
+        ))
+    }
+}
 
 #[derive(Parser)]
 struct Opts {
@@ -35,271 +581,42 @@ struct Opts {
     /// The port to bind to for the OMNI Http server.
     #[clap(long, default_value = "8000")]
     port: u16,
-}
 
-#[derive(Debug, Clone)]
-pub enum Transaction {
-    Mint(Identity, u128),
-    Send(Identity, Identity, u128),
-}
+    /// The list of supported symbols.
+    #[clap(long, short)]
+    symbols: Vec<String>,
 
-const LEDGER_ATTRIBUTE: Attribute = Attribute {
-    id: 2,
-    endpoints: Some(&["ledger.balance", "ledger.mint", "ledger.send"]),
-    arguments: Vec::new(),
-};
-lazy_static::lazy_static!(
+    /// The default symbol to use. If unspecified, will use the first symbol in the list of symbols.
+    #[clap(long, short)]
+    default: Option<String>,
 
-    pub static ref LEDGER_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
-        name: "LedgerModule".to_string(),
-        attributes: vec![LEDGER_ATTRIBUTE],
-    };
-);
-
-#[derive(Default, Debug, Clone)]
-struct LedgerStorage {
-    pub accounts: BTreeMap<Identity, BTreeMap<String, u128>>,
-    pub history: Vec<(u64, Vec<Transaction>)>,
-    pub height: u64,
-}
-
-impl LedgerStorage {
-    pub fn commit(&mut self) -> () {
-        self.height += 1;
-    }
-
-    pub fn get_balance(&self, identity: &Identity, ticker: &str) -> Option<u128> {
-        self.accounts.get(identity)?.get(ticker).map(|x| *x)
-    }
-
-    pub fn get_transactions_at(&self, index: u64) -> &[Transaction] {
-        if let Ok(i) = self.history.binary_search_by_key(&index, |(i, _)| *i) {
-            self.history[i].1.as_slice()
-        } else {
-            &[]
-        }
-    }
-
-    pub fn transactions_for(&self, account: &Identity) -> Vec<&Transaction> {
-        // Number of commits is probably a good enough metric for capacity.
-        let mut result = Vec::with_capacity(self.history.len() / 2 + 1);
-        for (_height, txs) in &self.history {
-            for tx in txs {
-                match tx {
-                    x @ Transaction::Mint(d, _) if d == account => {
-                        result.push(x);
-                    }
-                    x @ Transaction::Send(f, _, _) if f == account => {
-                        result.push(x);
-                    }
-                    x @ Transaction::Send(_, t, _) if t == account => {
-                        result.push(x);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        result
-    }
-
-    pub fn mint(&mut self, to: &Identity, ticker: &str, amount: u128) -> Result<(), OmniError> {
-        *self
-            .accounts
-            .entry(to.clone())
-            .or_default()
-            .entry(ticker.to_string())
-            .or_default() += amount;
-
-        Ok(())
-    }
-
-    pub fn send(
-        &mut self,
-        from: &Identity,
-        to: &Identity,
-        ticker: &str,
-        amount: u128,
-    ) -> Result<(), OmniError> {
-        if amount == 0 {
-            // NOOP.
-            return Ok(());
-        }
-
-        let amount_from = self.get_balance(from, ticker).unwrap_or(0);
-        let amount_to = self.get_balance(to, ticker).unwrap_or(0);
-
-        if amount > amount_from {
-            return Err(insufficient_funds());
-        }
-
-        match amount_from.checked_sub(amount) {
-            None => {
-                return Err(insufficient_funds());
-            }
-            Some(new_from) => match amount_to.checked_add(amount) {
-                None => {
-                    return Err(would_overflow());
-                }
-                Some(new_to) => {
-                    *self
-                        .accounts
-                        .entry(*from)
-                        .or_default()
-                        .entry(ticker.to_string())
-                        .or_default() = new_from;
-                    *self
-                        .accounts
-                        .entry(*to)
-                        .or_default()
-                        .entry(ticker.to_string())
-                        .or_default() = new_to;
-                }
-            },
-        }
-        Ok(())
-    }
-}
-
-impl Hash for LedgerStorage {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(b"accounts\0");
-        for (k, accounts) in &self.accounts {
-            state.write(b"a\0");
-            state.write(&k.to_vec());
-            state.write(b"t\0");
-
-            for (ticker, amount) in accounts {
-                state.write(ticker.as_bytes());
-                state.write(b"\0");
-                state.write_u128(*amount);
-                state.write(b"\0");
-            }
-        }
-    }
-}
-
-/// A simple ledger that keeps transactions in memory.
-#[derive(Default, Debug, Clone)]
-pub struct LedgerModule {
-    owner_id: Identity,
-    storage: Arc<Mutex<LedgerStorage>>,
-}
-
-impl LedgerModule {
-    pub fn new(owner_id: Identity) -> Self {
-        Self {
-            owner_id,
-            ..Default::default()
-        }
-    }
-
-    /// Checks whether an identity is the owner or not. Anonymous identities are forbidden.
-    pub fn is_owner(&self, identity: &Identity) -> bool {
-        &self.owner_id == identity && !identity.is_anonymous()
-    }
-
-    fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut d = minicbor::Decoder::new(payload);
-        let (identity, ticker) = d
-            .array()
-            .and_then(|_| {
-                let identity = d.decode::<Identity>().unwrap_or_else(|_| from.clone());
-                let ticker = d.str().unwrap_or("FBT");
-                Ok((identity, ticker))
-            })
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-
-        let mut storage = self.storage.lock().unwrap();
-        let amount = storage.get_balance(&identity, ticker).unwrap_or(0);
-        let mut bytes = Vec::<u8>::new();
-        minicbor::encode(((amount >> 64) as u64, amount as u64), &mut bytes)
-            .map_err(|e| OmniError::serialization_error(e.to_string()))?;
-
-        Ok(bytes)
-    }
-
-    fn send(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, ticker) = d
-            .array()
-            .and_then(|_| {
-                let i = d.decode::<Identity>()?;
-                let hi = d.u64()?;
-                let low = d.u64()?;
-                let t = match d.datatype() {
-                    Ok(Type::String) => d.str()?,
-                    _ => "FBT",
-                };
-
-                Ok((i, ((hi as u128) << 64) + (low as u128), t))
-            })
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-
-        let mut storage = self.storage.lock().unwrap();
-        storage.send(&from, &to, &ticker, amount)?;
-
-        Ok(Vec::new())
-    }
-
-    fn mint(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        if !self.is_owner(from) {
-            return Err(unauthorized());
-        }
-
-        let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, ticker) = d
-            .array()
-            .and_then(|_| {
-                let i = d.decode::<Identity>()?;
-                let hi = d.u64()?;
-                let low = d.u64()?;
-                let t = match d.datatype() {
-                    Ok(Type::String) => d.str()?,
-                    _ => "FBT",
-                };
-
-                Ok((i, ((hi as u128) << 64) + (low as u128), t))
-            })
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-
-        let mut storage = self.storage.lock().unwrap();
-        storage.mint(&to, &ticker, amount)?;
-
-        Ok(Vec::new())
-    }
-}
-
-#[async_trait]
-impl OmniModule for LedgerModule {
-    fn info(&self) -> &OmniModuleInfo {
-        &LEDGER_MODULE_INFO
-    }
-
-    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let data = match message.method.as_str() {
-            "ledger.mint" => self.mint(&message.from.unwrap_or_default(), &message.data),
-            "ledger.balance" => self.balance(&message.from.unwrap_or_default(), &message.data),
-            "ledger.send" => self.send(&message.from.unwrap_or_default(), &message.data),
-            _ => Err(OmniError::internal_server_error()),
-        }?;
-
-        Ok(ResponseMessage::from_request(
-            &message,
-            &message.to,
-            Ok(data),
-        ))
-    }
+    /// Uses an ABCI application module.
+    #[clap(long)]
+    abci: bool,
 }
 
 fn main() {
-    let o: Opts = Opts::parse();
-    let (id, keypair) = Identity::from_pem_addressable(std::fs::read(o.pem).unwrap()).unwrap();
-    let (owner_id, _) = Identity::from_pem_public(std::fs::read(o.owner).unwrap()).unwrap();
+    let Opts {
+        pem,
+        owner,
+        port,
+        symbols,
+        default,
+        abci,
+    } = Opts::parse();
+    let default = default.unwrap_or(symbols.first().unwrap().to_string());
+    let (id, keypair) = Identity::from_pem_addressable(std::fs::read(pem).unwrap()).unwrap();
+    let (owner_id, _) = Identity::from_pem_public(std::fs::read(owner).unwrap()).unwrap();
 
-    let omni = OmniServer::new(id, &keypair).with_module(LedgerModule::new(owner_id));
+    let module = LedgerModule::new(owner_id, symbols, default);
+    let omni = OmniServer::new("omni-ledger", id, &keypair);
+    let omni = if abci {
+        omni.with_module(omni_abci::AbciModule::new(module))
+    } else {
+        omni.with_module(module)
+    };
 
     HttpServer::simple(id, Some(keypair), omni)
-        .bind(format!("127.0.0.1:{}", o.port))
+        .bind(format!("127.0.0.1:{}", port))
         .unwrap();
 }

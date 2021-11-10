@@ -24,7 +24,6 @@ pub struct AbciHttpServer {
     client: WebSocketClient,
     identity: Identity,
     keypair: Option<Ed25519KeyPair>,
-    frontend: Box<dyn OmniAbciFrontend>,
 }
 
 impl Debug for AbciHttpServer {
@@ -33,15 +32,13 @@ impl Debug for AbciHttpServer {
             .field("client", &"...")
             .field("identity", &self.identity)
             .field("keypair", &"...")
-            .field("frontend", &self.frontend)
             .finish()
     }
 }
 
 impl AbciHttpServer {
-    pub fn new<F: OmniAbciFrontend + 'static>(
+    pub fn new(
         client: tendermint_rpc::WebSocketClient,
-        frontend: F,
         identity: Identity,
         keypair: Option<Ed25519KeyPair>,
     ) -> Self {
@@ -65,49 +62,47 @@ impl AbciHttpServer {
             client,
             identity,
             keypair,
-            frontend: Box::new(frontend),
         }
     }
 
     async fn execute_inner(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
-        let message = omni::message::decode_request_from_cose_sign1(envelope.clone())
-            .and_then(|request| self.frontend.validate(&request).map(|_| request))?;
+        let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
         let client = self.client.clone();
 
-        match self.frontend.message_type(&message) {
-            AbciMessageType::Query => {
-                let response = async move {
-                    let bytes = envelope.to_bytes().unwrap();
-                    client
-                        .abci_query(None, bytes, None, false)
-                        .await
-                        .map_err(|_| OmniError::internal_server_error())
-                }
-                .await?;
+        // match self.frontend.message_type(&message) {
+        //     AbciMessageType::Query => {
+        //         let response = async move {
+        //             let bytes = envelope.to_bytes().unwrap();
+        //             client
+        //                 .abci_query(None, bytes, None, false)
+        //                 .await
+        //                 .map_err(|_| OmniError::internal_server_error())
+        //         }
+        //         .await?;
+        //
+        //         Ok(ResponseMessage::from_request(
+        //             &message,
+        //             &self.identity,
+        //             Ok(response.value),
+        //         ))
+        //     }
+        //     AbciMessageType::Command => {
+        let response = client
+            .broadcast_tx_async(tendermint::abci::Transaction::from(
+                envelope
+                    .to_bytes()
+                    .map_err(|_| OmniError::internal_server_error())?,
+            ))
+            .await
+            .map_err(|_| OmniError::internal_server_error())?;
 
-                Ok(ResponseMessage::from_request(
-                    &message,
-                    &self.identity,
-                    Ok(response.value),
-                ))
-            }
-            AbciMessageType::Command => {
-                let response = client
-                    .broadcast_tx_async(tendermint::abci::Transaction::from(
-                        envelope
-                            .to_bytes()
-                            .map_err(|_| OmniError::internal_server_error())?,
-                    ))
-                    .await
-                    .map_err(|_| OmniError::internal_server_error())?;
-
-                Ok(ResponseMessage::from_request(
-                    &message,
-                    &self.identity,
-                    Ok(response.data.value().to_vec()),
-                ))
-            }
-        }
+        Ok(ResponseMessage::from_request(
+            &message,
+            &self.identity,
+            Ok(response.data.value().to_vec()),
+        ))
+        //     }
+        // }
     }
 }
 
@@ -122,7 +117,7 @@ impl LowLevelOmniRequestHandler for AbciHttpServer {
         omni::message::encode_cose_sign1_from_response(
             response,
             self.identity.clone(),
-            &self.keypair,
+            self.keypair.as_ref(),
         )
     }
 }

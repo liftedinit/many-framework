@@ -9,14 +9,25 @@ use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
 use ring::signature::Ed25519KeyPair;
 use std::convert::TryInto;
-use std::rc::Rc;
+use std::fmt::Formatter;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct OmniClient {
     id: Identity,
-    keypair: Option<Rc<Ed25519KeyPair>>,
+    keypair: Option<Arc<Ed25519KeyPair>>,
     to: Identity,
     url: Url,
+}
+
+impl std::fmt::Debug for OmniClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OmniClient")
+            .field("id", &self.id)
+            .field("to", &self.to)
+            .field("url", &self.url)
+            .finish()
+    }
 }
 
 impl OmniClient {
@@ -30,19 +41,19 @@ impl OmniClient {
             id: identity
                 .try_into()
                 .map_err(|_e| format!("Could not parse identity."))?,
-            keypair: keypair.map(Rc::new),
+            keypair: keypair.map(Arc::new),
             to,
             url: url.into_url().map_err(|e| format!("{}", e))?,
         })
     }
 
-    pub fn send_envelope(&self, message: CoseSign1) -> Result<CoseSign1, OmniError> {
+    pub fn send_envelope<S: IntoUrl>(url: S, message: CoseSign1) -> Result<CoseSign1, OmniError> {
         let bytes = message
             .to_bytes()
             .map_err(|_| OmniError::internal_server_error())?;
 
         let client = reqwest::blocking::Client::new();
-        let response = client.post(self.url.clone()).body(bytes).send().unwrap();
+        let response = client.post(url).body(bytes).send().unwrap();
         let body = response.bytes().unwrap();
         let bytes = body.to_vec();
         CoseSign1::from_bytes(&bytes).map_err(|e| OmniError::deserialization_error(e.to_string()))
@@ -55,7 +66,7 @@ impl OmniClient {
             self.keypair.as_ref().map(|x| x.as_ref()),
         )
         .unwrap();
-        let cose_sign1 = self.send_envelope(cose)?;
+        let cose_sign1 = Self::send_envelope(self.url.clone(), cose)?;
 
         let response = decode_response_from_cose_sign1(cose_sign1, None)
             .map_err(|e| OmniError::deserialization_error(e))?;

@@ -22,10 +22,11 @@ pub struct OmniServer {
     method_cache: BTreeSet<&'static str>,
     identity: Identity,
     public_key: CoseKey,
+    name: String,
 }
 
 impl OmniServer {
-    pub fn new(identity: Identity, public_key: &Ed25519KeyPair) -> Self {
+    pub fn new<N: ToString>(name: N, identity: Identity, public_key: &Ed25519KeyPair) -> Self {
         debug_assert!(identity.is_addressable());
 
         let x = public_key.public_key().as_ref().to_vec();
@@ -36,6 +37,7 @@ impl OmniServer {
             .into();
 
         Self {
+            name: name.to_string(),
             identity,
             public_key,
             ..Default::default()
@@ -87,6 +89,7 @@ impl OmniServer {
 
     pub fn status(&self) -> Status {
         StatusBuilder::default()
+            .name(self.name.clone())
             .version(1)
             .public_key(self.public_key.clone())
             .identity(self.identity.clone())
@@ -153,6 +156,8 @@ impl OmniRequestHandler for OmniServer {
                 .iter()
                 .any(|a| a.endpoints.unwrap_or(&[]).contains(method))
             {
+                m.validate(&message)?;
+
                 return m.execute(message).await.map(|mut r| {
                     r.from = self.identity;
                     r

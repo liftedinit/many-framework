@@ -13,13 +13,14 @@ ciborium = { git = "https://github.com/enarx/ciborium" }
 clap = "3.0.0-beta.5"
 hex = "0.4.3"
 lazy_static = "1.4.0"
+minicbor = "0.11.4"
 minicose = { git = "https://github.com/l-1-labs/rust-minicose.git" }
 omni = { path = "../omni" }
 reqwest = "0.11.6"
 ring = "0.17.0-alpha.10"
 tendermint = "0.23.0"
 tendermint-abci = { version = "0.23.0" }
-tendermint-rpc = "0.23.0"
+tendermint-rpc = { version = "0.23.0", features = [ "websocket-client" ] }
 tendermint-proto = "0.23.0"
 tokio = "1.13.0"
 tracing = "0.1.28"

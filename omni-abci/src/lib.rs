@@ -1,94 +1,110 @@
 use async_trait::async_trait;
+use minicbor::Encoder;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::{OmniModule, OmniModuleInfo};
-use omni::{Identity, OmniError};
-use std::collections::BTreeMap;
-use std::fmt::{Debug, Formatter};
-use std::iter::FromIterator;
-use std::sync::{Arc, Mutex};
-use tendermint_proto::abci::{RequestCheckTx, ResponseCheckTx};
+use omni::OmniError;
+use std::fmt::Debug;
+use std::sync::Arc;
 
 pub mod abci_app;
 pub mod omni_app;
 
-pub const ABCI_SERVER: Attribute = Attribute {
-    id: 1000,
-    endpoints: &["abci."],
-};
+pub const ABCI_SERVER: Attribute = Attribute::new(1000, &["abci.info"]);
 
-/// A module that specifies that this network is the backend of an ABCI blockchain.
-/// This adds keys to the status for whether certain functions are query or commands,
-/// since those need to be sent separately through ABCI.
+pub trait OmniAbciModuleBackend {
+    fn query_methods(&self) -> Result<Vec<String>, OmniError>;
+    fn height(&self) -> Result<u64, OmniError>;
+    fn hash(&self) -> Result<Vec<u8>, OmniError>;
+    fn commit(&self) -> Result<(), OmniError>;
+}
+
+/// A module that adapt an OMNI application to an ABCI-OMNI bridge.
+/// This module takes a backend (another module) which ALSO implements the ModuleBackend
+/// trait, and exposes the `abci.info` and `abci.init` endpoints.
 #[derive(Debug, Clone)]
-pub struct AbciApplicationModule {
-    queries: Vec<String>,
+pub struct AbciModule<B: OmniModule + OmniAbciModuleBackend> {
+    backend: Arc<B>,
+    module_info: OmniModuleInfo,
 }
 
-impl AbciApplicationModule {
-    pub fn new() -> Self {}
-}
+impl<B: OmniModule + OmniAbciModuleBackend> AbciModule<B> {
+    pub fn new(backend: B) -> Self {
+        let module_info = OmniModuleInfo {
+            name: format!("abci-{}", backend.info().name),
+            attributes: [vec![ABCI_SERVER], backend.info().attributes.clone()]
+                .concat()
+                .to_vec(),
+        };
 
-/// A module that implements an ABCI interface which allows to query, broadcast and expose
-/// other ABCI endpoints. This specific module does also implement the blockchain attribute.
-#[derive(Clone)]
-pub struct AbciModule {
-    client: Arc<Mutex<tendermint_rpc::WebSocketClient>>,
-    identity: Identity,
-}
+        Self {
+            backend: Arc::new(backend),
+            module_info,
+        }
+    }
 
-impl Debug for AbciModule {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AbciModule")
-            .field("client", &"...")
-            .field("identity", &self.identity)
-            .finish()
+    fn abci_info(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let mut bytes = Vec::with_capacity(128);
+        let mut e = Encoder::new(&mut bytes);
+
+        let (queries, height, hash) = {
+            let backend = &self.backend;
+            (backend.query_methods()?, backend.height()?, backend.hash()?)
+        };
+
+        e.begin_map()
+            .and_then(move |e| {
+                e.str("queries")?;
+                e.array(queries.len() as u64)?;
+                for i in queries {
+                    e.str(&i)?;
+                }
+
+                e.str("height")?.u64(height)?;
+                e.str("hash")?.bytes(hash.as_slice())?;
+
+                e.end()
+            })
+            .map_err(|e| OmniError::serialization_error(e.to_string()))?;
+
+        Ok(ResponseMessage::from_request(
+            &message,
+            &message.to,
+            Ok(bytes),
+        ))
+    }
+
+    fn commit(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let mut backend = &self.backend;
+        backend.commit();
+        Ok(ResponseMessage::from_request(
+            &message,
+            &message.to,
+            Ok(Vec::new()),
+        ))
     }
 }
-
-impl AbciModule {
-    pub fn new(client: Arc<Mutex<tendermint_rpc::WebSocketClient>>, identity: Identity) -> Self {
-        Self { client, identity }
-    }
-}
-
-lazy_static::lazy_static!(
-    pub static ref ABCI_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
-        name: "AbciModule".to_string(),
-        attributes: vec![ABCI_SERVER],
-    };
-);
 
 #[async_trait]
-impl OmniModule for AbciModule {
+impl<B: OmniModule + OmniAbciModuleBackend> OmniModule for AbciModule<B> {
     #[inline]
     fn info(&self) -> &OmniModuleInfo {
-        &ABCI_MODULE_INFO
+        &self.module_info
+    }
+
+    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
+        match message.method.as_str() {
+            "abci.info" => Ok(()),
+            "abci.commit" => Ok(()),
+            _ => self.backend.validate(message),
+        }
     }
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let mut client = self.client.lock().unwrap();
-
         match message.method.as_str() {
-            // "abci.check_tx" => {
-            //     let response = client.check_tx(RequestCheckTx {
-            //         tx: message.data.clone(),
-            //         r#type: 0,
-            //     });
-            //
-            //     match response {
-            //         Ok(ResponseCheckTx { code, data, .. }) if code == 0 => Ok(
-            //             ResponseMessage::from_request(&message, &self.identity, Ok(data)),
-            //         ),
-            //         Ok(ResponseCheckTx { code, data, .. }) => Err(OmniError::application_specific(
-            //             1000 * 10000 + code,
-            //             "ABCI Response Error: {msg}".to_string(),
-            //             BTreeMap::from_iter(vec![("msg".to_string(), hex::encode(&data))]),
-            //         )),
-            //         Err(_) => Err(OmniError::internal_server_error()),
-            //     }
-            // }
-            _ => Err(OmniError::internal_server_error()),
+            "abci.info" => self.abci_info(message),
+            "abci.commit" => self.commit(message),
+            _ => { self.backend.execute(message) }.await,
         }
     }
 }

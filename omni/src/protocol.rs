@@ -191,19 +191,17 @@ impl<'d> Decode<'d> for Attribute {
 
 #[derive(Clone, Debug, Builder)]
 pub struct Status {
-    version: u8,
-    public_key: CoseKey,
-    internal_version: Vec<u8>,
-    identity: Identity,
-    attributes: Vec<Attribute>,
+    pub name: String,
+    pub version: u8,
+    pub public_key: CoseKey,
+    pub internal_version: Vec<u8>,
+    pub identity: Identity,
+    pub attributes: Vec<Attribute>,
 }
 
 impl Status {
     pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
-        let mut bytes = Vec::<u8>::new();
-        minicbor::encode(self, &mut bytes).map_err(|e| format!("{}", e))?;
-
-        Ok(bytes)
+        minicbor::to_vec(self).map_err(|e| format!("{}", e))
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
@@ -217,6 +215,7 @@ impl Encode for Status {
 
         #[rustfmt::skip]
         e.begin_map()?
+            .str("name")?.str(self.name.as_str())?
             .str("version")?.u8(self.version)?
             .str("public_key")?.bytes(public_key.as_slice())?
             .str("identity")?.encode(&self.identity)?
@@ -241,6 +240,7 @@ impl<'b> Decode<'b> for Status {
             }
 
             match d.str()? {
+                "name" => builder.name(d.str()?.to_string()),
                 "version" => builder.version(d.decode()?),
                 "public_key" => {
                     let bytes = d.bytes()?;

@@ -6,6 +6,7 @@ use std::fmt::Debug;
 
 pub mod base;
 
+#[derive(Clone, Debug)]
 pub struct OmniModuleInfo {
     /// Returns the name of this module, for logs and metering.
     pub name: String,
@@ -18,6 +19,11 @@ pub struct OmniModuleInfo {
 pub trait OmniModule: Sync + Send + Debug {
     /// Returns the information of this module.
     fn info(&self) -> &OmniModuleInfo;
+
+    /// Verify that a message is well formed (ACLs, arguments, etc).
+    fn validate(&self, _message: &RequestMessage) -> Result<(), OmniError> {
+        Ok(())
+    }
 
     /// Execute a message and returns its response.
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError>;

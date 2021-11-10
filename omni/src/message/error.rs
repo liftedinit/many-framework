@@ -109,12 +109,15 @@ omni_error! {
 
     // 10000+ are reserved for application codes and are defined separately.
     // The method to use these is ATTRIBUTE_ID * 10000.
+
+    // If we follow the math, errors between 32,767,000 and 65,535,999 are reserved for custom
+    // server-specific error messages.
 }
 
 /// Easily define OmniError for specific applications.
 #[macro_export]
 macro_rules! define_omni_error {
-    ( $module_id: literal => { $( $id: literal : $vis: vis fn $name: ident ($( , $var_name: ident )*) => $message: literal ),* $(,)? } ) => {
+    ( $module_id: literal => { $( $id: literal : $vis: vis fn $name: ident ($( $var_name: ident ),*) => $message: literal ),* $(,)? } ) => {
         $(
             $vis fn $name ( $($var_name: String),* ) -> OmniError {
                 OmniError::application_specific(

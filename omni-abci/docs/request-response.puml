@@ -9,9 +9,9 @@ participant omni_app as "OMNI App"
 
 == Initialization ==
 omni -> omni_app : \
-    abci.initializeFrontend
+    abci.info
 omni_app -> omni : \
-    omni_abci::InitializationInfo
+    omni_abci::Info
 
 == Commands ==
 

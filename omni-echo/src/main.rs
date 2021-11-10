@@ -20,7 +20,7 @@ fn main() {
     let bytes = std::fs::read(o.pem).unwrap();
     let (id, keypair) = Identity::from_pem_addressable(bytes).unwrap();
 
-    let omni = OmniServer::new(id, &keypair);
+    let omni = OmniServer::new("echo", id, &keypair);
 
     HttpServer::simple(id, Some(keypair), omni)
         .bind(format!("127.0.0.1:{}", o.port))
