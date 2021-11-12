@@ -101,7 +101,8 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
                     )
                     .await
                     .map_err(|_| OmniError::internal_server_error())?;
-                return Ok(ResponseMessage::from_bytes(&response.value));
+                return Ok(ResponseMessage::from_bytes(&response.value)
+                    .map_err(|_| OmniError::internal_server_error())?);
             };
 
             Ok(ResponseMessage::from_request(
