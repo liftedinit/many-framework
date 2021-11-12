@@ -1,13 +1,20 @@
+use crate::module::AbciInfo;
+use minicose::CoseSign1;
 use omni::message::RequestMessage;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
+use std::io::Error;
 use std::ops::Shl;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use tendermint_abci::Application;
 use tendermint_proto::abci::{
-    RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery, ResponseCheckTx, ResponseCommit,
-    ResponseDeliverTx, ResponseInfo, ResponseQuery,
+    RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestDeliverTx, RequestEcho,
+    RequestEndBlock, RequestInfo, RequestInitChain, RequestLoadSnapshotChunk, RequestOfferSnapshot,
+    RequestQuery, RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock,
+    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock,
+    ResponseFlush, ResponseInfo, ResponseInitChain, ResponseListSnapshots,
+    ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponseQuery, ResponseSetOption,
 };
 use tracing::debug;
 
@@ -26,6 +33,7 @@ impl AbciApp {
         let omni_url = omni_url.into_url().map_err(|e| e.to_string())?;
 
         let server_id = if server_id.is_anonymous() {
+            /// Get the server ID from the omni server.
             server_id
         } else {
             server_id
@@ -56,23 +64,101 @@ impl Application for AbciApp {
             }
         };
 
-        let (last_block_height, last_block_app_hash) = match self.omni_client.call_("abci.info", ())
-        {
-            Ok(payload) => (0, Vec::new()),
-            Err(err) => {
-                return ResponseInfo {
-                    data: format!("An error occurred during call to abci.info:\n{}", err),
-                    ..Default::default()
+        let AbciInfo { height, hash } =
+            match self.omni_client.call_("abci.info", ()).and_then(|payload| {
+                minicbor::decode(&payload)
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))
+            }) {
+                Ok(x) => x,
+                Err(err) => {
+                    return ResponseInfo {
+                        data: format!("An error occurred during call to abci.info:\n{}", err),
+                        ..Default::default()
+                    }
                 }
-            }
-        };
+            };
 
         ResponseInfo {
             data: format!("omni-abci-bridge({})", status.name),
             version: env!("CARGO_PKG_VERSION").to_string(),
             app_version: 1,
-            last_block_height: last_block_height as i64,
-            last_block_app_hash: last_block_app_hash.to_vec(),
+            last_block_height: height as i64,
+            last_block_app_hash: hash,
+        }
+    }
+
+    fn commit(&self) -> ResponseCommit {
+        self.omni_client.call_("abci.commit", ()).map_or_else(
+            |err| ResponseCommit {
+                data: err.to_string().into_bytes(),
+                retain_height: 0,
+            },
+            |msg| ResponseCommit {
+                data: vec![],
+                retain_height: 0,
+            },
+        )
+    }
+
+    fn query(&self, request: RequestQuery) -> ResponseQuery {
+        let cose = match CoseSign1::from_bytes(&request.data) {
+            Ok(x) => x,
+            Err(err) => {
+                return ResponseQuery {
+                    code: 2,
+                    log: err.to_string(),
+                    ..Default::default()
+                }
+            }
+        };
+        let value = match OmniClient::send_envelope(self.omni_url.clone(), cose) {
+            Ok(cose_sign) => cose_sign,
+
+            Err(err) => {
+                return ResponseQuery {
+                    code: 3,
+                    log: err.to_string(),
+                    ..Default::default()
+                }
+            }
+        };
+        match value.to_bytes() {
+            Ok(value) => ResponseQuery {
+                code: 0,
+                value,
+                ..Default::default()
+            },
+            Err(err) => ResponseQuery {
+                code: 1,
+                log: err.to_string(),
+                ..Default::default()
+            },
+        }
+    }
+
+    fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
+        let cose = match CoseSign1::from_bytes(&request.tx) {
+            Ok(x) => x,
+            Err(err) => {
+                return ResponseDeliverTx {
+                    code: 2,
+                    log: err.to_string(),
+                    ..Default::default()
+                }
+            }
+        };
+        match OmniClient::send_envelope(self.omni_url.clone(), cose) {
+            Ok(cose_sign) => ResponseDeliverTx {
+                code: 0,
+                data: cose_sign.payload.unwrap_or_default(),
+                ..Default::default()
+            },
+            Err(err) => ResponseDeliverTx {
+                code: 1,
+                data: vec![],
+                log: err.to_string(),
+                ..Default::default()
+            },
         }
     }
 }

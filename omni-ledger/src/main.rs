@@ -19,7 +19,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use omni::message::error::define_omni_error;
-use omni_abci::OmniAbciModuleBackend;
+use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
 
 define_omni_error!(
     2 => {
@@ -29,7 +29,7 @@ define_omni_error!(
     }
 );
 
-type TokenAmountStorage = crypto_bigint::U512;
+type TokenAmountStorage = num_bigint::BigUint;
 
 #[repr(transparent)]
 #[derive(Default, Debug, Hash, Clone, Ord, PartialOrd, Eq, PartialEq)]
@@ -46,35 +46,29 @@ impl TokenAmount {
 
     pub(crate) fn hash<H: sha3::Digest>(&self, state: &mut H) {
         state.update("amount\0");
-        state.update(self.0.to_be_bytes());
+        state.update(self.0.to_bytes_be());
     }
 }
 
 impl std::ops::AddAssign for TokenAmount {
     fn add_assign(&mut self, rhs: Self) {
-        let (n, c) = self.0.adc(&rhs.0, crypto_bigint::Limb::ZERO);
-        if c == crypto_bigint::Limb::ZERO {
-            self.0 = n;
-        } else {
-            self.0 = TokenAmountStorage::MAX;
-        }
+        self.0 += rhs.0
     }
 }
 
 impl std::ops::SubAssign for TokenAmount {
     fn sub_assign(&mut self, rhs: Self) {
-        let (n, c) = self.0.sbb(&rhs.0, crypto_bigint::Limb::ZERO);
-        if c == crypto_bigint::Limb::ZERO {
-            self.0 = n;
+        if self.0 <= rhs.0 {
+            self.0 = TokenAmountStorage::from(0u8);
         } else {
-            self.0 = TokenAmountStorage::ZERO;
+            self.0 -= rhs.0
         }
     }
 }
 
 impl Encode for TokenAmount {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
-        e.tag(Tag::PosBignum)?.bytes(&self.0.to_be_bytes())?;
+        e.tag(Tag::PosBignum)?.bytes(&self.0.to_bytes_be())?;
         Ok(())
     }
 }
@@ -85,7 +79,7 @@ impl<'b> Decode<'b> for TokenAmount {
             return Err(minicbor::decode::Error::Message("Invalid tag."));
         }
 
-        Ok(TokenAmount(TokenAmountStorage::from_be_slice(d.bytes()?)))
+        Ok(TokenAmount(TokenAmountStorage::from_bytes_be(d.bytes()?)))
     }
 }
 
@@ -490,25 +484,33 @@ impl LedgerModule {
 }
 
 impl OmniAbciModuleBackend for LedgerModule {
-    fn query_methods(&self) -> Result<Vec<String>, OmniError> {
-        Ok(vec![
-            "ledger.balance".to_string(),
-            "ledger.info".to_string(),
-        ])
+    fn init(&self) -> AbciInit {
+        AbciInit {
+            endpoints: BTreeMap::from([
+                ("ledger.info".to_string(), false),
+                ("ledger.balance".to_string(), false),
+                ("ledger.mint".to_string(), true),
+                ("ledger.burn".to_string(), true),
+                ("ledger.send".to_string(), true),
+            ]),
+        }
     }
 
-    fn height(&self) -> Result<u64, OmniError> {
-        let mut storage = self.storage.lock().unwrap();
-        Ok(storage.height)
+    fn init_chain(&self) -> Result<(), OmniError> {
+        Ok(())
     }
 
-    fn hash(&self) -> Result<Vec<u8>, OmniError> {
+    fn info(&self) -> Result<AbciInfo, OmniError> {
         let mut storage = self.storage.lock().unwrap();
-        Ok(storage.hash())
+        Ok(AbciInfo {
+            height: storage.height,
+            hash: storage.hash(),
+        })
     }
 
     fn commit(&self) -> Result<(), OmniError> {
-        self.commit()
+        let mut storage = self.storage.lock().unwrap();
+        Ok(storage.commit())
     }
 }
 
@@ -520,8 +522,6 @@ impl OmniModule for LedgerModule {
 
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         let symbol = match message.method.as_str() {
-            "abci.info" => return Ok(()),
-            "abci.commit" => return Ok(()),
             "ledger.info" => return Ok(()),
             "ledger.mint" => {
                 decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
@@ -611,7 +611,7 @@ fn main() {
     let module = LedgerModule::new(owner_id, symbols, default);
     let omni = OmniServer::new("omni-ledger", id, &keypair);
     let omni = if abci {
-        omni.with_module(omni_abci::AbciModule::new(module))
+        omni.with_module(omni_abci::module::AbciModule::new(module))
     } else {
         omni.with_module(module)
     };

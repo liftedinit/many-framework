@@ -8,6 +8,7 @@ use tendermint_abci::ServerBuilder;
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
+mod module;
 mod omni_app;
 
 #[derive(Parser)]
@@ -15,6 +16,10 @@ struct Opts {
     /// Address and port to bind the ABCI server to.
     #[clap(long)]
     abci: String,
+
+    /// URL for the tendermint server. Tendermint must already be running.
+    #[clap(long)]
+    tendermint: String,
 
     /// URL (including scheme) that has the OMNI application running.
     #[clap(long)]
@@ -45,6 +50,7 @@ struct Opts {
 async fn main() {
     let Opts {
         abci,
+        tendermint,
         omni_app,
         omni,
         omni_pem,
@@ -67,26 +73,22 @@ async fn main() {
 
     let abci_app = AbciApp::create(omni_app, Identity::anonymous()).unwrap();
 
-    let ws_url = format!(
-        "ws://localhost:{}",
-        abci.to_socket_addrs().unwrap().next().unwrap().port()
-    );
-
     let abci_server = ServerBuilder::new(abci_read_buf_size)
         .bind(abci, abci_app)
         .unwrap();
-    std::thread::spawn(move || abci_server.listen().unwrap());
+    let j_abci = std::thread::spawn(move || abci_server.listen().unwrap());
+    std::thread::sleep(std::time::Duration::from_secs(5));
 
-    let (abci_client, abci_driver) = tendermint_rpc::WebSocketClient::new(ws_url.as_str())
-        .await
-        .unwrap();
-    tokio::spawn(async move { abci_driver.run().await.unwrap() });
-    eprintln!("0");
+    let abci_client = tendermint_rpc::HttpClient::new(tendermint.as_str()).unwrap();
 
     let (id, keypair) = Identity::from_pem_addressable(std::fs::read(omni_pem).unwrap()).unwrap();
-    let omni_server =
-        omni::transport::http::HttpServer::new(AbciHttpServer::new(abci_client, id, Some(keypair)));
+    let omni_server = omni::transport::http::HttpServer::new(
+        AbciHttpServer::new(abci_client, id, Some(keypair)).await,
+    );
 
     eprintln!("3");
-    std::thread::spawn(move || omni_server.bind(omni).unwrap());
+    let j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
+
+    j_abci.join().unwrap();
+    j_omni.join().unwrap();
 }

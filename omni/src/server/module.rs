@@ -17,7 +17,7 @@ pub struct OmniModuleInfo {
 /// A module ran by an omni server.
 #[async_trait]
 pub trait OmniModule: Sync + Send + Debug {
-    /// Returns the information of this module.
+    /// Returns information about this module.
     fn info(&self) -> &OmniModuleInfo;
 
     /// Verify that a message is well formed (ACLs, arguments, etc).

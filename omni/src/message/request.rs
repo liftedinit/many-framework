@@ -25,10 +25,7 @@ impl RequestMessage {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
-        let mut bytes = Vec::<u8>::new();
-        minicbor::encode(self, &mut bytes).map_err(|e| format!("{}", e))?;
-
-        Ok(bytes)
+        minicbor::to_vec(self).map_err(|e| format!("{}", e))
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
