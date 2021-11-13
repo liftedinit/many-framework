@@ -85,6 +85,10 @@ omni_error! {
             => "Deserialization error:\n{details}",
        3: SerializationError as serialization_error(details)
             => "Serialization error:\n{details}",
+       4: UnexpectedEmptyRequest as unexpected_empty_request()
+            => "Request of a message was unexpectedly empty.",
+       5: UnexpectedEmptyResponse as unexpected_empty_response()
+            => "Response of a message was unexpectedly empty.",
 
      100: InvalidIdentity as invalid_identity()
             => "Identity is invalid (does not follow the protocol).",
@@ -117,7 +121,8 @@ omni_error! {
 /// Easily define OmniError for specific applications.
 #[macro_export]
 macro_rules! define_omni_error {
-    ( $module_id: literal => { $( $id: literal : $vis: vis fn $name: ident ($( $var_name: ident ),*) => $message: literal ),* $(,)? } ) => {
+    ( $( attribute $module_id: literal => { $( $id: literal : $vis: vis fn $name: ident ($( $var_name: ident ),*) => $message: literal ),* $(,)? } );* ) => {
+        $(
         $(
             $vis fn $name ( $($var_name: String),* ) -> OmniError {
                 OmniError::application_specific(
@@ -128,6 +133,7 @@ macro_rules! define_omni_error {
                     ]),
                 )
             }
+        )*
         )*
     }
 }

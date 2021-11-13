@@ -210,8 +210,7 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
     }
 
     fn abci_commit(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let mut backend = &self.backend;
-        backend.commit();
+        self.backend.commit()?;
         Ok(ResponseMessage::from_request(
             &message,
             &message.to,

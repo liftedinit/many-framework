@@ -2,16 +2,14 @@ use crate::module::AbciInit;
 use async_trait::async_trait;
 use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
 use omni::message::{
-    decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessage,
-    RequestMessageBuilder, ResponseMessage,
+    decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessageBuilder,
+    ResponseMessage,
 };
 use omni::transport::LowLevelOmniRequestHandler;
 use omni::{Identity, OmniError};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
-use std::ops::Deref;
-use std::sync::{Arc, Mutex};
 use tendermint_rpc::Client;
 
 pub struct AbciHttpServer<C: Client> {
@@ -87,7 +85,8 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
                     ))
                     .await
                     .map_err(|_| OmniError::internal_server_error())?;
-                response.data.value().to_vec()
+                minicbor::to_vec(response.data.value().to_vec())
+                    .map_err(|e| OmniError::serialization_error(e.to_string()))?
             } else {
                 let response = self
                     .client

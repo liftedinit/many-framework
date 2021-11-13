@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "ledger",
     "omni",
     "omni-abci",
     "omni-echo",

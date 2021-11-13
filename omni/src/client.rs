@@ -14,9 +14,9 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct OmniClient {
-    id: Identity,
+    pub id: Identity,
     keypair: Option<Arc<Ed25519KeyPair>>,
-    to: Identity,
+    pub to: Identity,
     url: Url,
 }
 

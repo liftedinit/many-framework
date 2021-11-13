@@ -2,7 +2,6 @@ use clap::Parser;
 use omni::Identity;
 use omni_abci::abci_app::AbciApp;
 use omni_abci::omni_app::AbciHttpServer;
-use std::net::ToSocketAddrs;
 use std::path::PathBuf;
 use tendermint_abci::ServerBuilder;
 use tracing_subscriber::filter::LevelFilter;

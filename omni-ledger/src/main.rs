@@ -1,15 +1,16 @@
 use async_trait::async_trait;
 use clap::Parser;
-use crypto_bigint::Encoding;
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{decode, Decode, Decoder, Encode, Encoder};
+use omni::message::error::define_omni_error;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::{OmniModule, OmniModuleInfo};
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::{Identity, OmniError};
+use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
 use sha3::Digest;
 use std::cell::Cell;
 use std::collections::{BTreeMap, BTreeSet};
@@ -18,14 +19,12 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use omni::message::error::define_omni_error;
-use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
-
 define_omni_error!(
-    2 => {
+    attribute 2 => {
         1: fn unknown_symbol(symbol) => "Symbol not supported by this ledger: {symbol}.",
         2: fn unauthorized() => "Unauthorized to do this operation.",
         3: fn insufficient_funds() => "Insufficient funds.",
+        4: fn anonymous_cannot_hold_funds() => "Anonymous is not a valid account identity.",
     }
 );
 
@@ -175,7 +174,11 @@ impl LedgerStorage {
     }
 
     pub fn get_balance(&self, identity: &Identity, symbol: &str) -> Option<&TokenAmount> {
-        self.accounts.get(identity)?.get(symbol).map(|x| x)
+        if identity.is_anonymous() {
+            None
+        } else {
+            self.accounts.get(identity)?.get(symbol).map(|x| x)
+        }
     }
 
     pub fn get_transactions_at(&self, index: u64) -> &[Transaction] {
@@ -222,6 +225,9 @@ impl LedgerStorage {
             // NOOP.
             return Ok(());
         }
+        if to.is_anonymous() {
+            return Err(anonymous_cannot_hold_funds());
+        }
 
         *self
             .accounts
@@ -243,6 +249,9 @@ impl LedgerStorage {
         if amount.is_zero() {
             // NOOP.
             return Ok(());
+        }
+        if to.is_anonymous() {
+            return Err(anonymous_cannot_hold_funds());
         }
 
         *self
@@ -270,6 +279,9 @@ impl LedgerStorage {
         if amount.is_zero() {
             // NOOP.
             return Ok(());
+        }
+        if to.is_anonymous() || from.is_anonymous() {
+            return Err(anonymous_cannot_hold_funds());
         }
 
         let amount_from = self.get_balance(from, symbol).cloned().unwrap_or_default();
@@ -399,12 +411,6 @@ impl LedgerModule {
         Ok(bytes)
     }
 
-    fn commit(&self) -> Result<(), OmniError> {
-        let mut storage = self.storage.lock().unwrap();
-        storage.commit();
-        Ok(())
-    }
-
     fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
         let mut d = minicbor::Decoder::new(payload);
         let (identity, symbol): (Option<Identity>, Option<&str>) = d
@@ -501,7 +507,7 @@ impl OmniAbciModuleBackend for LedgerModule {
     }
 
     fn info(&self) -> Result<AbciInfo, OmniError> {
-        let mut storage = self.storage.lock().unwrap();
+        let storage = self.storage.lock().unwrap();
         Ok(AbciInfo {
             height: storage.height,
             hash: storage.hash(),
@@ -579,7 +585,7 @@ struct Opts {
     owner: PathBuf,
 
     /// The port to bind to for the OMNI Http server.
-    #[clap(long, default_value = "8000")]
+    #[clap(long, short, default_value = "8000")]
     port: u16,
 
     /// The list of supported symbols.

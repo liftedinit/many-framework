@@ -1,21 +1,9 @@
 use crate::module::AbciInfo;
 use minicose::CoseSign1;
-use omni::message::RequestMessage;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
-use std::io::Error;
-use std::ops::Shl;
-use std::sync::mpsc::{channel, Sender};
-use std::sync::{Arc, Mutex};
 use tendermint_abci::Application;
-use tendermint_proto::abci::{
-    RequestApplySnapshotChunk, RequestBeginBlock, RequestCheckTx, RequestDeliverTx, RequestEcho,
-    RequestEndBlock, RequestInfo, RequestInitChain, RequestLoadSnapshotChunk, RequestOfferSnapshot,
-    RequestQuery, RequestSetOption, ResponseApplySnapshotChunk, ResponseBeginBlock,
-    ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseEcho, ResponseEndBlock,
-    ResponseFlush, ResponseInfo, ResponseInitChain, ResponseListSnapshots,
-    ResponseLoadSnapshotChunk, ResponseOfferSnapshot, ResponseQuery, ResponseSetOption,
-};
+use tendermint_proto::abci::*;
 use tracing::debug;
 
 #[derive(Debug, Clone)]
@@ -33,7 +21,7 @@ impl AbciApp {
         let omni_url = omni_url.into_url().map_err(|e| e.to_string())?;
 
         let server_id = if server_id.is_anonymous() {
-            /// Get the server ID from the omni server.
+            // TODO: Get the server ID from the omni server.
             server_id
         } else {
             server_id
@@ -93,7 +81,7 @@ impl Application for AbciApp {
                 data: err.to_string().into_bytes(),
                 retain_height: 0,
             },
-            |msg| ResponseCommit {
+            |_msg| ResponseCommit {
                 data: vec![],
                 retain_height: 0,
             },

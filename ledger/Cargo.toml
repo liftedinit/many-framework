@@ -1,0 +1,19 @@
+[package]
+name = "ledger"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "3.0.0-beta.5"
+crc-any = "2.4.0"
+derive_builder = "0.10.2"
+hex = "0.4.3"
+lazy_static = "1.4.0"
+minicbor = { version = "0.11.3", features = ["derive", "half", "std"] }
+num-bigint = "0.4.3"
+omni = { path = "../omni" }
+regex = "1.5.4"
+ring = "0.17.0-alpha.10"
+tokio = { version = "1.12.0", features = [ "full" ] }
