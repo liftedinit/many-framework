@@ -1,9 +1,10 @@
 use clap::Parser;
-use omni::Identity;
+use omni::{Identity, OmniClient};
 use omni_abci::abci_app::AbciApp;
 use omni_abci::omni_app::AbciHttpServer;
 use std::path::PathBuf;
 use tendermint_abci::ServerBuilder;
+use tendermint_rpc::{Client, Id};
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
@@ -70,24 +71,68 @@ async fn main() {
     };
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
+    // Try to get the status of the backend OMNI app.
+    let omni_client = OmniClient::new(
+        &omni_app,
+        Identity::anonymous(),
+        Identity::anonymous(),
+        None,
+    )
+    .unwrap();
+
+    let start = std::time::SystemTime::now();
+    eprintln!("Connecting to the backend app...");
+    loop {
+        let omni_client = omni_client.clone();
+        let result = tokio::task::spawn_blocking(move || omni_client.status())
+            .await
+            .unwrap();
+        if let Err(e) = result {
+            if start.elapsed().unwrap().as_secs() > 60 {
+                eprintln!("\nCould not connect to the ABCI server in 60 seconds... Terminating.");
+                eprintln!("Latest error:\n{}\n", e);
+                std::process::exit(1);
+            }
+        } else {
+            break;
+        }
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+
     let abci_app = AbciApp::create(omni_app, Identity::anonymous()).unwrap();
 
     let abci_server = ServerBuilder::new(abci_read_buf_size)
         .bind(abci, abci_app)
         .unwrap();
     let j_abci = std::thread::spawn(move || abci_server.listen().unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
 
     let abci_client = tendermint_rpc::HttpClient::new(tendermint.as_str()).unwrap();
+
+    // Wait for 60 seconds until we can contact the ABCI server.
+    let start = std::time::SystemTime::now();
+    loop {
+        if abci_client.abci_info().await.is_ok() {
+            break;
+        }
+        if start.elapsed().unwrap().as_secs() > 60 {
+            eprintln!("\nCould not connect to the ABCI server in 60 seconds... Terminating.");
+            std::process::exit(1);
+        }
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
 
     let (id, keypair) = Identity::from_pem_addressable(std::fs::read(omni_pem).unwrap()).unwrap();
     let omni_server = omni::transport::http::HttpServer::new(
         AbciHttpServer::new(abci_client, id, Some(keypair)).await,
     );
 
-    eprintln!("3");
     let j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
 
     j_abci.join().unwrap();
+    // When ABCI is done, just kill the whole process.
+    // TODO: shutdown the omni server gracefully.
+    std::process::exit(0);
     j_omni.join().unwrap();
 }

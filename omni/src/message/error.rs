@@ -89,6 +89,8 @@ omni_error! {
             => "Request of a message was unexpectedly empty.",
        5: UnexpectedEmptyResponse as unexpected_empty_response()
             => "Response of a message was unexpectedly empty.",
+       6: UnexpectedTransportError as unexpected_transport_error(inner)
+            => "The transport returned an error unexpectedly:\n{inner}",
 
      100: InvalidIdentity as invalid_identity()
             => "Identity is invalid (does not follow the protocol).",

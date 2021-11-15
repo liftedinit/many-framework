@@ -115,7 +115,7 @@ impl<'b> Decode<'b> for ResponseMessage {
     fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
         if d.tag()? != Tag::Unassigned(10002) {
             return Err(minicbor::decode::Error::Message(
-                "Invalid tag, expected 10001 for a message.",
+                "Invalid tag, expected 10002 for a message.",
             ));
         };
 

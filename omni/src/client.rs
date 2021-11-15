@@ -53,7 +53,11 @@ impl OmniClient {
             .map_err(|_| OmniError::internal_server_error())?;
 
         let client = reqwest::blocking::Client::new();
-        let response = client.post(url).body(bytes).send().unwrap();
+        let response = client
+            .post(url)
+            .body(bytes)
+            .send()
+            .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
         let body = response.bytes().unwrap();
         let bytes = body.to_vec();
         CoseSign1::from_bytes(&bytes).map_err(|e| OmniError::deserialization_error(e.to_string()))

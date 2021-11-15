@@ -71,22 +71,31 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
         }
     }
 
-    async fn execute_inner(&self, envelope: CoseSign1) -> Result<ResponseMessage, OmniError> {
+    async fn execute_inner(&self, envelope: CoseSign1) -> Result<CoseSign1, OmniError> {
         let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
 
         if let Some(is_command) = self.endpoints.get(&message.method) {
-            let payload = if *is_command {
+            eprintln!("execute inner: \n{:?}\n {}", message, *is_command);
+            if *is_command {
                 let response = self
                     .client
                     .broadcast_tx_async(tendermint::abci::Transaction::from(
                         envelope
                             .to_bytes()
-                            .map_err(|_| OmniError::internal_server_error())?,
+                            .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?,
                     ))
                     .await
-                    .map_err(|_| OmniError::internal_server_error())?;
-                minicbor::to_vec(response.data.value().to_vec())
-                    .map_err(|e| OmniError::serialization_error(e.to_string()))?
+                    .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
+
+                let data = minicbor::to_vec(response.data.value().to_vec())
+                    .map_err(|e| OmniError::serialization_error(e.to_string()))?;
+                let response = ResponseMessage::from_request(&message, &self.identity, Ok(data));
+                omni::message::encode_cose_sign1_from_response(
+                    response,
+                    self.identity.clone(),
+                    self.keypair.as_ref(),
+                )
+                .map_err(|e| OmniError::unexpected_transport_error(e))
             } else {
                 let response = self
                     .client
@@ -94,21 +103,17 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
                         None,
                         envelope
                             .to_bytes()
-                            .map_err(|_| OmniError::internal_server_error())?,
+                            .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?,
                         None,
                         false,
                     )
                     .await
-                    .map_err(|_| OmniError::internal_server_error())?;
-                return Ok(ResponseMessage::from_bytes(&response.value)
-                    .map_err(|_| OmniError::internal_server_error())?);
-            };
-
-            Ok(ResponseMessage::from_request(
-                &message,
-                &self.identity,
-                Ok(payload),
-            ))
+                    .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
+                eprintln!("bytes: {}", hex::encode(&response.value));
+                let response = CoseSign1::from_bytes(&response.value)
+                    .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
+                Ok(response)
+            }
         } else {
             Err(OmniError::invalid_method_name(message.method))
         }
@@ -118,15 +123,12 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
 #[async_trait]
 impl<C: Client + Send + Sync> LowLevelOmniRequestHandler for AbciHttpServer<C> {
     async fn execute(&self, envelope: CoseSign1) -> Result<CoseSign1, String> {
-        let response = self
-            .execute_inner(envelope)
-            .await
-            .unwrap_or_else(|err| ResponseMessage::error(&self.identity, err));
-
-        omni::message::encode_cose_sign1_from_response(
-            response,
-            self.identity.clone(),
-            self.keypair.as_ref(),
-        )
+        self.execute_inner(envelope).await.or_else(|err| {
+            omni::message::encode_cose_sign1_from_response(
+                ResponseMessage::error(&self.identity, err),
+                self.identity.clone(),
+                self.keypair.as_ref(),
+            )
+        })
     }
 }
