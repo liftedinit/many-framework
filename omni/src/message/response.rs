@@ -94,7 +94,7 @@ impl Encode for ResponseMessage {
 
         e.str("timestamp")?;
         let timestamp = self.timestamp.unwrap_or(SystemTime::now());
-        e.tag(minicbor::data::Tag::DateTime)?.u64(
+        e.tag(minicbor::data::Tag::Timestamp)?.u64(
             timestamp
                 .duration_since(UNIX_EPOCH)
                 .expect("Time flew backward")
@@ -140,7 +140,7 @@ impl<'b> Decode<'b> for ResponseMessage {
                 "timestamp" => {
                     // Some logic applies.
                     let t = d.tag()?;
-                    if t != minicbor::data::Tag::DateTime {
+                    if t != minicbor::data::Tag::Timestamp {
                         return Err(minicbor::decode::Error::Message("Invalid tag."));
                     } else {
                         let secs = d.u64()?;
