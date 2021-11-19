@@ -1,3 +1,4 @@
+use crate::identity::cose::CoseKeyIdentity;
 use crate::message::{RequestMessage, ResponseMessage};
 use crate::protocol::{Status, StatusBuilder};
 use crate::server::module::{OmniModule, OmniModuleInfo};
@@ -20,26 +21,15 @@ pub struct OmniModuleList {}
 pub struct OmniServer {
     modules: Vec<Box<dyn OmniModule>>,
     method_cache: BTreeSet<&'static str>,
-    identity: Identity,
-    public_key: CoseKey,
+    identity: CoseKeyIdentity,
     name: String,
 }
 
 impl OmniServer {
-    pub fn new<N: ToString>(name: N, identity: Identity, public_key: &Ed25519KeyPair) -> Self {
-        debug_assert!(identity.is_addressable());
-
-        let x = public_key.public_key().as_ref().to_vec();
-        let public_key: CoseKey = Ed25519CoseKeyBuilder::default()
-            .x(x)
-            .build()
-            .unwrap()
-            .into();
-
+    pub fn new<N: ToString>(name: N, identity: CoseKeyIdentity) -> Self {
         Self {
             name: name.to_string(),
             identity,
-            public_key,
             ..Default::default()
         }
         .with_module(BaseServerModule)
@@ -91,8 +81,8 @@ impl OmniServer {
         StatusBuilder::default()
             .name(self.name.clone())
             .version(1)
-            .public_key(self.public_key.clone())
-            .identity(self.identity.clone())
+            .public_key(self.identity.public_key())
+            .identity(self.identity.identity.clone())
             .internal_version(vec![])
             .attributes(vec![])
             .build()
@@ -111,7 +101,7 @@ impl OmniRequestHandler for OmniServer {
         let method = message.method.as_str();
 
         // Verify that the message is for this server, if it's not anonymous.
-        if to.is_anonymous() || &self.identity == &to {
+        if to.is_anonymous() || &self.identity.identity == &to {
             // Verify the endpoint.
             if self.method_cache.contains(method) {
                 Ok(())
@@ -121,7 +111,7 @@ impl OmniRequestHandler for OmniServer {
         } else {
             Err(OmniError::unknown_destination(
                 to.to_string(),
-                self.identity.to_string(),
+                self.identity.identity.to_string(),
             ))
         }
     }
@@ -145,7 +135,7 @@ impl OmniRequestHandler for OmniServer {
         } {
             return Ok(ResponseMessage::from_request(
                 &message,
-                &self.identity,
+                &self.identity.identity,
                 Ok(payload),
             ));
         }
@@ -159,7 +149,7 @@ impl OmniRequestHandler for OmniServer {
                 m.validate(&message)?;
 
                 return m.execute(message).await.map(|mut r| {
-                    r.from = self.identity;
+                    r.from = self.identity.identity;
                     r
                 });
             }

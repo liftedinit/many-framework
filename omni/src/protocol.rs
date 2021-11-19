@@ -193,7 +193,7 @@ impl<'d> Decode<'d> for Attribute {
 pub struct Status {
     pub name: String,
     pub version: u8,
-    pub public_key: CoseKey,
+    pub public_key: Option<CoseKey>,
     pub internal_version: Vec<u8>,
     pub identity: Identity,
     pub attributes: Vec<Attribute>,
@@ -211,17 +211,20 @@ impl Status {
 
 impl Encode for Status {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
-        let public_key = self.public_key.to_public_key().unwrap().to_bytes().unwrap();
-
         #[rustfmt::skip]
         e.begin_map()?
             .str("name")?.str(self.name.as_str())?
             .str("version")?.u8(self.version)?
-            .str("public_key")?.bytes(public_key.as_slice())?
             .str("identity")?.encode(&self.identity)?
             .str("internal_version")?.bytes(self.internal_version.as_slice())?
-            .str("attributes")?.encode(self.attributes.as_slice())?
-            .end()?;
+            .str("attributes")?.encode(self.attributes.as_slice())?;
+
+        if let Some(pk) = self.public_key.as_ref() {
+            let public_key = pk.to_public_key().unwrap().to_bytes().unwrap();
+            e.str("public_key")?.bytes(public_key.as_slice())?;
+        }
+
+        e.end()?;
 
         Ok(())
     }
@@ -246,7 +249,7 @@ impl<'b> Decode<'b> for Status {
                     let bytes = d.bytes()?;
                     let key: CoseKey = CoseKey::from_bytes(bytes)
                         .map_err(|_e| minicbor::decode::Error::Message("Invalid cose key."))?;
-                    builder.public_key(key)
+                    builder.public_key(Some(key))
                 }
                 "internal_version" => builder.internal_version(d.bytes()?.to_vec()),
                 "identity" => builder.identity(d.decode()?),

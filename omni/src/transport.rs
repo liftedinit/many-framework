@@ -1,3 +1,4 @@
+use crate::identity::cose::CoseKeyIdentity;
 use crate::message::{OmniError, RequestMessage, ResponseMessage};
 use crate::Identity;
 use async_trait::async_trait;
@@ -13,32 +14,12 @@ pub trait LowLevelOmniRequestHandler: Send + Sync + Debug {
 #[derive(Debug)]
 pub struct HandlerExecutorAdapter<H: OmniRequestHandler + Debug> {
     handler: H,
-    identity: Identity,
-    keypair: Option<Ed25519KeyPair>,
+    identity: CoseKeyIdentity,
 }
 
 impl<H: OmniRequestHandler + Debug> HandlerExecutorAdapter<H> {
-    pub fn new(handler: H, identity: Identity, keypair: Option<Ed25519KeyPair>) -> Self {
-        let cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
-            let x = kp.public_key().as_ref().to_vec();
-            Ed25519CoseKeyBuilder::default()
-                .x(x)
-                .kid(identity.to_vec())
-                .build()
-                .unwrap()
-                .into()
-        });
-
-        assert!(
-            identity.matches_key(&cose_key),
-            "Identity does not match keypair."
-        );
-        assert!(identity.is_addressable(), "Identity is not addressable.");
-        Self {
-            handler,
-            identity,
-            keypair,
-        }
+    pub fn new(handler: H, identity: CoseKeyIdentity) -> Self {
+        Self { handler, identity }
     }
 }
 
@@ -50,17 +31,13 @@ impl<H: OmniRequestHandler + Debug> LowLevelOmniRequestHandler for HandlerExecut
 
         let response = match request {
             Ok(x) => match self.handler.execute(x).await {
-                Err(e) => ResponseMessage::error(&self.identity, e),
+                Err(e) => ResponseMessage::error(&self.identity.identity, e),
                 Ok(x) => x,
             },
-            Err(e) => ResponseMessage::error(&self.identity, e),
+            Err(e) => ResponseMessage::error(&self.identity.identity, e),
         };
 
-        crate::message::encode_cose_sign1_from_response(
-            response,
-            self.identity.clone(),
-            self.keypair.as_ref(),
-        )
+        crate::message::encode_cose_sign1_from_response(response, &self.identity)
     }
 }
 

@@ -14,7 +14,6 @@ crypto-bigint = "0.2.11"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 minicbor = "0.11.3"
-minicose = { git = "https://github.com/l-1-labs/rust-minicose.git", features = [ "allow-unsigned" ] }
 num-bigint = "0.4.3"
 omni = { path = "../omni", features = [ "pem" ] }
 omni-abci = { path = "../omni-abci" }

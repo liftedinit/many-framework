@@ -611,7 +611,7 @@ fn main() {
         abci,
     } = Opts::parse();
     let default = default.unwrap_or(symbols.first().unwrap().to_string());
-    let (id, keypair) = Identity::from_pem_addressable(std::fs::read(pem).unwrap()).unwrap();
+    let (id, keypair) = Identity::from_pem_public(std::fs::read(pem).unwrap()).unwrap();
     let (owner_id, _) = Identity::from_pem_public(std::fs::read(owner).unwrap()).unwrap();
 
     let module = LedgerModule::new(owner_id, symbols, default);

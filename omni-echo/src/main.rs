@@ -1,4 +1,5 @@
 use clap::Parser;
+use omni::identity::cose::CoseKeyIdentity;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::Identity;
@@ -18,11 +19,11 @@ struct Opts {
 fn main() {
     let o: Opts = Opts::parse();
     let bytes = std::fs::read(o.pem).unwrap();
-    let (id, keypair) = Identity::from_pem_addressable(bytes).unwrap();
+    let id = CoseKeyIdentity::from_pem(&String::from_utf8(bytes).unwrap()).unwrap();
 
-    let omni = OmniServer::new("echo", id, &keypair);
+    let omni = OmniServer::new("echo", id.clone());
 
-    HttpServer::simple(id, Some(keypair), omni)
+    HttpServer::simple(id, omni)
         .bind(format!("127.0.0.1:{}", o.port))
         .unwrap();
 }

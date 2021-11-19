@@ -11,10 +11,13 @@ pub use response::ResponseMessageBuilder;
 use crate::Identity;
 use minicose::exports::ciborium::value::Value;
 use minicose::{
-    AlgorithmicCurve, Algorithms, CoseKey, CoseKeySet, CoseSign1, CoseSign1Builder, Ed25519CoseKey,
+    Algorithm, CoseKey, CoseKeySet, CoseSign1, CoseSign1Builder, Ed25519CoseKey,
     Ed25519CoseKeyBuilder, ProtectedHeaders, ProtectedHeadersBuilder,
 };
-use ring::signature::{Ed25519KeyPair, KeyPair};
+// use ring::signature::{Ed25519KeyPair, KeyPair};
+use crate::identity::cose::CoseKeyIdentity;
+use minicose::algorithms::AlgorithmCurve;
+use signature::{Signature, Signer};
 use std::convert::TryFrom;
 
 pub fn decode_request_from_cose_sign1(sign1: CoseSign1) -> Result<RequestMessage, OmniError> {
@@ -72,34 +75,22 @@ pub fn decode_response_from_cose_sign1(
 
 fn encode_cose_sign1_from_payload(
     payload: Vec<u8>,
-    id: Identity,
-    keypair: Option<&Ed25519KeyPair>,
+    cose_key: &CoseKeyIdentity,
 ) -> Result<CoseSign1, String> {
-    let maybe_cose_key: Option<CoseKey> = keypair.as_ref().map(|kp| {
-        let x = kp.public_key().as_ref().to_vec();
-        Ed25519CoseKeyBuilder::default()
-            .x(x)
-            .kid(id.to_vec())
-            .build()
-            .unwrap()
-            .into()
-    });
-
-    if !id.matches_key(&maybe_cose_key) {
-        return Err("Identity did not match keypair.".to_string());
-    }
-
     let mut protected: ProtectedHeaders = ProtectedHeadersBuilder::default()
-        .alg(Algorithms::EdDSA(AlgorithmicCurve::Ed25519))
-        .kid(id.to_vec())
+        .alg(Algorithm::EDDSA)
+        .crv(AlgorithmCurve::Ed25519)
+        .kid(cose_key.identity.to_vec())
         .content_type("application/cbor".to_string())
         .build()
         .unwrap();
 
     // Add the keyset to the headers.
-    if let Some(cose_key) = maybe_cose_key {
+    if let Some(key) = cose_key.key.as_ref() {
         let mut keyset = CoseKeySet::default();
-        keyset.insert(cose_key);
+        let mut key_public = key.to_public_key()?;
+        key_public.kid = Some(cose_key.identity.to_vec());
+        keyset.insert(key_public);
 
         protected.custom_headers.insert(
             Value::from("keyset"),
@@ -113,27 +104,30 @@ fn encode_cose_sign1_from_payload(
         .build()
         .unwrap();
 
-    if let Some(kp) = keypair {
-        cose.sign_with(|bytes| Ok(kp.sign(bytes).as_ref().to_vec()))
-            .map_err(|e| e.to_string())?;
+    if cose_key.key.is_some() {
+        cose.sign_with(|bytes| {
+            cose_key
+                .try_sign(bytes)
+                .map(|v| v.as_bytes().to_vec())
+                .map_err(|e| e.to_string())
+        })
+        .map_err(|e| e.to_string())?;
     }
     Ok(cose)
 }
 
 pub fn encode_cose_sign1_from_response(
     response: ResponseMessage,
-    id: Identity,
-    keypair: Option<&Ed25519KeyPair>,
+    cose_key: &CoseKeyIdentity,
 ) -> Result<CoseSign1, String> {
-    encode_cose_sign1_from_payload(response.to_bytes().unwrap(), id, keypair)
+    encode_cose_sign1_from_payload(response.to_bytes().unwrap(), cose_key)
 }
 
 pub fn encode_cose_sign1_from_request(
     request: RequestMessage,
-    id: Identity,
-    keypair: Option<&Ed25519KeyPair>,
+    cose_key: &CoseKeyIdentity,
 ) -> Result<CoseSign1, String> {
-    encode_cose_sign1_from_payload(request.to_bytes().unwrap(), id, keypair)
+    encode_cose_sign1_from_payload(request.to_bytes().unwrap(), cose_key)
 }
 
 /// Provide utility functions surrounding request and response messages.
@@ -169,16 +163,6 @@ impl CoseSign1RequestMessage {
         if id.is_public_key() {
             let other = Identity::public_key(&cose_key);
             if other.eq(id) {
-                Some(ring::signature::UnparsedPublicKey::new(
-                    &ring::signature::ED25519,
-                    key_bytes,
-                ))
-            } else {
-                None
-            }
-        } else if id.is_addressable() {
-            if Identity::addressable(&cose_key).eq(id) {
-                // Some(cosekey_to_ring_key(key_bytes))
                 Some(ring::signature::UnparsedPublicKey::new(
                     &ring::signature::ED25519,
                     key_bytes,

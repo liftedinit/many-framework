@@ -36,10 +36,6 @@ struct IdOfOpt {
     /// The pem file to read from.
     pem: PathBuf,
 
-    /// Whether or not this public key is addressable (e.g. a Network).
-    #[clap(long)]
-    addressable: bool,
-
     /// Whether to display the key in hexadecimal.
     #[clap(long)]
     hex: bool,
@@ -99,11 +95,7 @@ fn main() {
             let bytes = std::fs::read(o.pem).unwrap();
 
             // Create the identity from the public key hash.
-            let (id, _) = if o.addressable {
-                Identity::from_pem_addressable(bytes).unwrap()
-            } else {
-                Identity::from_pem_public(bytes).unwrap()
-            };
+            let (id, _) = Identity::from_pem_public(bytes).unwrap();
 
             if o.hex {
                 println!("{}", hex::encode(id.to_vec()));

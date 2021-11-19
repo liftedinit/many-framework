@@ -1,3 +1,4 @@
+use crate::identity::cose::CoseKeyIdentity;
 use crate::transport::{HandlerExecutorAdapter, LowLevelOmniRequestHandler, OmniRequestHandler};
 use crate::Identity;
 use anyhow::anyhow;
@@ -17,8 +18,8 @@ pub struct HttpServer<E: LowLevelOmniRequestHandler> {
 }
 
 impl<H: OmniRequestHandler> HttpServer<HandlerExecutorAdapter<H>> {
-    pub fn simple(identity: Identity, keypair: Option<Ed25519KeyPair>, handler: H) -> Self {
-        Self::new(HandlerExecutorAdapter::new(handler, identity, keypair))
+    pub fn simple(identity: CoseKeyIdentity, handler: H) -> Self {
+        Self::new(HandlerExecutorAdapter::new(handler, identity))
     }
 }
 
@@ -64,7 +65,8 @@ impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
             .and_then(|r| r.to_bytes().map_err(|e| e.to_string()));
         let bytes = match response {
             Ok(bytes) => bytes,
-            Err(_e) => {
+            Err(e) => {
+                eprintln!("   error: {}", e);
                 return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
         };

@@ -1,3 +1,4 @@
+use crate::identity::cose::CoseKeyIdentity;
 use crate::message::{
     decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessage,
     RequestMessageBuilder,
@@ -14,8 +15,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct OmniClient {
-    pub id: Identity,
-    keypair: Option<Arc<Ed25519KeyPair>>,
+    pub id: CoseKeyIdentity,
     pub to: Identity,
     url: Url,
 }
@@ -31,17 +31,15 @@ impl std::fmt::Debug for OmniClient {
 }
 
 impl OmniClient {
-    pub fn new<S: IntoUrl, I: TryInto<Identity>>(
+    pub fn new<S: IntoUrl, I: TryInto<CoseKeyIdentity>>(
         url: S,
         to: Identity,
         identity: I,
-        keypair: Option<Ed25519KeyPair>,
     ) -> Result<Self, String> {
         Ok(Self {
             id: identity
                 .try_into()
                 .map_err(|_e| format!("Could not parse identity."))?,
-            keypair: keypair.map(Arc::new),
             to,
             url: url.into_url().map_err(|e| format!("{}", e))?,
         })
@@ -64,12 +62,7 @@ impl OmniClient {
     }
 
     pub fn send_message(&self, message: RequestMessage) -> Result<Vec<u8>, OmniError> {
-        let cose = encode_cose_sign1_from_request(
-            message,
-            self.id.clone(),
-            self.keypair.as_ref().map(|x| x.as_ref()),
-        )
-        .unwrap();
+        let cose = encode_cose_sign1_from_request(message, &self.id).unwrap();
         let cose_sign1 = Self::send_envelope(self.url.clone(), cose)?;
 
         let response = decode_response_from_cose_sign1(cose_sign1, None)
@@ -84,7 +77,7 @@ impl OmniClient {
     {
         let message: RequestMessage = RequestMessageBuilder::default()
             .version(1)
-            .from(self.id.clone())
+            .from(self.id.identity.clone())
             .to(self.to.clone())
             .method(method.into())
             .data(argument.to_vec())

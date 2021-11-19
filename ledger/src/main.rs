@@ -141,7 +141,7 @@ fn send(
     amount: BigUint,
     symbol: Option<String>,
 ) -> Result<(), OmniError> {
-    if client.id.is_anonymous() {
+    if client.id.identity.is_anonymous() {
         Err(OmniError::invalid_identity())
     } else {
         let payload = client.call_("ledger.send", (destination, Amount(amount), symbol))?;

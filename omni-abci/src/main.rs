@@ -123,16 +123,16 @@ async fn main() {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    let (id, keypair) = Identity::from_pem_addressable(std::fs::read(omni_pem).unwrap()).unwrap();
+    let (id, keypair) = Identity::from_pem_public(std::fs::read(omni_pem).unwrap()).unwrap();
     let omni_server = omni::transport::http::HttpServer::new(
         AbciHttpServer::new(abci_client, id, Some(keypair)).await,
     );
 
-    let j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
+    let _j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
 
     j_abci.join().unwrap();
     // When ABCI is done, just kill the whole process.
     // TODO: shutdown the omni server gracefully.
     std::process::exit(0);
-    j_omni.join().unwrap();
+    // j_omni.join().unwrap();
 }

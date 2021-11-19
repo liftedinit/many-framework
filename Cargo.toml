@@ -7,3 +7,7 @@ members = [
     "omni-echo",
     "omni-ledger",
 ]
+
+# Uncomment this for local builds of minicose.
+#[patch."https://github.com/l-1-labs/rust-minicose"]
+#minicose = { path = "../rust-minicose" }

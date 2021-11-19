@@ -45,7 +45,6 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
             identity.matches_key(&cose_key),
             "Identity does not match keypair."
         );
-        assert!(identity.is_addressable(), "Identity is not addressable.");
 
         let init_message = RequestMessageBuilder::default()
             .from(identity.clone())
