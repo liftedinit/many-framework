@@ -17,7 +17,6 @@ minicbor = "0.11.4"
 minicose = { git = "https://github.com/l-1-labs/rust-minicose.git" }
 omni = { path = "../omni" }
 reqwest = "0.11.6"
-ring = "0.17.0-alpha.10"
 tendermint = "0.23.0"
 tendermint-abci = { version = "0.23.0" }
 tendermint-rpc = { version = "0.23.0", features = [ "http-client" ] }

@@ -2,6 +2,7 @@ pub mod identity;
 pub mod message;
 
 use clap::Parser as Clap;
+use omni::identity::cose::CoseKeyIdentity;
 use omni::message::{encode_cose_sign1_from_request, RequestMessage, RequestMessageBuilder};
 use omni::{Identity, OmniClient};
 use std::convert::TryFrom;
@@ -95,7 +96,9 @@ fn main() {
             let bytes = std::fs::read(o.pem).unwrap();
 
             // Create the identity from the public key hash.
-            let (id, _) = Identity::from_pem_public(bytes).unwrap();
+            let id = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&o.pem).unwrap())
+                .unwrap()
+                .identity;
 
             if o.hex {
                 println!("{}", hex::encode(id.to_vec()));
@@ -105,14 +108,11 @@ fn main() {
         }
         SubCommand::Message(o) => {
             // If `pem` is not provided, use anonymous and don't sign.
-            let (from_identity, keypair) = o.pem.map_or_else(
-                || (Identity::anonymous(), None),
-                |pem| {
-                    let bytes = std::fs::read(pem).unwrap();
-                    let (id, keypair) = Identity::from_pem_public(bytes).unwrap();
-                    (id, Some(keypair))
-                },
+            let key = o.pem.map_or_else(
+                || CoseKeyIdentity::anonymous(),
+                |p| CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap(),
             );
+            let from_identity = key.identity.clone();
             let to_identity = o.to.unwrap_or_default();
 
             let data = o
@@ -120,7 +120,7 @@ fn main() {
                 .map_or(vec![], |d| cbor_diag::parse_diag(&d).unwrap().to_bytes());
 
             if let Some(s) = o.server {
-                let client = OmniClient::new(s, to_identity, from_identity, keypair).unwrap();
+                let client = OmniClient::new(s, to_identity, key).unwrap();
                 let response = client.call_raw(o.method, &data);
 
                 match response {
@@ -156,8 +156,7 @@ fn main() {
                     .build()
                     .unwrap();
 
-                let cose = encode_cose_sign1_from_request(message, from_identity, keypair.as_ref())
-                    .unwrap();
+                let cose = encode_cose_sign1_from_request(message, &key).unwrap();
                 let bytes = cose.to_bytes().unwrap();
                 if o.hex {
                     println!("{}", hex::encode(&bytes));

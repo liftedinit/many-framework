@@ -11,8 +11,8 @@ pub use response::ResponseMessageBuilder;
 use crate::Identity;
 use minicose::exports::ciborium::value::Value;
 use minicose::{
-    Algorithm, CoseKey, CoseKeySet, CoseSign1, CoseSign1Builder, Ed25519CoseKey,
-    Ed25519CoseKeyBuilder, ProtectedHeaders, ProtectedHeadersBuilder,
+    Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, Ed25519CoseKey, ProtectedHeaders,
+    ProtectedHeadersBuilder,
 };
 // use ring::signature::{Ed25519KeyPair, KeyPair};
 use crate::identity::cose::CoseKeyIdentity;
@@ -22,9 +22,10 @@ use std::convert::TryFrom;
 
 pub fn decode_request_from_cose_sign1(sign1: CoseSign1) -> Result<RequestMessage, OmniError> {
     let request = CoseSign1RequestMessage { sign1 };
-    let from_id = request
-        .verify()
-        .map_err(|_| OmniError::could_not_verify_signature())?;
+    let from_id = request.verify().map_err(|e| {
+        eprintln!("e {}", e);
+        OmniError::could_not_verify_signature()
+    })?;
 
     let payload = request
         .sign1
@@ -162,6 +163,7 @@ impl CoseSign1RequestMessage {
 
         if id.is_public_key() {
             let other = Identity::public_key(&cose_key);
+            eprintln!("other: {}   id: {}", other, id);
             if other.eq(id) {
                 Some(ring::signature::UnparsedPublicKey::new(
                     &ring::signature::ED25519,

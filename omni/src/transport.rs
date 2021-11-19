@@ -1,9 +1,7 @@
 use crate::identity::cose::CoseKeyIdentity;
 use crate::message::{OmniError, RequestMessage, ResponseMessage};
-use crate::Identity;
 use async_trait::async_trait;
-use minicose::{CoseKey, CoseSign1, Ed25519CoseKeyBuilder};
-use ring::signature::{Ed25519KeyPair, KeyPair};
+use minicose::CoseSign1;
 use std::fmt::Debug;
 
 #[async_trait]

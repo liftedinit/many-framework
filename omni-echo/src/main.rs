@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 struct Opts {
-    /// The location of a Ed25519 PEM file for the identity of this server.
+    /// The location of a PEM file for the identity of this server.
     #[clap(long)]
     pem: PathBuf,
 

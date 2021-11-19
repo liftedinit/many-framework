@@ -1,9 +1,7 @@
 use crate::identity::cose::CoseKeyIdentity;
 use crate::transport::{HandlerExecutorAdapter, LowLevelOmniRequestHandler, OmniRequestHandler};
-use crate::Identity;
 use anyhow::anyhow;
 use minicose::CoseSign1;
-use ring::signature::Ed25519KeyPair;
 use std::fmt::Debug;
 use std::io::Cursor;
 use std::net::ToSocketAddrs;

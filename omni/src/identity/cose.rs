@@ -3,8 +3,7 @@ use ed25519_dalek::PublicKey;
 use minicose::{Algorithm, CoseKey, EcDsaCoseKey, Ed25519CoseKey, Ed25519CoseKeyBuilder};
 use pkcs8::der::Document;
 use signature::{Error, Signature, Signer, Verifier};
-use simple_asn1::oid;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::fmt::{Debug, Formatter};
 
 #[derive(Clone, Eq, PartialEq)]
@@ -131,14 +130,29 @@ impl Verifier<CoseKeyIdentitySignature> for CoseKeyIdentity {
         if let Some(cose_key) = self.key.as_ref() {
             match cose_key.alg {
                 Algorithm::None => Err(Error::new()),
-                Algorithm::ECDSA => Err(Error::new()),
+                Algorithm::ECDSA => {
+                    let key = EcDsaCoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;
+                    let (x, y) = (key.x.ok_or_else(Error::new)?, key.y.ok_or_else(Error::new)?);
+                    let key = vec![x, y].concat();
+
+                    let public_key = ring::signature::UnparsedPublicKey::new(
+                        &ring::signature::ECDSA_P256_SHA256_ASN1,
+                        key.as_slice(),
+                    );
+
+                    public_key
+                        .verify(msg, &signature.bytes)
+                        .map_err(|_| Error::new())
+                }
                 Algorithm::EDDSA => {
                     let key =
                         Ed25519CoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;
-                    let x = (key.x.ok_or_else(Error::new)?);
+                    let x = key.x.ok_or_else(Error::new)?;
 
-                    let kp = ed25519_dalek::PublicKey::from_bytes(&x).map_err(|_| Error::new())?;
-                    kp.verify_strict(msg, &ed25519::Signature::from_bytes(&signature.bytes)?)
+                    let public_key =
+                        ed25519_dalek::PublicKey::from_bytes(&x).map_err(|_| Error::new())?;
+                    public_key
+                        .verify_strict(msg, &ed25519::Signature::from_bytes(&signature.bytes)?)
                         .map_err(|_| Error::new())
                 }
             }

@@ -3,6 +3,7 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
+use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
@@ -163,26 +164,20 @@ fn main() {
     } = Opts::parse();
 
     let server_id = server_id.unwrap_or_default();
-
-    // If `pem` is not provided, use anonymous and don't sign.
-    let (from_identity, keypair) = pem.map_or_else(
-        || (Identity::anonymous(), None),
-        |pem| {
-            let bytes = std::fs::read(pem).unwrap();
-            let (id, keypair) = Identity::from_pem_public(bytes).unwrap();
-            (id, Some(keypair))
-        },
+    let key = pem.map_or_else(
+        || CoseKeyIdentity::anonymous(),
+        |p| CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap(),
     );
 
-    let client = OmniClient::new(&server, server_id, from_identity, keypair).unwrap();
+    let client = OmniClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbol }) => {
             let identity = identity.map(|ref identity| {
                 Identity::from_str(identity)
                     .or_else(|_| {
-                        let bytes = std::fs::read(PathBuf::from(identity))?;
+                        let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 
-                        Ok(Identity::from_pem_public(bytes).unwrap().0)
+                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().identity)
                     })
                     .map_err(|_: std::io::Error| ())
                     .unwrap()

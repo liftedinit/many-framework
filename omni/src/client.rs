@@ -8,10 +8,8 @@ use crate::{Identity, OmniError};
 use minicbor::Encode;
 use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
-use ring::signature::Ed25519KeyPair;
 use std::convert::TryInto;
 use std::fmt::Formatter;
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct OmniClient {
@@ -31,10 +29,10 @@ impl std::fmt::Debug for OmniClient {
 }
 
 impl OmniClient {
-    pub fn new<S: IntoUrl, I: TryInto<CoseKeyIdentity>>(
+    pub fn new<S: IntoUrl>(
         url: S,
         to: Identity,
-        identity: I,
+        identity: CoseKeyIdentity,
     ) -> Result<Self, String> {
         Ok(Self {
             id: identity

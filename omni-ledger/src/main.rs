@@ -3,6 +3,7 @@ use clap::Parser;
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{decode, Decode, Decoder, Encode, Encoder};
+use omni::identity::cose::CoseKeyIdentity;
 use omni::message::error::define_omni_error;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
@@ -576,7 +577,7 @@ impl OmniModule for LedgerModule {
 
 #[derive(Parser)]
 struct Opts {
-    /// The location of a Ed25519 PEM file for the identity of this server.
+    /// The location of a PEM file for the identity of this server.
     #[clap(long)]
     pem: PathBuf,
 
@@ -611,18 +612,20 @@ fn main() {
         abci,
     } = Opts::parse();
     let default = default.unwrap_or(symbols.first().unwrap().to_string());
-    let (id, keypair) = Identity::from_pem_public(std::fs::read(pem).unwrap()).unwrap();
-    let (owner_id, _) = Identity::from_pem_public(std::fs::read(owner).unwrap()).unwrap();
+    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&pem).unwrap()).unwrap();
+    let owner_id = CoseKeyIdentity::from_pem(&std::fs::read_to_string(owner).unwrap())
+        .unwrap()
+        .identity;
 
     let module = LedgerModule::new(owner_id, symbols, default);
-    let omni = OmniServer::new("omni-ledger", id, &keypair);
+    let omni = OmniServer::new("omni-ledger", key.clone());
     let omni = if abci {
         omni.with_module(omni_abci::module::AbciModule::new(module))
     } else {
         omni.with_module(module)
     };
 
-    HttpServer::simple(id, Some(keypair), omni)
+    HttpServer::simple(key, omni)
         .bind(format!("127.0.0.1:{}", port))
         .unwrap();
 }

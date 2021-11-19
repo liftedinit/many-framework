@@ -3,10 +3,8 @@ use crate::message::{RequestMessage, ResponseMessage};
 use crate::protocol::{Status, StatusBuilder};
 use crate::server::module::{OmniModule, OmniModuleInfo};
 use crate::transport::OmniRequestHandler;
-use crate::{Identity, OmniError};
+use crate::OmniError;
 use async_trait::async_trait;
-use minicose::{CoseKey, Ed25519CoseKeyBuilder};
-use ring::signature::{Ed25519KeyPair, KeyPair};
 use std::collections::BTreeSet;
 
 pub mod function;

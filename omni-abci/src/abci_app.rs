@@ -1,5 +1,6 @@
 use crate::module::AbciInfo;
 use minicose::CoseSign1;
+use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
 use tendermint_abci::Application;
@@ -29,7 +30,7 @@ impl AbciApp {
 
         Ok(Self {
             omni_url: omni_url.clone(),
-            omni_client: OmniClient::new(omni_url.clone(), server_id, Identity::anonymous(), None)
+            omni_client: OmniClient::new(omni_url.clone(), server_id, CoseKeyIdentity::anonymous())
                 .map_err(|e| e.to_string())?,
         })
     }

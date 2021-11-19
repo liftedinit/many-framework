@@ -2,8 +2,7 @@ use crate::message::OmniError;
 use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
-use minicose::{CoseKey, Ed25519CoseKeyBuilder};
-use ring::signature::{Ed25519KeyPair, KeyPair};
+use minicose::CoseKey;
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
@@ -27,21 +26,6 @@ impl Identity {
 
     pub fn from_str<S: AsRef<str>>(str: S) -> Result<Self, OmniError> {
         InnerIdentity::from_str(str.as_ref()).map(Self)
-    }
-
-    #[cfg(feature = "pem")]
-    pub fn from_pem_public(bytes: Vec<u8>) -> Result<(Self, Ed25519KeyPair), anyhow::Error> {
-        let content = pem::parse(bytes)?;
-        let keypair = Ed25519KeyPair::from_pkcs8_maybe_unchecked(&content.contents)
-            .map_err(|err| anyhow::anyhow!("error parsing Ed25519 keypair: {}", err))?;
-
-        let x = keypair.public_key().as_ref().to_vec();
-        let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
-            .x(x)
-            .build()
-            .unwrap()
-            .into();
-        Ok((Identity::public_key(&cose_key), keypair))
     }
 
     pub const fn anonymous() -> Self {

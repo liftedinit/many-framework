@@ -1,4 +1,5 @@
 use clap::Parser;
+use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient};
 use omni_abci::abci_app::AbciApp;
 use omni_abci::omni_app::AbciHttpServer;
@@ -75,8 +76,7 @@ async fn main() {
     let omni_client = OmniClient::new(
         &omni_app,
         Identity::anonymous(),
-        Identity::anonymous(),
-        None,
+        CoseKeyIdentity::anonymous(),
     )
     .unwrap();
 
@@ -123,10 +123,9 @@ async fn main() {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    let (id, keypair) = Identity::from_pem_public(std::fs::read(omni_pem).unwrap()).unwrap();
-    let omni_server = omni::transport::http::HttpServer::new(
-        AbciHttpServer::new(abci_client, id, Some(keypair)).await,
-    );
+    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&omni_pem).unwrap()).unwrap();
+    let omni_server =
+        omni::transport::http::HttpServer::new(AbciHttpServer::new(abci_client, key).await);
 
     let _j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
 
