@@ -8,17 +8,14 @@ pub use request::RequestMessageBuilder;
 pub use response::ResponseMessage;
 pub use response::ResponseMessageBuilder;
 
+use crate::identity::cose::{CoseKeyIdentity, CoseKeyIdentitySignature};
 use crate::Identity;
+use minicose::algorithms::AlgorithmCurve;
 use minicose::exports::ciborium::value::Value;
 use minicose::{
-    Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, Ed25519CoseKey, ProtectedHeaders,
-    ProtectedHeadersBuilder,
+    Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, ProtectedHeaders, ProtectedHeadersBuilder,
 };
-// use ring::signature::{Ed25519KeyPair, KeyPair};
-use crate::identity::cose::CoseKeyIdentity;
-use minicose::algorithms::AlgorithmCurve;
-use signature::{Signature, Signer};
-use std::convert::TryFrom;
+use signature::{Signature, Signer, Verifier};
 
 pub fn decode_request_from_cose_sign1(sign1: CoseSign1) -> Result<RequestMessage, OmniError> {
     let request = CoseSign1RequestMessage { sign1 };
@@ -148,30 +145,17 @@ impl CoseSign1RequestMessage {
         }
     }
 
-    pub fn get_public_key_for_identity(
-        &self,
-        id: &Identity,
-    ) -> Option<ring::signature::UnparsedPublicKey<Vec<u8>>> {
+    pub fn get_public_key_for_identity(&self, id: &Identity) -> Option<CoseKeyIdentity> {
         // Verify the keybytes matches the identity.
         if id.is_anonymous() {
             return None;
         }
+
         // Find the key_bytes.
         let cose_key = self.get_keyset()?.get_kid(&id.to_vec()).cloned()?;
-        let ed25519_key = Ed25519CoseKey::try_from(cose_key.clone()).ok()?;
-        let key_bytes = ed25519_key.x?;
-
-        if id.is_public_key() {
-            let other = Identity::public_key(&cose_key);
-            eprintln!("other: {}   id: {}", other, id);
-            if other.eq(id) {
-                Some(ring::signature::UnparsedPublicKey::new(
-                    &ring::signature::ED25519,
-                    key_bytes,
-                ))
-            } else {
-                None
-            }
+        let key = CoseKeyIdentity::from_key(cose_key).ok()?;
+        if id == &key.identity {
+            Some(key)
         } else {
             None
         }
@@ -188,7 +172,10 @@ impl CoseSign1RequestMessage {
                     .ok_or("Could not find a public key in the envelope".to_string())
                     .and_then(|key| {
                         self.sign1
-                            .verify_with(|content, sig| key.verify(content, sig).is_ok())
+                            .verify_with(|content, sig| {
+                                let sig = CoseKeyIdentitySignature::from_bytes(sig).unwrap();
+                                key.verify(content, &sig).is_ok()
+                            })
                             .map_err(|e| e.to_string())
                     })
                     .and_then(|valid| {

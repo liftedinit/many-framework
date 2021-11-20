@@ -2,7 +2,6 @@ use clap::Parser;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
-use omni::Identity;
 use std::path::PathBuf;
 
 #[derive(Parser)]

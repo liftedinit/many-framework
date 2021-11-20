@@ -1,6 +1,10 @@
 use crate::Identity;
 use ed25519_dalek::PublicKey;
-use minicose::{Algorithm, CoseKey, EcDsaCoseKey, Ed25519CoseKey, Ed25519CoseKeyBuilder};
+use minicose::{
+    Algorithm, CoseKey, EcDsaCoseKey, EcDsaCoseKeyBuilder, Ed25519CoseKey, Ed25519CoseKeyBuilder,
+};
+use p256::elliptic_curve::sec1::FromEncodedPoint;
+use p256::pkcs8::FromPrivateKey;
 use pkcs8::der::Document;
 use signature::{Error, Signature, Signer, Verifier};
 use std::convert::TryFrom;
@@ -76,6 +80,7 @@ impl CoseKeyIdentity {
 
         if decoded.algorithm.oid == pkcs8::ObjectIdentifier::new("1.3.101.112") {
             // Ed25519
+            // Remove the 0420 header that's in all private keys in pkcs8 for some reason.
             let sk = ed25519_dalek::SecretKey::from_bytes(&decoded.private_key[2..])
                 .map_err(|e| e.to_string())?;
             let pk: PublicKey = (&sk).into();
@@ -88,6 +93,20 @@ impl CoseKeyIdentity {
             let cose_key: CoseKey = Ed25519CoseKeyBuilder::default()
                 .x(keypair.public.to_bytes().to_vec())
                 .d(keypair.secret.to_bytes().to_vec())
+                .build()
+                .unwrap()
+                .into();
+
+            Self::from_key(cose_key)
+        } else if decoded.algorithm.oid == pkcs8::ObjectIdentifier::new("1.2.840.10045.2.1") {
+            // ECDSA
+            let sk = p256::SecretKey::from_pkcs8_pem(pem).unwrap();
+            let pk = sk.public_key();
+            let points: p256::EncodedPoint = pk.into();
+            let cose_key: CoseKey = EcDsaCoseKeyBuilder::default()
+                .x(points.x().unwrap().to_vec())
+                .y(points.y().unwrap().to_vec())
+                .d(sk.to_bytes().to_vec())
                 .build()
                 .unwrap()
                 .into();
@@ -133,15 +152,21 @@ impl Verifier<CoseKeyIdentitySignature> for CoseKeyIdentity {
                 Algorithm::ECDSA => {
                     let key = EcDsaCoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;
                     let (x, y) = (key.x.ok_or_else(Error::new)?, key.y.ok_or_else(Error::new)?);
-                    let key = vec![x, y].concat();
-
-                    let public_key = ring::signature::UnparsedPublicKey::new(
-                        &ring::signature::ECDSA_P256_SHA256_ASN1,
-                        key.as_slice(),
+                    let points = p256::EncodedPoint::from_affine_coordinates(
+                        x.as_slice().into(),
+                        y.as_slice().into(),
+                        false,
                     );
+                    let public_key = p256::PublicKey::from_encoded_point(&points).unwrap();
 
-                    public_key
-                        .verify(msg, &signature.bytes)
+                    let verify_key: p256::ecdsa::VerifyingKey = public_key.into();
+
+                    verify_key
+                        .verify(
+                            msg,
+                            &p256::ecdsa::Signature::from_bytes(&signature.bytes)
+                                .map_err(|_| Error::new())?,
+                        )
                         .map_err(|_| Error::new())
                 }
                 Algorithm::EDDSA => {
@@ -167,7 +192,19 @@ impl Signer<CoseKeyIdentitySignature> for CoseKeyIdentity {
         if let Some(cose_key) = self.key.as_ref() {
             match cose_key.alg {
                 Algorithm::None => Err(Error::new()),
-                Algorithm::ECDSA => Err(Error::new()),
+                Algorithm::ECDSA => {
+                    let key = EcDsaCoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;
+                    if !key.can_sign() {
+                        return Err(Error::new());
+                    }
+
+                    let d = key.d.ok_or_else(Error::new)?;
+                    let secret_key = p256::SecretKey::from_bytes(&d).map_err(|_| Error::new())?;
+                    let signing_key: p256::ecdsa::SigningKey = secret_key.into();
+
+                    let signature: p256::ecdsa::Signature = signing_key.sign(msg);
+                    CoseKeyIdentitySignature::from_bytes(&signature.as_ref())
+                }
                 Algorithm::EDDSA => {
                     let key =
                         Ed25519CoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;

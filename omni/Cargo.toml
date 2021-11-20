@@ -26,6 +26,7 @@ hex = "0.4.3"
 lazy_static = "1.4.0"
 minicbor = { version = "0.11.3", features = ["derive", "half", "std"] }
 minicose = { git = "https://github.com/l-1-labs/rust-minicose.git", features = [ "allow-unsigned" ] }
+p256 = { version = "0.9.0", features = [ "pem", "ecdsa", "std" ] }
 pem = { version = "1.0.0", optional = true }
 pkcs8 = { version = "0.8", features = [ "pem", "std", "encryption" ] }
 openssh-keys = "0.5.0"

@@ -93,8 +93,6 @@ fn main() {
             }
         }
         SubCommand::IdOf(o) => {
-            let bytes = std::fs::read(o.pem).unwrap();
-
             // Create the identity from the public key hash.
             let id = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&o.pem).unwrap())
                 .unwrap()
