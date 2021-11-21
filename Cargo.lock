@@ -1170,6 +1170,7 @@ dependencies = [
 [[package]]
 name = "minicose"
 version = "0.1.0"
+source = "git+ssh://git@github.com/l-1-labs/rust-minicose.git#c3eb5f990d9470130139429ba0b381c2fe83096b"
 dependencies = [
  "ciborium",
  "ciborium-ll",
