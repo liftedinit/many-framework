@@ -99,6 +99,12 @@ impl Identity {
     }
 }
 
+impl PartialEq<&str> for Identity {
+    fn eq(&self, other: &&str) -> bool {
+        self.to_string() == *other
+    }
+}
+
 impl Debug for Identity {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Identity")
@@ -445,6 +451,7 @@ mod serde {
 
 #[cfg(test)]
 mod tests {
+    use crate::identity::cose::CoseKeyIdentity;
     use crate::Identity;
 
     fn identity(seed: u32) -> Identity {
@@ -496,5 +503,27 @@ mod tests {
         .unwrap();
 
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn from_pem() {
+        let pem = concat!(
+            "-----",
+            "BEGIN ",
+            "PRIVATE ",
+            "KEY",
+            "-----\n",
+            "MC4CAQAwBQYDK2VwBCIEIHcoTY2RYa48O8ONAgfxEw+15MIyqSat0/QpwA1YxiPD\n",
+            "-----",
+            "END ",
+            "PRIVATE ",
+            "KEY-----"
+        );
+
+        let id = CoseKeyIdentity::from_pem(pem).unwrap();
+        assert_eq!(
+            id.identity,
+            "ojpaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wi"
+        );
     }
 }
