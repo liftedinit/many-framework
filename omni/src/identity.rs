@@ -486,4 +486,15 @@ mod tests {
         assert_eq!(Identity::from_str(&b.to_string()), Ok(b));
         assert_eq!(Identity::from_str(&c.to_string()), Ok(c));
     }
+
+    #[test]
+    fn textual_format_1() {
+        let a = Identity::from_str("oysahek5lid7ek7ckhq7j77nfwgk3vkspnyppm2u467ne5mwiq").unwrap();
+        let b = Identity::from_bytes(
+            &hex::decode("01c8aead03f915f128f0fa7ff696c656eaa93db87bd9aa73df693acb22").unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(a, b);
+    }
 }

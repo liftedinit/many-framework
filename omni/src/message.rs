@@ -91,7 +91,7 @@ fn encode_cose_sign1_from_payload(
         keyset.insert(key_public);
 
         protected.custom_headers.insert(
-            Value::from("keyset"),
+            Value::from("keyset").into(),
             Value::from(keyset.to_bytes().map_err(|e| e.to_string()).unwrap()),
         );
     }

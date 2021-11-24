@@ -1,16 +1,17 @@
 use clap::Parser;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient};
-use omni_abci::abci_app::AbciApp;
-use omni_abci::omni_app::AbciHttpServer;
 use std::path::PathBuf;
 use tendermint_abci::ServerBuilder;
-use tendermint_rpc::{Client, Id};
+use tendermint_rpc::Client;
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
 mod module;
 mod omni_app;
+
+use abci_app::AbciApp;
+use omni_app::AbciHttpServer;
 
 #[derive(Parser)]
 struct Opts {
