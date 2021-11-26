@@ -79,8 +79,8 @@ macro_rules! omni_error {
 
 omni_error! {
     // Range 0-999 is for unexpected or transport errors.
-       0: Unknown as unknown()
-            => "Unknown error.",
+       0: Unknown as unknown(message)
+            => "Unknown error: {message}",
        1: MessageTooLong as message_too_long(max)
             => "Message is too long. Max allowed size is {max} bytes.",
        2: DeserializationError as deserialization_error(details)
@@ -98,6 +98,8 @@ omni_error! {
             => "Identity is invalid (does not follow the protocol).",
      101: InvalidIdentityPrefix as invalid_identity_prefix(actual)
             => "Identity string did not start with the right prefix. Expected 'o', was '{actual}'.",
+     102: InvalidIdentityKind as invalid_identity_kind(actual)
+            => "Identity ",
 
     // 1000-1999 is for request errors.
     1000: InvalidMethodName as invalid_method_name(method)
@@ -168,12 +170,18 @@ impl OmniError {
         message: String,
         fields: BTreeMap<String, String>,
     ) -> Self {
-        let code = OmniErrorCode::from(code);
-        if !code.is_application_specific() {
-            return OmniError::unknown();
+        let omni_code = OmniErrorCode::from(code);
+        if !omni_code.is_application_specific() {
+            return OmniError::unknown(format!(
+                concat!(
+                    "Request for an application specific ",
+                    "error but code {} is not application specific."
+                ),
+                code
+            ));
         }
         OmniError {
-            code: code.into(),
+            code: omni_code,
             message: Some(message),
             fields,
         }
@@ -202,7 +210,7 @@ impl Default for OmniErrorCode {
 impl Default for OmniError {
     #[inline]
     fn default() -> Self {
-        OmniError::unknown()
+        OmniError::unknown("?".to_string())
     }
 }
 

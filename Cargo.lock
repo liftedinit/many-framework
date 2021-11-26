@@ -562,20 +562,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ed25519-zebra"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a128b76af6dd4b427e34a6fd43dc78dbfe73672ec41ff615a2414c1a0ad0409"
-dependencies = [
- "curve25519-dalek",
- "hex",
- "rand_core 0.5.1",
- "serde",
- "sha2",
- "thiserror",
-]
-
-[[package]]
 name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1374,7 +1360,7 @@ dependencies = [
  "minicose",
  "openssh-keys",
  "p256",
- "pem 1.0.1",
+ "pem",
  "pkcs8 0.8.0",
  "regex",
  "reqwest",
@@ -1420,33 +1406,25 @@ dependencies = [
  "async-trait",
  "clap",
  "omni",
- "pem 1.0.1",
+ "pem",
 ]
 
 [[package]]
 name = "omni-ledger"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
- "base64 0.13.0",
  "clap",
- "crypto-bigint",
  "hex",
  "lazy_static",
  "minicbor",
  "num-bigint 0.4.3",
  "omni",
  "omni-abci",
- "pem 0.8.3",
- "ring 0.17.0-alpha.10",
  "serde",
- "serde_cbor",
- "serde_cose",
+ "serde_json",
  "sha3",
  "simple_asn1 0.5.4",
- "static_assertions",
- "thiserror",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1605,17 +1583,6 @@ name = "peg-runtime"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c719dcf55f09a3a7e764c6649ab594c18a177e3599c467983cdf644bfc0a4088"
-
-[[package]]
-name = "pem"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd56cbd21fea48d0c440b41cd69c589faacade08c992d9a54e471b79d0fd13eb"
-dependencies = [
- "base64 0.13.0",
- "once_cell",
- "regex",
-]
 
 [[package]]
 name = "pem"
@@ -2170,31 +2137,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_cbor"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bef2ebfde456fb76bbcf9f59315333decc4fda0b2b44b420243c11e0f5ec1f5"
-dependencies = [
- "half",
- "serde",
-]
-
-[[package]]
-name = "serde_cose"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb093f9b4c4079594d97791eba327966efdc559196c5c6647db5f6f963a61d35"
-dependencies = [
- "ed25519-zebra",
- "hex",
- "lazy_static",
- "serde",
- "serde_bytes",
- "serde_cbor",
- "serde_repr",
-]
-
-[[package]]
 name = "serde_derive"
 version = "1.0.130"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2207,9 +2149,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.71"
+version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063bf466a64011ac24040a49009724ee60a57da1b437617ceb32e53ad61bfb19"
+checksum = "d0ffa0837f2dfa6fb90868c2b5468cad482e175f7dad97e7421951e663f2b527"
 dependencies = [
  "itoa",
  "ryu",

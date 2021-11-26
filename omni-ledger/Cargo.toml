@@ -6,25 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.44"
 async-trait = "0.1.51"
-base64 = "0.13.0"
 clap = "3.0.0-beta.4"
-crypto-bigint = "0.2.11"
 hex = "0.4.3"
 lazy_static = "1.4.0"
-minicbor = "0.11.3"
 num-bigint = "0.4.3"
+minicbor = "0.11.5"
 omni = { path = "../omni", features = [ "pem" ] }
 omni-abci = { path = "../omni-abci" }
-pem = "0.8.3"
-ring = "0.17.0-alpha.10"
 serde = "1.0.130"
-serde_cbor = "0.11.2"
-serde_cose = "0.1.4"
+serde_json = "1.0.72"
 sha3 = "0.9.1"
 simple_asn1 = "0.5.4"
-static_assertions = "1.1.0"
-thiserror = "1.0.29"
 tracing = "0.1.28"
 tracing-subscriber = "0.2.24"

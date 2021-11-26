@@ -26,6 +26,8 @@ define_omni_error!(
         2: fn unauthorized() => "Unauthorized to do this operation.",
         3: fn insufficient_funds() => "Insufficient funds.",
         4: fn anonymous_cannot_hold_funds() => "Anonymous is not a valid account identity.",
+        5: fn invalid_initial_state(expected, actual)
+            => "Invalid initial state hash. Expected '{}', was '{}'.",
     }
 );
 
@@ -47,6 +49,12 @@ impl TokenAmount {
     pub(crate) fn hash<H: sha3::Digest>(&self, state: &mut H) {
         state.update("amount\0");
         state.update(self.0.to_bytes_be());
+    }
+}
+
+impl From<u64> for TokenAmount {
+    fn from(v: u64) -> Self {
+        TokenAmount(v.into())
     }
 }
 
@@ -81,6 +89,13 @@ impl<'b> Decode<'b> for TokenAmount {
 
         Ok(TokenAmount(TokenAmountStorage::from_bytes_be(d.bytes()?)))
     }
+}
+
+#[derive(serde::Deserialize, Debug, Default)]
+pub struct InitialState {
+    initial: BTreeMap<String, BTreeMap<String, u64>>,
+    symbols: Vec<String>,
+    hash: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -360,25 +375,59 @@ impl LedgerStorage {
 /// A simple ledger that keeps transactions in memory.
 #[derive(Default, Debug, Clone)]
 pub struct LedgerModule {
-    owner_id: Identity,
+    owner_id: Option<Identity>,
     symbols: BTreeSet<String>,
-    default_symbol: String,
     storage: Arc<Mutex<LedgerStorage>>,
 }
 
 impl LedgerModule {
-    pub fn new(owner_id: Identity, symbols: Vec<String>, default_symbol: String) -> Self {
-        Self {
+    pub fn new(
+        owner_id: Option<Identity>,
+        symbols: Vec<String>,
+        initial_state: InitialState,
+    ) -> Result<Self, OmniError> {
+        let mut storage: LedgerStorage = Default::default();
+
+        for (k, v) in &initial_state.initial {
+            let id = Identity::from_str(k)?;
+            for (symbol, amount) in v {
+                if symbols.contains(symbol) {
+                    storage
+                        .accounts
+                        .entry(id.clone())
+                        .or_default()
+                        .insert(symbol.to_owned(), (*amount).into());
+                } else {
+                    return Err(unknown_symbol(symbol.to_owned()));
+                }
+            }
+        }
+
+        if let Some(h) = initial_state.hash {
+            // Verify the hash.
+            let actual = hex::encode(storage.hash());
+            if actual != h {
+                return Err(invalid_initial_state(h, actual));
+            }
+        }
+
+        Ok(Self {
             owner_id,
             symbols: BTreeSet::from_iter(symbols.iter().map(|x| x.to_string())),
-            default_symbol,
-            ..Default::default()
-        }
+            storage: Arc::new(Mutex::new(storage)),
+        })
     }
 
     /// Checks whether an identity is the owner or not. Anonymous identities are forbidden.
     pub fn is_owner(&self, identity: &Identity) -> bool {
-        &self.owner_id == identity && !identity.is_anonymous()
+        if identity.is_anonymous() {
+            return false;
+        }
+
+        match &self.owner_id {
+            Some(o) => o == identity,
+            None => false,
+        }
     }
 
     pub fn is_known_symbol(&self, symbol: &str) -> Result<(), OmniError> {
@@ -402,7 +451,6 @@ impl LedgerModule {
                 e.str("height")?.u64(storage.height)?;
                 e.str("hash")?.bytes(hash.as_slice())?;
                 e.str("symbols")?.encode(&self.symbols)?;
-                e.str("default_symbol")?.str(self.default_symbol.as_str())?;
 
                 e.end()?;
                 Ok(())
@@ -414,10 +462,9 @@ impl LedgerModule {
 
     fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
         let mut d = minicbor::Decoder::new(payload);
-        let (identity, symbol): (Option<Identity>, Option<&str>) = d
+        let (identity, symbol): (Option<Identity>, &str) = d
             .decode()
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-        let symbol = symbol.unwrap_or_else(|| self.default_symbol.as_str());
 
         let storage = self.storage.lock().unwrap();
         if let Some(amount) = storage.get_balance(identity.as_ref().unwrap_or_else(|| from), symbol)
@@ -431,10 +478,9 @@ impl LedgerModule {
 
     fn send(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
         let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, Option<&str>) = d
+        let (to, amount, symbol): (Identity, TokenAmount, &str) = d
             .decode()
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-        let symbol = symbol.unwrap_or_else(|| self.default_symbol.as_str());
 
         let mut storage = self.storage.lock().unwrap();
         storage.send(&from, &to, symbol, amount.clone())?;
@@ -453,10 +499,9 @@ impl LedgerModule {
         }
 
         let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, Option<&str>) = d
+        let (to, amount, symbol): (Identity, TokenAmount, &str) = d
             .decode()
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-        let symbol = symbol.unwrap_or_else(|| self.default_symbol.as_str());
 
         let mut storage = self.storage.lock().unwrap();
         storage.mint(&to, symbol, amount)?;
@@ -475,16 +520,12 @@ impl LedgerModule {
         }
 
         let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, Option<String>) = d
+        let (to, amount, symbol): (Identity, TokenAmount, String) = d
             .decode()
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         let mut storage = self.storage.lock().unwrap();
-        storage.burn(
-            &to,
-            symbol.as_ref().unwrap_or_else(|| &self.default_symbol),
-            amount,
-        )?;
+        storage.burn(&to, &symbol, amount)?;
 
         Ok(Vec::new())
     }
@@ -582,8 +623,9 @@ struct Opts {
     pem: PathBuf,
 
     /// The pem file for the owner of the ledger (who can mint).
+    /// By default there are no owners and accounts cannot be minted.
     #[clap(long)]
-    owner: PathBuf,
+    owner: Option<PathBuf>,
 
     /// The port to bind to for the OMNI Http server.
     #[clap(long, short, default_value = "8000")]
@@ -593,13 +635,13 @@ struct Opts {
     #[clap(long, short)]
     symbols: Vec<String>,
 
-    /// The default symbol to use. If unspecified, will use the first symbol in the list of symbols.
-    #[clap(long, short)]
-    default: Option<String>,
-
     /// Uses an ABCI application module.
     #[clap(long)]
     abci: bool,
+
+    /// Path of a state file (that will be used for the initial setup).
+    #[clap(long)]
+    state: Option<PathBuf>,
 }
 
 fn main() {
@@ -608,16 +650,23 @@ fn main() {
         owner,
         port,
         symbols,
-        default,
         abci,
+        state,
     } = Opts::parse();
-    let default = default.unwrap_or(symbols.first().unwrap().to_string());
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&pem).unwrap()).unwrap();
-    let owner_id = CoseKeyIdentity::from_pem(&std::fs::read_to_string(owner).unwrap())
-        .unwrap()
-        .identity;
+    let owner_id = owner.map(|owner| {
+        CoseKeyIdentity::from_pem(&std::fs::read_to_string(owner).unwrap())
+            .unwrap()
+            .identity
+    });
 
-    let module = LedgerModule::new(owner_id, symbols, default);
+    let state = state.map_or_else(Default::default, |s| {
+        let content = std::fs::read_to_string(&s).unwrap();
+        let json: InitialState = serde_json::from_str(&content).unwrap();
+        json
+    });
+
+    let module = LedgerModule::new(owner_id, symbols, state).unwrap();
     let omni = OmniServer::new("omni-ledger", key.clone());
     let omni = if abci {
         omni.with_module(omni_abci::module::AbciModule::new(module))
