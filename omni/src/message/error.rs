@@ -130,8 +130,8 @@ macro_rules! define_omni_error {
     ( $( attribute $module_id: literal => { $( $id: literal : $vis: vis fn $name: ident ($( $var_name: ident ),*) => $message: literal ),* $(,)? } );* ) => {
         $(
         $(
-            $vis fn $name ( $($var_name: String),* ) -> OmniError {
-                OmniError::application_specific(
+            $vis fn $name ( $($var_name: String),* ) -> $crate::OmniError {
+                $crate::OmniError::application_specific(
                     $module_id * 10000 + $id,
                     String::from($message),
                     std::iter::FromIterator::from_iter(vec![

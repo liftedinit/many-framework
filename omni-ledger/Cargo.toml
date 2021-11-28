@@ -11,6 +11,7 @@ clap = "3.0.0-beta.4"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 num-bigint = "0.4.3"
+merk = { git = "ssh://git@github.com/nomic-io/merk.git", rev = "1e7a8ac9ce2f714f21cbc3775de2baf7b263b9a3" }
 minicbor = "0.11.5"
 omni = { path = "../omni", features = [ "pem" ] }
 omni-abci = { path = "../omni-abci" }
