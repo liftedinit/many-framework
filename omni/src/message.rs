@@ -79,12 +79,7 @@ fn encode_cose_sign1_from_payload(
 
     protected
         .set(HeadersFields::Alg as i128, Algorithm::EDDSA as i128)
-        .set(HeadersFields::Crv as i128, AlgorithmCurve::Ed25519 as i128)
-        .set(HeadersFields::Kid as i128, cose_key.identity.to_vec())
-        .set(
-            HeadersFields::ContentType as i128,
-            "application/cbor".to_string(),
-        );
+        .set(HeadersFields::Kid as i128, cose_key.identity.to_vec());
 
     // Add the keyset to the headers.
     if let Some(key) = cose_key.key.as_ref() {
