@@ -13,7 +13,7 @@ use crate::Identity;
 use minicose::algorithms::AlgorithmCurve;
 use minicose::exports::ciborium::value::Value;
 use minicose::{
-    Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, ProtectedHeaders, ProtectedHeadersBuilder,
+    Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, HeadersFields, ProtectedHeaders,
 };
 use signature::{Signature, Signer, Verifier};
 
@@ -75,13 +75,16 @@ fn encode_cose_sign1_from_payload(
     payload: Vec<u8>,
     cose_key: &CoseKeyIdentity,
 ) -> Result<CoseSign1, String> {
-    let mut protected: ProtectedHeaders = ProtectedHeadersBuilder::default()
-        .alg(Algorithm::EDDSA)
-        .crv(AlgorithmCurve::Ed25519)
-        .kid(cose_key.identity.to_vec())
-        .content_type("application/cbor".to_string())
-        .build()
-        .unwrap();
+    let mut protected: ProtectedHeaders = ProtectedHeaders::default();
+
+    protected
+        .set(HeadersFields::Alg as i128, Algorithm::EDDSA as i128)
+        .set(HeadersFields::Crv as i128, AlgorithmCurve::Ed25519 as i128)
+        .set(HeadersFields::Kid as i128, cose_key.identity.to_vec())
+        .set(
+            HeadersFields::ContentType as i128,
+            "application/cbor".to_string(),
+        );
 
     // Add the keyset to the headers.
     if let Some(key) = cose_key.key.as_ref() {
@@ -90,9 +93,9 @@ fn encode_cose_sign1_from_payload(
         key_public.kid = Some(cose_key.identity.to_vec());
         keyset.insert(key_public);
 
-        protected.add_custom_header(
-            Value::from("keyset").into(),
-            Value::from(keyset.to_bytes().map_err(|e| e.to_string()).unwrap()),
+        protected.set(
+            "keyset".to_string(),
+            keyset.to_bytes().map_err(|e| e.to_string()).unwrap(),
         );
     }
 
