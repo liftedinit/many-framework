@@ -7,11 +7,13 @@ pub use request::RequestMessage;
 pub use request::RequestMessageBuilder;
 pub use response::ResponseMessage;
 pub use response::ResponseMessageBuilder;
+use std::collections::BTreeMap;
 
 use crate::identity::cose::{CoseKeyIdentity, CoseKeyIdentitySignature};
 use crate::Identity;
 use minicose::algorithms::AlgorithmCurve;
-use minicose::exports::ciborium::value::Value;
+use minicose::exports::ciborium;
+use minicose::exports::ciborium::value::{CanonicalValue, Value};
 use minicose::{
     Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, HeadersFields, ProtectedHeaders,
 };
@@ -88,10 +90,24 @@ fn encode_cose_sign1_from_payload(
         key_public.kid = Some(cose_key.identity.to_vec());
         keyset.insert(key_public);
 
-        protected.set(
-            "keyset".to_string(),
-            keyset.to_bytes().map_err(|e| e.to_string()).unwrap(),
-        );
+        fn to_canonical_bytes(bytes: &[u8]) -> Vec<u8> {
+            let value: BTreeMap<CanonicalValue, Value> = ciborium::de::from_reader(bytes)
+                .unwrap_or_else(|e| {
+                    unreachable!(
+                        "Unexpected error: {}. bytes: {}",
+                        e.to_string(),
+                        hex::encode(bytes)
+                    );
+                });
+
+            let mut bytes: Vec<u8> = Vec::new();
+            ciborium::ser::into_writer(&value, &mut bytes).unwrap();
+            bytes
+        }
+
+        let ks_bytes = keyset.to_bytes().map_err(|e| e.to_string()).unwrap();
+
+        protected.set("keyset".to_string(), to_canonical_bytes(&ks_bytes));
     }
 
     let mut cose: CoseSign1 = CoseSign1Builder::default()
