@@ -1,8 +1,6 @@
 use crate::error;
 use minicbor::data::Tag;
-use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
-use omni::protocol::Attribute;
-use omni::server::module::OmniModuleInfo;
+use minicbor::{encode, Decode, Decoder, Encode, Encoder};
 use omni::{Identity, OmniError};
 use sha3::Digest;
 use std::cell::Cell;

@@ -1,24 +1,8 @@
-use async_trait::async_trait;
 use clap::Parser;
-use minicbor::data::Tag;
-use minicbor::encode::{Error, Write};
-use minicbor::{decode, Decode, Decoder, Encode, Encoder};
 use omni::identity::cose::CoseKeyIdentity;
-use omni::message::error::define_omni_error;
-use omni::message::{RequestMessage, ResponseMessage};
-use omni::protocol::Attribute;
-use omni::server::module::{OmniModule, OmniModuleInfo};
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
-use omni::{Identity, OmniError};
-use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
-use sha3::Digest;
-use std::cell::Cell;
-use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Formatter;
-use std::iter::FromIterator;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 
 mod error;
 mod module;

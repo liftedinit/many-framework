@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 
 pub struct InfoArgs;
 impl<'de> Decode<'de> for InfoArgs {
-    fn decode(d: &mut Decoder<'de>) -> Result<Self, decode::Error> {
+    fn decode(_d: &mut Decoder<'de>) -> Result<Self, decode::Error> {
         Ok(Self)
     }
 }
@@ -60,6 +60,7 @@ impl LedgerModule {
         symbols: Vec<String>,
         initial_state: InitialState,
     ) -> Result<Self, OmniError> {
+        let mut symbols = BTreeSet::from_iter(symbols.iter().cloned());
         let mut storage: LedgerStorage = Default::default();
 
         for (k, v) in &initial_state.initial {
@@ -75,6 +76,10 @@ impl LedgerModule {
                     return Err(error::unknown_symbol(symbol.to_owned()));
                 }
             }
+        }
+
+        for symbol in initial_state.symbols {
+            symbols.insert(symbol);
         }
 
         if let Some(h) = initial_state.hash {

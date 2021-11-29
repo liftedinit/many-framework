@@ -7,13 +7,10 @@ pub use request::RequestMessage;
 pub use request::RequestMessageBuilder;
 pub use response::ResponseMessage;
 pub use response::ResponseMessageBuilder;
-use std::collections::BTreeMap;
 
 use crate::identity::cose::{CoseKeyIdentity, CoseKeyIdentitySignature};
 use crate::Identity;
-use minicose::algorithms::AlgorithmCurve;
-use minicose::exports::ciborium;
-use minicose::exports::ciborium::value::{CanonicalValue, Value};
+use minicose::exports::ciborium::value::Value;
 use minicose::{
     Algorithm, CoseKeySet, CoseSign1, CoseSign1Builder, HeadersFields, ProtectedHeaders,
 };
