@@ -150,7 +150,10 @@ impl Verifier<CoseKeyIdentitySignature> for CoseKeyIdentity {
             match cose_key.alg {
                 Algorithm::None => Err(Error::new()),
                 Algorithm::ECDSA => {
-                    let key = EcDsaCoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;
+                    let key = EcDsaCoseKey::try_from(cose_key.clone()).map_err(|e| {
+                        eprintln!("Deserializing ECDSA key failed: {}", e);
+                        Error::new()
+                    })?;
                     let (x, y) = (key.x.ok_or_else(Error::new)?, key.y.ok_or_else(Error::new)?);
                     let points = p256::EncodedPoint::from_affine_coordinates(
                         x.as_slice().into(),
@@ -164,21 +167,33 @@ impl Verifier<CoseKeyIdentitySignature> for CoseKeyIdentity {
                     verify_key
                         .verify(
                             msg,
-                            &p256::ecdsa::Signature::from_bytes(&signature.bytes)
-                                .map_err(|_| Error::new())?,
+                            &p256::ecdsa::Signature::from_bytes(&signature.bytes).map_err(|e| {
+                                eprintln!("Deserializing signature failed: {}", e);
+                                Error::new()
+                            })?,
                         )
-                        .map_err(|_| Error::new())
+                        .map_err(|e| {
+                            eprintln!("Key verify failed: {}", e);
+                            Error::new()
+                        })
                 }
                 Algorithm::EDDSA => {
-                    let key =
-                        Ed25519CoseKey::try_from(cose_key.clone()).map_err(|_| Error::new())?;
+                    let key = Ed25519CoseKey::try_from(cose_key.clone()).map_err(|e| {
+                        eprintln!("Deserializing Ed25519 key failed: {}", e);
+                        Error::new()
+                    })?;
                     let x = key.x.ok_or_else(Error::new)?;
 
-                    let public_key =
-                        ed25519_dalek::PublicKey::from_bytes(&x).map_err(|_| Error::new())?;
+                    let public_key = ed25519_dalek::PublicKey::from_bytes(&x).map_err(|e| {
+                        eprintln!("Public key does not deserialize: {}", e);
+                        Error::new()
+                    })?;
                     public_key
                         .verify_strict(msg, &ed25519::Signature::from_bytes(&signature.bytes)?)
-                        .map_err(|_| Error::new())
+                        .map_err(|e| {
+                            eprintln!("Verification failed (ed25519): {}", e);
+                            Error::new()
+                        })
                 }
             }
         } else {
