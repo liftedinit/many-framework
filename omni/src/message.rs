@@ -90,7 +90,7 @@ fn encode_cose_sign1_from_payload(
         key_public.kid = Some(cose_key.identity.to_vec());
         keyset.insert(key_public);
 
-        protected.custom_headers.insert(
+        protected.add_custom_header(
             Value::from("keyset").into(),
             Value::from(keyset.to_bytes().map_err(|e| e.to_string()).unwrap()),
         );
@@ -162,7 +162,7 @@ impl CoseSign1RequestMessage {
     }
 
     pub fn verify(&self) -> Result<Identity, String> {
-        if let Some(ref kid) = self.sign1.protected.kid {
+        if let Some(ref kid) = self.sign1.protected.kid() {
             if let Ok(id) = Identity::from_bytes(kid) {
                 if id.is_anonymous() {
                     return Ok(id);

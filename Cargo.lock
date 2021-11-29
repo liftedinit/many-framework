@@ -58,9 +58,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.48"
+version = "1.0.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62e1f47f7dc0422027a4e370dd4548d4d66b26782e513e98dca1e689e058a80e"
+checksum = "8b26702f315f53b6071259e15dd9d64528213b44d61de1ec926eca7715d62203"
 
 [[package]]
 name = "arrayref"
@@ -319,7 +319,7 @@ dependencies = [
 [[package]]
 name = "ciborium"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#e8512abee2f126ae60923be4362c175703550894"
+source = "git+https://github.com/enarx/ciborium#10b531eb306d82c68afbead9126930e680d2dbff"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
  "ciborium-ll 0.2.0 (git+https://github.com/enarx/ciborium)",
@@ -334,7 +334,7 @@ source = "git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104ca
 [[package]]
 name = "ciborium-io"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#e8512abee2f126ae60923be4362c175703550894"
+source = "git+https://github.com/enarx/ciborium#10b531eb306d82c68afbead9126930e680d2dbff"
 
 [[package]]
 name = "ciborium-ll"
@@ -348,7 +348,7 @@ dependencies = [
 [[package]]
 name = "ciborium-ll"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#e8512abee2f126ae60923be4362c175703550894"
+source = "git+https://github.com/enarx/ciborium#10b531eb306d82c68afbead9126930e680d2dbff"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
  "half",
@@ -1408,7 +1408,7 @@ dependencies = [
 [[package]]
 name = "minicose"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/rust-minicose.git#aefa90294b24ff32d09755d6e24e122792b32d32"
+source = "git+ssh://git@github.com/l-1-labs/rust-minicose.git#04ece3185e9ea90b89ae202513b7f6924f750cc4"
 dependencies = [
  "ciborium 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
  "ciborium-ll 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
@@ -2284,9 +2284,9 @@ dependencies = [
 
 [[package]]
 name = "ryu"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
+checksum = "3c9613b5a66ab9ba26415184cfc41156594925a9cf3a2057e57f31ff145f6568"
 
 [[package]]
 name = "salsa20"
@@ -2614,9 +2614,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.81"
+version = "1.0.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2afee18b8beb5a596ecb4a2dce128c719b4ba399d34126b9e4396e3f9860966"
+checksum = "8daf5dd0bb60cbd4137b1b587d2fc0ae729bc07cf01cd70b36a1ed5ade3b9d59"
 dependencies = [
  "proc-macro2",
  "quote",
