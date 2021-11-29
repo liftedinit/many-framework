@@ -174,7 +174,14 @@ impl CoseSign1RequestMessage {
                         self.sign1
                             .verify_with(|content, sig| {
                                 let sig = CoseKeyIdentitySignature::from_bytes(sig).unwrap();
-                                key.verify(content, &sig).is_ok()
+                                let result = key.verify(content, &sig);
+                                match result {
+                                    Ok(()) => true,
+                                    Err(e) => {
+                                        eprintln!("Error from verify: {}", e);
+                                        false
+                                    }
+                                }
                             })
                             .map_err(|e| e.to_string())
                     })
