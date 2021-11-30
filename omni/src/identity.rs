@@ -3,6 +3,7 @@ use minicbor::data::Type;
 use minicbor::encode::Write;
 use minicbor::{Decode, Decoder, Encode, Encoder};
 use minicose::CoseKey;
+use serde::Deserialize;
 use sha3::digest::generic_array::typenum::Unsigned;
 use sha3::{Digest, Sha3_224};
 use std::convert::TryFrom;
@@ -168,6 +169,42 @@ impl<'b> Decode<'b> for Identity {
             }
         }
         .map_err(|_e| minicbor::decode::Error::Message("Could not decode identity from bytes"))
+    }
+}
+
+impl<'de> Deserialize<'de> for Identity {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = Identity;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("identity string or bytes")
+            }
+
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Identity::from_str(v).map_err(E::custom)
+            }
+
+            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Identity::from_bytes(v).map_err(E::custom)
+            }
+        }
+
+        if deserializer.is_human_readable() {
+            deserializer.deserialize_str(Visitor)
+        } else {
+            deserializer.deserialize_byte_buf(Visitor)
+        }
     }
 }
 

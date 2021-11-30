@@ -41,30 +41,30 @@ impl<'a> Encode for InfoReturns<'a> {
 
 #[derive(serde::Deserialize, Debug, Default)]
 pub struct InitialState {
-    initial: BTreeMap<String, BTreeMap<String, u64>>,
-    symbols: Vec<String>,
+    initial: BTreeMap<Identity, BTreeMap<String, u64>>,
+    symbols: BTreeSet<String>,
+    minters: Option<BTreeMap<String, BTreeSet<Identity>>>,
     hash: Option<String>,
 }
 
 /// A simple ledger that keeps transactions in memory.
 #[derive(Default, Debug, Clone)]
 pub struct LedgerModule {
-    owner_id: Option<Identity>,
+    minters: BTreeMap<String, BTreeSet<Identity>>,
     symbols: BTreeSet<String>,
     storage: Arc<Mutex<LedgerStorage>>,
 }
 
 impl LedgerModule {
-    pub fn new(
-        owner_id: Option<Identity>,
-        symbols: Vec<String>,
-        initial_state: InitialState,
-    ) -> Result<Self, OmniError> {
-        let mut symbols = BTreeSet::from_iter(symbols.iter().cloned());
+    pub fn new(initial_state: InitialState) -> Result<Self, OmniError> {
+        let mut symbols = BTreeSet::new();
         let mut storage: LedgerStorage = Default::default();
 
-        for (k, v) in &initial_state.initial {
-            let id = Identity::from_str(k)?;
+        for symbol in initial_state.symbols {
+            symbols.insert(symbol);
+        }
+
+        for (id, v) in &initial_state.initial {
             for (symbol, amount) in v {
                 if symbols.contains(symbol) {
                     storage
@@ -78,10 +78,6 @@ impl LedgerModule {
             }
         }
 
-        for symbol in initial_state.symbols {
-            symbols.insert(symbol);
-        }
-
         if let Some(h) = initial_state.hash {
             // Verify the hash.
             let actual = hex::encode(storage.hash());
@@ -90,22 +86,32 @@ impl LedgerModule {
             }
         }
 
+        let mut minters: BTreeMap<String, BTreeSet<Identity>> = BTreeMap::new();
+        if let Some(minter_list) = initial_state.minters {
+            for (symbol, id_list) in minter_list {
+                for id in id_list {
+                    minters.entry(symbol.clone()).or_default().insert(id);
+                }
+            }
+        }
+
         Ok(Self {
-            owner_id,
-            symbols: BTreeSet::from_iter(symbols.iter().map(|x| x.to_string())),
+            minters,
+            symbols,
             storage: Arc::new(Mutex::new(storage)),
         })
     }
 
     /// Checks whether an identity is the owner or not. Anonymous identities are forbidden.
-    pub fn is_owner(&self, identity: &Identity) -> bool {
+    pub fn is_minter(&self, identity: &Identity, symbol: &str) -> bool {
         if identity.is_anonymous() {
             return false;
         }
 
-        match &self.owner_id {
-            Some(o) => o == identity,
-            None => false,
+        if let Some(minters) = self.minters.get(symbol) {
+            minters.contains(identity)
+        } else {
+            false
         }
     }
 
@@ -170,14 +176,14 @@ impl LedgerModule {
     }
 
     fn mint(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        if !self.is_owner(from) {
-            return Err(error::unauthorized());
-        }
-
         let mut d = minicbor::Decoder::new(payload);
         let (to, amount, symbol): (Identity, TokenAmount, &str) = d
             .decode()
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+
+        if !self.is_minter(from, symbol) {
+            return Err(error::unauthorized());
+        }
 
         let mut storage = self.storage.lock().unwrap();
         storage.mint(&to, symbol, amount)?;
@@ -191,17 +197,17 @@ impl LedgerModule {
     }
 
     fn burn(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        if !self.is_owner(from) {
-            return Err(error::unauthorized());
-        }
-
         let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, String) = d
+        let (to, amount, symbol): (Identity, TokenAmount, &str) = d
             .decode()
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
+        if !self.is_minter(from, symbol) {
+            return Err(error::unauthorized());
+        }
+
         let mut storage = self.storage.lock().unwrap();
-        storage.burn(&to, &symbol, amount)?;
+        storage.burn(&to, symbol, amount)?;
 
         Ok(Vec::new())
     }
