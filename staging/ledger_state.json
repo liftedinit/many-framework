@@ -1,0 +1,15 @@
+{
+  "initial": {
+    "ojpaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wi": {
+      "FBT": 1000000
+    }
+  },
+  "minters": {
+    "FBT": [
+      "ojpaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wi"
+    ]
+  },
+  "symbols": [
+    "FBT"
+  ]
+}
