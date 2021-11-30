@@ -1,3 +1,4 @@
+# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 # NOTE: Any path below can be absolute (e.g. "/var/myawesomeapp/data") or
@@ -14,11 +15,10 @@
 proxy-app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "tendermint1"
+moniker = "tendermint-4"
 
-
-# Mode of Node: full | validator | seed (default: "validator")
-# * validator node (default)
+# Mode of Node: full | validator | seed
+# * validator node
 #   - all reactors
 #   - with priv_validator_key.json, priv_validator_state.json
 # * full node
@@ -28,11 +28,6 @@ moniker = "tendermint1"
 #   - only P2P, PEX Reactor
 #   - No priv_validator_key.json, priv_validator_state.json
 mode = "validator"
-
-# If this node is many blocks behind the tip of the chain, FastSync
-# allows them to catchup quickly by downloading blocks in parallel
-# and verifying their commits
-fast-sync = true
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -101,10 +96,10 @@ laddr = ""
 client-certificate-file = ""
 
 # Client key generated while creating certificates for secure connection
-validator-client-key-file = ""
+client-key-file = ""
 
 # Path to the Root Certificate Authority used to sign both client and server certificates
-certificate-authority = ""
+root-ca-file = ""
 
 
 #######################################################################
@@ -202,6 +197,9 @@ pprof-laddr = ""
 #######################################################
 [p2p]
 
+# Enable the legacy p2p layer.
+use-legacy = false
+
 # Select the p2p internal queue
 queue-type = "priority"
 
@@ -234,8 +232,7 @@ persistent-peers = ""
 upnp = false
 
 # Path to address book
-# TODO: Remove once p2p refactor is complete
-# ref: https:#github.com/tendermint/tendermint/issues/5670
+# TODO: Remove once p2p refactor is complete in favor of peer store.
 addr-book-file = "config/addrbook.json"
 
 # Set true for strict address routability rules
@@ -261,8 +258,8 @@ max-connections = 64
 max-incoming-connection-attempts = 100
 
 # List of node IDs, to which a connection will be (re)established ignoring any existing limits
-# TODO: Remove once p2p refactor is complete
-# ref: https:#github.com/tendermint/tendermint/issues/5670
+# TODO: Remove once p2p refactor is complete.
+# ref: https://github.com/tendermint/tendermint/issues/5670
 unconditional-peer-ids = ""
 
 # Maximum pause when redialing a persistent peer (if zero, exponential backoff is used)
@@ -369,22 +366,30 @@ ttl-num-blocks = 0
 # starting from the height of the snapshot.
 enable = false
 
-# RPC servers (comma-separated) for light client verification of the synced state machine and
-# retrieval of state data for node bootstrapping. Also needs a trusted height and corresponding
-# header hash obtained from a trusted source, and a period during which validators can be trusted.
-#
-# For Cosmos SDK-based chains, trust-period should usually be about 2/3 of the unbonding time (~2
-# weeks) during which they can be financially punished (slashed) for misbehavior.
+# State sync uses light client verification to verify state. This can be done either through the
+# P2P layer or RPC layer. Set this to true to use the P2P layer. If false (default), RPC layer
+# will be used.
+use-p2p = false
+
+# If using RPC, at least two addresses need to be provided. They should be compatible with net.Dial,
+# for example: "host.example.com:2125"
 rpc-servers = ""
+
+# The hash and height of a trusted block. Must be within the trust-period.
 trust-height = 0
 trust-hash = ""
+
+# The trust period should be set so that Tendermint can detect and gossip misbehavior before
+# it is considered expired. For chains based on the Cosmos SDK, one day less than the unbonding
+# period should suffice.
 trust-period = "168h0m0s"
 
 # Time to spend discovering snapshots before initiating a restore.
 discovery-time = "15s"
 
-# Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically /tmp).
-# Will create a new, randomly named directory within, and remove it when done.
+# Temporary directory for state sync snapshot chunks, defaults to os.TempDir().
+# The synchronizer will create a new, randomly named directory within this directory
+# and remove it when the sync is complete.
 temp-dir = ""
 
 # The timeout duration before re-requesting a chunk, possibly from a different
@@ -405,7 +410,7 @@ fetchers = "4"
 enable = true
 
 # Block Sync version to use:
-#   1) "v0" (default) - the standard block sync implementation
+#   1) "v0" (default) - the standard Block Sync implementation
 #   2) "v2" - DEPRECATED, please use v0
 version = "v0"
 
@@ -493,4 +498,3 @@ max-open-connections = 3
 
 # Instrumentation namespace
 namespace = "tendermint"
-
