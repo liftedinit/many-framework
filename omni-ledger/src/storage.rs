@@ -109,13 +109,23 @@ impl Transaction {
     }
 }
 
-#[derive(Default)]
 pub struct LedgerStorage {
     pub accounts: BTreeMap<Identity, BTreeMap<String, TokenAmount>>,
     pub history: BTreeMap<u64, Vec<Transaction>>,
     pub height: u64,
 
     hash_cache: Cell<Option<Vec<u8>>>,
+}
+
+impl Default for LedgerStorage {
+    fn default() -> Self {
+        Self {
+            accounts: Default::default(),
+            history: Default::default(),
+            height: 0,
+            hash_cache: Default::default(),
+        }
+    }
 }
 
 impl std::fmt::Debug for LedgerStorage {
@@ -132,6 +142,7 @@ impl LedgerStorage {
     pub fn commit(&mut self) -> () {
         self.hash_cache.take();
         self.height += 1;
+        eprintln!("height: {}", self.height);
     }
 
     pub fn add_transaction(&mut self, tx: Transaction) {

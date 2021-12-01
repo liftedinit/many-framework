@@ -1,15 +1,16 @@
 {
   "initial": {
-    "ojpaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wi": {
+    "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
       "FBT": 1000000
     }
   },
   "minters": {
     "FBT": [
-      "ojpaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wi"
+      "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
     ]
   },
   "symbols": [
     "FBT"
-  ]
+  ],
+  "hash": "af9fa48a5495493607d31099f3646e1b9b67b651bbb7fdf32ad0dd1db6c91a54d84accec922e86c1694d82f1700d9ad34d40a90c69655501b7a971c59704f358"
 }

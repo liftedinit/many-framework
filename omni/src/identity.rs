@@ -310,7 +310,7 @@ impl InnerIdentity {
                 }
             }
             2 => {
-                if bytes.len() != 31 {
+                if bytes.len() != 32 {
                     Err(OmniError::invalid_identity())
                 } else {
                     let mut hash = [0; 28];
@@ -332,7 +332,7 @@ impl InnerIdentity {
         if &value[1..] == "aa" {
             Ok(Self::Anonymous())
         } else {
-            let (_crc, data) = value[1..].split_at(2);
+            let data = &value[..value.len() - 2][1..];
             let data = base32::decode(base32::Alphabet::RFC4648 { padding: false }, data).unwrap();
             let result = Self::try_from(data.as_slice())?;
 
@@ -418,13 +418,10 @@ impl InnerIdentity {
         let crc = crc.get_crc().to_be_bytes();
         format!(
             "o{}{}",
+            base32::encode(base32::Alphabet::RFC4648 { padding: false }, &data),
             base32::encode(base32::Alphabet::RFC4648 { padding: false }, &crc)
                 .get(0..2)
                 .unwrap(),
-            match self {
-                InnerIdentity::Anonymous() => "".to_string(),
-                _ => base32::encode(base32::Alphabet::RFC4648 { padding: false }, &data),
-            }
         )
         .to_lowercase()
     }
@@ -576,7 +573,7 @@ mod tests {
 
     #[test]
     fn textual_format_1() {
-        let a = Identity::from_str("oysahek5lid7ek7ckhq7j77nfwgk3vkspnyppm2u467ne5mwiq").unwrap();
+        let a = Identity::from_str("oahek5lid7ek7ckhq7j77nfwgk3vkspnyppm2u467ne5mwiqys").unwrap();
         let b = Identity::from_bytes(
             &hex::decode("01c8aead03f915f128f0fa7ff696c656eaa93db87bd9aa73df693acb22").unwrap(),
         )

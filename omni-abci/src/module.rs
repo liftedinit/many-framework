@@ -242,7 +242,6 @@ impl<B: OmniAbciModuleBackend> OmniModule for AbciModule<B> {
         match message.method.as_str() {
             "abci.init" => self.abci_init(message),
             "abci.info" => self.abci_info(message),
-
             "abci.commit" => self.abci_commit(message),
             "abci.beginBlock" => Err(OmniError::internal_server_error()),
             "abci.endBlock" => Err(OmniError::internal_server_error()),

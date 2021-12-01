@@ -60,7 +60,7 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
             if *is_command {
                 let response = self
                     .client
-                    .broadcast_tx_async(tendermint::abci::Transaction::from(
+                    .broadcast_tx_async(tendermint_rpc::abci::Transaction::from(
                         envelope
                             .to_bytes()
                             .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?,

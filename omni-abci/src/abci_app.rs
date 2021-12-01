@@ -37,6 +37,19 @@ impl AbciApp {
 }
 
 impl Application for AbciApp {
+    fn begin_block(&self, _request: RequestBeginBlock) -> ResponseBeginBlock {
+        Default::default()
+    }
+    fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
+        Default::default()
+    }
+    fn flush(&self) -> ResponseFlush {
+        Default::default()
+    }
+    fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
+        Default::default()
+    }
+
     fn info(&self, request: RequestInfo) -> ResponseInfo {
         debug!(
             "Got info request. Tendermint version: {}; Block version: {}; P2P version: {}",
@@ -72,21 +85,8 @@ impl Application for AbciApp {
             version: env!("CARGO_PKG_VERSION").to_string(),
             app_version: 1,
             last_block_height: height as i64,
-            last_block_app_hash: hash,
+            last_block_app_hash: hash.into(),
         }
-    }
-
-    fn commit(&self) -> ResponseCommit {
-        self.omni_client.call_("abci.commit", ()).map_or_else(
-            |err| ResponseCommit {
-                data: err.to_string().into_bytes(),
-                retain_height: 0,
-            },
-            |_msg| ResponseCommit {
-                data: vec![],
-                retain_height: 0,
-            },
-        )
     }
 
     fn query(&self, request: RequestQuery) -> ResponseQuery {
@@ -114,7 +114,7 @@ impl Application for AbciApp {
         match value.to_bytes() {
             Ok(value) => ResponseQuery {
                 code: 0,
-                value,
+                value: value.into(),
                 ..Default::default()
             },
             Err(err) => ResponseQuery {
@@ -139,15 +139,28 @@ impl Application for AbciApp {
         match OmniClient::send_envelope(self.omni_url.clone(), cose) {
             Ok(cose_sign) => ResponseDeliverTx {
                 code: 0,
-                data: cose_sign.payload.unwrap_or_default(),
+                data: cose_sign.payload.unwrap_or_default().into(),
                 ..Default::default()
             },
             Err(err) => ResponseDeliverTx {
                 code: 1,
-                data: vec![],
+                data: vec![].into(),
                 log: err.to_string(),
                 ..Default::default()
             },
         }
+    }
+
+    fn commit(&self) -> ResponseCommit {
+        self.omni_client.call_("abci.commit", ()).map_or_else(
+            |err| ResponseCommit {
+                data: err.to_string().into_bytes().into(),
+                retain_height: 0,
+            },
+            |_msg| ResponseCommit {
+                data: vec![].into(),
+                retain_height: 0,
+            },
+        )
     }
 }

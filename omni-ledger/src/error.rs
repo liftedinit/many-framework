@@ -7,6 +7,6 @@ define_omni_error!(
         3: pub fn insufficient_funds() => "Insufficient funds.",
         4: pub fn anonymous_cannot_hold_funds() => "Anonymous is not a valid account identity.",
         5: pub fn invalid_initial_state(expected, actual)
-            => "Invalid initial state hash. Expected '{}', was '{}'.",
+            => "Invalid initial state hash. Expected '{expected}', was '{actual}'.",
     }
 );

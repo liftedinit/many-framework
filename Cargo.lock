@@ -236,6 +236,9 @@ name = "bytes"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "cbor-diag"
@@ -2651,9 +2654,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02880339f0e89dc7de809cb300a7dbe5e066c71937a7a55472438ae02e4a841b"
+version = "0.23.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#0b52addc2b10951053cc4e33ab163168c923c3cc"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2680,9 +2682,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-abci"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a198fbba5f158272a33fe7e7504e021ec19121736c06126aa3243dec7ba5b43"
+version = "0.23.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#0b52addc2b10951053cc4e33ab163168c923c3cc"
 dependencies = [
  "bytes",
  "flex-error",
@@ -2693,9 +2694,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2aff01e0eacdcfb75e8a1bbbc2d71286f7b6db3eda82c52ad7ca4f619ebb90cc"
+version = "0.23.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#0b52addc2b10951053cc4e33ab163168c923c3cc"
 dependencies = [
  "flex-error",
  "serde",
@@ -2707,9 +2707,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1b8319fcf0860833eabe3278cf2d94ca20ef04bee6a77d892f986026fb1c252"
+version = "0.23.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#0b52addc2b10951053cc4e33ab163168c923c3cc"
 dependencies = [
  "bytes",
  "chrono",
@@ -2725,9 +2724,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9c88786eeb1b408530fa7a8151aa9639cc04a6210cd8b5fa27aaafbd1e2a091"
+version = "0.23.0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#0b52addc2b10951053cc4e33ab163168c923c3cc"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2744,6 +2742,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
+ "subtle",
  "subtle-encoding",
  "tendermint",
  "tendermint-config",
