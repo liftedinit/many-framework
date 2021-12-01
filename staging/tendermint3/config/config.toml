@@ -223,7 +223,7 @@ seeds = ""
 # Comma separated list of peers to be added to the peer store
 # on startup. Either BootstrapPeers or PersistentPeers are
 # needed for peer discovery
-bootstrap-peers = ""
+bootstrap-peers = "tendermint-1 tendermint-2 tendermint-4"
 
 # Comma separated list of nodes to keep persistent connections to
 persistent-peers = ""
