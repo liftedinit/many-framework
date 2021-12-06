@@ -6,10 +6,9 @@ use minicbor::{Decode, Decoder, Encode, Encoder};
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
-use omni::{Identity, OmniError, OmniModule};
+use omni::{OmniError, OmniModule};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::SystemTime;
 
 pub const ABCI_SERVER: Attribute = Attribute::new(
     1000,
@@ -249,8 +248,7 @@ impl<B: OmniAbciModuleBackend> OmniModule for AbciModule<B> {
             _ => {
                 // Forward the message to the backend. If we got here, the contract is the message
                 // is a command message and have been through the blockchain.
-                let mut response = self.backend.execute(message).await?;
-                Ok(response)
+                self.backend.execute(message).await
             }
         }
     }

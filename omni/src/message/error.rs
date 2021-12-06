@@ -136,8 +136,8 @@ macro_rules! define_attribute_omni_error {
         $(
         $(
             $vis fn $name ( $($var_name: String),* ) -> $crate::OmniError {
-                $crate::OmniError::application_specific(
-                    ($module_id as i64) * -10000i64 - ($id as i64),
+                $crate::OmniError::attribute_specific(
+                    ($module_id as i32) * -10000i32 - ($id as i32),
                     String::from($message),
                     std::iter::FromIterator::from_iter(vec![
                         $( (stringify!($var_name).to_string(), $var_name) ),*
@@ -169,8 +169,26 @@ impl OmniErrorCode {
 
 impl OmniError {
     #[inline]
+    pub fn is_attribute_specific(&self) -> bool {
+        self.code.is_attribute_specific()
+    }
+
+    #[inline]
     pub fn is_application_specific(&self) -> bool {
         self.code.is_application_specific()
+    }
+
+    #[inline]
+    pub fn attribute_specific(
+        code: i32,
+        message: String,
+        arguments: BTreeMap<String, String>,
+    ) -> Self {
+        OmniError {
+            code: OmniErrorCode::AttributeSpecific(code),
+            message: Some(message),
+            arguments,
+        }
     }
 
     #[inline]

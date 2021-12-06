@@ -4,7 +4,6 @@ use omni::identity::cose::CoseKeyIdentity;
 use omni::message::ResponseMessage;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
-use std::collections::BTreeMap;
 use std::time::SystemTime;
 use tendermint_abci::Application;
 use tendermint_proto::abci::*;
