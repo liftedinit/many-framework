@@ -1,6 +1,6 @@
-use omni::define_omni_error;
+use omni::define_attribute_omni_error;
 
-define_omni_error!(
+define_attribute_omni_error!(
     attribute 2 => {
         1: pub fn unknown_symbol(symbol) => "Symbol not supported by this ledger: {symbol}.",
         2: pub fn unauthorized() => "Unauthorized to do this operation.",
