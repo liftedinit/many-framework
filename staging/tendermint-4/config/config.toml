@@ -15,7 +15,7 @@
 proxy-app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "tendermint-2"
+moniker = "tendermint-4"
 
 # Mode of Node: full | validator | seed
 # * validator node
@@ -112,7 +112,7 @@ root-ca-file = ""
 [rpc]
 
 # TCP or UNIX socket address for the RPC server to listen on
-laddr = "tcp://127.0.0.1:26657"
+laddr = "tcp://0.0.0.0:26657"
 
 # A list of origins a cross-domain request can be executed from
 # Default value '[]' disables cors support
@@ -223,10 +223,10 @@ seeds = ""
 # Comma separated list of peers to be added to the peer store
 # on startup. Either BootstrapPeers or PersistentPeers are
 # needed for peer discovery
-bootstrap-peers = "tendermint-1 tendermint-3 tendermint-4"
+bootstrap-peers = ""
 
 # Comma separated list of nodes to keep persistent connections to
-persistent-peers = ""
+persistent-peers = "18d54540cec617fd94d536ff7e3a23f6ec4f0337@tendermint-1:26656,0749d5479956cb4234c464f58e0feca76be6c5c3@tendermint-2:26656,365de9cd732bc77a3500136f2ff9b0900866ba8d@tendermint-3:26656"
 
 # UPNP port forwarding
 upnp = false
@@ -237,7 +237,7 @@ addr-book-file = "config/addrbook.json"
 
 # Set true for strict address routability rules
 # Set false for private or local networks
-addr-book-strict = true
+addr-book-strict = false
 
 # Maximum number of inbound peers
 #
@@ -298,8 +298,8 @@ private-peer-ids = ""
 allow-duplicate-ip = false
 
 # Peer connection configuration.
-handshake-timeout = "20s"
-dial-timeout = "3s"
+handshake-timeout = "3m20s"
+dial-timeout = "30s"
 
 #######################################################
 ###          Mempool Configuration Option          ###
@@ -485,7 +485,7 @@ psql-conn = ""
 # When true, Prometheus metrics are served under /metrics on
 # PrometheusListenAddr.
 # Check out the documentation for the list of available metrics.
-prometheus = false
+prometheus = true
 
 # Address to listen for Prometheus collector(s) connections
 prometheus-listen-addr = ":26660"

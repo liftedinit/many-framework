@@ -69,27 +69,34 @@ impl ResponseMessage {
 
 impl Encode for ResponseMessage {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        // Let's keep this map canonically sorted.
         e.tag(Tag::Unassigned(10002))?;
-        e.begin_map()?;
+        let len = 3
+            + if self.version.is_some() { 1 } else { 0 }
+            + if self.to.is_some() { 1 } else { 0 }
+            + if self.id.is_some() { 1 } else { 0 };
 
-        if let Some(ref v) = self.version {
-            e.str("version")?.u8(*v)?;
+        e.map(len)?;
+
+        if let Some(ref id) = self.id {
+            e.str("id")?.u64(*id)?;
         }
-
-        // No need to send the anonymous identity.
-        e.str("from")?.encode(self.from)?;
-
         if let Some(to) = self.to {
             e.str("to")?.encode(to)?;
         }
 
-        match &self.data {
-            Ok(d) => {
-                e.str("data")?.bytes(d)?;
-            }
-            Err(err) => {
-                e.str("error")?.encode(err)?;
-            }
+        if let Ok(d) = &self.data {
+            e.str("data")?.bytes(d)?;
+        }
+        // No need to send the anonymous identity.
+        e.str("from")?.encode(self.from)?;
+
+        if let Err(err) = &self.data {
+            e.str("error")?.encode(err)?;
+        }
+
+        if let Some(ref v) = self.version {
+            e.str("version")?.u8(*v)?;
         }
 
         e.str("timestamp")?;
@@ -100,12 +107,6 @@ impl Encode for ResponseMessage {
                 .expect("Time flew backward")
                 .as_secs(),
         )?;
-
-        if let Some(ref id) = self.id {
-            e.str("id")?.u64(*id)?;
-        }
-
-        e.end()?;
 
         Ok(())
     }

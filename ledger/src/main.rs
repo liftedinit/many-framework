@@ -7,6 +7,7 @@ use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
+use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Clone, Debug)]
 #[repr(transparent)]
@@ -46,6 +47,14 @@ struct Opts {
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
     pem: Option<PathBuf>,
+
+    /// Increase output logging verbosity to DEBUG level.
+    #[clap(short, long, parse(from_occurrences))]
+    verbose: i8,
+
+    /// Suppress all output logging. Can be used multiple times to suppress more.
+    #[clap(short, long, parse(from_occurrences))]
+    quiet: i8,
 
     #[clap(subcommand)]
     subcommand: SubCommand,
@@ -161,7 +170,21 @@ fn main() {
         server,
         server_id,
         subcommand,
+        verbose,
+        quiet,
     } = Opts::parse();
+
+    let verbose_level = 2 + verbose - quiet;
+    let log_level = match verbose_level {
+        x if x > 3 => LevelFilter::TRACE,
+        3 => LevelFilter::DEBUG,
+        2 => LevelFilter::INFO,
+        1 => LevelFilter::WARN,
+        0 => LevelFilter::ERROR,
+        x if x < 0 => LevelFilter::OFF,
+        _ => unreachable!(),
+    };
+    tracing_subscriber::fmt().with_max_level(log_level).init();
 
     let server_id = server_id.unwrap_or_default();
     let key = pem.map_or_else(

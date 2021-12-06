@@ -600,7 +600,7 @@ mod tests {
         let id = CoseKeyIdentity::from_pem(pem).unwrap();
         assert_eq!(
             id.identity,
-            "ojpaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wi"
+            "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
         );
     }
 }

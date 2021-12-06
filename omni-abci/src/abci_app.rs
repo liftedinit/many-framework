@@ -1,14 +1,18 @@
 use crate::module::AbciInfo;
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
+use omni::message::ResponseMessage;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
+use std::collections::BTreeMap;
+use std::time::SystemTime;
 use tendermint_abci::Application;
 use tendermint_proto::abci::*;
 use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct AbciApp {
+    app_name: String,
     omni_client: OmniClient,
     omni_url: Url,
 }
@@ -28,43 +32,26 @@ impl AbciApp {
             server_id
         };
 
+        let omni_client =
+            OmniClient::new(omni_url.clone(), server_id, CoseKeyIdentity::anonymous())
+                .map_err(|e| e.to_string())?;
+        let status = omni_client.status().map_err(|x| x.to_string())?;
+        let app_name = status.name;
+
         Ok(Self {
-            omni_url: omni_url.clone(),
-            omni_client: OmniClient::new(omni_url.clone(), server_id, CoseKeyIdentity::anonymous())
-                .map_err(|e| e.to_string())?,
+            app_name,
+            omni_url,
+            omni_client,
         })
     }
 }
 
 impl Application for AbciApp {
-    fn begin_block(&self, _request: RequestBeginBlock) -> ResponseBeginBlock {
-        Default::default()
-    }
-    fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
-        Default::default()
-    }
-    fn flush(&self) -> ResponseFlush {
-        Default::default()
-    }
-    fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
-        Default::default()
-    }
-
     fn info(&self, request: RequestInfo) -> ResponseInfo {
         debug!(
             "Got info request. Tendermint version: {}; Block version: {}; P2P version: {}",
             request.version, request.block_version, request.p2p_version
         );
-
-        let status = match self.omni_client.status() {
-            Ok(status) => status,
-            Err(e) => {
-                return ResponseInfo {
-                    data: format!("An error occurred during call to status:\n{}", e),
-                    ..Default::default()
-                }
-            }
-        };
 
         let AbciInfo { height, hash } =
             match self.omni_client.call_("abci.info", ()).and_then(|payload| {
@@ -81,14 +68,16 @@ impl Application for AbciApp {
             };
 
         ResponseInfo {
-            data: format!("omni-abci-bridge({})", status.name),
+            data: format!("omni-abci-bridge({})", self.app_name),
             version: env!("CARGO_PKG_VERSION").to_string(),
             app_version: 1,
             last_block_height: height as i64,
             last_block_app_hash: hash.into(),
         }
     }
-
+    fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
+        Default::default()
+    }
     fn query(&self, request: RequestQuery) -> ResponseQuery {
         let cose = match CoseSign1::from_bytes(&request.data) {
             Ok(x) => x,
@@ -124,6 +113,9 @@ impl Application for AbciApp {
             },
         }
     }
+    fn begin_block(&self, _request: RequestBeginBlock) -> ResponseBeginBlock {
+        Default::default()
+    }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
         let cose = match CoseSign1::from_bytes(&request.tx) {
@@ -137,11 +129,30 @@ impl Application for AbciApp {
             }
         };
         match OmniClient::send_envelope(self.omni_url.clone(), cose) {
-            Ok(cose_sign) => ResponseDeliverTx {
-                code: 0,
-                data: cose_sign.payload.unwrap_or_default().into(),
-                ..Default::default()
-            },
+            Ok(cose_sign) => {
+                let payload = cose_sign.payload.unwrap_or_default();
+                let mut response = ResponseMessage::from_bytes(&payload).unwrap_or_default();
+
+                // Consensus will sign the result, so the `from` field is unnecessary.
+                response.from = Identity::anonymous();
+                // The version is ignored and removed.
+                response.version = None;
+                // The timestamp MIGHT differ between two nodes so we just force it to be 0.
+                response.timestamp = Some(SystemTime::UNIX_EPOCH);
+
+                if let Ok(data) = response.to_bytes() {
+                    ResponseDeliverTx {
+                        code: 0,
+                        data: data.into(),
+                        ..Default::default()
+                    }
+                } else {
+                    ResponseDeliverTx {
+                        code: 3,
+                        ..Default::default()
+                    }
+                }
+            }
             Err(err) => ResponseDeliverTx {
                 code: 1,
                 data: vec![].into(),
@@ -149,6 +160,14 @@ impl Application for AbciApp {
                 ..Default::default()
             },
         }
+    }
+
+    fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
+        Default::default()
+    }
+
+    fn flush(&self) -> ResponseFlush {
+        Default::default()
     }
 
     fn commit(&self) -> ResponseCommit {

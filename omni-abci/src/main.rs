@@ -83,6 +83,7 @@ async fn main() {
 
     let start = std::time::SystemTime::now();
     eprintln!("Connecting to the backend app...");
+
     loop {
         let omni_client = omni_client.clone();
         let result = tokio::task::spawn_blocking(move || omni_client.status())
@@ -94,14 +95,20 @@ async fn main() {
                 eprintln!("Latest error:\n{}\n", e);
                 std::process::exit(1);
             }
+            eprint!(".");
         } else {
+            eprintln!(" Connected.");
             break;
         }
 
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    let abci_app = AbciApp::create(omni_app, Identity::anonymous()).unwrap();
+    let abci_app = tokio::task::spawn_blocking(move || {
+        AbciApp::create(omni_app, Identity::anonymous()).unwrap()
+    })
+    .await
+    .unwrap();
 
     let abci_server = ServerBuilder::new(abci_read_buf_size)
         .bind(abci, abci_app)

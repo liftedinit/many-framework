@@ -48,6 +48,8 @@ impl OmniClient {
             .to_bytes()
             .map_err(|_| OmniError::internal_server_error())?;
 
+        tracing::debug!("request\n{}", hex::encode(&bytes));
+
         let client = reqwest::blocking::Client::new();
         let response = client
             .post(url)
@@ -56,6 +58,7 @@ impl OmniClient {
             .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
         let body = response.bytes().unwrap();
         let bytes = body.to_vec();
+        tracing::debug!("reply\n{}", hex::encode(&bytes));
         CoseSign1::from_bytes(&bytes).map_err(|e| OmniError::deserialization_error(e.to_string()))
     }
 

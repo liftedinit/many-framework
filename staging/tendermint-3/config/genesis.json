@@ -1,0 +1,63 @@
+{
+  "genesis_time": "2021-12-03T03:18:54.373171Z",
+  "chain_id": "omni-ledger-staging",
+  "initial_height": "0",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000",
+      "max_bytes": "1048576"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    },
+    "version": {
+      "app_version": "0"
+    }
+  },
+  "validators": [
+    {
+      "address": "3CC909CFD39DF737114E350AC9775DEE1DBDDDA8",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "sFv6xOpzXVEp2++P8TXS40fLYgjogwPqzpHbnB6DiUM="
+      },
+      "power": "10",
+      "name": ""
+    },
+    {
+      "address": "1F781856751D40E06FC3D42F238BFB6875D03B35",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "7Fk0FB5O4W8Lr6j5Nl8+Y7N7sQUavB5S10gufZIHxeI="
+      },
+      "power": "10",
+      "name": ""
+    },
+    {
+      "address": "E45FC2CE341E0017A3ED0666B32AC5D93E1A46B3",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "DE9MlQKZvM2DSYSVZ0w5Psh1ji1ccsuWcSj81qSVDxE="
+      },
+      "power": "10",
+      "name": ""
+    },
+    {
+      "address": "40966780DC8317EFDA3CC60B26BA01A72F9BE731",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "TK/BadfO/loQkBFw/SiOig08vwUeAWofaf1NNrTEtlE="
+      },
+      "power": "10",
+      "name": ""
+    }
+  ],
+  "app_hash": ""
+}

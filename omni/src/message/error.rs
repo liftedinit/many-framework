@@ -62,8 +62,6 @@ macro_rules! omni_error {
             $($(
                 #[doc = $description]
                 pub fn $snake_name( $($arg: String,)* ) -> Self {
-                    eprintln!("error {}\n{:?}\n\n", stringify!($snake_name), backtrace::Backtrace::new());
-
                     Self {
                         code: OmniErrorCode::$name,
                         message: None,

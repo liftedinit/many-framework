@@ -6,7 +6,7 @@ use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-#[derive(Debug, Clone, Default, Builder)]
+#[derive(Clone, Default, Builder)]
 #[builder(setter(strip_option), default)]
 pub struct RequestMessage {
     pub version: Option<u8>,
@@ -16,6 +16,29 @@ pub struct RequestMessage {
     pub data: Vec<u8>,
     pub timestamp: Option<SystemTime>,
     pub id: Option<u64>,
+}
+
+impl std::fmt::Debug for RequestMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let anon = Identity::anonymous();
+        let data = hex::encode(&self.data);
+
+        let mut s = f.debug_struct("RequestMessage");
+        s.field("version", &self.version)
+            .field("from", self.from.as_ref().unwrap_or(&anon))
+            .field("to", &self.to)
+            .field("method", &self.method)
+            .field("data", &data);
+
+        if let Some(timestamp) = &self.timestamp {
+            s.field("timestamp", timestamp);
+        }
+        if let Some(id) = &self.id {
+            s.field("id", id);
+        }
+
+        s.finish()
+    }
 }
 
 impl RequestMessage {

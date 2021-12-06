@@ -40,7 +40,6 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
             .unwrap();
 
         let response = client.abci_query(None, data, None, false).await.unwrap();
-        eprintln!("{:?}", response);
         let response = CoseSign1::from_bytes(&response.value).unwrap();
         let response = decode_response_from_cose_sign1(response, None).unwrap();
         let init_message = AbciInit::from_bytes(&response.data.unwrap()).unwrap();
@@ -56,15 +55,15 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
         let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
 
         if let Some(is_command) = self.endpoints.get(&message.method) {
-            eprintln!("execute inner: \n{:?}\n {}", message, *is_command);
+            eprintln!("execute inner ({}): \n{:#?}------\n", *is_command, message);
+            let data = envelope
+                .to_bytes()
+                .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
+
             if *is_command {
                 let response = self
                     .client
-                    .broadcast_tx_async(tendermint_rpc::abci::Transaction::from(
-                        envelope
-                            .to_bytes()
-                            .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?,
-                    ))
+                    .broadcast_tx_sync(tendermint_rpc::abci::Transaction::from(data))
                     .await
                     .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
 
@@ -77,14 +76,7 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
             } else {
                 let response = self
                     .client
-                    .abci_query(
-                        None,
-                        envelope
-                            .to_bytes()
-                            .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?,
-                        None,
-                        false,
-                    )
+                    .abci_query(None, data, None, false)
                     .await
                     .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
                 eprintln!("bytes: {}", hex::encode(&response.value));
