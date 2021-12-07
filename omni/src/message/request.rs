@@ -78,11 +78,12 @@ impl Encode for RequestMessage {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
         e.tag(Tag::Unassigned(10001))?;
         let l =
-            3 + if self.from.is_none() || self.from == Some(Identity::anonymous()) {
+            2 + if self.from.is_none() || self.from == Some(Identity::anonymous()) {
                 0
             } else {
                 1
             } + if self.to.is_anonymous() { 0 } else { 1 }
+                + if self.data.is_empty() { 0 } else { 1 }
                 + if self.id.is_none() { 0 } else { 1 }
                 + if self.nonce.is_none() { 0 } else { 1 };
         e.map(l)?;
@@ -105,8 +106,10 @@ impl Encode for RequestMessage {
         e.i8(RequestMessageCborKey::Endpoint as i8)?
             .encode(&self.method)?;
 
-        e.i8(RequestMessageCborKey::Argument as i8)?
-            .bytes(&self.data)?;
+        if !self.data.is_empty() {
+            e.i8(RequestMessageCborKey::Argument as i8)?
+                .bytes(&self.data)?;
+        }
 
         e.i8(RequestMessageCborKey::Timestamp as i8)?;
         let timestamp = self.timestamp.unwrap_or(SystemTime::now());
