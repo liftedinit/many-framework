@@ -9,14 +9,14 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[derive(FromPrimitive, ToPrimitive)]
 #[repr(i8)]
 pub enum RequestMessageCborKey {
-    ProtocolVersion = -1,
-    From = -2,
-    To = -3,
-    Endpoint = -4,
-    Argument = -5,
-    Timestamp = -6,
-    Id = -7,
-    Nonce = -8,
+    ProtocolVersion = 0,
+    From,
+    To,
+    Endpoint,
+    Argument,
+    Timestamp,
+    Id,
+    Nonce,
 }
 
 #[derive(Clone, Default, Builder)]

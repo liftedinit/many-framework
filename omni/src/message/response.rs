@@ -10,14 +10,14 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[derive(FromPrimitive, ToPrimitive)]
 #[repr(i8)]
 pub enum ResponseMessageCborKey {
-    ProtocolVersion = -1,
-    From = -2,
-    To = -3,
-    Endpoint = -4,
-    Result = -5,
-    Timestamp = -6,
-    Id = -7,
-    Nonce = -8,
+    ProtocolVersion = 0,
+    From,
+    To,
+    _Endpoint, // Unused in Response.
+    Result,
+    Timestamp,
+    Id,
+    _Nonce, // Unused in Response.
 }
 
 /// An OMNI message response.
