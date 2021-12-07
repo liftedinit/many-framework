@@ -39,6 +39,10 @@ impl<'a> Encode for InfoReturns<'a> {
     }
 }
 
+pub struct BalanceArgs {
+    id: Option<Identity>,
+}
+
 #[derive(serde::Deserialize, Debug, Default)]
 pub struct InitialState {
     initial: BTreeMap<Identity, BTreeMap<String, u64>>,

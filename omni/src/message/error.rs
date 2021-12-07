@@ -1,11 +1,13 @@
 use minicbor::data::Type;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
+use num_derive::{FromPrimitive, ToPrimitive};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::iter::FromIterator;
 
-#[repr(u32)]
+#[derive(FromPrimitive, ToPrimitive)]
+#[repr(i8)]
 enum OmniErrorCborKey {
     Code = 0,
     Message = 1,
@@ -304,12 +306,11 @@ impl<'b> Decode<'b> for OmniError {
                 break;
             }
 
-            let k = d.i64()?;
-            match k {
-                0 => code = Some(d.i64()?),
-                1 => message = Some(d.str()?),
-                2 => arguments = d.decode()?,
-                _ => {}
+            match num_traits::FromPrimitive::from_i64(d.i64()?) {
+                Some(OmniErrorCborKey::Code) => code = Some(d.i64()?),
+                Some(OmniErrorCborKey::Message) => message = Some(d.str()?),
+                Some(OmniErrorCborKey::Arguments) => arguments = d.decode()?,
+                None => {}
             }
 
             i += 1;

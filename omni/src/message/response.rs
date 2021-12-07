@@ -4,7 +4,21 @@ use derive_builder::Builder;
 use minicbor::data::{Tag, Type};
 use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
+use num_derive::{FromPrimitive, ToPrimitive};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+#[derive(FromPrimitive, ToPrimitive)]
+#[repr(i8)]
+pub enum ResponseMessageCborKey {
+    ProtocolVersion = -1,
+    From = -2,
+    To = -3,
+    Endpoint = -4,
+    Result = -5,
+    Timestamp = -6,
+    Id = -7,
+    Nonce = -8,
+}
 
 /// An OMNI message response.
 #[derive(Debug, Builder)]
@@ -69,37 +83,39 @@ impl ResponseMessage {
 
 impl Encode for ResponseMessage {
     fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
-        // Let's keep this map canonically sorted.
         e.tag(Tag::Unassigned(10002))?;
-        let len = 3
-            + if self.version.is_some() { 1 } else { 0 }
-            + if self.to.is_some() { 1 } else { 0 }
-            + if self.id.is_some() { 1 } else { 0 };
+        let l = 2
+            + if self.from.is_anonymous() { 0 } else { 1 }
+            + if self.to.is_none() || self.to == Some(Identity::anonymous()) {
+                0
+            } else {
+                1
+            }
+            + if self.id.is_none() { 0 } else { 1 };
+        e.map(l)?;
 
-        e.map(len)?;
+        // Skip version for this version of the protocol. This message implementation
+        // only supports version 1.
+        // e.i8(RequestMessageCborKey::ProtocolVersion as i8)?.u8(*v)?;
 
-        if let Some(ref id) = self.id {
-            e.str("id")?.u64(*id)?;
-        }
-        if let Some(to) = self.to {
-            e.str("to")?.encode(to)?;
-        }
-
-        if let Ok(d) = &self.data {
-            e.str("data")?.bytes(d)?;
-        }
         // No need to send the anonymous identity.
-        e.str("from")?.encode(self.from)?;
-
-        if let Err(err) = &self.data {
-            e.str("error")?.encode(err)?;
+        if !self.from.is_anonymous() {
+            e.i8(ResponseMessageCborKey::From as i8)?
+                .encode(&self.from)?;
         }
 
-        if let Some(ref v) = self.version {
-            e.str("version")?.u8(*v)?;
+        if let Some(ref i) = self.to {
+            if !i.is_anonymous() {
+                e.i8(ResponseMessageCborKey::To as i8)?.encode(i)?;
+            }
         }
 
-        e.str("timestamp")?;
+        match &self.data {
+            Ok(result) => e.i8(ResponseMessageCborKey::Result as i8)?.bytes(&result)?,
+            Err(error) => e.i8(ResponseMessageCborKey::Result as i8)?.encode(&error)?,
+        };
+
+        e.i8(ResponseMessageCborKey::Timestamp as i8)?;
         let timestamp = self.timestamp.unwrap_or(SystemTime::now());
         e.tag(minicbor::data::Tag::Timestamp)?.u64(
             timestamp
@@ -107,6 +123,10 @@ impl Encode for ResponseMessage {
                 .expect("Time flew backward")
                 .as_secs(),
         )?;
+
+        if let Some(ref id) = self.id {
+            e.i8(ResponseMessageCborKey::Id as i8)?.u64(*id)?;
+        }
 
         Ok(())
     }
@@ -132,13 +152,16 @@ impl<'b> Decode<'b> for ResponseMessage {
                 break;
             }
 
-            match d.str()? {
-                "version" => builder.version(d.decode()?),
-                "from" => builder.from(d.decode()?),
-                "to" => builder.to(d.decode()?),
-                "data" => builder.data(Ok(d.bytes()?.to_vec())),
-                "error" => builder.data(Err(d.decode()?)),
-                "timestamp" => {
+            match num_traits::FromPrimitive::from_i64(d.i64()?) {
+                Some(ResponseMessageCborKey::ProtocolVersion) => builder.version(d.decode()?),
+                Some(ResponseMessageCborKey::From) => builder.from(d.decode()?),
+                Some(ResponseMessageCborKey::To) => builder.to(d.decode()?),
+                Some(ResponseMessageCborKey::Result) => match d.datatype()? {
+                    Type::Bytes => builder.data(Ok(d.bytes()?.to_vec())),
+                    Type::Map => builder.data(Err(d.decode()?)),
+                    _ => &mut builder,
+                },
+                Some(ResponseMessageCborKey::Timestamp) => {
                     // Some logic applies.
                     let t = d.tag()?;
                     if t != minicbor::data::Tag::Timestamp {
