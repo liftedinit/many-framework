@@ -14,6 +14,7 @@ lazy_static = "1.4.0"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
 num-bigint = "0.4.3"
 omni = { path = "../omni" }
+omni-ledger = { path = "../omni-ledger" }
 regex = "1.5.4"
 ring = "0.17.0-alpha.10"
 tracing = "0.1.29"

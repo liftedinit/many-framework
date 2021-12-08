@@ -1,10 +1,3 @@
-use crate::balance::{BalanceArgs, SymbolList};
-use crate::burn::BurnArgs;
-use crate::error::unauthorized;
-use crate::info::InfoReturns;
-use crate::mint::MintArgs;
-use crate::send::SendArgs;
-use crate::{error, LedgerStorage, TokenAmount};
 use async_trait::async_trait;
 use minicbor::{decode, Encoder};
 use omni::message::{RequestMessage, ResponseMessage};
@@ -21,16 +14,24 @@ pub mod info;
 pub mod mint;
 pub mod send;
 
+use crate::{error, storage::LedgerStorage, storage::TokenAmount};
+use balance::{BalanceArgs, SymbolList};
+use burn::BurnArgs;
+use error::unauthorized;
+use info::InfoReturns;
+use mint::MintArgs;
+use send::SendArgs;
+
 #[derive(serde::Deserialize, Debug, Default)]
 pub struct InitialState {
-    initial: BTreeMap<Identity, BTreeMap<String, u64>>,
+    initial: BTreeMap<Identity, BTreeMap<String, u128>>,
     symbols: BTreeSet<String>,
     minters: Option<BTreeMap<String, BTreeSet<Identity>>>,
     hash: Option<String>,
 }
 
 /// A simple ledger that keeps transactions in memory.
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LedgerModule {
     minters: BTreeMap<String, BTreeSet<Identity>>,
     symbols: BTreeSet<String>,
@@ -40,25 +41,11 @@ pub struct LedgerModule {
 impl LedgerModule {
     pub fn new(initial_state: InitialState) -> Result<Self, OmniError> {
         let mut symbols = BTreeSet::new();
-        let mut storage: LedgerStorage = Default::default();
 
         for symbol in initial_state.symbols {
             symbols.insert(symbol);
         }
-
-        for (id, v) in &initial_state.initial {
-            for (symbol, amount) in v {
-                if symbols.contains(symbol) {
-                    storage
-                        .accounts
-                        .entry(id.clone())
-                        .or_default()
-                        .insert(symbol.to_owned(), (*amount).into());
-                } else {
-                    return Err(error::unknown_symbol(symbol.to_owned()));
-                }
-            }
-        }
+        let mut storage: LedgerStorage = LedgerStorage::new(symbols.clone(), initial_state.initial);
 
         if let Some(h) = initial_state.hash {
             // Verify the hash.
@@ -153,7 +140,7 @@ impl LedgerModule {
         }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.send(from, &to, symbol, amount.clone())?;
+        storage.send(from, &to, &symbol.to_string(), amount.clone())?;
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
@@ -169,7 +156,7 @@ impl LedgerModule {
         }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.mint(&account, symbol, amount)?;
+        storage.mint(&account, &symbol.to_string(), amount)?;
 
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
@@ -186,7 +173,7 @@ impl LedgerModule {
         }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.burn(&account, symbol, amount)?;
+        storage.burn(&account, &symbol.to_string(), amount)?;
 
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
@@ -212,7 +199,7 @@ impl OmniAbciModuleBackend for LedgerModule {
     fn info(&self) -> Result<AbciInfo, OmniError> {
         let storage = self.storage.lock().unwrap();
         Ok(AbciInfo {
-            height: storage.height,
+            height: 0,
             hash: storage.hash(),
         })
     }

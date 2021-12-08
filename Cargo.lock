@@ -1281,6 +1281,7 @@ dependencies = [
  "minicbor",
  "num-bigint 0.4.3",
  "omni",
+ "omni-ledger",
  "regex",
  "ring 0.17.0-alpha.10",
  "tokio",

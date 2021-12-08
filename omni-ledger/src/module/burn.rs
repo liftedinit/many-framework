@@ -1,4 +1,4 @@
-use crate::TokenAmount;
+use crate::storage::TokenAmount;
 use minicbor::data::Type;
 use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
 use omni::Identity;
