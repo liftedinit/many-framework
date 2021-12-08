@@ -1,6 +1,6 @@
 use crate::identity::cose::CoseKeyIdentity;
 use crate::message::{RequestMessage, ResponseMessage};
-use crate::protocol::{Status, StatusBuilder};
+use crate::protocol::{Attribute, Status, StatusBuilder};
 use crate::server::module::{OmniModule, OmniModuleInfo};
 use crate::transport::OmniRequestHandler;
 use crate::OmniError;
@@ -76,13 +76,20 @@ impl OmniServer {
     }
 
     pub fn status(&self) -> Status {
+        let mut attributes: Vec<Attribute> = self
+            .modules
+            .iter()
+            .flat_map(|m| m.info().attributes.clone())
+            .collect();
+        attributes.sort();
+
         StatusBuilder::default()
             .name(self.name.clone())
             .version(1)
             .public_key(self.identity.public_key())
             .identity(self.identity.identity.clone())
-            .internal_version(vec![])
-            .attributes(vec![])
+            .internal_version(std::env!("CARGO_PKG_VERSION").to_string())
+            .attributes(attributes)
             .build()
             .unwrap()
     }

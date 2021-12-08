@@ -1,10 +1,11 @@
+use crate::balance::SymbolList;
 use crate::error;
 use minicbor::data::Tag;
 use minicbor::{encode, Decode, Decoder, Encode, Encoder};
 use omni::{Identity, OmniError};
 use sha3::Digest;
 use std::cell::Cell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 type TokenAmountStorage = num_bigint::BigUint;
 
@@ -150,11 +151,42 @@ impl LedgerStorage {
         self.history.entry(self.height).or_default().push(tx);
     }
 
-    pub fn get_balance(&self, identity: &Identity, symbol: &str) -> Option<&TokenAmount> {
+    pub fn get_balance(&self, identity: &Identity, symbol: &str) -> TokenAmount {
         if identity.is_anonymous() {
-            None
+            TokenAmount::zero()
         } else {
-            self.accounts.get(identity)?.get(symbol).map(|x| x)
+            if let Some(account) = self.accounts.get(identity) {
+                account.get(symbol).cloned().unwrap_or(TokenAmount::zero())
+            } else {
+                TokenAmount::zero()
+            }
+        }
+    }
+
+    pub fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&String, &TokenAmount> {
+        if identity.is_anonymous() {
+            // Anonymous cannot hold funds.
+            BTreeMap::new()
+        } else {
+            match self.accounts.get(identity) {
+                None => BTreeMap::new(),
+                Some(account) => account.iter().collect(),
+            }
+        }
+    }
+
+    pub fn get_multiple_balances(
+        &self,
+        identity: &Identity,
+        symbols: BTreeSet<String>,
+    ) -> BTreeMap<&String, &TokenAmount> {
+        if symbols.is_empty() {
+            self.get_all_balances(identity)
+        } else {
+            self.get_all_balances(identity)
+                .into_iter()
+                .filter(|(k, _v)| symbols.contains(k.as_str()))
+                .collect()
         }
     }
 
@@ -261,7 +293,7 @@ impl LedgerStorage {
             return Err(error::anonymous_cannot_hold_funds());
         }
 
-        let amount_from = self.get_balance(from, symbol).cloned().unwrap_or_default();
+        let amount_from = self.get_balance(from, symbol);
         if amount > amount_from {
             return Err(error::insufficient_funds());
         }

@@ -1,7 +1,12 @@
+use crate::balance::{BalanceArgs, SymbolList};
+use crate::burn::BurnArgs;
+use crate::error::unauthorized;
+use crate::info::InfoReturns;
+use crate::mint::MintArgs;
+use crate::send::SendArgs;
 use crate::{error, LedgerStorage, TokenAmount};
 use async_trait::async_trait;
-use minicbor::encode::Write;
-use minicbor::{decode, Decode, Decoder, Encode, Encoder};
+use minicbor::{decode, Encoder};
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
@@ -10,38 +15,11 @@ use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 
-pub struct InfoArgs;
-impl<'de> Decode<'de> for InfoArgs {
-    fn decode(_d: &mut Decoder<'de>) -> Result<Self, decode::Error> {
-        Ok(Self)
-    }
-}
-
-pub struct InfoReturns<'a> {
-    pub height: u64,
-    pub symbols: &'a [&'a str],
-    pub hash: &'a [u8],
-}
-impl<'a> Encode for InfoReturns<'a> {
-    fn encode<W: Write>(
-        &self,
-        e: &mut Encoder<W>,
-    ) -> Result<(), minicbor::encode::Error<W::Error>> {
-        e.map(3)?
-            .str("height")?
-            .encode(self.height)?
-            .str("symbols")?
-            .encode(self.symbols)?
-            .str("hash")?
-            .encode(self.hash)?;
-
-        Ok(())
-    }
-}
-
-pub struct BalanceArgs {
-    id: Option<Identity>,
-}
+pub mod balance;
+pub mod burn;
+pub mod info;
+pub mod mint;
+pub mod send;
 
 #[derive(serde::Deserialize, Debug, Default)]
 pub struct InitialState {
@@ -137,7 +115,6 @@ impl LedgerModule {
         let symbols: Vec<&str> = self.symbols.iter().map(|x| x.as_str()).collect();
 
         e.encode(InfoReturns {
-            height: storage.height,
             symbols: symbols.as_slice(),
             hash: hash.as_slice(),
         })
@@ -147,73 +124,71 @@ impl LedgerModule {
     }
 
     fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut d = minicbor::Decoder::new(payload);
-        let (identity, symbol): (Option<Identity>, &str) = d
-            .decode()
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let BalanceArgs { account, symbols } =
+            decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+
+        let identity = account.as_ref().unwrap_or(from);
 
         let storage = self.storage.lock().unwrap();
-        if let Some(amount) = storage.get_balance(identity.as_ref().unwrap_or_else(|| from), symbol)
-        {
-            minicbor::to_vec(amount).map_err(|e| OmniError::serialization_error(e.to_string()))
-        } else {
-            minicbor::to_vec(TokenAmount::zero())
-                .map_err(|e| OmniError::serialization_error(e.to_string()))
-        }
+        let amounts = storage.get_multiple_balances(
+            identity,
+            symbols.unwrap_or_else(|| SymbolList(BTreeSet::new())).0,
+        );
+        minicbor::to_vec(amounts).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
-    fn send(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, &str) = d
-            .decode()
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+    fn send(&self, sender: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        let SendArgs {
+            from,
+            to,
+            amount,
+            symbol,
+        } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+
+        let from = from.as_ref().unwrap_or(sender);
+
+        // TODO: allow some ACLs or delegation on the ledger.
+        if from != sender {
+            return Err(unauthorized());
+        }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.send(&from, &to, symbol, amount.clone())?;
-
-        if let Some(amount) = storage.get_balance(&from, symbol) {
-            minicbor::to_vec(amount).map_err(|e| OmniError::serialization_error(e.to_string()))
-        } else {
-            minicbor::to_vec(TokenAmount::zero())
-                .map_err(|e| OmniError::serialization_error(e.to_string()))
-        }
+        storage.send(from, &to, symbol, amount.clone())?;
+        minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
     fn mint(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, &str) = d
-            .decode()
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let MintArgs {
+            account,
+            amount,
+            symbol,
+        } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         if !self.is_minter(from, symbol) {
             return Err(error::unauthorized());
         }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.mint(&to, symbol, amount)?;
+        storage.mint(&account, symbol, amount)?;
 
-        if let Some(amount) = storage.get_balance(&to, symbol) {
-            minicbor::to_vec(amount).map_err(|e| OmniError::serialization_error(e.to_string()))
-        } else {
-            minicbor::to_vec(TokenAmount::zero())
-                .map_err(|e| OmniError::serialization_error(e.to_string()))
-        }
+        minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
     fn burn(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut d = minicbor::Decoder::new(payload);
-        let (to, amount, symbol): (Identity, TokenAmount, &str) = d
-            .decode()
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let BurnArgs {
+            account,
+            amount,
+            symbol,
+        } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         if !self.is_minter(from, symbol) {
             return Err(error::unauthorized());
         }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.burn(&to, symbol, amount)?;
+        storage.burn(&account, symbol, amount)?;
 
-        Ok(Vec::new())
+        minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 }
 
@@ -273,33 +248,29 @@ impl OmniModule for LedgerModule {
     }
 
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
-        let symbol = match message.method.as_str() {
+        match message.method.as_str() {
             "ledger.info" => return Ok(()),
             "ledger.mint" => {
-                decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
-                    .2
+                decode::<'_, MintArgs>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
             "ledger.burn" => {
-                decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
-                    .2
+                decode::<'_, BurnArgs>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
             "ledger.balance" => {
-                decode::<'_, (Option<Identity>, Option<&str>)>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
-                    .1
+                decode::<'_, BalanceArgs>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
             "ledger.send" => {
-                decode::<'_, (Identity, TokenAmount, Option<&str>)>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?
-                    .2
+                decode::<'_, SendArgs>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
             _ => {
                 return Err(OmniError::internal_server_error());
             }
         };
-        symbol.map_or(Ok(()), |s| self.is_known_symbol(s))
+        Ok(())
     }
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {

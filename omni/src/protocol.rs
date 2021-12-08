@@ -4,6 +4,7 @@ use minicbor::data::Type;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decode, Decoder, Encode, Encoder};
 use minicose::CoseKey;
+use std::cmp::Ordering;
 use std::fmt::{Debug, Formatter};
 
 pub mod attributes;
@@ -122,6 +123,26 @@ impl Attribute {
     }
 }
 
+impl PartialEq for Attribute {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Attribute {}
+
+impl PartialOrd for Attribute {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+
+impl Ord for Attribute {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
 impl Debug for Attribute {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut dbg = f.debug_struct("Attribute");
@@ -194,7 +215,7 @@ pub struct Status {
     pub name: String,
     pub version: u8,
     pub public_key: Option<CoseKey>,
-    pub internal_version: Vec<u8>,
+    pub internal_version: String,
     pub identity: Identity,
     pub attributes: Vec<Attribute>,
 }
@@ -216,7 +237,7 @@ impl Encode for Status {
             .str("name")?.str(self.name.as_str())?
             .str("version")?.u8(self.version)?
             .str("identity")?.encode(&self.identity)?
-            .str("internal_version")?.bytes(self.internal_version.as_slice())?
+            .str("internal_version")?.str(self.internal_version.as_str())?
             .str("attributes")?.encode(self.attributes.as_slice())?;
 
         if let Some(pk) = self.public_key.as_ref() {
@@ -251,7 +272,7 @@ impl<'b> Decode<'b> for Status {
                         .map_err(|_e| minicbor::decode::Error::Message("Invalid cose key."))?;
                     builder.public_key(Some(key))
                 }
-                "internal_version" => builder.internal_version(d.bytes()?.to_vec()),
+                "internal_version" => builder.internal_version(d.str()?.to_string()),
                 "identity" => builder.identity(d.decode()?),
                 "attributes" => builder.attributes(d.decode()?),
                 _ => &mut builder,
