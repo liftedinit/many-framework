@@ -7,10 +7,10 @@ use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use omni_ledger::module::balance::{BalanceArgs, BalanceReturns};
 use omni_ledger::module::burn::BurnArgs;
+use omni_ledger::module::info::InfoReturns;
 use omni_ledger::module::mint::MintArgs;
 use omni_ledger::module::send::SendArgs;
-use omni_ledger::storage::TokenAmount;
-use std::collections::BTreeMap;
+use omni_ledger::storage::{verify_proof, TokenAmount};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use tracing_subscriber::filter::LevelFilter;
@@ -90,6 +90,10 @@ struct BalanceOpt {
 
     /// The symbol to check the balance of.
     symbols: Vec<String>,
+
+    /// Whether to return a proof or not.
+    #[clap(long)]
+    proof: bool,
 }
 
 #[derive(Parser)]
@@ -108,15 +112,16 @@ fn balance(
     client: OmniClient,
     account: Option<Identity>,
     symbols: Vec<String>,
+    proof: bool,
 ) -> Result<(), OmniError> {
     let argument = BalanceArgs {
         account,
         symbols: if symbols.is_empty() {
             None
         } else {
-            Some(symbols.into())
+            Some(symbols.clone().into())
         },
-        proof: None,
+        proof: Some(proof),
     };
     let payload = client.call_("ledger.balance", argument)?;
 
@@ -124,8 +129,29 @@ fn balance(
         Err(OmniError::unexpected_empty_response())
     } else {
         let balance: BalanceReturns = minicbor::decode(&payload).unwrap();
-        for (symbol, amount) in balance.balances {
-            println!("{} {}", symbol, amount);
+        if let Some(balances) = balance.balances {
+            for (symbol, amount) in balances {
+                println!("{} {}", symbol, amount);
+            }
+        } else if let Some(p) = balance.proof {
+            let info = client.call_("ledger.info", ())?;
+            let info: InfoReturns = minicbor::decode(&info).unwrap();
+            let balances = verify_proof(
+                p.as_slice(),
+                account.as_ref().unwrap_or_else(|| &client.id.identity),
+                symbols.as_slice(),
+                &info.hash.to_vec().try_into().unwrap(),
+            )
+            .unwrap();
+
+            for (symbol, amount) in balances {
+                println!("{} {}", symbol, amount);
+            }
+        } else {
+            return Err(OmniError::unknown(
+                "Server did not response with either a balance record or proof. This is an error"
+                    .to_string(),
+            ));
         }
 
         Ok(())
@@ -227,7 +253,11 @@ fn main() {
 
     let client = OmniClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
-        SubCommand::Balance(BalanceOpt { identity, symbols }) => {
+        SubCommand::Balance(BalanceOpt {
+            identity,
+            symbols,
+            proof,
+        }) => {
             let identity = identity.map(|ref identity| {
                 Identity::from_str(identity)
                     .or_else(|_| {
@@ -239,7 +269,7 @@ fn main() {
                     .unwrap()
             });
 
-            balance(client, identity, symbols)
+            balance(client, identity, symbols, proof)
         }
         SubCommand::Mint(TargetCommandOpt {
             identity,

@@ -10,12 +10,6 @@ use std::collections::{BTreeMap, BTreeSet};
 #[cbor(transparent)]
 pub struct SymbolList(#[n(0)] pub BTreeSet<String>);
 
-impl SymbolList {
-    pub fn iter(&'_ self) -> impl Iterator<Item = &'_ String> {
-        self.0.iter()
-    }
-}
-
 impl From<Vec<String>> for SymbolList {
     fn from(v: Vec<String>) -> Self {
         SymbolList(v.into_iter().collect())
@@ -53,8 +47,11 @@ pub struct BalanceArgs {
 #[cbor(map)]
 pub struct BalanceReturns {
     #[n(0)]
-    pub balances: BTreeMap<String, TokenAmount>,
+    pub balances: Option<BTreeMap<String, TokenAmount>>,
 
     #[n(1)]
     pub proof: Option<ByteVec>,
+
+    #[n(2)]
+    pub hash: ByteVec,
 }

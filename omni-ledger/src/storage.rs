@@ -1,19 +1,38 @@
 use crate::error;
-use crate::error::unknown_symbol;
-use crate::module::balance::SymbolList;
 use minicbor::data::Tag;
 use minicbor::{encode, Decode, Decoder, Encode, Encoder};
 use num_bigint::BigUint;
 use omni::{Identity, OmniError};
-use sha3::Digest;
-use std::cell::Cell;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::{Display, Formatter, Octal};
+use std::fmt::{Display, Formatter};
 use std::path::Path;
 
 /// Returns the key for the persistent kv-store.
 fn key_for(id: &Identity, symbol: &String) -> Vec<u8> {
     format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
+}
+
+pub fn verify_proof(
+    bytes: &[u8],
+    identity: &Identity,
+    symbols: &[String],
+    expected_hash: &[u8; 32],
+) -> Result<BTreeMap<String, TokenAmount>, String> {
+    let keys: Vec<Vec<u8>> = symbols.iter().map(|s| key_for(identity, s)).collect();
+    let values =
+        fmerk::verify_proof(bytes, keys.as_slice(), *expected_hash).map_err(|e| e.to_string())?;
+
+    let mut result = BTreeMap::new();
+    for (symbol, amount) in symbols.iter().zip(values.iter()) {
+        result.insert(
+            symbol.clone(),
+            amount
+                .as_ref()
+                .map_or(TokenAmount::zero(), |x| TokenAmount::from(x.clone())),
+        );
+    }
+
+    Ok(result)
 }
 
 type TokenAmountStorage = num_bigint::BigUint;
@@ -29,11 +48,6 @@ impl TokenAmount {
 
     pub fn is_zero(&self) -> bool {
         self.0 == 0u8.into()
-    }
-
-    pub(crate) fn hash<H: sha3::Digest>(&self, state: &mut H) {
-        state.update("amount\0");
-        state.update(self.0.to_bytes_be());
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -105,49 +119,6 @@ impl<'b> Decode<'b> for TokenAmount {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Transaction {
-    Mint(Identity, TokenAmount, String),
-    Burn(Identity, TokenAmount, String),
-    Send(Identity, Identity, TokenAmount, String),
-}
-
-impl Transaction {
-    pub(crate) fn hash<H: sha3::Digest>(&self, state: &mut H) {
-        match self {
-            Transaction::Mint(id, amount, symbol) => {
-                state.update("mint\0");
-                state.update(id.to_vec().as_slice());
-                state.update("\0");
-                amount.hash(state);
-                state.update("symbol\0");
-                state.update(symbol.as_bytes());
-                state.update("\0");
-            }
-            Transaction::Burn(id, amount, symbol) => {
-                state.update("burn\0");
-                state.update(id.to_vec().as_slice());
-                state.update("\0");
-                amount.hash(state);
-                state.update("symbol\0");
-                state.update(symbol.as_bytes());
-                state.update("\0");
-            }
-            Transaction::Send(from, to, amount, symbol) => {
-                state.update("send\0");
-                state.update(from.to_vec().as_slice());
-                state.update("\0");
-                state.update(to.to_vec().as_slice());
-                state.update("\0");
-                amount.hash(state);
-                state.update("symbol\0");
-                state.update(symbol.as_bytes());
-                state.update("\0");
-            }
-        }
-    }
-}
-
 pub struct LedgerStorage {
     symbols: BTreeSet<String>,
     minters: BTreeSet<Identity>,
@@ -170,7 +141,7 @@ impl std::fmt::Debug for LedgerStorage {
 
 impl LedgerStorage {
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
-        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store.get(b"/config/symbols").unwrap().unwrap();
         let minters = persistent_store.get(b"/config/minters").unwrap().unwrap();
@@ -241,6 +212,10 @@ impl LedgerStorage {
         self.symbols.iter().map(|x| x.as_str()).collect()
     }
 
+    pub fn can_mint(&self, id: &Identity, _symbol: &str) -> bool {
+        self.minters.contains(id)
+    }
+
     pub fn commit(&mut self) -> () {
         self.persistent_store.commit(&[]).unwrap();
     }
@@ -257,7 +232,7 @@ impl LedgerStorage {
         }
     }
 
-    pub fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&String, TokenAmount> {
+    fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&String, TokenAmount> {
         if identity.is_anonymous() {
             // Anonymous cannot hold funds.
             BTreeMap::new()
@@ -280,7 +255,7 @@ impl LedgerStorage {
     pub fn get_multiple_balances(
         &self,
         identity: &Identity,
-        symbols: BTreeSet<String>,
+        symbols: &BTreeSet<String>,
     ) -> BTreeMap<&String, TokenAmount> {
         if symbols.is_empty() {
             self.get_all_balances(identity)
@@ -290,6 +265,22 @@ impl LedgerStorage {
                 .filter(|(k, _v)| symbols.contains(k.as_str()))
                 .collect()
         }
+    }
+
+    pub fn generate_proof(
+        &mut self,
+        identity: &Identity,
+        symbols: &BTreeSet<String>,
+    ) -> Result<Vec<u8>, OmniError> {
+        self.persistent_store
+            .prove(
+                symbols
+                    .iter()
+                    .map(|s| key_for(identity, s))
+                    .collect::<Vec<Vec<u8>>>()
+                    .as_slice(),
+            )
+            .map_err(|e| OmniError::unknown(e.to_string()))
     }
 
     pub fn mint(

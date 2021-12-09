@@ -165,7 +165,6 @@ pub trait OmniAbciModuleBackend: OmniModule {
 pub struct AbciModule<B: OmniAbciModuleBackend> {
     backend: Arc<B>,
     module_info: OmniModuleInfo,
-    endpoints: BTreeMap<String, bool>,
 }
 
 impl<B: OmniAbciModuleBackend> AbciModule<B> {
@@ -177,12 +176,10 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
                 .concat()
                 .to_vec(),
         };
-        let endpoints = backend.init().endpoints;
 
         Self {
             backend: Arc::new(backend),
             module_info,
-            endpoints,
         }
     }
 

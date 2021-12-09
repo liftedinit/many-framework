@@ -16,7 +16,7 @@ pub mod mint;
 pub mod send;
 
 use crate::module::balance::BalanceReturns;
-use crate::{error, storage::LedgerStorage, storage::TokenAmount};
+use crate::{error, storage::LedgerStorage};
 use balance::{BalanceArgs, SymbolList};
 use burn::BurnArgs;
 use error::unauthorized;
@@ -45,7 +45,7 @@ impl LedgerModule {
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, OmniError> {
-        let mut storage = if let Some(state) = initial_state {
+        let storage = if let Some(state) = initial_state {
             let storage = LedgerStorage::new(
                 state.symbols,
                 state.initial,
@@ -89,8 +89,8 @@ impl LedgerModule {
         let symbols: Vec<&str> = storage.get_symbols();
 
         e.encode(InfoReturns {
-            symbols: symbols.as_slice(),
-            hash: hash.as_slice(),
+            symbols: symbols.iter().map(|x| x.to_string()).collect(),
+            hash: hash.into(),
         })
         .map_err(|e| OmniError::serialization_error(e.to_string()))?;
 
@@ -106,22 +106,30 @@ impl LedgerModule {
 
         let identity = account.as_ref().unwrap_or(from);
 
-        let storage = self.storage.lock().unwrap();
-        let balances = storage.get_multiple_balances(
-            identity,
-            symbols.unwrap_or_else(|| SymbolList(BTreeSet::new())).0,
-        );
+        let mut storage = self.storage.lock().unwrap();
+        let symbols = symbols.unwrap_or_else(|| SymbolList(BTreeSet::new())).0;
 
         // TODO: include merkle proof here.
-        let proof = if proof.unwrap_or(false) { None } else { None };
-
-        let returns = BalanceReturns {
-            balances: balances
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), v))
-                .collect(),
-            proof,
+        let returns = if proof.unwrap_or(false) {
+            BalanceReturns {
+                balances: None,
+                proof: Some(storage.generate_proof(identity, &symbols)?.into()),
+                hash: storage.hash().into(),
+            }
+        } else {
+            let balances = storage.get_multiple_balances(identity, &symbols);
+            BalanceReturns {
+                balances: Some(
+                    balances
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect(),
+                ),
+                proof: None,
+                hash: storage.hash().into(),
+            }
         };
+
         minicbor::to_vec(returns).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
@@ -153,7 +161,12 @@ impl LedgerModule {
         } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         let mut storage = self.storage.lock().unwrap();
-        storage.mint(&account, &symbol.to_string(), amount)?;
+
+        if storage.can_mint(from, symbol) {
+            storage.mint(&account, &symbol.to_string(), amount)?;
+        } else {
+            return Err(unauthorized());
+        }
 
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
@@ -166,7 +179,11 @@ impl LedgerModule {
         } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         let mut storage = self.storage.lock().unwrap();
-        storage.burn(&account, &symbol.to_string(), amount)?;
+        if storage.can_mint(from, symbol) {
+            storage.burn(&account, &symbol.to_string(), amount)?;
+        } else {
+            return Err(unauthorized());
+        }
 
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }

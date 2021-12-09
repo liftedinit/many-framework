@@ -9,7 +9,6 @@ mod module;
 mod storage;
 
 use module::*;
-use storage::*;
 
 #[derive(Parser)]
 struct Opts {

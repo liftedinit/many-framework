@@ -1,4 +1,5 @@
-use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
+use minicbor::bytes::ByteVec;
+use minicbor::{decode, Decode, Decoder, Encode};
 
 pub struct InfoArgs;
 impl<'de> Decode<'de> for InfoArgs {
@@ -7,18 +8,11 @@ impl<'de> Decode<'de> for InfoArgs {
     }
 }
 
-pub struct InfoReturns<'a> {
-    pub symbols: &'a [&'a str],
-    pub hash: &'a [u8],
-}
-impl<'a> Encode for InfoReturns<'a> {
-    fn encode<W: encode::Write>(&self, e: &mut Encoder<W>) -> Result<(), encode::Error<W::Error>> {
-        e.map(3)?
-            .u8(0)?
-            .encode(self.symbols)?
-            .u8(1)?
-            .encode(self.hash)?;
+#[derive(Decode, Encode)]
+pub struct InfoReturns {
+    #[n(0)]
+    pub symbols: Vec<String>,
 
-        Ok(())
-    }
+    #[n(1)]
+    pub hash: ByteVec,
 }

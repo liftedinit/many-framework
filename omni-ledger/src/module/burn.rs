@@ -1,7 +1,6 @@
 use crate::storage::TokenAmount;
-use minicbor::{decode, Decode, Encode};
+use minicbor::{Decode, Encode};
 use omni::Identity;
-use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Encode, Decode)]
 #[cbor(map)]

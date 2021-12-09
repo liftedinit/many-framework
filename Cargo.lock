@@ -48,6 +48,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "anomaly"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "550632e31568ae1a5f47998c3aa48563030fc49b9ec91913ca337cf64fbc5ccb"
+dependencies = [
+ "backtrace",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,6 +295,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
+ "time 0.1.44",
  "winapi",
 ]
 
@@ -395,6 +405,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmac"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b70e37282d9624283878ffda1d1e53883bcf868cf441bddda44127620b39572d"
+dependencies = [
+ "crypto-mac",
+ "dbl",
+]
+
+[[package]]
 name = "colored"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -475,6 +495,7 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1d1a86f49236c215f271d40892d5fc950490551400b02ef360692c29815c714"
 dependencies = [
+ "cipher",
  "generic-array",
  "subtle",
 ]
@@ -541,6 +562,15 @@ name = "data-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
+
+[[package]]
+name = "dbl"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37e797687b5f09528a48fcb63b6914d0255b8a6c760699a919af37042f09d9b3"
+dependencies = [
+ "generic-array",
+]
 
 [[package]]
 name = "debug-helper"
@@ -745,6 +775,25 @@ checksum = "c606d892c9de11507fa0dcffc116434f94e105d0bbdc4e405b61519464c49d7b"
 dependencies = [
  "eyre",
  "paste",
+]
+
+[[package]]
+name = "fmerk"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e02058fbcaf42d293a81d2214111a2f57ff27ba2c2cf8d09f5aa55d1f1156e8"
+dependencies = [
+ "blake2-rfc",
+ "byteorder",
+ "colored",
+ "ed2",
+ "failure",
+ "hex",
+ "jemallocator",
+ "num_cpus",
+ "rand 0.7.3",
+ "rocksdb",
+ "time 0.1.44",
 ]
 
 [[package]]
@@ -970,6 +1019,12 @@ name = "half"
 version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
+
+[[package]]
+name = "harp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60bf12c625ed5e96f81609ae4377c34e9fa3e4d1fada392404322daeace511ab"
 
 [[package]]
 name = "hashbrown"
@@ -1270,6 +1325,7 @@ dependencies = [
  "clap",
  "crc-any",
  "derive_builder",
+ "fmerk 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "lazy_static",
  "minicbor",
@@ -1281,6 +1337,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.3",
+ "yubihsm",
 ]
 
 [[package]]
@@ -1656,7 +1713,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "clap",
- "fmerk",
+ "fmerk 0.1.1 (git+ssh://git@github.com/FindoraNetwork/fmerk.git?rev=8c790860b15e258b92a6d8aecd1c6893ccd66a98)",
  "hex",
  "itertools",
  "lazy_static",
@@ -1793,6 +1850,15 @@ checksum = "0744126afe1a6dd7f394cb50a716dbe086cb06e255e53d8d0185d82828358fb5"
 
 [[package]]
 name = "pbkdf2"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d95f5254224e617595d2cc3cc73ff0a5eaf2637519e25f03388154e9378b6ffa"
+dependencies = [
+ "crypto-mac",
+]
+
+[[package]]
+name = "pbkdf2"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f05894bce6a1ba4be299d0c5f29563e08af2bc18bb7d48313113bed71e904739"
@@ -1910,7 +1976,7 @@ dependencies = [
  "block-modes",
  "der 0.5.1",
  "hmac",
- "pbkdf2",
+ "pbkdf2 0.9.0",
  "scrypt",
  "sha2",
  "spki 0.5.2",
@@ -2349,7 +2415,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f2cc535b6997b0c755bf9344e71ca0e1be070d07ff792f1fcd31e7b90e07d5f"
 dependencies = [
  "hmac",
- "pbkdf2",
+ "pbkdf2 0.9.0",
  "salsa20",
  "sha2",
 ]
@@ -2532,6 +2598,19 @@ checksum = "f2807892cfa58e081aa1f1111391c7a0649d4fa127a4ffbe34bcbfb35a1171a4"
 dependencies = [
  "digest",
  "rand_core 0.6.3",
+ "signature_derive",
+]
+
+[[package]]
+name = "signature_derive"
+version = "1.0.0-pre.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffba76095b73f87680d2cf325a8000d5fc507ca6c20c4f7e2747405550620d90"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
 ]
 
 [[package]]
@@ -3123,6 +3202,9 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "vcpkg"
@@ -3302,6 +3384,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0120db82e8a1e0b9fb3345a539c478767c0048d842860994d96113d5b667bd69"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "yubihsm"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c32cd8146a6966df8137f5dbb77010ae5253e6937b21d1fd6ed55213478b4d0"
+dependencies = [
+ "aes",
+ "anomaly",
+ "bitflags",
+ "block-modes",
+ "chrono",
+ "cmac",
+ "ecdsa",
+ "ed25519",
+ "harp",
+ "hmac",
+ "log",
+ "p256",
+ "p384",
+ "pbkdf2 0.8.0",
+ "rand_core 0.6.3",
+ "serde",
+ "serde_json",
+ "sha2",
+ "signature",
+ "subtle",
+ "thiserror",
+ "uuid",
+ "zeroize",
 ]
 
 [[package]]
