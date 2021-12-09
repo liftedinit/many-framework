@@ -27,7 +27,16 @@ struct Opts {
 
     /// Path of a state file (that will be used for the initial setup).
     #[clap(long)]
-    state: PathBuf,
+    state: Option<PathBuf>,
+
+    /// Path to a persistent store database (rocksdb).
+    #[clap(long)]
+    persistent: PathBuf,
+
+    /// Delete the persistent storage to start from a clean state.
+    /// If this is not specified the initial state will not be used.
+    #[clap(long, short)]
+    clean: bool,
 }
 
 fn main() {
@@ -35,14 +44,26 @@ fn main() {
         pem,
         port,
         abci,
-        state,
+        mut state,
+        persistent,
+        clean,
     } = Opts::parse();
+    if clean {
+        // Delete the persistent storage.
+        let _ = std::fs::remove_dir_all(persistent.as_path());
+    } else if persistent.exists() {
+        // Initial state is ignored.
+        state = None;
+    }
+
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&pem).unwrap()).unwrap();
 
-    let content = std::fs::read_to_string(&state).unwrap();
-    let state: InitialState = serde_json::from_str(&content).unwrap();
+    let state: Option<InitialStateJson> = state.map(|state| {
+        let content = std::fs::read_to_string(&state).unwrap();
+        serde_json::from_str(&content).unwrap()
+    });
 
-    let module = LedgerModule::new(state).unwrap();
+    let module = LedgerModule::new(state, persistent, abci).unwrap();
     let omni = OmniServer::new("omni-ledger", key.clone());
     let omni = if abci {
         omni.with_module(omni_abci::module::AbciModule::new(module))

@@ -5,7 +5,7 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
-use omni_ledger::module::balance::BalanceArgs;
+use omni_ledger::module::balance::{BalanceArgs, BalanceReturns};
 use omni_ledger::module::burn::BurnArgs;
 use omni_ledger::module::mint::MintArgs;
 use omni_ledger::module::send::SendArgs;
@@ -116,14 +116,15 @@ fn balance(
         } else {
             Some(symbols.into())
         },
+        proof: None,
     };
     let payload = client.call_("ledger.balance", argument)?;
 
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
     } else {
-        let balance: BTreeMap<String, TokenAmount> = minicbor::decode(&payload).unwrap();
-        for (symbol, amount) in balance {
+        let balance: BalanceReturns = minicbor::decode(&payload).unwrap();
+        for (symbol, amount) in balance.balances {
             println!("{} {}", symbol, amount);
         }
 

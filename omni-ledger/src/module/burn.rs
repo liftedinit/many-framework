@@ -1,6 +1,5 @@
 use crate::storage::TokenAmount;
-use minicbor::data::Type;
-use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
+use minicbor::{decode, Decode, Encode};
 use omni::Identity;
 use std::collections::{BTreeMap, BTreeSet};
 

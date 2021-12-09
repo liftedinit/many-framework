@@ -3,11 +3,18 @@ use crate::error::unknown_symbol;
 use crate::module::balance::SymbolList;
 use minicbor::data::Tag;
 use minicbor::{encode, Decode, Decoder, Encode, Encoder};
+use num_bigint::BigUint;
 use omni::{Identity, OmniError};
 use sha3::Digest;
 use std::cell::Cell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Formatter, Octal};
+use std::path::Path;
+
+/// Returns the key for the persistent kv-store.
+fn key_for(id: &Identity, symbol: &String) -> Vec<u8> {
+    format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
+}
 
 type TokenAmountStorage = num_bigint::BigUint;
 
@@ -28,6 +35,10 @@ impl TokenAmount {
         state.update("amount\0");
         state.update(self.0.to_bytes_be());
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_bytes_be()
+    }
 }
 
 impl From<u64> for TokenAmount {
@@ -42,9 +53,15 @@ impl From<u128> for TokenAmount {
     }
 }
 
-impl From<TokenAmountStorage> for TokenAmount {
-    fn from(s: TokenAmountStorage) -> Self {
-        TokenAmount(s)
+impl From<Vec<u8>> for TokenAmount {
+    fn from(v: Vec<u8>) -> Self {
+        TokenAmount(num_bigint::BigUint::from_bytes_be(v.as_slice()))
+    }
+}
+
+impl From<num_bigint::BigUint> for TokenAmount {
+    fn from(v: BigUint) -> Self {
+        TokenAmount(v)
     }
 }
 
@@ -83,7 +100,8 @@ impl<'b> Decode<'b> for TokenAmount {
             return Err(minicbor::decode::Error::Message("Invalid tag."));
         }
 
-        Ok(TokenAmount(TokenAmountStorage::from_bytes_be(d.bytes()?)))
+        let bytes = d.bytes()?.to_vec();
+        Ok(TokenAmount::from(bytes))
     }
 }
 
@@ -131,79 +149,131 @@ impl Transaction {
 }
 
 pub struct LedgerStorage {
-    accounts: BTreeMap<Identity, BTreeMap<usize, TokenAmount>>,
-    symbols: Vec<String>,
+    symbols: BTreeSet<String>,
+    minters: BTreeSet<Identity>,
 
-    hash_cache: Cell<Option<Vec<u8>>>,
+    persistent_store: fmerk::Merk,
+
+    /// When this is true, we do not commit every transactions as they come,
+    /// but wait for a `commit` call before committing the batch to the
+    /// persistent store.
+    blockchain: bool,
 }
 
 impl std::fmt::Debug for LedgerStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
-            .field("accounts", &self.accounts)
+            .field("symbols", &self.symbols)
             .finish()
     }
 }
 
 impl LedgerStorage {
-    pub fn new(
-        mut symbols: BTreeSet<String>,
+    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
+        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+
+        let symbols = persistent_store.get(b"/config/symbols").unwrap().unwrap();
+        let minters = persistent_store.get(b"/config/minters").unwrap().unwrap();
+
+        Ok(Self {
+            symbols: String::from_utf8(symbols)
+                .unwrap()
+                .split(":")
+                .map(|x| x.to_owned())
+                .collect(),
+            minters: String::from_utf8(minters)
+                .unwrap()
+                .split(":")
+                .map(|x| Identity::from_str(x))
+                .collect::<Result<BTreeSet<Identity>, OmniError>>()
+                .map_err(|e| e.to_string())?,
+            persistent_store,
+            blockchain,
+        })
+    }
+
+    pub fn new<P: AsRef<Path>>(
+        symbols: BTreeSet<String>,
         initial_balances: BTreeMap<Identity, BTreeMap<String, u128>>,
-    ) -> Self {
-        let mut symbols: Vec<String> = symbols.into_iter().collect();
-        let mut accounts = BTreeMap::new();
+        minters: BTreeSet<Identity>,
+        persistent_path: P,
+        blockchain: bool,
+    ) -> Result<Self, String> {
+        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+
+        let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
+        use itertools::Itertools;
 
         for (k, v) in initial_balances.into_iter() {
-            let account: &mut BTreeMap<usize, TokenAmount> = accounts.entry(k).or_default();
-
             for (symbol, tokens) in v.into_iter() {
-                match symbols.binary_search(&symbol) {
-                    Err(_) => continue,
-                    Ok(index) => {
-                        account.insert(index, TokenAmount::from(tokens));
-                    }
+                if !symbols.contains(&symbol) {
+                    return Err(format!(r#"Unknown symbol "{}" for identity {}"#, symbol, k));
                 }
+
+                let key = key_for(&k, &symbol);
+                batch.push((key, fmerk::Op::Put(TokenAmount::from(tokens).to_vec())));
             }
         }
 
-        Self {
+        batch.push((
+            b"/config/minters".to_vec(),
+            fmerk::Op::Put(minters.iter().map(|i| i.to_string()).join(":").into_bytes()),
+        ));
+        batch.push((
+            b"/config/symbols".to_vec(),
+            fmerk::Op::Put(symbols.iter().join(":").into_bytes()),
+        ));
+
+        persistent_store
+            .apply(batch.as_slice())
+            .map_err(|e| e.to_string())?;
+        persistent_store.commit(&[]).map_err(|e| e.to_string())?;
+
+        Ok(Self {
             symbols,
-            accounts,
-            hash_cache: Default::default(),
-        }
+            minters,
+            persistent_store,
+            blockchain,
+        })
+    }
+
+    pub fn get_symbols(&self) -> Vec<&str> {
+        self.symbols.iter().map(|x| x.as_str()).collect()
     }
 
     pub fn commit(&mut self) -> () {
-        self.hash_cache.take();
+        self.persistent_store.commit(&[]).unwrap();
     }
 
     pub fn get_balance(&self, identity: &Identity, symbol: &String) -> TokenAmount {
         if identity.is_anonymous() {
             TokenAmount::zero()
         } else {
-            if let Some(account) = self.accounts.get(identity) {
-                match self.symbols.binary_search(symbol) {
-                    Err(_) => TokenAmount::zero(),
-                    Ok(ref symbol) => account.get(symbol).cloned().unwrap_or(TokenAmount::zero()),
-                }
-            } else {
-                TokenAmount::zero()
+            let key = key_for(identity, symbol);
+            match self.persistent_store.get(&key).unwrap() {
+                None => TokenAmount::zero(),
+                Some(amount) => TokenAmount::from(amount),
             }
         }
     }
 
-    pub fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&String, &TokenAmount> {
+    pub fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&String, TokenAmount> {
         if identity.is_anonymous() {
             // Anonymous cannot hold funds.
             BTreeMap::new()
         } else {
-            match self.accounts.get(identity) {
-                None => BTreeMap::new(),
-                Some(account) => account
-                    .iter()
-                    .map(|(k, v)| (&self.symbols[*k], v))
-                    .collect(),
+            let mut result = BTreeMap::new();
+            for symbol in &self.symbols {
+                match self.persistent_store.get(&key_for(identity, &symbol)) {
+                    Ok(None) => {}
+                    Ok(Some(value)) => {
+                        result.insert(symbol, TokenAmount::from(value));
+                    }
+                    Err(_) => {}
+                }
             }
+
+            result
         }
     }
 
@@ -211,7 +281,7 @@ impl LedgerStorage {
         &self,
         identity: &Identity,
         symbols: BTreeSet<String>,
-    ) -> BTreeMap<&String, &TokenAmount> {
+    ) -> BTreeMap<&String, TokenAmount> {
         if symbols.is_empty() {
             self.get_all_balances(identity)
         } else {
@@ -236,19 +306,16 @@ impl LedgerStorage {
             return Err(error::anonymous_cannot_hold_funds());
         }
 
-        let index = match self.symbols.binary_search(symbol) {
-            Ok(i) => i,
-            Err(_) => return Err(unknown_symbol(symbol.clone())),
-        };
+        let mut balance = self.get_balance(to, symbol);
+        balance += amount;
 
-        *self
-            .accounts
-            .entry(to.clone())
-            .or_default()
-            .entry(index)
-            .or_default() += amount.clone();
+        self.persistent_store
+            .apply(&[(key_for(to, symbol), fmerk::Op::Put(balance.to_vec()))])
+            .unwrap();
 
-        self.hash_cache.take();
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
         Ok(())
     }
 
@@ -266,19 +333,17 @@ impl LedgerStorage {
             return Err(error::anonymous_cannot_hold_funds());
         }
 
-        let index = match self.symbols.binary_search(symbol) {
-            Ok(i) => i,
-            Err(_) => return Err(unknown_symbol(symbol.clone())),
-        };
+        let mut balance = self.get_balance(to, symbol);
+        balance -= amount;
 
-        *self
-            .accounts
-            .entry(to.clone())
-            .or_default()
-            .entry(index)
-            .or_default() -= amount.clone();
+        self.persistent_store
+            .apply(&[(key_for(to, symbol), fmerk::Op::Put(balance.to_vec()))])
+            .unwrap();
 
-        self.hash_cache.take();
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+
         Ok(())
     }
 
@@ -297,59 +362,30 @@ impl LedgerStorage {
             return Err(error::anonymous_cannot_hold_funds());
         }
 
-        let amount_from = self.get_balance(from, symbol);
+        let mut amount_from = self.get_balance(from, symbol);
         if amount > amount_from {
             return Err(error::insufficient_funds());
         }
-        let index = match self.symbols.binary_search(symbol) {
-            Ok(i) => i,
-            Err(_) => return Err(unknown_symbol(symbol.to_string())),
-        };
+        let mut amount_to = self.get_balance(to, symbol);
 
-        *self
-            .accounts
-            .entry(*from)
-            .or_default()
-            .entry(index)
-            .or_default() -= amount.clone();
-        *self
-            .accounts
-            .entry(*to)
-            .or_default()
-            .entry(index)
-            .or_default() += amount.clone();
+        amount_to += amount.clone();
+        amount_from -= amount.clone();
 
-        self.hash_cache.take();
+        self.persistent_store
+            .apply(&[
+                (key_for(from, symbol), fmerk::Op::Put(amount_from.to_vec())),
+                (key_for(to, symbol), fmerk::Op::Put(amount_to.to_vec())),
+            ])
+            .unwrap();
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+
         Ok(())
     }
 
     pub fn hash(&self) -> Vec<u8> {
-        let cache = self.hash_cache.as_ptr();
-
-        if let Some(cache) = unsafe { &*cache } {
-            cache.clone()
-        } else {
-            let mut hasher = sha3::Sha3_512::default();
-            self.hash_inner(&mut hasher);
-            let hash = hasher.finalize().to_vec();
-
-            self.hash_cache.set(Some(hash));
-            self.hash()
-        }
-    }
-
-    fn hash_inner<H: sha3::Digest>(&self, state: &mut H) {
-        state.update(b"accounts\0");
-        for (k, accounts) in &self.accounts {
-            state.update(b"a\0");
-            state.update(&k.to_vec());
-            state.update(b"t\0");
-
-            for (symbol, amount) in accounts {
-                state.update(symbol.to_be_bytes());
-                state.update(b"\0");
-                amount.hash(state);
-            }
-        }
+        self.persistent_store.root_hash().to_vec()
     }
 }

@@ -6,6 +6,7 @@ use omni::server::module::OmniModuleInfo;
 use omni::{Identity, OmniError, OmniModule};
 use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 pub mod balance;
@@ -14,6 +15,7 @@ pub mod info;
 pub mod mint;
 pub mod send;
 
+use crate::module::balance::BalanceReturns;
 use crate::{error, storage::LedgerStorage, storage::TokenAmount};
 use balance::{BalanceArgs, SymbolList};
 use burn::BurnArgs;
@@ -22,74 +24,59 @@ use info::InfoReturns;
 use mint::MintArgs;
 use send::SendArgs;
 
+/// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
-pub struct InitialState {
+pub struct InitialStateJson {
     initial: BTreeMap<Identity, BTreeMap<String, u128>>,
     symbols: BTreeSet<String>,
-    minters: Option<BTreeMap<String, BTreeSet<Identity>>>,
+    minters: Option<BTreeMap<String, Vec<Identity>>>,
     hash: Option<String>,
 }
 
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug, Clone)]
 pub struct LedgerModule {
-    minters: BTreeMap<String, BTreeSet<Identity>>,
-    symbols: BTreeSet<String>,
     storage: Arc<Mutex<LedgerStorage>>,
 }
 
 impl LedgerModule {
-    pub fn new(initial_state: InitialState) -> Result<Self, OmniError> {
-        let mut symbols = BTreeSet::new();
+    pub fn new<P: AsRef<Path>>(
+        initial_state: Option<InitialStateJson>,
+        persistence_store_path: P,
+        blockchain: bool,
+    ) -> Result<Self, OmniError> {
+        let mut storage = if let Some(state) = initial_state {
+            let storage = LedgerStorage::new(
+                state.symbols,
+                state.initial,
+                state
+                    .minters
+                    .unwrap_or_default()
+                    .values()
+                    .flatten()
+                    .cloned()
+                    .collect(),
+                persistence_store_path,
+                blockchain,
+            )
+            .map_err(|e| OmniError::unknown(e))?;
 
-        for symbol in initial_state.symbols {
-            symbols.insert(symbol);
-        }
-        let mut storage: LedgerStorage = LedgerStorage::new(symbols.clone(), initial_state.initial);
-
-        if let Some(h) = initial_state.hash {
-            // Verify the hash.
-            let actual = hex::encode(storage.hash());
-            if actual != h {
-                return Err(error::invalid_initial_state(h, actual));
-            }
-        }
-
-        let mut minters: BTreeMap<String, BTreeSet<Identity>> = BTreeMap::new();
-        if let Some(minter_list) = initial_state.minters {
-            for (symbol, id_list) in minter_list {
-                for id in id_list {
-                    minters.entry(symbol.clone()).or_default().insert(id);
+            if let Some(h) = state.hash {
+                // Verify the hash.
+                let actual = hex::encode(storage.hash());
+                if actual != h {
+                    return Err(error::invalid_initial_state(h, actual));
                 }
             }
-        }
+
+            storage
+        } else {
+            LedgerStorage::load(persistence_store_path, blockchain).unwrap()
+        };
 
         Ok(Self {
-            minters,
-            symbols,
             storage: Arc::new(Mutex::new(storage)),
         })
-    }
-
-    /// Checks whether an identity is the owner or not. Anonymous identities are forbidden.
-    pub fn is_minter(&self, identity: &Identity, symbol: &str) -> bool {
-        if identity.is_anonymous() {
-            return false;
-        }
-
-        if let Some(minters) = self.minters.get(symbol) {
-            minters.contains(identity)
-        } else {
-            false
-        }
-    }
-
-    pub fn is_known_symbol(&self, symbol: &str) -> Result<(), OmniError> {
-        if self.symbols.contains(symbol) {
-            Ok(())
-        } else {
-            Err(error::unknown_symbol(symbol.to_string()))
-        }
     }
 
     fn info(&self, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
@@ -99,7 +86,7 @@ impl LedgerModule {
 
         // Hash the storage.
         let hash = storage.hash();
-        let symbols: Vec<&str> = self.symbols.iter().map(|x| x.as_str()).collect();
+        let symbols: Vec<&str> = storage.get_symbols();
 
         e.encode(InfoReturns {
             symbols: symbols.as_slice(),
@@ -111,17 +98,31 @@ impl LedgerModule {
     }
 
     fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let BalanceArgs { account, symbols } =
-            decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let BalanceArgs {
+            account,
+            symbols,
+            proof,
+        } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         let identity = account.as_ref().unwrap_or(from);
 
         let storage = self.storage.lock().unwrap();
-        let amounts = storage.get_multiple_balances(
+        let balances = storage.get_multiple_balances(
             identity,
             symbols.unwrap_or_else(|| SymbolList(BTreeSet::new())).0,
         );
-        minicbor::to_vec(amounts).map_err(|e| OmniError::serialization_error(e.to_string()))
+
+        // TODO: include merkle proof here.
+        let proof = if proof.unwrap_or(false) { None } else { None };
+
+        let returns = BalanceReturns {
+            balances: balances
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
+            proof,
+        };
+        minicbor::to_vec(returns).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
     fn send(&self, sender: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
@@ -151,10 +152,6 @@ impl LedgerModule {
             symbol,
         } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
-        if !self.is_minter(from, symbol) {
-            return Err(error::unauthorized());
-        }
-
         let mut storage = self.storage.lock().unwrap();
         storage.mint(&account, &symbol.to_string(), amount)?;
 
@@ -168,10 +165,6 @@ impl LedgerModule {
             symbol,
         } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
-        if !self.is_minter(from, symbol) {
-            return Err(error::unauthorized());
-        }
-
         let mut storage = self.storage.lock().unwrap();
         storage.burn(&account, &symbol.to_string(), amount)?;
 
@@ -179,6 +172,8 @@ impl LedgerModule {
     }
 }
 
+// This module is always supported, but will only be added when created using an ABCI
+// flag.
 impl OmniAbciModuleBackend for LedgerModule {
     fn init(&self) -> AbciInit {
         AbciInit {

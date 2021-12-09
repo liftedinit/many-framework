@@ -75,7 +75,7 @@ impl OmniServer {
         self
     }
 
-    pub fn status(&self) -> Status {
+    fn status(&self) -> Status {
         let mut attributes: Vec<Attribute> = self
             .modules
             .iter()
@@ -94,7 +94,7 @@ impl OmniServer {
             .unwrap()
     }
 
-    pub fn endpoints(&self) -> Vec<&'static str> {
+    fn endpoints(&self) -> Vec<&'static str> {
         self.method_cache.iter().map(|x| *x).collect()
     }
 }

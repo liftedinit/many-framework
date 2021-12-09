@@ -1,6 +1,7 @@
 use crate::storage::TokenAmount;
+use minicbor::bytes::ByteVec;
 use minicbor::data::Type;
-use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
+use minicbor::{decode, Decode, Decoder, Encode};
 use omni::Identity;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -43,4 +44,17 @@ pub struct BalanceArgs {
 
     #[n(1)]
     pub symbols: Option<SymbolList>,
+
+    #[n(2)]
+    pub proof: Option<bool>,
+}
+
+#[derive(Encode, Decode)]
+#[cbor(map)]
+pub struct BalanceReturns {
+    #[n(0)]
+    pub balances: BTreeMap<String, TokenAmount>,
+
+    #[n(1)]
+    pub proof: Option<ByteVec>,
 }

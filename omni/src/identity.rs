@@ -83,6 +83,10 @@ impl Identity {
         self.0.to_vec()
     }
 
+    pub fn to_byte_array(&self) -> [u8; MAX_IDENTITY_BYTE_LEN] {
+        self.0.to_byte_array()
+    }
+
     pub fn matches_key(&self, key: Option<&CoseKey>) -> bool {
         match &self.0 {
             InnerIdentity::Anonymous() => key.is_none(),
@@ -344,7 +348,6 @@ impl InnerIdentity {
         }
     }
 
-    #[allow(dead_code)]
     pub const fn to_byte_array(&self) -> [u8; MAX_IDENTITY_BYTE_LEN] {
         let mut bytes = [0; MAX_IDENTITY_BYTE_LEN];
         match self {
