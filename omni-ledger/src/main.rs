@@ -7,6 +7,7 @@ use std::path::PathBuf;
 mod error;
 mod module;
 mod storage;
+mod utils;
 
 use module::*;
 

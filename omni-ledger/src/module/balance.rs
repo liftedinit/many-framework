@@ -1,4 +1,4 @@
-use crate::storage::TokenAmount;
+use crate::utils::TokenAmount;
 use minicbor::bytes::ByteVec;
 use minicbor::data::Type;
 use minicbor::{decode, Decode, Decoder, Encode};
