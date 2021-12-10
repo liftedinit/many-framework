@@ -1,4 +1,4 @@
-use crate::module::AbciInfo;
+use crate::info::AbciInfo;
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::message::ResponseMessage;
@@ -24,16 +24,16 @@ impl AbciApp {
     {
         let omni_url = omni_url.into_url().map_err(|e| e.to_string())?;
 
-        let server_id = if server_id.is_anonymous() {
-            // TODO: Get the server ID from the omni server.
-            server_id
-        } else {
-            server_id
-        };
+        // TODO: Get the server ID from the omni server.
+        // let server_id = if server_id.is_anonymous() {
+        //     server_id
+        // } else {
+        //     server_id
+        // };
 
         let omni_client =
             OmniClient::new(omni_url.clone(), server_id, CoseKeyIdentity::anonymous())
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| e)?;
         let status = omni_client.status().map_err(|x| x.to_string())?;
         let app_name = status.name;
 

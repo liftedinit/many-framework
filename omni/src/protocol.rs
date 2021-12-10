@@ -80,7 +80,7 @@ impl<'d> Decode<'d> for AttributeArgument {
             }
             _ => Err(minicbor::decode::Error::Message(
                 "Invalid data type while decoding arguments.",
-            ))?,
+            )),
         }
     }
 }

@@ -87,7 +87,7 @@ impl OmniServer {
             .name(self.name.clone())
             .version(1)
             .public_key(self.identity.public_key())
-            .identity(self.identity.identity.clone())
+            .identity(self.identity.identity)
             .internal_version(std::env!("CARGO_PKG_VERSION").to_string())
             .attributes(attributes)
             .build()
@@ -95,7 +95,7 @@ impl OmniServer {
     }
 
     fn endpoints(&self) -> Vec<&'static str> {
-        self.method_cache.iter().map(|x| *x).collect()
+        self.method_cache.iter().copied().collect()
     }
 }
 
@@ -128,7 +128,7 @@ impl OmniRequestHandler for OmniServer {
             "status" => Some(
                 self.status()
                     .to_bytes()
-                    .map_err(|e| OmniError::serialization_error(e))?,
+                    .map_err(OmniError::serialization_error)?,
             ),
             "heartbeat" => Some(Vec::new()),
             "echo" => Some(message.data.clone()),

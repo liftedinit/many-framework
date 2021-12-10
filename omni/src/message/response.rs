@@ -111,7 +111,7 @@ impl Encode for ResponseMessage {
         }
 
         match &self.data {
-            Ok(result) => e.i8(ResponseMessageCborKey::Result as i8)?.bytes(&result)?,
+            Ok(result) => e.i8(ResponseMessageCborKey::Result as i8)?.bytes(result)?,
             Err(error) => e.i8(ResponseMessageCborKey::Result as i8)?.encode(&error)?,
         };
 

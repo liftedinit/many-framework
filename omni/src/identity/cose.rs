@@ -218,7 +218,7 @@ impl Signer<CoseKeyIdentitySignature> for CoseKeyIdentity {
                     let signing_key: p256::ecdsa::SigningKey = secret_key.into();
 
                     let signature: p256::ecdsa::Signature = signing_key.sign(msg);
-                    CoseKeyIdentitySignature::from_bytes(&signature.as_ref())
+                    CoseKeyIdentitySignature::from_bytes(signature.as_ref())
                 }
                 Algorithm::EDDSA => {
                     let key =

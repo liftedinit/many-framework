@@ -4,7 +4,7 @@ use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
 use omni::{Identity, OmniError, OmniModule};
-use omni_abci::module::{AbciInfo, AbciInit, OmniAbciModuleBackend};
+use omni_abci::module::OmniAbciModuleBackend;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -22,6 +22,8 @@ use burn::BurnArgs;
 use error::unauthorized;
 use info::InfoReturns;
 use mint::MintArgs;
+use omni_abci::info::AbciInfo;
+use omni_abci::init::AbciInit;
 use send::SendArgs;
 
 /// The initial state schema, loaded from JSON.
@@ -59,7 +61,7 @@ impl LedgerModule {
                 persistence_store_path,
                 blockchain,
             )
-            .map_err(|e| OmniError::unknown(e))?;
+            .map_err(OmniError::unknown)?;
 
             if let Some(h) = state.hash {
                 // Verify the hash.
@@ -149,7 +151,7 @@ impl LedgerModule {
         }
 
         let mut storage = self.storage.lock().unwrap();
-        storage.send(from, &to, &symbol.to_string(), amount.clone())?;
+        storage.send(from, &to, &symbol.to_string(), amount)?;
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
@@ -218,7 +220,8 @@ impl OmniAbciModuleBackend for LedgerModule {
 
     fn commit(&self) -> Result<(), OmniError> {
         let mut storage = self.storage.lock().unwrap();
-        Ok(storage.commit())
+        storage.commit();
+        Ok(())
     }
 }
 

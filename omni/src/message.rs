@@ -26,9 +26,9 @@ pub fn decode_request_from_cose_sign1(sign1: CoseSign1) -> Result<RequestMessage
     let payload = request
         .sign1
         .payload
-        .ok_or_else(|| OmniError::empty_envelope())?;
+        .ok_or_else(OmniError::empty_envelope)?;
     let message =
-        RequestMessage::from_bytes(&payload).map_err(|e| OmniError::deserialization_error(e))?;
+        RequestMessage::from_bytes(&payload).map_err(OmniError::deserialization_error)?;
 
     // Check the `from` field.
     if from_id != message.from.unwrap_or_default() {
@@ -87,7 +87,7 @@ fn encode_cose_sign1_from_payload(
         key_public.kid = Some(cose_key.identity.to_vec());
         keyset.insert(key_public);
 
-        let ks_bytes = keyset.to_bytes().map_err(|e| e.to_string()).unwrap();
+        let ks_bytes = keyset.to_bytes().map_err(|e| e).unwrap();
         protected.set("keyset".to_string(), ks_bytes);
     }
 
@@ -157,7 +157,7 @@ impl CoseSign1RequestMessage {
     }
 
     pub fn verify(&self) -> Result<Identity, String> {
-        if let Some(ref kid) = self.sign1.protected.kid() {
+        if let Some(kid) = self.sign1.protected.kid() {
             if let Ok(id) = Identity::from_bytes(kid) {
                 if id.is_anonymous() {
                     return Ok(id);

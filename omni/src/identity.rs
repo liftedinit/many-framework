@@ -25,10 +25,6 @@ impl Identity {
         InnerIdentity::try_from(bytes).map(Self)
     }
 
-    pub fn from_str<S: AsRef<str>>(str: S) -> Result<Self, OmniError> {
-        InnerIdentity::from_str(str.as_ref()).map(Self)
-    }
-
     pub const fn anonymous() -> Self {
         Self(InnerIdentity::Anonymous())
     }
@@ -291,8 +287,8 @@ impl Default for InnerIdentity {
 
 impl InnerIdentity {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, OmniError> {
-        let bytes = bytes.as_ref();
-        if bytes.len() < 1 {
+        let bytes = bytes;
+        if bytes.is_empty() {
             return Err(OmniError::invalid_identity());
         }
 

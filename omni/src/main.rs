@@ -88,7 +88,7 @@ fn main() {
                     std::process::exit(1);
                 }
             } else {
-                let i = Identity::try_from(o.arg.to_string()).unwrap();
+                let i = Identity::try_from(o.arg).unwrap();
                 println!("{}", hex::encode(&i.to_vec()));
             }
         }
@@ -107,10 +107,10 @@ fn main() {
         SubCommand::Message(o) => {
             // If `pem` is not provided, use anonymous and don't sign.
             let key = o.pem.map_or_else(
-                || CoseKeyIdentity::anonymous(),
+                CoseKeyIdentity::anonymous,
                 |p| CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap(),
             );
-            let from_identity = key.identity.clone();
+            let from_identity = key.identity;
             let to_identity = o.to.unwrap_or_default();
 
             let data = o

@@ -236,9 +236,7 @@ impl Default for OmniError {
 impl Display for OmniError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let message = self
-            .message
-            .as_ref()
-            .map(|s| s.as_str())
+            .message.as_deref()
             .unwrap_or_else(|| self.code.message().unwrap_or("Invalid error code."));
 
         let re = regex::Regex::new(r"\{\{|\}\}|\{[^\}\s]*\}").unwrap();

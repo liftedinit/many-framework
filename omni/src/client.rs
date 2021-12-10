@@ -8,7 +8,6 @@ use crate::{Identity, OmniError};
 use minicbor::Encode;
 use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
-use std::convert::TryInto;
 use std::fmt::Formatter;
 
 #[derive(Clone)]
@@ -29,15 +28,9 @@ impl std::fmt::Debug for OmniClient {
 }
 
 impl OmniClient {
-    pub fn new<S: IntoUrl>(
-        url: S,
-        to: Identity,
-        identity: CoseKeyIdentity,
-    ) -> Result<Self, String> {
+    pub fn new<S: IntoUrl>(url: S, to: Identity, id: CoseKeyIdentity) -> Result<Self, String> {
         Ok(Self {
-            id: identity
-                .try_into()
-                .map_err(|_e| format!("Could not parse identity."))?,
+            id,
             to,
             url: url.into_url().map_err(|e| format!("{}", e))?,
         })
@@ -67,7 +60,7 @@ impl OmniClient {
         let cose_sign1 = Self::send_envelope(self.url.clone(), cose)?;
 
         let response = decode_response_from_cose_sign1(cose_sign1, None)
-            .map_err(|e| OmniError::deserialization_error(e))?;
+            .map_err(OmniError::deserialization_error)?;
 
         response.data
     }
@@ -78,8 +71,8 @@ impl OmniClient {
     {
         let message: RequestMessage = RequestMessageBuilder::default()
             .version(1)
-            .from(self.id.identity.clone())
-            .to(self.to.clone())
+            .from(self.id.identity)
+            .to(self.to)
             .method(method.into())
             .data(argument.to_vec())
             .build()

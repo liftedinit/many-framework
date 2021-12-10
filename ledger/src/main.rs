@@ -14,6 +14,7 @@ use omni_ledger::utils::TokenAmount;
 use omni_ledger::verify_proof;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
+use std::str::FromStr;
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Clone, Debug)]
@@ -139,7 +140,7 @@ fn balance(
             let info: InfoReturns = minicbor::decode(&info).unwrap();
             let balances = verify_proof(
                 p.as_slice(),
-                account.as_ref().unwrap_or_else(|| &client.id.identity),
+                account.as_ref().unwrap_or(&client.id.identity),
                 symbols.as_slice(),
                 &info.hash.to_vec().try_into().unwrap(),
             )
@@ -247,10 +248,9 @@ fn main() {
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
     let server_id = server_id.unwrap_or_default();
-    let key = pem.map_or_else(
-        || CoseKeyIdentity::anonymous(),
-        |p| CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap(),
-    );
+    let key = pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
+        CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
+    });
 
     let client = OmniClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {

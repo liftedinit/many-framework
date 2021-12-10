@@ -1,4 +1,4 @@
-use crate::module::AbciInit;
+use crate::init::AbciInit;
 use async_trait::async_trait;
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
@@ -30,7 +30,7 @@ impl<C: Client> Debug for AbciHttpServer<C> {
 impl<C: Client + Send + Sync> AbciHttpServer<C> {
     pub async fn new(client: C, identity: CoseKeyIdentity) -> Self {
         let init_message = RequestMessageBuilder::default()
-            .from(identity.identity.clone())
+            .from(identity.identity)
             .method("abci.init".to_string())
             .build()
             .unwrap();
@@ -72,7 +72,7 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
                 let response =
                     ResponseMessage::from_request(&message, &self.identity.identity, Ok(data));
                 omni::message::encode_cose_sign1_from_response(response, &self.identity)
-                    .map_err(|e| OmniError::unexpected_transport_error(e))
+                    .map_err(OmniError::unexpected_transport_error)
             } else {
                 let response = self
                     .client
