@@ -5,9 +5,11 @@ use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
 use omni::{Identity, OmniError, OmniModule};
 use omni_abci::module::OmniAbciModuleBackend;
+use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use tracing::info;
 
 pub mod balance;
 pub mod burn;
@@ -22,8 +24,6 @@ use burn::BurnArgs;
 use error::unauthorized;
 use info::InfoReturns;
 use mint::MintArgs;
-use omni_abci::info::AbciInfo;
-use omni_abci::init::AbciInit;
 use send::SendArgs;
 
 /// The initial state schema, loaded from JSON.
@@ -75,6 +75,11 @@ impl LedgerModule {
         } else {
             LedgerStorage::load(persistence_store_path, blockchain).unwrap()
         };
+
+        info!(
+            height = storage.get_height(),
+            hash = hex::encode(storage.hash()).as_str()
+        );
 
         Ok(Self {
             storage: Arc::new(Mutex::new(storage)),
@@ -194,14 +199,15 @@ impl LedgerModule {
 // This module is always supported, but will only be added when created using an ABCI
 // flag.
 impl OmniAbciModuleBackend for LedgerModule {
+    #[rustfmt::skip]
     fn init(&self) -> AbciInit {
         AbciInit {
             endpoints: BTreeMap::from([
-                ("ledger.info".to_string(), false),
-                ("ledger.balance".to_string(), false),
-                ("ledger.mint".to_string(), true),
-                ("ledger.burn".to_string(), true),
-                ("ledger.send".to_string(), true),
+                ("ledger.info".to_string(), EndpointInfo { should_commit: false }),
+                ("ledger.balance".to_string(), EndpointInfo { should_commit: false }),
+                ("ledger.mint".to_string(), EndpointInfo { should_commit: true }),
+                ("ledger.burn".to_string(), EndpointInfo { should_commit: true }),
+                ("ledger.send".to_string(), EndpointInfo { should_commit: true }),
             ]),
         }
     }
@@ -213,15 +219,15 @@ impl OmniAbciModuleBackend for LedgerModule {
     fn info(&self) -> Result<AbciInfo, OmniError> {
         let storage = self.storage.lock().unwrap();
         Ok(AbciInfo {
-            height: 0,
-            hash: storage.hash(),
+            height: storage.get_height(),
+            hash: storage.hash().into(),
         })
     }
 
-    fn commit(&self) -> Result<(), OmniError> {
+    fn commit(&self) -> Result<AbciCommitInfo, OmniError> {
         let mut storage = self.storage.lock().unwrap();
-        storage.commit();
-        Ok(())
+        let info = storage.commit();
+        Ok(info)
     }
 }
 

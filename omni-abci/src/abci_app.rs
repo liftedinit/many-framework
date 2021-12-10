@@ -1,4 +1,4 @@
-use crate::info::AbciInfo;
+use crate::types::{AbciCommitInfo, AbciInfo};
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::message::ResponseMessage;
@@ -71,7 +71,7 @@ impl Application for AbciApp {
             version: env!("CARGO_PKG_VERSION").to_string(),
             app_version: 1,
             last_block_height: height as i64,
-            last_block_app_hash: hash.into(),
+            last_block_app_hash: hash.to_vec().into(),
         }
     }
     fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
@@ -175,9 +175,12 @@ impl Application for AbciApp {
                 data: err.to_string().into_bytes().into(),
                 retain_height: 0,
             },
-            |_msg| ResponseCommit {
-                data: vec![].into(),
-                retain_height: 0,
+            |msg| {
+                let info: AbciCommitInfo = minicbor::decode(&msg).unwrap();
+                ResponseCommit {
+                    data: info.hash.into(),
+                    retain_height: info.retain_height as i64,
+                }
             },
         )
     }

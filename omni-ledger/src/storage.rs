@@ -1,6 +1,7 @@
 use crate::error;
 use crate::utils::TokenAmount;
 use omni::{Identity, OmniError};
+use omni_abci::types::AbciCommitInfo;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::str::FromStr;
@@ -107,8 +108,31 @@ impl LedgerStorage {
         self.minters.contains(id)
     }
 
-    pub fn commit(&mut self) {
+    pub fn get_height(&self) -> u64 {
+        self.persistent_store
+            .get(b"/height")
+            .unwrap()
+            .map_or(0u64, |x| {
+                let mut bytes = [0u8; 8];
+                bytes.copy_from_slice(x.as_slice());
+                u64::from_be_bytes(bytes)
+            })
+    }
+
+    pub fn commit(&mut self) -> AbciCommitInfo {
+        let current_height = self.get_height() + 1;
+        self.persistent_store
+            .apply(&[(
+                b"/height".to_vec(),
+                fmerk::Op::Put(current_height.to_be_bytes().to_vec()),
+            )])
+            .unwrap();
         self.persistent_store.commit(&[]).unwrap();
+
+        AbciCommitInfo {
+            retain_height: current_height,
+            hash: self.hash(),
+        }
     }
 
     pub fn get_balance(&self, identity: &Identity, symbol: &str) -> TokenAmount {

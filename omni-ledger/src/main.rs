@@ -3,6 +3,7 @@ use omni::identity::cose::CoseKeyIdentity;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use std::path::PathBuf;
+use tracing::level_filters::LevelFilter;
 
 mod error;
 mod module;
@@ -13,6 +14,14 @@ use module::*;
 
 #[derive(Parser)]
 struct Opts {
+    /// Increase output logging verbosity to DEBUG level.
+    #[clap(short, long, parse(from_occurrences))]
+    verbose: i8,
+
+    /// Suppress all output logging. Can be used multiple times to suppress more.
+    #[clap(short, long, parse(from_occurrences))]
+    quiet: i8,
+
     /// The location of a PEM file for the identity of this server.
     #[clap(long)]
     pem: PathBuf,
@@ -41,6 +50,8 @@ struct Opts {
 
 fn main() {
     let Opts {
+        verbose,
+        quiet,
         pem,
         port,
         abci,
@@ -48,6 +59,19 @@ fn main() {
         persistent,
         clean,
     } = Opts::parse();
+
+    let verbose_level = 2 + verbose - quiet;
+    let log_level = match verbose_level {
+        x if x > 3 => LevelFilter::TRACE,
+        3 => LevelFilter::DEBUG,
+        2 => LevelFilter::INFO,
+        1 => LevelFilter::WARN,
+        0 => LevelFilter::ERROR,
+        x if x < 0 => LevelFilter::OFF,
+        _ => unreachable!(),
+    };
+    tracing_subscriber::fmt().with_max_level(log_level).init();
+
     if clean {
         // Delete the persistent storage.
         let _ = std::fs::remove_dir_all(persistent.as_path());

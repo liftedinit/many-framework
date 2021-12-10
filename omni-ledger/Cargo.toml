@@ -10,7 +10,7 @@ doc = false
 [dependencies]
 async-trait = "0.1.51"
 clap = "3.0.0-beta.4"
-fmerk = { git = "ssh://git@github.com/FindoraNetwork/fmerk.git", rev = "8c790860b15e258b92a6d8aecd1c6893ccd66a98" }
+fmerk = "0.1.1"
 hex = "0.4.3"
 itertools = "0.10.3"
 lazy_static = "1.4.0"

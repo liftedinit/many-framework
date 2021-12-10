@@ -1,4 +1,4 @@
-use crate::init::AbciInit;
+use crate::types::{AbciInit, EndpointInfo};
 use async_trait::async_trait;
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
@@ -15,7 +15,7 @@ use tendermint_rpc::Client;
 pub struct AbciHttpServer<C: Client> {
     client: C,
     identity: CoseKeyIdentity,
-    endpoints: BTreeMap<String, bool>,
+    endpoints: BTreeMap<String, EndpointInfo>,
 }
 
 impl<C: Client> Debug for AbciHttpServer<C> {
@@ -42,7 +42,7 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
         let response = client.abci_query(None, data, None, false).await.unwrap();
         let response = CoseSign1::from_bytes(&response.value).unwrap();
         let response = decode_response_from_cose_sign1(response, None).unwrap();
-        let init_message = AbciInit::from_bytes(&response.data.unwrap()).unwrap();
+        let init_message: AbciInit = minicbor::decode(&response.data.unwrap()).unwrap();
 
         Self {
             client,
@@ -54,13 +54,14 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
     async fn execute_inner(&self, envelope: CoseSign1) -> Result<CoseSign1, OmniError> {
         let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
 
-        if let Some(is_command) = self.endpoints.get(&message.method) {
-            eprintln!("execute inner ({}): \n{:#?}------\n", *is_command, message);
+        if let Some(info) = self.endpoints.get(&message.method) {
+            let is_command = info.should_commit;
+            eprintln!("execute inner ({}): \n{:#?}------\n", is_command, message);
             let data = envelope
                 .to_bytes()
                 .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
 
-            if *is_command {
+            if is_command {
                 let response = self
                     .client
                     .broadcast_tx_sync(tendermint_rpc::abci::Transaction::from(data))

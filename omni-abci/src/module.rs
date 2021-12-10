@@ -1,5 +1,4 @@
-use crate::info::AbciInfo;
-use crate::init::AbciInit;
+use crate::types::{AbciCommitInfo, AbciInfo, AbciInit};
 use async_trait::async_trait;
 use minicbor::Encoder;
 use omni::message::{RequestMessage, ResponseMessage};
@@ -43,7 +42,7 @@ pub trait OmniAbciModuleBackend: OmniModule {
     }
 
     /// Called after a block. The app should take this call and serialize its state.
-    fn commit(&self) -> Result<(), OmniError>;
+    fn commit(&self) -> Result<AbciCommitInfo, OmniError>;
 }
 
 /// A module that adapt an OMNI application to an ABCI-OMNI bridge.
@@ -97,11 +96,12 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
     }
 
     fn abci_commit(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        self.backend.commit()?;
+        let info = self.backend.commit()?;
         Ok(ResponseMessage::from_request(
             &message,
             &message.to,
-            Ok(Vec::new()),
+            Ok(minicbor::to_vec(info)
+                .map_err(|e| OmniError::deserialization_error(e.to_string()))?),
         ))
     }
 }
