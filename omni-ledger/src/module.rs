@@ -226,8 +226,7 @@ impl OmniAbciModuleBackend for LedgerModule {
 
     fn commit(&self) -> Result<AbciCommitInfo, OmniError> {
         let mut storage = self.storage.lock().unwrap();
-        let info = storage.commit();
-        Ok(info)
+        Ok(storage.commit())
     }
 }
 

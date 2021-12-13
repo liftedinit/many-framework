@@ -5,7 +5,7 @@ use crate::message::{
 };
 use crate::protocol::Status;
 use crate::{Identity, OmniError};
-use minicbor::Encode;
+use minicbor::{Decode, Encode};
 use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
 use std::fmt::Formatter;
@@ -41,8 +41,9 @@ impl OmniClient {
             .to_bytes()
             .map_err(|_| OmniError::internal_server_error())?;
 
-        tracing::debug!("request\n{}", hex::encode(&bytes));
+        eprintln!("request\n{}", hex::encode(&bytes));
 
+        eprintln!("len: {}", bytes.len());
         let client = reqwest::blocking::Client::new();
         let response = client
             .post(url)

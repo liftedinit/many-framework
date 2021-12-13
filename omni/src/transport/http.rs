@@ -3,7 +3,7 @@ use crate::transport::{HandlerExecutorAdapter, LowLevelOmniRequestHandler, OmniR
 use anyhow::anyhow;
 use minicose::CoseSign1;
 use std::fmt::Debug;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 use std::net::ToSocketAddrs;
 use tiny_http::{Request, Response};
 
@@ -39,19 +39,14 @@ impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
             _ => {}
         }
 
-        let actual_len = match request.as_reader().read(buffer) {
-            Ok(x) => x,
-            Err(_e) => {
-                return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
-            }
-        };
+        let mut v = Vec::new();
+        let _ = request.as_reader().read_to_end(&mut v);
 
-        let bytes = &buffer[..actual_len];
-        eprintln!(" request: {}", hex::encode(bytes));
+        let bytes = &v;
 
         let envelope = match CoseSign1::from_bytes(bytes) {
             Ok(cs) => cs,
-            Err(_e) => {
+            Err(e) => {
                 return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
         };
@@ -64,12 +59,10 @@ impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
         let bytes = match response {
             Ok(bytes) => bytes,
             Err(e) => {
-                eprintln!("   error: {}", e);
                 return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
         };
 
-        eprintln!("   reply: {}", hex::encode(&bytes));
         Response::from_data(bytes)
     }
 

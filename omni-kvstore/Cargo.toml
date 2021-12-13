@@ -1,0 +1,26 @@
+[package]
+name = "omni-kvstore"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "omni-kvstore"
+doc = false
+
+[dependencies]
+async-trait = "0.1.51"
+clap = "3.0.0-beta.4"
+fmerk = "0.1.1"
+hex = "0.4.3"
+itertools = "0.10.3"
+lazy_static = "1.4.0"
+num-bigint = "0.4.3"
+minicbor = { version = "0.12.0", features = ["derive", "std"] }
+omni = { path = "../omni", features = [ "pem" ] }
+omni-abci = { path = "../omni-abci" }
+serde = "1.0.130"
+serde_json = "1.0.72"
+sha3 = "0.9.1"
+simple_asn1 = "0.5.4"
+tracing = "0.1.28"
+tracing-subscriber = "0.2.24"

@@ -5,6 +5,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::iter::FromIterator;
+use tracing::debug;
 
 #[derive(FromPrimitive, ToPrimitive)]
 #[repr(i8)]
@@ -71,6 +72,7 @@ macro_rules! omni_error {
             $($(
                 #[doc = $description]
                 pub fn $snake_name( $($arg: String,)* ) -> Self {
+                    tracing::info!("Error: {:?} Backtrace: {:?}", OmniErrorCode::$name, backtrace::Backtrace::new());
                     Self {
                         code: OmniErrorCode::$name,
                         message: None,
@@ -236,7 +238,8 @@ impl Default for OmniError {
 impl Display for OmniError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let message = self
-            .message.as_deref()
+            .message
+            .as_deref()
             .unwrap_or_else(|| self.code.message().unwrap_or("Invalid error code."));
 
         let re = regex::Regex::new(r"\{\{|\}\}|\{[^\}\s]*\}").unwrap();

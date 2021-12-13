@@ -1096,6 +1096,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "http_proxy"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "hex",
+ "minicbor",
+ "new_mime_guess",
+ "omni",
+ "omni-kvstore",
+ "tiny_http",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.3",
+]
+
+[[package]]
 name = "httparse"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1287,6 +1303,20 @@ name = "keccak"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
+
+[[package]]
+name = "kvstore"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "hex",
+ "minicbor",
+ "omni",
+ "omni-kvstore",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.3",
+]
 
 [[package]]
 name = "lazy_static"
@@ -1498,6 +1528,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "new_mime_guess"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb3253391c5e7939360b2f7f27c7e7821dbc1a0bdab65884dde484fd71132764"
+dependencies = [
+ "mime",
+ "unicase",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1687,6 +1727,28 @@ dependencies = [
  "clap",
  "omni",
  "pem",
+]
+
+[[package]]
+name = "omni-kvstore"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "fmerk",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "minicbor",
+ "num-bigint 0.4.3",
+ "omni",
+ "omni-abci",
+ "serde",
+ "serde_json",
+ "sha3",
+ "simple_asn1 0.5.4",
+ "tracing",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
