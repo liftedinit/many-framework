@@ -2,17 +2,17 @@
 
 # Build this container using ```docker build --ssh default -f docker/build/Dockerfile .```
 # in the repo's root directory.
+FROM rust:latest as builder
 
-FROM rust:alpine
-
-WORKDIR /app
-COPY ../../ .
-
-# Install ssh and git
-RUN apk add --no-cache openssh-client git
+RUN apt-get update && \
+    apt-get upgrade && \
+    apt-get -y install make openssh-client git
 
 # Install build dependencies
-RUN apk add --no-cache musl-dev openssl-dev
+RUN apt-get -y install musl-dev libssl-dev clang lld librocksdb-dev
+
+COPY / /app
+WORKDIR /app
 
 RUN <<EOR
     mkdir ~/.cargo

@@ -3,7 +3,7 @@ version: '3'
 services:
   node0:
     container_name: node0
-    image: "ledger/localnode"
+    image: "omni/ledger"
     ports:
       - "8000:8001"
       - "26656-26657:26656-26657"
