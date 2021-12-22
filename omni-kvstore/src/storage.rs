@@ -1,5 +1,6 @@
 use crate::error;
 use crate::utils::TokenAmount;
+use fmerk::rocksdb::ReadOptions;
 use fmerk::Op;
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
@@ -71,7 +72,7 @@ impl KvStoreStorage {
         })
     }
 
-    pub fn get_height(&self) -> u64 {
+    pub fn height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
             .unwrap()
@@ -83,7 +84,7 @@ impl KvStoreStorage {
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
-        let current_height = self.get_height() + 1;
+        let current_height = self.height() + 1;
         self.persistent_store
             .apply(&[(
                 b"/height".to_vec(),
@@ -102,6 +103,14 @@ impl KvStoreStorage {
         self.persistent_store.root_hash().to_vec()
     }
 
+    pub fn query(&self, prefix: Option<&[u8]>) -> Result<StorageIterator<'_>, OmniError> {
+        if let Some(prefix) = prefix {
+            Ok(StorageIterator::prefixed(&self.persistent_store, prefix))
+        } else {
+            Ok(StorageIterator::new(&self.persistent_store))
+        }
+    }
+
     pub fn get(&self, _id: &Identity, key: &[u8]) -> Result<Option<Vec<u8>>, OmniError> {
         self.persistent_store
             .get(&vec![b"/store/".to_vec(), key.to_vec()].concat())
@@ -115,5 +124,45 @@ impl KvStoreStorage {
                 Op::Put(value),
             )])
             .map_err(|e| OmniError::unknown(e.to_string()))
+    }
+}
+
+pub struct StorageIterator<'a> {
+    inner: fmerk::rocksdb::DBIterator<'a>,
+}
+
+impl<'a> StorageIterator<'a> {
+    pub fn new(merk: &'a fmerk::Merk) -> Self {
+        Self {
+            inner: merk.iter_opt(fmerk::rocksdb::IteratorMode::Start, Default::default()),
+        }
+    }
+
+    pub fn prefixed(merk: &'a fmerk::Merk, prefix: &[u8]) -> Self {
+        if prefix.is_empty() {
+            return Self::new(merk);
+        }
+
+        let mut upper_bound = prefix.to_vec();
+        let last = upper_bound.last_mut().unwrap();
+        *last += 1;
+
+        let mut opts = fmerk::rocksdb::ReadOptions::default();
+        opts.set_iterate_upper_bound(upper_bound);
+
+        Self {
+            inner: merk.iter_opt(
+                fmerk::rocksdb::IteratorMode::From(prefix, fmerk::rocksdb::Direction::Forward),
+                opts,
+            ),
+        }
+    }
+}
+
+impl<'a> Iterator for StorageIterator<'a> {
+    type Item = (Box<[u8]>, Box<[u8]>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
     }
 }

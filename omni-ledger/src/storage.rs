@@ -13,7 +13,7 @@ pub(crate) fn key_for(id: &Identity, symbol: &str) -> Vec<u8> {
 
 pub struct LedgerStorage {
     symbols: BTreeSet<String>,
-    minters: BTreeSet<Identity>,
+    minters: BTreeMap<String, Vec<Identity>>,
 
     persistent_store: fmerk::Merk,
 
@@ -35,21 +35,23 @@ impl LedgerStorage {
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let symbols = persistent_store.get(b"/config/symbols").unwrap().unwrap();
-        let minters = persistent_store.get(b"/config/minters").unwrap().unwrap();
+        let symbols = persistent_store
+            .get(b"/config/symbols")
+            .map_err(|e| e.to_string())?;
+        let minters = persistent_store
+            .get(b"/config/minters")
+            .map_err(|e| e.to_string())?;
+
+        let symbols: BTreeSet<String> = symbols
+            .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
+            .map_err(|e| e.to_string())?;
+        let minters = minters
+            .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
+            .map_err(|e| e.to_string())?;
 
         Ok(Self {
-            symbols: String::from_utf8(symbols)
-                .unwrap()
-                .split(':')
-                .map(|x| x.to_owned())
-                .collect(),
-            minters: String::from_utf8(minters)
-                .unwrap()
-                .split(':')
-                .map(Identity::from_str)
-                .collect::<Result<BTreeSet<Identity>, OmniError>>()
-                .map_err(|e| e.to_string())?,
+            symbols,
+            minters,
             persistent_store,
             blockchain,
         })
@@ -58,14 +60,13 @@ impl LedgerStorage {
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeSet<String>,
         initial_balances: BTreeMap<Identity, BTreeMap<String, u128>>,
-        minters: BTreeSet<Identity>,
+        minters: BTreeMap<String, Vec<Identity>>,
         persistent_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
         let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
-        use itertools::Itertools;
 
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
@@ -80,11 +81,11 @@ impl LedgerStorage {
 
         batch.push((
             b"/config/minters".to_vec(),
-            fmerk::Op::Put(minters.iter().map(|i| i.to_string()).join(":").into_bytes()),
+            fmerk::Op::Put(minicbor::to_vec(&minters).map_err(|e| e.to_string())?),
         ));
         batch.push((
             b"/config/symbols".to_vec(),
-            fmerk::Op::Put(symbols.iter().join(":").into_bytes()),
+            fmerk::Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
         ));
 
         persistent_store
@@ -104,8 +105,8 @@ impl LedgerStorage {
         self.symbols.iter().map(|x| x.as_str()).collect()
     }
 
-    pub fn can_mint(&self, id: &Identity, _symbol: &str) -> bool {
-        self.minters.contains(id)
+    pub fn can_mint(&self, id: &Identity, symbol: &str) -> bool {
+        self.minters.get(symbol).map_or(false, |x| x.contains(id))
     }
 
     pub fn get_height(&self) -> u64 {
@@ -260,7 +261,7 @@ impl LedgerStorage {
         symbol: &str,
         amount: TokenAmount,
     ) -> Result<(), OmniError> {
-        if amount.is_zero() {
+        if amount.is_zero() || from == to {
             // NOOP.
             return Ok(());
         }

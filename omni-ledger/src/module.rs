@@ -51,13 +51,7 @@ impl LedgerModule {
             let storage = LedgerStorage::new(
                 state.symbols,
                 state.initial,
-                state
-                    .minters
-                    .unwrap_or_default()
-                    .values()
-                    .flatten()
-                    .cloned()
-                    .collect(),
+                state.minters.unwrap_or_default(),
                 persistence_store_path,
                 blockchain,
             )

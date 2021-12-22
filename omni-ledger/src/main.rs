@@ -2,6 +2,7 @@ use clap::Parser;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use tracing::level_filters::LevelFilter;
 
@@ -26,9 +27,9 @@ struct Opts {
     #[clap(long)]
     pem: PathBuf,
 
-    /// The port to bind to for the OMNI Http server.
-    #[clap(long, short, default_value = "8000")]
-    port: u16,
+    /// The address and port to bind to for the OMNI Http server.
+    #[clap(long, short, default_value = "127.0.0.1:8000")]
+    addr: SocketAddr,
 
     /// Uses an ABCI application module.
     #[clap(long)]
@@ -53,7 +54,7 @@ fn main() {
         verbose,
         quiet,
         pem,
-        port,
+        addr,
         abci,
         mut state,
         persistent,
@@ -95,7 +96,5 @@ fn main() {
         omni.with_module(module)
     };
 
-    HttpServer::simple(key, omni)
-        .bind(format!("127.0.0.1:{}", port))
-        .unwrap();
+    HttpServer::simple(key, omni).bind(addr).unwrap();
 }

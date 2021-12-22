@@ -73,4 +73,4 @@ COPY /docker/ledger/local/ledger.json /app/state.json
 COPY --from=builder /src/target/debug/omni-ledger /app/omni-ledger
 
 ENTRYPOINT ["./omni-ledger"]
-CMD ["--port", "8000", "--state", "/app/state.json", "--persistent", "/app/ledger.db", "--pem", "/app/id.pem"]
+CMD ["--addr", "0.0.0.0:8000", "--state", "/app/state.json", "--persistent", "/app/ledger.db", "--pem", "/app/id.pem"]

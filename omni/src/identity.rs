@@ -529,6 +529,7 @@ mod serde {
 mod tests {
     use crate::identity::cose::CoseKeyIdentity;
     use crate::Identity;
+    use std::str::FromStr;
 
     fn identity(seed: u32) -> Identity {
         #[rustfmt::skip]

@@ -64,7 +64,7 @@ impl KvStoreModule {
         }
 
         info!(
-            height = storage.get_height(),
+            height = storage.height(),
             hash = hex::encode(storage.hash()).as_str()
         );
 
@@ -130,7 +130,7 @@ impl OmniAbciModuleBackend for KvStoreModule {
     fn info(&self) -> Result<AbciInfo, OmniError> {
         let storage = self.storage.lock().unwrap();
         Ok(AbciInfo {
-            height: storage.get_height(),
+            height: storage.height(),
             hash: storage.hash().into(),
         })
     }

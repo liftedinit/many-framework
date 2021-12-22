@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.51"
-clap = "3.0.0-beta.5"
+clap = { version = "3.0.0-beta.5", features = [ "derive" ] }
 omni = { path = "../omni", features = [ "pem" ] }
 pem = "1.0.0"

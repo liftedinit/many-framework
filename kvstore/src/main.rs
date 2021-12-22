@@ -1,7 +1,5 @@
 use clap::Parser;
-use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
-use minicbor::{Decoder, Encoder};
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use omni_kvstore::module::get::{GetArgs, GetReturns};

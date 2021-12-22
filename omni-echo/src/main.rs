@@ -4,7 +4,8 @@ use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use std::path::PathBuf;
 
-#[derive(Parser)]
+#[derive(Parser, Debug, PartialEq)]
+#[clap(about, author, version)]
 struct Opts {
     /// The location of a PEM file for the identity of this server.
     #[clap(long)]
