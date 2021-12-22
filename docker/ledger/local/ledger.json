@@ -1,0 +1,16 @@
+{
+  "initial": {
+    "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
+      "FBT": 1000000
+    }
+  },
+  "minters": {
+    "FBT": [
+      "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
+    ]
+  },
+  "symbols": [
+    "FBT"
+  ],
+  "hash": "c7ab111b9dc141e3905402c7be6ee3d9abe91f8cf12884cb39b5e29365c58337"
+}

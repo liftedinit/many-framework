@@ -44,9 +44,12 @@ impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
 
         let bytes = &v;
 
+        tracing::debug!("request len={}", bytes.len());
+
         let envelope = match CoseSign1::from_bytes(bytes) {
             Ok(cs) => cs,
             Err(e) => {
+                tracing::debug!(r#"error description="{}""#, e.to_string());
                 return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
         };
