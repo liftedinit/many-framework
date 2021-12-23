@@ -1,14 +1,14 @@
 [workspace]
 
 members = [
-    "http_proxy",
-    "ledger",
-    "kvstore",
-    "omni",
-    "omni-abci",
-    "omni-echo",
-    "omni-ledger",
-    "omni-kvstore",
+    "src/http_proxy",
+    "src/ledger",
+    "src/kvstore",
+    "src/omni",
+    "src/omni-abci",
+    "src/omni-echo",
+    "src/omni-ledger",
+    "src/omni-kvstore",
 ]
 
 # Uncomment this for local builds of minicose.

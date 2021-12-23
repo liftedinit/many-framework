@@ -69,7 +69,7 @@ EXPOSE 8000
 # Generate the private key.
 RUN openssl genpkey -algorithm Ed25519 -out /app/id.pem
 
-COPY /docker/ledger/local/ledger.json /app/state.json
+COPY /docker/kvstore/local/kvstore.json /app/state.json
 COPY --from=builder /src/target/debug/omni-ledger /app/omni-ledger
 
 ENTRYPOINT ["./omni-ledger"]
