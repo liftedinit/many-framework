@@ -5,6 +5,7 @@ use omni_abci::types::AbciCommitInfo;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::str::FromStr;
+use tracing::info;
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for(id: &Identity, symbol: &str) -> Vec<u8> {
@@ -213,6 +214,8 @@ impl LedgerStorage {
             return Err(error::anonymous_cannot_hold_funds());
         }
 
+        info!("mint({}, {} {})", to, &amount, symbol);
+
         let mut balance = self.get_balance(to, symbol);
         balance += amount;
 
@@ -239,6 +242,8 @@ impl LedgerStorage {
         if to.is_anonymous() {
             return Err(error::anonymous_cannot_hold_funds());
         }
+
+        info!("burn({}, {} {})", to, &amount, symbol);
 
         let mut balance = self.get_balance(to, symbol);
         balance -= amount;
@@ -273,8 +278,10 @@ impl LedgerStorage {
         if amount > amount_from {
             return Err(error::insufficient_funds());
         }
-        let mut amount_to = self.get_balance(to, symbol);
 
+        info!("send({} => {}, {} {})", from, to, &amount, symbol);
+
+        let mut amount_to = self.get_balance(to, symbol);
         amount_to += amount.clone();
         amount_from -= amount;
 

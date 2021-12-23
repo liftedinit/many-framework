@@ -81,21 +81,23 @@ impl LedgerModule {
     }
 
     fn info(&self, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let mut bytes = Vec::with_capacity(512);
-        let mut e = Encoder::new(&mut bytes);
         let storage = self.storage.lock().unwrap();
 
         // Hash the storage.
         let hash = storage.hash();
         let symbols: Vec<&str> = storage.get_symbols();
 
-        e.encode(InfoReturns {
+        info!(
+            "info(): hash={} symbols={:?}",
+            hex::encode(storage.hash()).as_str(),
+            symbols
+        );
+
+        minicbor::to_vec(InfoReturns {
             symbols: symbols.iter().map(|x| x.to_string()).collect(),
             hash: hash.into(),
         })
-        .map_err(|e| OmniError::serialization_error(e.to_string()))?;
-
-        Ok(bytes)
+        .map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
     fn balance(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
@@ -110,7 +112,8 @@ impl LedgerModule {
         let mut storage = self.storage.lock().unwrap();
         let symbols = symbols.unwrap_or_else(|| SymbolList(BTreeSet::new())).0;
 
-        // TODO: include merkle proof here.
+        let balances = storage.get_multiple_balances(identity, &symbols);
+        info!("balance({}, {:?}): {:?}", identity, &symbols, &balances);
         let returns = if proof.unwrap_or(false) {
             BalanceReturns {
                 balances: None,
@@ -118,7 +121,6 @@ impl LedgerModule {
                 hash: storage.hash().into(),
             }
         } else {
-            let balances = storage.get_multiple_balances(identity, &symbols);
             BalanceReturns {
                 balances: Some(
                     balances
@@ -207,11 +209,18 @@ impl OmniAbciModuleBackend for LedgerModule {
     }
 
     fn init_chain(&self) -> Result<(), OmniError> {
+        info!("abci.init_chain()",);
         Ok(())
     }
 
     fn info(&self) -> Result<AbciInfo, OmniError> {
         let storage = self.storage.lock().unwrap();
+
+        info!(
+            "abci.info(): height={} hash={}",
+            storage.get_height(),
+            hex::encode(storage.hash()).as_str()
+        );
         Ok(AbciInfo {
             height: storage.get_height(),
             hash: storage.hash().into(),
@@ -220,7 +229,14 @@ impl OmniAbciModuleBackend for LedgerModule {
 
     fn commit(&self) -> Result<AbciCommitInfo, OmniError> {
         let mut storage = self.storage.lock().unwrap();
-        Ok(storage.commit())
+        let result = storage.commit();
+
+        info!(
+            "abci.commit(): retain_height={} hash={}",
+            result.retain_height,
+            hex::encode(storage.hash()).as_str()
+        );
+        Ok(result)
     }
 }
 

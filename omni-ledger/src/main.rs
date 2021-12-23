@@ -4,6 +4,7 @@ use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
 mod error;
@@ -13,7 +14,7 @@ mod utils;
 
 use module::*;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 struct Opts {
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
@@ -73,9 +74,18 @@ fn main() {
     };
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
+    debug!("{:?}", Opts::parse());
+
     if clean {
         // Delete the persistent storage.
-        let _ = std::fs::remove_dir_all(persistent.as_path());
+        // Ignore NotFound errors.
+        match std::fs::remove_dir_all(persistent.as_path()) {
+            Ok(_) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                panic!("Error: {}", e.to_string())
+            }
+        }
     } else if persistent.exists() {
         // Initial state is ignored.
         state = None;

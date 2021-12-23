@@ -41,9 +41,6 @@ impl OmniClient {
             .to_bytes()
             .map_err(|_| OmniError::internal_server_error())?;
 
-        eprintln!("request\n{}", hex::encode(&bytes));
-
-        eprintln!("len: {}", bytes.len());
         let client = reqwest::blocking::Client::new();
         let response = client
             .post(url)

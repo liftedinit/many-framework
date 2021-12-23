@@ -1,13 +1,19 @@
 use minicbor::data::Tag;
 use minicbor::{encode, Decode, Decoder, Encode, Encoder};
 use num_bigint::BigUint;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 type TokenAmountStorage = num_bigint::BigUint;
 
 #[repr(transparent)]
-#[derive(Default, Debug, Hash, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Default, Hash, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct TokenAmount(TokenAmountStorage);
+
+impl Debug for TokenAmount {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.0.to_string().as_str())
+    }
+}
 
 impl TokenAmount {
     pub fn zero() -> Self {
