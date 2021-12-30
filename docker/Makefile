@@ -2,7 +2,7 @@
 build: build-repo build-ledger
 
 build-repo:
-	docker build --ssh default --tag local/repo_build .. --target builder -f build.dockerfile
+	docker build --ssh default --tag omni_local/repo_build .. --target builder -f build.dockerfile
 
 build-ledger: build-repo
 	docker build --ssh default --tag omni/ledger .. --target runtime -f ledger/Dockerfile

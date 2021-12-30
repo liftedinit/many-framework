@@ -1,4 +1,4 @@
-FROM local/repo_build:latest as builder
+FROM omni_local/repo_build:latest as builder
 
 # ==== STAGE 2 ====
 FROM debian:bullseye as runtime
