@@ -1703,6 +1703,7 @@ dependencies = [
 [[package]]
 name = "omni"
 version = "0.1.0"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#0bec1dc1c8b52e80b6b17fb086264a0676b67aa8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1710,7 +1711,6 @@ dependencies = [
  "base32",
  "base64 0.13.0",
  "cbor-diag",
- "clap",
  "crc-any",
  "derive_builder",
  "ecdsa",

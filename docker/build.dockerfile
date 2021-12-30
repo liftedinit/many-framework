@@ -10,7 +10,6 @@ RUN cargo version
 COPY /src/http_proxy/Cargo.toml ./src/http_proxy/
 COPY /src/kvstore/Cargo.toml ./src/kvstore/
 COPY /src/ledger/Cargo.toml ./src/ledger/
-COPY /src/omni/Cargo.toml ./src/omni/
 COPY /src/omni-abci/Cargo.toml ./src/omni-abci/
 COPY /src/omni-echo/Cargo.toml ./src/omni-echo/
 COPY /src/omni-kvstore/Cargo.toml ./src/omni-kvstore/

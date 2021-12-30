@@ -10,5 +10,5 @@ doc = false
 [dependencies]
 async-trait = "0.1.51"
 clap = { version = "3.0.0-beta.5", features = [ "derive" ] }
-omni = { path = "../omni", features = [ "pem" ] }
+omni = { git = "ssh://git@github.com/l-1-labs/omni-rust.git", features = [ "pem" ] }
 pem = "1.0.0"
