@@ -20,7 +20,7 @@ tendermint init validator
 
 tmux kill-session -t "$_name" || true
 tmux new-session -s "$_name" -d "tendermint start 2>&1 | tee ~/tendermint.log"
-tmux new-window -t "$_name" "./target/debug/omni-ledger --abci --port 8000 --pem ~/Identities/id1.pem --state ./staging/ledger_state.json 2>&1 | tee ~/omni-ledger.log"
+tmux new-window -t "$_name" "./target/debug/omni-ledger --abci --addr 127.0.0.1:8000 --pem ~/Identities/id1.pem --state ./staging/ledger_state.json 2>&1 | tee ~/omni-ledger.log"
 tmux new-window -t "$_name" "./target/debug/omni-abci -v --omni 0.0.0.0:8001 --omni-app http://localhost:8000 --omni-pem $HOME/Identities/id1.pem --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee ~/omni-abci.log"
 tmux new-window -t "$_name" "$SHELL"
 

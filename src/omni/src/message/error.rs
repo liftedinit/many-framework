@@ -5,7 +5,6 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::iter::FromIterator;
-use tracing::debug;
 
 #[derive(FromPrimitive, ToPrimitive)]
 #[repr(i8)]

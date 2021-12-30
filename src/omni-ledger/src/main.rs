@@ -91,7 +91,8 @@ fn main() {
         state = None;
     }
 
-    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&pem).unwrap()).unwrap();
+    let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
+    let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
 
     let state: Option<InitialStateJson> = state.map(|state| {
         let content = std::fs::read_to_string(&state).unwrap();

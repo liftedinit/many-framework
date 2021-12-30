@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use minicbor::{decode, Encoder};
+use minicbor::decode;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
 use omni::{Identity, OmniError, OmniModule};
 use omni_abci::module::OmniAbciModuleBackend;
 use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tracing::info;
@@ -17,7 +17,6 @@ pub mod put;
 
 use crate::storage::AclBTreeMap;
 use crate::{error, storage::KvStoreStorage};
-use error::unauthorized;
 use get::{GetArgs, GetReturns};
 use info::InfoReturns;
 use put::{PutArgs, PutReturns};

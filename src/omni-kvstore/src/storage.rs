@@ -1,12 +1,9 @@
-use crate::error;
-use crate::utils::TokenAmount;
-use fmerk::rocksdb::ReadOptions;
+use crate::error::unauthorized;
 use fmerk::Op;
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::path::Path;
-use std::str::FromStr;
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for(id: &Identity, symbol: &str) -> Vec<u8> {
@@ -54,9 +51,6 @@ impl KvStoreStorage {
     ) -> Result<Self, String> {
         let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
-        use itertools::Itertools;
-
         persistent_store
             .apply(&[(
                 b"/config/acls".to_vec(),
@@ -103,6 +97,32 @@ impl KvStoreStorage {
         self.persistent_store.root_hash().to_vec()
     }
 
+    fn can_write(&self, id: &Identity, key: &[u8]) -> bool {
+        // TODO: remove this.
+        if self.acls.is_empty() {
+            return true;
+        }
+
+        let mut has_matched = false;
+
+        // Any ACL that matches the key as a prefix in the ACL map and contains the identity
+        // is a match.
+        // Since BTreeMap is sorted by key, the first key that doesn't match after a key that
+        // matches is out-of-bound and we won't match, so we can cut short.
+        for (k, v) in self.acls.iter() {
+            if key.starts_with(k) {
+                has_matched = true;
+                if v.contains(id) {
+                    return true;
+                }
+            } else if has_matched {
+                return false;
+            }
+        }
+
+        false
+    }
+
     pub fn query(&self, prefix: Option<&[u8]>) -> Result<StorageIterator<'_>, OmniError> {
         if let Some(prefix) = prefix {
             Ok(StorageIterator::prefixed(&self.persistent_store, prefix))
@@ -117,13 +137,17 @@ impl KvStoreStorage {
             .map_err(|e| OmniError::unknown(e.to_string()))
     }
 
-    pub fn put(&mut self, _id: &Identity, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> {
-        self.persistent_store
-            .apply(&[(
-                vec![b"/store/".to_vec(), key.to_vec()].concat(),
-                Op::Put(value),
-            )])
-            .map_err(|e| OmniError::unknown(e.to_string()))
+    pub fn put(&mut self, id: &Identity, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> {
+        if self.can_write(id, key) {
+            self.persistent_store
+                .apply(&[(
+                    vec![b"/store/".to_vec(), key.to_vec()].concat(),
+                    Op::Put(value),
+                )])
+                .map_err(|e| OmniError::unknown(e.to_string()))
+        } else {
+            Err(unauthorized())
+        }
     }
 }
 

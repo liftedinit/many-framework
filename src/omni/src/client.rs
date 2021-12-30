@@ -5,7 +5,7 @@ use crate::message::{
 };
 use crate::protocol::Status;
 use crate::{Identity, OmniError};
-use minicbor::{Decode, Encode};
+use minicbor::Encode;
 use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
 use std::fmt::Formatter;

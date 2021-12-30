@@ -3,7 +3,7 @@ use crate::transport::{HandlerExecutorAdapter, LowLevelOmniRequestHandler, OmniR
 use anyhow::anyhow;
 use minicose::CoseSign1;
 use std::fmt::Debug;
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 use std::net::ToSocketAddrs;
 use tiny_http::{Request, Response};
 
@@ -29,7 +29,7 @@ impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
     async fn handle_request(
         &self,
         request: &mut Request,
-        buffer: &mut [u8],
+        _buffer: &mut [u8],
     ) -> Response<std::io::Cursor<Vec<u8>>> {
         match request.body_length() {
             Some(x) if x > READ_BUFFER_LEN => {
@@ -61,7 +61,7 @@ impl<E: LowLevelOmniRequestHandler> HttpServer<E> {
             .and_then(|r| r.to_bytes().map_err(|e| e.to_string()));
         let bytes = match response {
             Ok(bytes) => bytes,
-            Err(e) => {
+            Err(_e) => {
                 return Response::empty(500).with_data(Cursor::new(vec![]), Some(0));
             }
         };

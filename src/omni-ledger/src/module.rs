@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use minicbor::{decode, Encoder};
+use minicbor::decode;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;

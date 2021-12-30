@@ -39,7 +39,7 @@ main() {
   tmux new-session -s "$tmux_name" -n tendermint-ledger -d "TMHOME=\"$root_dir/ledger\" tendermint start 2>&1 | tee \"$root_dir/tendermint-ledger.log\""
   tmux new-window -t "$tmux_name" -n tendermint-kvstore "TMHOME=\"$root_dir/kvstore\" tendermint start 2>&1 | tee \"$root_dir/tendermint-kvstore.log\""
 
-  tmux new-window -t "$tmux_name" -n ledger "./target/debug/omni-ledger --abci --port 8000 --pem ~/Identities/id1.pem --state ./staging/ledger_state.json --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/omni-ledger.log\""
+  tmux new-window -t "$tmux_name" -n ledger "./target/debug/omni-ledger --abci --addr 127.0.0.1:8000 --pem ~/Identities/id1.pem --state ./staging/ledger_state.json --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/omni-ledger.log\""
   tmux new-window -t "$tmux_name" -n ledger-abci "./target/debug/omni-abci -v --omni 0.0.0.0:8001 --omni-app http://localhost:8000 --omni-pem $HOME/Identities/id1.pem --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee \"$root_dir/omni-abci-ledger.log\""
 
   tmux new-window -t "$tmux_name" -n kvstore "./target/debug/omni-kvstore --abci --port 8010 --pem ~/Identities/id1.pem --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/omni-kvstore.log\""
