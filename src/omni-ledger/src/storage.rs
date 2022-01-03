@@ -2,9 +2,9 @@ use crate::error;
 use crate::utils::TokenAmount;
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
+use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use std::str::FromStr;
 use tracing::info;
 
 /// Returns the key for the persistent kv-store.
@@ -285,12 +285,22 @@ impl LedgerStorage {
         amount_to += amount.clone();
         amount_from -= amount;
 
-        self.persistent_store
-            .apply(&[
-                (key_for(from, symbol), fmerk::Op::Put(amount_from.to_vec())),
-                (key_for(to, symbol), fmerk::Op::Put(amount_to.to_vec())),
-            ])
-            .unwrap();
+        // Keys in batch must be sorted.
+        let key_from = key_for(from, symbol);
+        let key_to = key_for(to, symbol);
+
+        let batch: Vec<fmerk::BatchEntry> = match key_from.cmp(&key_to) {
+            Ordering::Less | Ordering::Equal => vec![
+                (key_from, fmerk::Op::Put(amount_from.to_vec())),
+                (key_to, fmerk::Op::Put(amount_to.to_vec())),
+            ],
+            _ => vec![
+                (key_to, fmerk::Op::Put(amount_to.to_vec())),
+                (key_from, fmerk::Op::Put(amount_from.to_vec())),
+            ],
+        };
+
+        self.persistent_store.apply(&batch).unwrap();
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();

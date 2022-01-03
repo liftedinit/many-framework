@@ -5,11 +5,6 @@ use omni_abci::types::AbciCommitInfo;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-/// Returns the key for the persistent kv-store.
-pub(crate) fn key_for(id: &Identity, symbol: &str) -> Vec<u8> {
-    format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
-}
-
 pub type AclBTreeMap = BTreeMap<Vec<u8>, Vec<Identity>>;
 
 pub struct KvStoreStorage {

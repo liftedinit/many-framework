@@ -8,7 +8,6 @@ use tracing::level_filters::LevelFilter;
 mod error;
 mod module;
 mod storage;
-mod utils;
 
 use module::*;
 
