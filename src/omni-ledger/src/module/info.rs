@@ -9,6 +9,7 @@ impl<'de> Decode<'de> for InfoArgs {
 }
 
 #[derive(Decode, Encode)]
+#[cbor(map)]
 pub struct InfoReturns {
     #[n(0)]
     pub symbols: Vec<String>,
