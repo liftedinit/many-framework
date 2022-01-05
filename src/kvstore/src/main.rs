@@ -1,10 +1,8 @@
 use clap::Parser;
-use minicbor::encode::{Error, Write};
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use omni_kvstore::module::get::{GetArgs, GetReturns};
 use omni_kvstore::module::put::{PutArgs, PutReturns};
-use std::fmt::{Display, Formatter};
 use std::io::Read;
 use std::path::PathBuf;
 use tracing_subscriber::filter::LevelFilter;
@@ -104,11 +102,20 @@ fn put(client: OmniClient, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> 
         value,
     };
 
-    let payload = client.call_("kvstore.put", arguments)?;
+    let response = client.call("kvstore.put", arguments)?;
+    let payload = &response.data?;
     if payload.is_empty() {
-        Err(OmniError::unexpected_empty_response())
+        if response
+            .attributes
+            .contains(&omni::protocol::attributes::response::ASYNC)
+        {
+            eprintln!("Async response received...");
+            Ok(())
+        } else {
+            Err(OmniError::unexpected_empty_response())
+        }
     } else {
-        let _: PutReturns = minicbor::decode(&payload)
+        let _: PutReturns = minicbor::decode(payload)
             .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
         Ok(())
     }

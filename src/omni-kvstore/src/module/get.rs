@@ -1,4 +1,3 @@
-use minicbor::bytes::ByteVec;
 use minicbor::{Decode, Encode};
 
 #[derive(Encode, Decode)]
@@ -16,10 +15,4 @@ pub struct GetArgs {
 pub struct GetReturns {
     #[n(0)]
     pub value: Option<Vec<u8>>,
-
-    #[n(1)]
-    pub proof: Option<ByteVec>,
-
-    #[n(2)]
-    pub hash: Option<ByteVec>,
 }

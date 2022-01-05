@@ -89,12 +89,8 @@ impl KvStoreModule {
         let storage = self.storage.lock().unwrap();
 
         let value = storage.get(from, &args.key)?;
-        minicbor::to_vec(GetReturns {
-            value,
-            hash: None,
-            proof: None,
-        })
-        .map_err(|e| OmniError::serialization_error(e.to_string()))
+        minicbor::to_vec(GetReturns { value })
+            .map_err(|e| OmniError::serialization_error(e.to_string()))
     }
 
     fn put(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
@@ -141,13 +137,17 @@ impl OmniAbciModuleBackend for KvStoreModule {
     }
 }
 
-const KVSTORE_ATTRIBUTE: Attribute =
-    Attribute::new(2, &["kvstore.info", "kvstore.get", "kvstore.put"]);
+const KVSTORE_ATTRIBUTE: Attribute = Attribute::id(3);
 
 lazy_static::lazy_static!(
     pub static ref KVSTORE_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
         name: "KvStoreModule".to_string(),
         attributes: vec![KVSTORE_ATTRIBUTE],
+        endpoints: vec![
+            "kvstore.info".to_string(),
+            "kvstore.get".to_string(),
+            "kvstore.put".to_string(),
+        ]
     };
 );
 

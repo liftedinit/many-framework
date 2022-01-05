@@ -133,16 +133,21 @@ impl KvStoreStorage {
     }
 
     pub fn put(&mut self, id: &Identity, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> {
-        if self.can_write(id, key) {
-            self.persistent_store
-                .apply(&[(
-                    vec![b"/store/".to_vec(), key.to_vec()].concat(),
-                    Op::Put(value),
-                )])
-                .map_err(|e| OmniError::unknown(e.to_string()))
-        } else {
-            Err(unauthorized())
+        if !self.can_write(id, key) {
+            return Err(unauthorized());
         }
+
+        self.persistent_store
+            .apply(&[(
+                vec![b"/store/".to_vec(), key.to_vec()].concat(),
+                Op::Put(value),
+            )])
+            .map_err(|e| OmniError::unknown(e.to_string()))?;
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+        Ok(())
     }
 }
 

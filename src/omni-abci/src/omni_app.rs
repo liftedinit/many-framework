@@ -68,10 +68,13 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
                     .await
                     .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
 
-                let data = minicbor::to_vec(response.data.value().to_vec())
+                let _ = minicbor::to_vec(response.data.value().to_vec())
                     .map_err(|e| OmniError::serialization_error(e.to_string()))?;
+
+                // A command will always return an empty payload with an ASYNC attribute.
                 let response =
-                    ResponseMessage::from_request(&message, &self.identity.identity, Ok(data));
+                    ResponseMessage::from_request(&message, &self.identity.identity, Ok(vec![]))
+                        .with_attribute(omni::protocol::attributes::response::ASYNC);
                 omni::message::encode_cose_sign1_from_response(response, &self.identity)
                     .map_err(OmniError::unexpected_transport_error)
             } else {

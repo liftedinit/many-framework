@@ -1,14 +1,8 @@
 use clap::Parser;
-use minicbor::data::Tag;
-use minicbor::encode::{Error, Write};
-use minicbor::{Decoder, Encoder};
 use omni::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient, OmniError};
+use omni::{Identity, OmniClient};
 use omni_kvstore::module::get::{GetArgs, GetReturns};
-use omni_kvstore::module::put::{PutArgs, PutReturns};
-use std::fmt::{Display, Formatter};
-use std::io::Read;
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use tiny_http::{Header, Method, Response, StatusCode};
 use tracing::warn;
@@ -84,23 +78,28 @@ fn main() {
                 );
                 match result {
                     Ok(result) => {
-                        let GetReturns { value, proof, hash } = minicbor::decode(&result).unwrap();
-                        let value = value.unwrap();
-                        let mimetype = new_mime_guess::from_path(path).first();
-                        let response =
-                            Response::empty(200).with_data(value.as_slice(), Some(value.len()));
-                        let response = if let Some(mimetype) = mimetype {
-                            response.with_header(
-                                Header::from_bytes("Content-Type", mimetype.essence_str()).unwrap(),
-                            )
-                        } else {
-                            response
-                        };
+                        let GetReturns { value } = minicbor::decode(&result).unwrap();
+                        match value {
+                            None => request.respond(Response::empty(404)).unwrap(),
+                            Some(value) => {
+                                let mimetype = new_mime_guess::from_path(path).first();
+                                let response = Response::empty(200)
+                                    .with_data(value.as_slice(), Some(value.len()));
+                                let response = if let Some(mimetype) = mimetype {
+                                    response.with_header(
+                                        Header::from_bytes("Content-Type", mimetype.essence_str())
+                                            .unwrap(),
+                                    )
+                                } else {
+                                    response
+                                };
 
-                        // Ignore errors on return.
-                        let _ = request.respond(response);
+                                // Ignore errors on return.
+                                let _ = request.respond(response);
+                            }
+                        }
                     }
-                    Err(_) => request.respond(Response::empty(404)).unwrap(),
+                    Err(_) => request.respond(Response::empty(500)).unwrap(),
                 }
             }
             // Method::Head => {}

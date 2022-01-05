@@ -240,21 +240,19 @@ impl OmniAbciModuleBackend for LedgerModule {
     }
 }
 
-const LEDGER_ATTRIBUTE: Attribute = Attribute::new(
-    2,
-    &[
-        "ledger.info",
-        "ledger.balance",
-        "ledger.mint",
-        "ledger.burn",
-        "ledger.send",
-    ],
-);
+const LEDGER_ATTRIBUTE: Attribute = Attribute::id(2);
 
 lazy_static::lazy_static!(
     pub static ref LEDGER_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
         name: "LedgerModule".to_string(),
         attributes: vec![LEDGER_ATTRIBUTE],
+        endpoints: vec![
+            "ledger.info".to_string(),
+            "ledger.balance".to_string(),
+            "ledger.mint".to_string(),
+            "ledger.burn".to_string(),
+            "ledger.send".to_string(),
+        ]
     };
 );
 

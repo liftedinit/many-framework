@@ -7,16 +7,7 @@ use omni::server::module::OmniModuleInfo;
 use omni::{OmniError, OmniModule};
 use std::sync::Arc;
 
-pub const ABCI_SERVER: Attribute = Attribute::new(
-    1000,
-    &[
-        "abci.info",
-        "abci.init",
-        "abci.commit",
-        "abci.beginBlock",
-        "abci.endBlock",
-    ],
-);
+pub const ABCI_SERVER: Attribute = Attribute::id(1000);
 
 pub trait OmniAbciModuleBackend: OmniModule {
     /// Called when the ABCI frontend is initialized. No action should be taken here, only
@@ -64,6 +55,17 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
             attributes: [vec![ABCI_SERVER], backend_info.attributes.clone()]
                 .concat()
                 .to_vec(),
+            endpoints: vec![
+                vec![
+                    "abci.info".to_string(),
+                    "abci.init".to_string(),
+                    "abci.commit".to_string(),
+                    "abci.beginBlock".to_string(),
+                    "abci.endBlock".to_string(),
+                ],
+                backend_info.endpoints.clone(),
+            ]
+            .concat(),
         };
 
         Self {
