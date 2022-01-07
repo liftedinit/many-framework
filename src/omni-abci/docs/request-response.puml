@@ -16,7 +16,7 @@ omni_app -> omni : \
 == Commands ==
 
 user -> omni : \
-    omni::RequestMessage\nmethod: "ledger.mint"
+    omni::RequestMessage\nmethod: "account.mint"
 omni -> tendermint : \
     broadcast_tx\n(signed envelope)
 
@@ -50,7 +50,7 @@ deactivate
 == Queries ==
 
 user -> omni : \
-    omni::RequestMessage\nmethod: "ledger.balance"
+    omni::RequestMessage\nmethod: "account.balance"
 omni -> tendermint : \
     query\n(signed envelope)
 

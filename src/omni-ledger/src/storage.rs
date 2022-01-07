@@ -1,15 +1,21 @@
 use crate::error;
+use crate::module::ledger::list::{Transaction, TransactionContent, TransactionId};
 use crate::utils::TokenAmount;
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use std::time::SystemTime;
 use tracing::info;
 
 /// Returns the key for the persistent kv-store.
-pub(crate) fn key_for(id: &Identity, symbol: &str) -> Vec<u8> {
+pub(crate) fn key_for_account(id: &Identity, symbol: &str) -> Vec<u8> {
     format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
+}
+
+pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
+    vec![b"/transactions/".to_vec(), id.0].concat()
 }
 
 pub struct LedgerStorage {
@@ -75,7 +81,7 @@ impl LedgerStorage {
                     return Err(format!(r#"Unknown symbol "{}" for identity {}"#, symbol, k));
                 }
 
-                let key = key_for(&k, &symbol);
+                let key = key_for_account(&k, &symbol);
                 batch.push((key, fmerk::Op::Put(TokenAmount::from(tokens).to_vec())));
             }
         }
@@ -110,6 +116,16 @@ impl LedgerStorage {
         self.minters.get(symbol).map_or(false, |x| x.contains(id))
     }
 
+    pub fn inc_height(&mut self) -> u64 {
+        let current_height = self.get_height();
+        self.persistent_store
+            .apply(&[(
+                b"/height".to_vec(),
+                fmerk::Op::Put((current_height + 1).to_be_bytes().to_vec()),
+            )])
+            .unwrap();
+        current_height
+    }
     pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
@@ -122,26 +138,47 @@ impl LedgerStorage {
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
-        let current_height = self.get_height() + 1;
-        self.persistent_store
-            .apply(&[(
-                b"/height".to_vec(),
-                fmerk::Op::Put(current_height.to_be_bytes().to_vec()),
-            )])
-            .unwrap();
+        let retain_height = self.inc_height();
         self.persistent_store.commit(&[]).unwrap();
 
         AbciCommitInfo {
-            retain_height: current_height,
+            retain_height,
             hash: self.hash(),
         }
+    }
+
+    pub fn nb_transactions(&self) -> u64 {
+        self.persistent_store
+            .get(b"/transactions_count")
+            .unwrap()
+            .map_or(0, |x| {
+                let mut bytes = [0u8; 8];
+                bytes.copy_from_slice(x.as_slice());
+                u64::from_be_bytes(bytes)
+            })
+    }
+    fn add_transaction(&mut self, transaction: Transaction) -> () {
+        let current_nb_transactions = self.nb_transactions();
+
+        self.persistent_store
+            .apply(&[
+                (
+                    key_for_transaction(transaction.id.clone()),
+                    fmerk::Op::Put(minicbor::to_vec(&transaction).unwrap()),
+                ),
+                (
+                    b"/transactions_count".to_vec(),
+                    fmerk::Op::Put((current_nb_transactions + 1).to_be_bytes().to_vec()),
+                ),
+            ])
+            .unwrap();
     }
 
     pub fn get_balance(&self, identity: &Identity, symbol: &str) -> TokenAmount {
         if identity.is_anonymous() {
             TokenAmount::zero()
         } else {
-            let key = key_for(identity, symbol);
+            let key = key_for_account(identity, symbol);
             match self.persistent_store.get(&key).unwrap() {
                 None => TokenAmount::zero(),
                 Some(amount) => TokenAmount::from(amount),
@@ -156,7 +193,10 @@ impl LedgerStorage {
         } else {
             let mut result = BTreeMap::new();
             for symbol in &self.symbols {
-                match self.persistent_store.get(&key_for(identity, symbol)) {
+                match self
+                    .persistent_store
+                    .get(&key_for_account(identity, symbol))
+                {
                     Ok(None) => {}
                     Ok(Some(value)) => {
                         result.insert(symbol.as_str(), TokenAmount::from(value));
@@ -193,7 +233,7 @@ impl LedgerStorage {
             .prove(
                 symbols
                     .iter()
-                    .map(|s| key_for(identity, s))
+                    .map(|s| key_for_account(identity, s))
                     .collect::<Vec<Vec<u8>>>()
                     .as_slice(),
             )
@@ -220,7 +260,10 @@ impl LedgerStorage {
         balance += amount;
 
         self.persistent_store
-            .apply(&[(key_for(to, symbol), fmerk::Op::Put(balance.to_vec()))])
+            .apply(&[(
+                key_for_account(to, symbol),
+                fmerk::Op::Put(balance.to_vec()),
+            )])
             .unwrap();
 
         if !self.blockchain {
@@ -249,7 +292,10 @@ impl LedgerStorage {
         balance -= amount;
 
         self.persistent_store
-            .apply(&[(key_for(to, symbol), fmerk::Op::Put(balance.to_vec()))])
+            .apply(&[(
+                key_for_account(to, symbol),
+                fmerk::Op::Put(balance.to_vec()),
+            )])
             .unwrap();
 
         if !self.blockchain {
@@ -283,11 +329,11 @@ impl LedgerStorage {
 
         let mut amount_to = self.get_balance(to, symbol);
         amount_to += amount.clone();
-        amount_from -= amount;
+        amount_from -= amount.clone();
 
         // Keys in batch must be sorted.
-        let key_from = key_for(from, symbol);
-        let key_to = key_for(to, symbol);
+        let key_from = key_for_account(from, symbol);
+        let key_to = key_for_account(to, symbol);
 
         let batch: Vec<fmerk::BatchEntry> = match key_from.cmp(&key_to) {
             Ordering::Less | Ordering::Equal => vec![
@@ -302,6 +348,18 @@ impl LedgerStorage {
 
         self.persistent_store.apply(&batch).unwrap();
 
+        let t = SystemTime::now();
+        self.add_transaction(Transaction {
+            id: t.clone().into(),
+            time: t.into(),
+            content: TransactionContent::Send {
+                from: from.clone(),
+                to: to.clone(),
+                symbol: symbol.to_string(),
+                amount: amount.clone(),
+            },
+        });
+
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
         }
@@ -311,5 +369,49 @@ impl LedgerStorage {
 
     pub fn hash(&self) -> Vec<u8> {
         self.persistent_store.root_hash().to_vec()
+    }
+
+    pub fn iter(&self, start: Option<SystemTime>, end: Option<SystemTime>) -> LedgerIterator {
+        LedgerIterator::scoped_by_time(&self.persistent_store, start, end)
+    }
+}
+
+pub struct LedgerIterator<'a> {
+    inner: fmerk::rocksdb::DBIterator<'a>,
+}
+
+impl<'a> LedgerIterator<'a> {
+    pub fn scoped_by_time(
+        merk: &'a fmerk::Merk,
+        start: Option<SystemTime>,
+        end: Option<SystemTime>,
+    ) -> Self {
+        use fmerk::rocksdb::{Direction, IteratorMode, ReadOptions};
+        let mut opts = ReadOptions::default();
+        let start_key = start
+            .map(|x| key_for_transaction(x.into()))
+            .unwrap_or(b"/transactions/".to_vec());
+        let end_key = end
+            .map(|x| key_for_transaction(x.into()))
+            .unwrap_or(b"/transactions0".to_vec());
+
+        opts.set_iterate_upper_bound(end_key.clone());
+        let mode = IteratorMode::From(&start_key, Direction::Forward);
+
+        Self {
+            inner: merk.iter_opt(mode, opts),
+        }
+    }
+}
+
+impl<'a> Iterator for LedgerIterator<'a> {
+    type Item = (Box<[u8]>, Vec<u8>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(k, v)| {
+            let new_v = fmerk::tree::Tree::decode(k.to_vec(), v.as_ref());
+
+            (k, new_v.value().to_vec())
+        })
     }
 }

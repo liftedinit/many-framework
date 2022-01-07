@@ -5,11 +5,11 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
-use omni_ledger::module::balance::{BalanceArgs, BalanceReturns};
-use omni_ledger::module::burn::BurnArgs;
-use omni_ledger::module::info::InfoReturns;
-use omni_ledger::module::mint::MintArgs;
-use omni_ledger::module::send::SendArgs;
+use omni_ledger::module::account::balance::{BalanceArgs, BalanceReturns};
+use omni_ledger::module::account::burn::BurnArgs;
+use omni_ledger::module::account::info::InfoReturns;
+use omni_ledger::module::account::mint::MintArgs;
+use omni_ledger::module::account::send::SendArgs;
 use omni_ledger::utils::TokenAmount;
 use omni_ledger::verify_proof;
 use std::fmt::{Display, Formatter};
@@ -125,7 +125,7 @@ fn balance(
         },
         proof: Some(proof),
     };
-    let payload = client.call_("ledger.balance", argument)?;
+    let payload = client.call_("account.balance", argument)?;
 
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
@@ -136,7 +136,7 @@ fn balance(
                 println!("{} {}", symbol, amount);
             }
         } else if let Some(p) = balance.proof {
-            let info = client.call_("ledger.info", ())?;
+            let info = client.call_("account.info", ())?;
             let info: InfoReturns = minicbor::decode(&info).unwrap();
             let balances = verify_proof(
                 p.as_slice(),
@@ -171,7 +171,7 @@ fn mint(
         symbol: symbol.as_str(),
         amount: TokenAmount::from(amount),
     };
-    let payload = client.call_("ledger.mint", arguments)?;
+    let payload = client.call_("account.mint", arguments)?;
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
     } else {
@@ -191,7 +191,7 @@ fn burn(
         symbol: symbol.as_str(),
         amount: TokenAmount::from(amount),
     };
-    let payload = client.call_("ledger.burn", arguments)?;
+    let payload = client.call_("account.burn", arguments)?;
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
     } else {
@@ -215,7 +215,7 @@ fn send(
             symbol: symbol.as_str(),
             amount: TokenAmount::from(amount),
         };
-        let payload = client.call_("ledger.send", arguments)?;
+        let payload = client.call_("account.send", arguments)?;
         if payload.is_empty() {
             Err(OmniError::unexpected_empty_response())
         } else {

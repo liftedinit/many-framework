@@ -6,14 +6,8 @@ use std::fmt::{Debug, Display, Formatter};
 type TokenAmountStorage = num_bigint::BigUint;
 
 #[repr(transparent)]
-#[derive(Default, Hash, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Default, Hash, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct TokenAmount(TokenAmountStorage);
-
-impl Debug for TokenAmount {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.0.to_string().as_str())
-    }
-}
 
 impl TokenAmount {
     pub fn zero() -> Self {
