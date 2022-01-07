@@ -6,25 +6,26 @@ use omni::server::module::OmniModuleInfo;
 use omni::{Identity, OmniError, OmniModule};
 use omni_abci::module::OmniAbciModuleBackend;
 use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
+use std::cmp::max;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tracing::info;
 
-pub mod balance;
-pub mod burn;
-pub mod info;
-pub mod mint;
-pub mod send;
+pub mod account;
+pub mod ledger;
 
-use crate::module::balance::BalanceReturns;
+use crate::module::ledger::list::Transaction;
 use crate::{error, storage::LedgerStorage};
-use balance::{BalanceArgs, SymbolList};
-use burn::BurnArgs;
+use account::balance::BalanceReturns;
+use account::balance::{BalanceArgs, SymbolList};
+use account::burn::BurnArgs;
+use account::info::InfoReturns;
+use account::mint::MintArgs;
+use account::send::SendArgs;
 use error::unauthorized;
-use info::InfoReturns;
-use mint::MintArgs;
-use send::SendArgs;
+
+const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
@@ -80,7 +81,7 @@ impl LedgerModule {
         })
     }
 
-    fn info(&self, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+    fn account_info(&self, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
         let storage = self.storage.lock().unwrap();
 
         // Hash the storage.
@@ -190,6 +191,47 @@ impl LedgerModule {
 
         minicbor::to_vec(()).map_err(|e| OmniError::serialization_error(e.to_string()))
     }
+
+    fn ledger_info(&self, _sender: &Identity, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        let storage = self.storage.lock().unwrap();
+        minicbor::to_vec(ledger::info::InfoReturns {
+            nb_transactions: storage.nb_transactions(),
+        })
+        .map_err(|e| OmniError::serialization_error(e.to_string()))
+    }
+
+    fn ledger_list(&self, _sender: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
+        let ledger::list::ListArgs {
+            count,
+            // source,
+            // destination,
+            // min_id,
+            // transaction_type,
+            date_start,
+            date_end,
+            ..
+        } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+
+        let count = count.map_or(MAXIMUM_TRANSACTION_COUNT, |c| {
+            max(c as usize, MAXIMUM_TRANSACTION_COUNT)
+        });
+
+        let storage = self.storage.lock().unwrap();
+        let nb_transactions = storage.nb_transactions();
+        let iter = storage.iter(date_start.map(Into::into), date_end.map(Into::into));
+
+        let transactions: Vec<Transaction> = iter
+            .take(count)
+            .map(|(_k, v)| decode::<Transaction>(v.as_slice()))
+            .collect::<Result<_, _>>()
+            .map_err(|e| OmniError::unknown(e.to_string()))?;
+
+        minicbor::to_vec(ledger::list::ListReturns {
+            nb_transactions,
+            transactions,
+        })
+        .map_err(|e| OmniError::serialization_error(e.to_string()))
+    }
 }
 
 // This module is always supported, but will only be added when created using an ABCI
@@ -199,11 +241,13 @@ impl OmniAbciModuleBackend for LedgerModule {
     fn init(&self) -> AbciInit {
         AbciInit {
             endpoints: BTreeMap::from([
+                ("account.info".to_string(), EndpointInfo { should_commit: false }),
+                ("account.balance".to_string(), EndpointInfo { should_commit: false }),
+                ("account.mint".to_string(), EndpointInfo { should_commit: true }),
+                ("account.burn".to_string(), EndpointInfo { should_commit: true }),
+                ("account.send".to_string(), EndpointInfo { should_commit: true }),
                 ("ledger.info".to_string(), EndpointInfo { should_commit: false }),
-                ("ledger.balance".to_string(), EndpointInfo { should_commit: false }),
-                ("ledger.mint".to_string(), EndpointInfo { should_commit: true }),
-                ("ledger.burn".to_string(), EndpointInfo { should_commit: true }),
-                ("ledger.send".to_string(), EndpointInfo { should_commit: true }),
+                ("ledger.list".to_string(), EndpointInfo { should_commit: false }),
             ]),
         }
     }
@@ -240,18 +284,21 @@ impl OmniAbciModuleBackend for LedgerModule {
     }
 }
 
-const LEDGER_ATTRIBUTE: Attribute = Attribute::id(2);
+pub const ACCOUNT_ATTRIBUTE: Attribute = Attribute::id(2);
+pub const LEDGER_ATTRIBUTE: Attribute = Attribute::id(4);
 
 lazy_static::lazy_static!(
     pub static ref LEDGER_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
         name: "LedgerModule".to_string(),
-        attributes: vec![LEDGER_ATTRIBUTE],
+        attributes: vec![ACCOUNT_ATTRIBUTE, LEDGER_ATTRIBUTE],
         endpoints: vec![
+            "account.info".to_string(),
+            "account.balance".to_string(),
+            "account.mint".to_string(),
+            "account.burn".to_string(),
+            "account.send".to_string(),
             "ledger.info".to_string(),
-            "ledger.balance".to_string(),
-            "ledger.mint".to_string(),
-            "ledger.burn".to_string(),
-            "ledger.send".to_string(),
+            "ledger.list".to_string(),
         ]
     };
 );
@@ -264,21 +311,26 @@ impl OmniModule for LedgerModule {
 
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         match message.method.as_str() {
-            "ledger.info" => return Ok(()),
-            "ledger.mint" => {
+            "account.info" => return Ok(()),
+            "account.mint" => {
                 decode::<'_, MintArgs>(message.data.as_slice())
                     .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
-            "ledger.burn" => {
+            "account.burn" => {
                 decode::<'_, BurnArgs>(message.data.as_slice())
                     .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
-            "ledger.balance" => {
+            "account.balance" => {
                 decode::<'_, BalanceArgs>(message.data.as_slice())
                     .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
-            "ledger.send" => {
+            "account.send" => {
                 decode::<'_, SendArgs>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+            }
+            "ledger.info" => return Ok(()),
+            "ledger.list" => {
+                decode::<'_, ledger::list::ListArgs>(message.data.as_slice())
                     .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
             _ => {
@@ -290,11 +342,13 @@ impl OmniModule for LedgerModule {
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
         let data = match message.method.as_str() {
-            "ledger.info" => self.info(&message.data),
-            "ledger.balance" => self.balance(&message.from.unwrap_or_default(), &message.data),
-            "ledger.mint" => self.mint(&message.from.unwrap_or_default(), &message.data),
-            "ledger.burn" => self.burn(&message.from.unwrap_or_default(), &message.data),
-            "ledger.send" => self.send(&message.from.unwrap_or_default(), &message.data),
+            "account.info" => self.account_info(&message.data),
+            "account.balance" => self.balance(&message.from.unwrap_or_default(), &message.data),
+            "account.mint" => self.mint(&message.from.unwrap_or_default(), &message.data),
+            "account.burn" => self.burn(&message.from.unwrap_or_default(), &message.data),
+            "account.send" => self.send(&message.from.unwrap_or_default(), &message.data),
+            "ledger.info" => self.ledger_info(&message.from.unwrap_or_default(), &message.data),
+            "ledger.list" => self.ledger_list(&message.from.unwrap_or_default(), &message.data),
             _ => Err(OmniError::internal_server_error()),
         }?;
 
