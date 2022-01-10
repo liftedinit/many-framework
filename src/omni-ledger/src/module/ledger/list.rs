@@ -48,7 +48,7 @@ impl Into<SystemTime> for Timestamp {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, PartialEq)]
 pub struct TransactionId(pub Vec<u8>);
 
 impl Encode for TransactionId {
@@ -111,22 +111,22 @@ pub struct ListArgs {
     pub count: Option<u64>,
 
     #[n(1)]
-    pub source: Option<Identity>,
+    pub account: Option<Identity>,
 
     #[n(2)]
-    pub destination: Option<Identity>,
-
-    #[n(3)]
     pub min_id: Option<TransactionId>,
 
-    #[n(4)]
+    #[n(3)]
     pub transaction_type: Option<TransactionKind>,
 
-    #[n(5)]
+    #[n(4)]
     pub date_start: Option<Timestamp>,
 
-    #[n(6)]
+    #[n(5)]
     pub date_end: Option<Timestamp>,
+
+    #[n(6)]
+    pub symbol: Option<String>,
 }
 
 #[derive(Encode, Decode)]

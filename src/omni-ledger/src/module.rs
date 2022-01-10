@@ -15,7 +15,9 @@ use tracing::info;
 pub mod account;
 pub mod ledger;
 
-use crate::module::ledger::list::Transaction;
+use crate::module::ledger::list::{
+    Transaction, TransactionContent, TransactionId, TransactionKind,
+};
 use crate::{error, storage::LedgerStorage};
 use account::balance::BalanceReturns;
 use account::balance::{BalanceArgs, SymbolList};
@@ -26,6 +28,113 @@ use account::send::SendArgs;
 use error::unauthorized;
 
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
+
+type TxResult = Result<Transaction, OmniError>;
+fn filter_account<'a>(
+    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    account: Option<Identity>,
+) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(id) = account {
+        Box::new(it.filter(move |t| match t {
+            // Propagate the errors.
+            Err(_) => true,
+            Ok(Transaction {
+                content: TransactionContent::Send { from, to, .. },
+                ..
+            }) => from == &id || to == &id,
+            Ok(Transaction {
+                content: TransactionContent::Mint { account, .. },
+                ..
+            }) => account == &id,
+            Ok(Transaction {
+                content: TransactionContent::Burn { account, .. },
+                ..
+            }) => account == &id,
+        }))
+    } else {
+        it
+    };
+
+    new_it
+}
+
+fn filter_transaction<'a>(
+    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    transaction_kind: Option<TransactionKind>,
+) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+    match transaction_kind {
+        Some(TransactionKind::Send) => Box::new(it.filter(|t| match t {
+            Err(_) => true,
+            Ok(Transaction {
+                content: TransactionContent::Send { .. },
+                ..
+            }) => true,
+            _ => false,
+        })),
+        Some(TransactionKind::Mint) => Box::new(it.filter(|t| match t {
+            Err(_) => true,
+            Ok(Transaction {
+                content: TransactionContent::Mint { .. },
+                ..
+            }) => true,
+            _ => false,
+        })),
+        Some(TransactionKind::Burn) => Box::new(it.filter(|t| match t {
+            Err(_) => true,
+            Ok(Transaction {
+                content: TransactionContent::Burn { .. },
+                ..
+            }) => true,
+            _ => false,
+        })),
+        _ => it,
+    }
+}
+
+fn filter_symbol<'a>(
+    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    symbol: Option<String>,
+) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(s) = symbol {
+        Box::new(it.filter(move |t| match t {
+            // Propagate the errors.
+            Err(_) => true,
+            Ok(Transaction {
+                content: TransactionContent::Send { symbol, .. },
+                ..
+            }) => symbol == &s,
+            Ok(Transaction {
+                content: TransactionContent::Mint { symbol, .. },
+                ..
+            }) => symbol == &s,
+            Ok(Transaction {
+                content: TransactionContent::Burn { symbol, .. },
+                ..
+            }) => symbol == &s,
+        }))
+    } else {
+        it
+    };
+
+    new_it
+}
+
+fn filter_minimum_id<'a>(
+    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    min_id: Option<TransactionId>,
+) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(min_id) = min_id {
+        Box::new(it.filter(move |t| match t {
+            // Propagate the errors.
+            Err(_) => true,
+            Ok(Transaction { id, .. }) => id >= &min_id,
+        }))
+    } else {
+        it
+    };
+
+    new_it
+}
 
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
@@ -203,13 +312,12 @@ impl LedgerModule {
     fn ledger_list(&self, _sender: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
         let ledger::list::ListArgs {
             count,
-            // source,
-            // destination,
-            // min_id,
-            // transaction_type,
+            account,
+            min_id,
+            transaction_type,
             date_start,
             date_end,
-            ..
+            symbol,
         } = decode(payload).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
 
         let count = count.map_or(MAXIMUM_TRANSACTION_COUNT, |c| {
@@ -220,9 +328,17 @@ impl LedgerModule {
         let nb_transactions = storage.nb_transactions();
         let iter = storage.iter(date_start.map(Into::into), date_end.map(Into::into));
 
+        let iter = Box::new(iter.take(count).map(|(_k, v)| {
+            decode::<Transaction>(v.as_slice())
+                .map_err(|e| OmniError::deserialization_error(e.to_string()))
+        }));
+
+        let iter = filter_account(iter, account);
+        let iter = filter_transaction(iter, transaction_type);
+        let iter = filter_symbol(iter, symbol);
+        let iter = filter_minimum_id(iter, min_id);
+
         let transactions: Vec<Transaction> = iter
-            .take(count)
-            .map(|(_k, v)| decode::<Transaction>(v.as_slice()))
             .collect::<Result<_, _>>()
             .map_err(|e| OmniError::unknown(e.to_string()))?;
 
