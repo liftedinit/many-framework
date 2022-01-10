@@ -327,7 +327,7 @@ dependencies = [
 [[package]]
 name = "ciborium"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#ff7e212b0e9c8458d1ded862ad9ba399bd48c91e"
+source = "git+https://github.com/enarx/ciborium#fd8c2e14f72542e50a3778db2084bbf4f0cdd600"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
  "ciborium-ll 0.2.0 (git+https://github.com/enarx/ciborium)",
@@ -342,7 +342,7 @@ source = "git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104ca
 [[package]]
 name = "ciborium-io"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#ff7e212b0e9c8458d1ded862ad9ba399bd48c91e"
+source = "git+https://github.com/enarx/ciborium#fd8c2e14f72542e50a3778db2084bbf4f0cdd600"
 
 [[package]]
 name = "ciborium-ll"
@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "ciborium-ll"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#ff7e212b0e9c8458d1ded862ad9ba399bd48c91e"
+source = "git+https://github.com/enarx/ciborium#fd8c2e14f72542e50a3778db2084bbf4f0cdd600"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
  "half",
@@ -813,6 +813,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastrand"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "779d043b6a0b90cc4c0ed7ee380a6504394cee7efd7db050e3774eee387324b2"
+dependencies = [
+ "instant",
+]
+
+[[package]]
 name = "ff"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -835,8 +844,7 @@ dependencies = [
 [[package]]
 name = "fmerk"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e02058fbcaf42d293a81d2214111a2f57ff27ba2c2cf8d09f5aa55d1f1156e8"
+source = "git+https://github.com/hansl/fmerk#6030b3ac74e32dce007dd9928d10af83aeccb4b1"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1221,11 +1229,12 @@ dependencies = [
  "headers",
  "http",
  "hyper",
- "hyper-tls",
- "native-tls",
+ "hyper-rustls",
+ "rustls-native-certs",
  "tokio",
- "tokio-native-tls",
+ "tokio-rustls",
  "tower-service",
+ "webpki",
 ]
 
 [[package]]
@@ -1284,9 +1293,9 @@ checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "indexmap"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
+checksum = "282a6247722caba404c065016bbfa522806e51714c34f5dfc3e4a3a46fcb4223"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -2232,9 +2241,9 @@ checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
 dependencies = [
  "getrandom 0.1.16",
  "libc",
- "rand_chacha 0.2.2",
+ "rand_chacha",
  "rand_core 0.5.1",
- "rand_hc 0.2.0",
+ "rand_hc",
  "rand_pcg",
 ]
 
@@ -2244,10 +2253,7 @@ version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e7573632e6454cf6b99d7aac4ccca54be06da05aca2ef7423d22d27d4d4bcd8"
 dependencies = [
- "libc",
- "rand_chacha 0.3.1",
  "rand_core 0.6.3",
- "rand_hc 0.3.1",
 ]
 
 [[package]]
@@ -2258,16 +2264,6 @@ checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
 dependencies = [
  "ppv-lite86",
  "rand_core 0.5.1",
-]
-
-[[package]]
-name = "rand_chacha"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
-dependencies = [
- "ppv-lite86",
- "rand_core 0.6.3",
 ]
 
 [[package]]
@@ -2295,15 +2291,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core 0.5.1",
-]
-
-[[package]]
-name = "rand_hc"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d51e9f596de227fda2ea6c84607f5558e196eeaf43c986b724ba4fb8fdf497e7"
-dependencies = [
- "rand_core 0.6.3",
 ]
 
 [[package]]
@@ -2874,13 +2861,13 @@ dependencies = [
 
 [[package]]
 name = "tempfile"
-version = "3.2.0"
+version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dac1c663cfc93810f88aed9b8941d48cabf856a1b111c29a40439018d870eb22"
+checksum = "5cdb1ef4eaeeaddc8fbd371e5017057064af0911902ef36b39801f67cc6d79e4"
 dependencies = [
  "cfg-if",
+ "fastrand",
  "libc",
- "rand 0.8.4",
  "redox_syscall",
  "remove_dir_all",
  "winapi",
@@ -2889,7 +2876,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a12118978f2ffea4042d6d38ebfb290d12611314"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#8d779863c5f3638eca57a5089da065768b2d7d87"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2917,7 +2904,7 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a12118978f2ffea4042d6d38ebfb290d12611314"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#8d779863c5f3638eca57a5089da065768b2d7d87"
 dependencies = [
  "bytes",
  "flex-error",
@@ -2929,7 +2916,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a12118978f2ffea4042d6d38ebfb290d12611314"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#8d779863c5f3638eca57a5089da065768b2d7d87"
 dependencies = [
  "flex-error",
  "serde",
@@ -2942,7 +2929,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a12118978f2ffea4042d6d38ebfb290d12611314"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#8d779863c5f3638eca57a5089da065768b2d7d87"
 dependencies = [
  "bytes",
  "flex-error",
@@ -2959,7 +2946,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.0"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a12118978f2ffea4042d6d38ebfb290d12611314"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#8d779863c5f3638eca57a5089da065768b2d7d87"
 dependencies = [
  "async-trait",
  "bytes",
