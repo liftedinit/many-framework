@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, UNIX_EPOCH};
-use tracing::{debug, info};
+use tracing::info;
 
 pub mod account;
 pub mod ledger;
@@ -347,9 +347,7 @@ impl LedgerModule {
         let iter = filter_symbol(iter, symbol);
         let iter = filter_date(iter, date_start, date_end);
 
-        let transactions: Vec<Transaction> = iter
-            .collect::<Result<_, _>>()
-            .map_err(|e| OmniError::unknown(e.to_string()))?;
+        let transactions: Vec<Transaction> = iter.collect::<Result<_, _>>()?;
 
         minicbor::to_vec(ledger::list::ListReturns {
             nb_transactions,

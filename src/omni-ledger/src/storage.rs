@@ -432,11 +432,12 @@ pub struct LedgerIterator<'a> {
 impl<'a> LedgerIterator<'a> {
     pub fn scoped_by_id(merk: &'a fmerk::Merk, start: Option<TransactionId>) -> Self {
         use fmerk::rocksdb::{Direction, IteratorMode, ReadOptions};
-        let opts = ReadOptions::default();
+        let mut opts = ReadOptions::default();
         let start_key = start
             .map(|x| key_for_transaction(x.into()))
             .unwrap_or(b"/transactions/".to_vec());
 
+        opts.set_iterate_upper_bound(b"/transactions0".to_vec());
         let mode = IteratorMode::From(&start_key, Direction::Forward);
 
         Self {
