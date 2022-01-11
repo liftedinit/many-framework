@@ -1,9 +1,47 @@
 use crate::utils::TokenAmount;
-use minicbor::data::Tag;
+use minicbor::data::{Tag, Type};
 use minicbor::encode::{Error, Write};
 use minicbor::{decode, Decode, Decoder, Encode, Encoder};
 use omni::Identity;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+pub struct VecOrSingle<T>(pub Vec<T>);
+
+impl<T> Into<Vec<T>> for VecOrSingle<T> {
+    fn into(self) -> Vec<T> {
+        self.0
+    }
+}
+impl<T> From<Vec<T>> for VecOrSingle<T> {
+    fn from(v: Vec<T>) -> Self {
+        Self(v)
+    }
+}
+
+impl<T> Encode for VecOrSingle<T>
+where
+    T: Encode,
+{
+    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        if self.0.len() == 1 {
+            self.0.get(0).encode(e)
+        } else {
+            self.0.encode(e)
+        }
+    }
+}
+
+impl<'b, T> Decode<'b> for VecOrSingle<T>
+where
+    T: Decode<'b>,
+{
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, decode::Error> {
+        Ok(match d.datatype()? {
+            Type::Array | Type::ArrayIndef => Self(d.array_iter()?.collect::<Result<_, _>>()?),
+            _ => Self(vec![d.decode::<T>()?]),
+        })
+    }
+}
 
 #[repr(transparent)]
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
@@ -66,7 +104,7 @@ impl<'b> Decode<'b> for TransactionId {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(u8)]
 pub enum TransactionKind {
     Send = 0,
@@ -101,13 +139,13 @@ pub struct ListArgs {
     pub count: Option<u64>,
 
     #[n(1)]
-    pub account: Option<Identity>,
+    pub account: Option<VecOrSingle<Identity>>,
 
     #[n(2)]
     pub min_id: Option<TransactionId>,
 
     #[n(3)]
-    pub transaction_type: Option<TransactionKind>,
+    pub transaction_type: Option<VecOrSingle<TransactionKind>>,
 
     #[n(4)]
     pub date_start: Option<Timestamp>,
@@ -116,7 +154,7 @@ pub struct ListArgs {
     pub date_end: Option<Timestamp>,
 
     #[n(6)]
-    pub symbol: Option<String>,
+    pub symbol: Option<VecOrSingle<String>>,
 }
 
 #[derive(Encode, Decode)]
@@ -140,6 +178,32 @@ pub struct Transaction {
 
     #[n(2)]
     pub content: TransactionContent,
+}
+
+impl Transaction {
+    pub fn kind(&self) -> TransactionKind {
+        match self.content {
+            TransactionContent::Send { .. } => TransactionKind::Send,
+            TransactionContent::Mint { .. } => TransactionKind::Mint,
+            TransactionContent::Burn { .. } => TransactionKind::Burn,
+        }
+    }
+
+    pub fn symbol(&self) -> &String {
+        match &self.content {
+            TransactionContent::Send { symbol, .. } => symbol,
+            TransactionContent::Mint { symbol, .. } => symbol,
+            TransactionContent::Burn { symbol, .. } => symbol,
+        }
+    }
+
+    pub fn is_about(&self, id: &Identity) -> bool {
+        match &self.content {
+            TransactionContent::Send { from, to, .. } => id == from || id == to,
+            TransactionContent::Mint { account, .. } => id == account,
+            TransactionContent::Burn { account, .. } => id == account,
+        }
+    }
 }
 
 pub enum TransactionContent {

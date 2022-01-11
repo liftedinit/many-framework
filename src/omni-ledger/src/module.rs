@@ -16,7 +16,7 @@ use tracing::info;
 pub mod account;
 pub mod ledger;
 
-use crate::module::ledger::list::{Timestamp, Transaction, TransactionContent, TransactionKind};
+use crate::module::ledger::list::{Timestamp, Transaction, TransactionKind, VecOrSingle};
 use crate::{error, storage::LedgerStorage};
 use account::balance::BalanceReturns;
 use account::balance::{BalanceArgs, SymbolList};
@@ -31,91 +31,49 @@ const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 type TxResult = Result<Transaction, OmniError>;
 fn filter_account<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    account: Option<Identity>,
+    account: Option<VecOrSingle<Identity>>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
-    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(id) = account {
+    if let Some(account) = account {
+        let account: Vec<Identity> = account.into();
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(Transaction {
-                content: TransactionContent::Send { from, to, .. },
-                ..
-            }) => from == &id || to == &id,
-            Ok(Transaction {
-                content: TransactionContent::Mint { account, .. },
-                ..
-            }) => account == &id,
-            Ok(Transaction {
-                content: TransactionContent::Burn { account, .. },
-                ..
-            }) => account == &id,
+            Ok(t) => account.iter().any(|id| t.is_about(id)),
         }))
     } else {
         it
-    };
-
-    new_it
+    }
 }
 
 fn filter_transaction_kind<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    transaction_kind: Option<TransactionKind>,
+    transaction_kind: Option<VecOrSingle<TransactionKind>>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
-    match transaction_kind {
-        Some(TransactionKind::Send) => Box::new(it.filter(|t| match t {
+    if let Some(k) = transaction_kind {
+        let k: Vec<TransactionKind> = k.into();
+        Box::new(it.filter(move |t| match t {
             Err(_) => true,
-            Ok(Transaction {
-                content: TransactionContent::Send { .. },
-                ..
-            }) => true,
-            _ => false,
-        })),
-        Some(TransactionKind::Mint) => Box::new(it.filter(|t| match t {
-            Err(_) => true,
-            Ok(Transaction {
-                content: TransactionContent::Mint { .. },
-                ..
-            }) => true,
-            _ => false,
-        })),
-        Some(TransactionKind::Burn) => Box::new(it.filter(|t| match t {
-            Err(_) => true,
-            Ok(Transaction {
-                content: TransactionContent::Burn { .. },
-                ..
-            }) => true,
-            _ => false,
-        })),
-        _ => it,
+            Ok(t) => k.contains(&t.kind()),
+        }))
+    } else {
+        it
     }
 }
 
 fn filter_symbol<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    symbol: Option<String>,
+    symbol: Option<VecOrSingle<String>>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
-    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(s) = symbol {
+    if let Some(s) = symbol {
+        let s: Vec<String> = s.into();
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(Transaction {
-                content: TransactionContent::Send { symbol, .. },
-                ..
-            }) => symbol == &s,
-            Ok(Transaction {
-                content: TransactionContent::Mint { symbol, .. },
-                ..
-            }) => symbol == &s,
-            Ok(Transaction {
-                content: TransactionContent::Burn { symbol, .. },
-                ..
-            }) => symbol == &s,
+            Ok(t) => s.contains(t.symbol()),
         }))
     } else {
         it
-    };
-
-    new_it
+    }
 }
 
 fn filter_date<'a>(
