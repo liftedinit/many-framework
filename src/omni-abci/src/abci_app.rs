@@ -1,4 +1,4 @@
-use crate::types::{AbciCommitInfo, AbciInfo};
+use crate::types::{AbciBlock, AbciCommitInfo, AbciInfo};
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::message::ResponseMessage;
@@ -112,8 +112,16 @@ impl Application for AbciApp {
             },
         }
     }
-    fn begin_block(&self, _request: RequestBeginBlock) -> ResponseBeginBlock {
-        Default::default()
+
+    fn begin_block(&self, request: RequestBeginBlock) -> ResponseBeginBlock {
+        let time = request
+            .header
+            .map(|x| x.time.map(|x| x.seconds as u64))
+            .flatten();
+
+        let block = AbciBlock { time };
+        let _ = self.omni_client.call_("abci.beginBlock", block);
+        ResponseBeginBlock { events: vec![] }
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {

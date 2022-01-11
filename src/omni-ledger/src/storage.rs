@@ -28,6 +28,10 @@ pub struct LedgerStorage {
     /// but wait for a `commit` call before committing the batch to the
     /// persistent store.
     blockchain: bool,
+
+    latest_tid: u64,
+
+    current_time: Option<SystemTime>,
 }
 
 impl std::fmt::Debug for LedgerStorage {
@@ -39,28 +43,42 @@ impl std::fmt::Debug for LedgerStorage {
 }
 
 impl LedgerStorage {
+    pub fn set_time(&mut self, time: SystemTime) {
+        self.current_time = Some(time);
+    }
+
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
             .get(b"/config/symbols")
             .map_err(|e| e.to_string())?;
-        let minters = persistent_store
-            .get(b"/config/minters")
-            .map_err(|e| e.to_string())?;
-
         let symbols: BTreeSet<String> = symbols
             .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
+            .map_err(|e| e.to_string())?;
+
+        let minters = persistent_store
+            .get(b"/config/minters")
             .map_err(|e| e.to_string())?;
         let minters = minters
             .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
             .map_err(|e| e.to_string())?;
+
+        let height = persistent_store.get(b"/height").unwrap().map_or(0u64, |x| {
+            let mut bytes = [0u8; 8];
+            bytes.copy_from_slice(x.as_slice());
+            u64::from_be_bytes(bytes)
+        });
+
+        let latest_tid = height << 32;
 
         Ok(Self {
             symbols,
             minters,
             persistent_store,
             blockchain,
+            latest_tid,
+            current_time: None,
         })
     }
 
@@ -105,6 +123,8 @@ impl LedgerStorage {
             minters,
             persistent_store,
             blockchain,
+            latest_tid: 0,
+            current_time: None,
         })
     }
 
@@ -137,9 +157,16 @@ impl LedgerStorage {
             })
     }
 
+    fn new_transaction_id(&mut self) -> TransactionId {
+        self.latest_tid += 1;
+        TransactionId(self.latest_tid.to_be_bytes().to_vec())
+    }
+
     pub fn commit(&mut self) -> AbciCommitInfo {
         let retain_height = self.inc_height();
         self.persistent_store.commit(&[]).unwrap();
+
+        self.latest_tid = retain_height << 32;
 
         AbciCommitInfo {
             retain_height,
@@ -257,7 +284,7 @@ impl LedgerStorage {
         info!("mint({}, {} {})", to, &amount, symbol);
 
         let mut balance = self.get_balance(to, symbol);
-        balance += amount;
+        balance += amount.clone();
 
         self.persistent_store
             .apply(&[(
@@ -265,6 +292,17 @@ impl LedgerStorage {
                 fmerk::Op::Put(balance.to_vec()),
             )])
             .unwrap();
+
+        let id = self.new_transaction_id();
+        self.add_transaction(Transaction {
+            id,
+            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
+            content: TransactionContent::Mint {
+                account: to.clone(),
+                symbol: symbol.to_string(),
+                amount: amount.clone(),
+            },
+        });
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
@@ -289,7 +327,7 @@ impl LedgerStorage {
         info!("burn({}, {} {})", to, &amount, symbol);
 
         let mut balance = self.get_balance(to, symbol);
-        balance -= amount;
+        balance -= amount.clone();
 
         self.persistent_store
             .apply(&[(
@@ -297,6 +335,17 @@ impl LedgerStorage {
                 fmerk::Op::Put(balance.to_vec()),
             )])
             .unwrap();
+
+        let id = self.new_transaction_id();
+        self.add_transaction(Transaction {
+            id,
+            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
+            content: TransactionContent::Burn {
+                account: to.clone(),
+                symbol: symbol.to_string(),
+                amount: amount.clone(),
+            },
+        });
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
@@ -348,10 +397,10 @@ impl LedgerStorage {
 
         self.persistent_store.apply(&batch).unwrap();
 
-        let t = SystemTime::now();
+        let id = self.new_transaction_id();
         self.add_transaction(Transaction {
-            id: t.clone().into(),
-            time: t.into(),
+            id,
+            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
             content: TransactionContent::Send {
                 from: from.clone(),
                 to: to.clone(),
@@ -371,8 +420,8 @@ impl LedgerStorage {
         self.persistent_store.root_hash().to_vec()
     }
 
-    pub fn iter(&self, start: Option<SystemTime>, end: Option<SystemTime>) -> LedgerIterator {
-        LedgerIterator::scoped_by_time(&self.persistent_store, start, end)
+    pub fn iter(&self, start: Option<TransactionId>) -> LedgerIterator {
+        LedgerIterator::scoped_by_id(&self.persistent_store, start)
     }
 }
 
@@ -381,21 +430,13 @@ pub struct LedgerIterator<'a> {
 }
 
 impl<'a> LedgerIterator<'a> {
-    pub fn scoped_by_time(
-        merk: &'a fmerk::Merk,
-        start: Option<SystemTime>,
-        end: Option<SystemTime>,
-    ) -> Self {
+    pub fn scoped_by_id(merk: &'a fmerk::Merk, start: Option<TransactionId>) -> Self {
         use fmerk::rocksdb::{Direction, IteratorMode, ReadOptions};
-        let mut opts = ReadOptions::default();
+        let opts = ReadOptions::default();
         let start_key = start
             .map(|x| key_for_transaction(x.into()))
             .unwrap_or(b"/transactions/".to_vec());
-        let end_key = end
-            .map(|x| key_for_transaction(x.into()))
-            .unwrap_or(b"/transactions0".to_vec());
 
-        opts.set_iterate_upper_bound(end_key.clone());
         let mode = IteratorMode::From(&start_key, Direction::Forward);
 
         Self {

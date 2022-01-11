@@ -1,6 +1,6 @@
-use crate::types::{AbciCommitInfo, AbciInfo, AbciInit};
+use crate::types::{AbciBlock, AbciCommitInfo, AbciInfo, AbciInit};
 use async_trait::async_trait;
-use minicbor::Encoder;
+use minicbor::decode;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
@@ -20,7 +20,7 @@ pub trait OmniAbciModuleBackend: OmniModule {
     fn init_chain(&self) -> Result<(), OmniError>;
 
     /// Called at the start of a block.
-    fn block_begin(&self) -> Result<(), OmniError> {
+    fn block_begin(&self, _info: AbciBlock) -> Result<(), OmniError> {
         Ok(())
     }
 
@@ -59,6 +59,7 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
                 vec![
                     "abci.info".to_string(),
                     "abci.init".to_string(),
+                    "abci.initChain".to_string(),
                     "abci.commit".to_string(),
                     "abci.beginBlock".to_string(),
                     "abci.endBlock".to_string(),
@@ -83,12 +84,9 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
         ))
     }
     fn abci_info(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let mut bytes = Vec::with_capacity(128);
-        let mut e = Encoder::new(&mut bytes);
-
         let info = OmniAbciModuleBackend::info(self.backend.as_ref())?;
-        e.encode(info)
-            .map_err(|e| OmniError::serialization_error(e.to_string()))?;
+        let bytes =
+            minicbor::to_vec(info).map_err(|e| OmniError::serialization_error(e.to_string()))?;
 
         Ok(ResponseMessage::from_request(
             &message,
@@ -106,6 +104,19 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
                 .map_err(|e| OmniError::deserialization_error(e.to_string()))?),
         ))
     }
+
+    fn abci_begin_block(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let info: AbciBlock =
+            decode(&message.data).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+        let result = self.backend.block_begin(info)?;
+
+        Ok(ResponseMessage::from_request(
+            &message,
+            &message.to,
+            Ok(minicbor::to_vec(result)
+                .map_err(|e| OmniError::deserialization_error(e.to_string()))?),
+        ))
+    }
 }
 
 #[async_trait]
@@ -117,9 +128,9 @@ impl<B: OmniAbciModuleBackend> OmniModule for AbciModule<B> {
 
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         match message.method.as_str() {
+            "abci.info" => Ok(()),
             "abci.init" => Ok(()),
             "abci.initChain" => Ok(()),
-            "abci.info" => Ok(()),
             "abci.commit" => Ok(()),
             "abci.beginBlock" => Ok(()),
             "abci.endBlock" => Ok(()),
@@ -132,7 +143,7 @@ impl<B: OmniAbciModuleBackend> OmniModule for AbciModule<B> {
             "abci.init" => self.abci_init(message),
             "abci.info" => self.abci_info(message),
             "abci.commit" => self.abci_commit(message),
-            "abci.beginBlock" => Err(OmniError::internal_server_error()),
+            "abci.beginBlock" => self.abci_begin_block(message),
             "abci.endBlock" => Err(OmniError::internal_server_error()),
             _ => {
                 // Forward the message to the backend. If we got here, the contract is the message

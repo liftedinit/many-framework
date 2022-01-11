@@ -5,19 +5,18 @@ use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
 use omni::{Identity, OmniError, OmniModule};
 use omni_abci::module::OmniAbciModuleBackend;
-use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
+use omni_abci::types::{AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
 use std::cmp::max;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use tracing::info;
+use std::time::{Duration, UNIX_EPOCH};
+use tracing::{debug, info};
 
 pub mod account;
 pub mod ledger;
 
-use crate::module::ledger::list::{
-    Transaction, TransactionContent, TransactionId, TransactionKind,
-};
+use crate::module::ledger::list::{Timestamp, Transaction, TransactionContent, TransactionKind};
 use crate::{error, storage::LedgerStorage};
 use account::balance::BalanceReturns;
 use account::balance::{BalanceArgs, SymbolList};
@@ -58,7 +57,7 @@ fn filter_account<'a>(
     new_it
 }
 
-fn filter_transaction<'a>(
+fn filter_transaction_kind<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
     transaction_kind: Option<TransactionKind>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
@@ -119,18 +118,28 @@ fn filter_symbol<'a>(
     new_it
 }
 
-fn filter_minimum_id<'a>(
+fn filter_date<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    min_id: Option<TransactionId>,
+    start: Option<Timestamp>,
+    end: Option<Timestamp>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
-    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(min_id) = min_id {
+    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(start) = start {
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(Transaction { id, .. }) => id >= &min_id,
+            Ok(Transaction { time, .. }) => time >= &start,
         }))
     } else {
         it
+    };
+    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(end) = end {
+        Box::new(new_it.take_while(move |t| match t {
+            // Propagate the errors.
+            Err(_) => true,
+            Ok(Transaction { time, .. }) => time <= &end,
+        }))
+    } else {
+        new_it
     };
 
     new_it
@@ -326,7 +335,7 @@ impl LedgerModule {
 
         let storage = self.storage.lock().unwrap();
         let nb_transactions = storage.nb_transactions();
-        let iter = storage.iter(date_start.map(Into::into), date_end.map(Into::into));
+        let iter = storage.iter(min_id);
 
         let iter = Box::new(iter.take(count).map(|(_k, v)| {
             decode::<Transaction>(v.as_slice())
@@ -334,9 +343,9 @@ impl LedgerModule {
         }));
 
         let iter = filter_account(iter, account);
-        let iter = filter_transaction(iter, transaction_type);
+        let iter = filter_transaction_kind(iter, transaction_type);
         let iter = filter_symbol(iter, symbol);
-        let iter = filter_minimum_id(iter, min_id);
+        let iter = filter_date(iter, date_start, date_end);
 
         let transactions: Vec<Transaction> = iter
             .collect::<Result<_, _>>()
@@ -370,6 +379,19 @@ impl OmniAbciModuleBackend for LedgerModule {
 
     fn init_chain(&self) -> Result<(), OmniError> {
         info!("abci.init_chain()",);
+        Ok(())
+    }
+
+    fn block_begin(&self, info: AbciBlock) -> Result<(), OmniError> {
+        let time = info.time;
+        info!("abci.block_begin(): time={:?}", time);
+
+        if let Some(time) = time {
+            let time = UNIX_EPOCH.checked_add(Duration::from_secs(time)).unwrap();
+            let mut storage = self.storage.lock().unwrap();
+            storage.set_time(time);
+        }
+
         Ok(())
     }
 

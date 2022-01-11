@@ -5,6 +5,8 @@ use minicbor::{decode, Decode, Decoder, Encode, Encoder};
 use omni::Identity;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+#[repr(transparent)]
+#[derive(Ord, PartialOrd, Eq, PartialEq)]
 pub struct Timestamp(pub SystemTime);
 
 impl Encode for Timestamp {
@@ -61,18 +63,6 @@ impl Encode for TransactionId {
 impl<'b> Decode<'b> for TransactionId {
     fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
         Ok(TransactionId(d.bytes()?.to_vec()))
-    }
-}
-
-impl From<SystemTime> for TransactionId {
-    fn from(t: SystemTime) -> Self {
-        Self(
-            t.duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-                .to_be_bytes()
-                .to_vec(),
-        )
     }
 }
 

@@ -3,12 +3,14 @@ use minicbor::{Decode, Encode};
 use std::collections::BTreeMap;
 
 #[derive(Encode, Decode)]
+#[cbor(map)]
 pub struct EndpointInfo {
     #[n(0)]
     pub should_commit: bool,
 }
 
 #[derive(Encode, Decode)]
+#[cbor(map)]
 pub struct AbciInit {
     /// List the methods supported by this module. For performance reason, this list will be
     /// cached and the only calls that will be sent to the backend module will be those
@@ -21,6 +23,7 @@ pub struct AbciInit {
 }
 
 #[derive(Encode, Decode)]
+#[cbor(map)]
 pub struct AbciInfo {
     #[n(0)]
     pub height: u64,
@@ -30,6 +33,14 @@ pub struct AbciInfo {
 }
 
 #[derive(Encode, Decode)]
+#[cbor(map)]
+pub struct AbciBlock {
+    #[n(0)]
+    pub time: Option<u64>,
+}
+
+#[derive(Encode, Decode)]
+#[cbor(map)]
 pub struct AbciCommitInfo {
     #[n(0)]
     pub retain_height: u64,
