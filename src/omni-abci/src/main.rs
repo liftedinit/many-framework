@@ -7,6 +7,7 @@ use tendermint_rpc::Client;
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
+mod module;
 mod omni_app;
 mod types;
 
@@ -84,25 +85,31 @@ async fn main() {
     let start = std::time::SystemTime::now();
     eprintln!("Connecting to the backend app...");
 
-    loop {
+    let status = loop {
         let omni_client = omni_client.clone();
         let result = tokio::task::spawn_blocking(move || omni_client.status())
             .await
             .unwrap();
-        if let Err(e) = result {
-            if start.elapsed().unwrap().as_secs() > 60 {
-                eprintln!("\nCould not connect to the ABCI server in 60 seconds... Terminating.");
-                eprintln!("Latest error:\n{}\n", e);
-                std::process::exit(1);
+
+        match result {
+            Err(e) => {
+                if start.elapsed().unwrap().as_secs() > 60 {
+                    eprintln!(
+                        "\nCould not connect to the ABCI server in 60 seconds... Terminating."
+                    );
+                    eprintln!("Latest error:\n{}\n", e);
+                    std::process::exit(1);
+                }
+                eprint!(".");
             }
-            eprint!(".");
-        } else {
-            eprintln!(" Connected.");
-            break;
+            Ok(s) => {
+                eprintln!(" Connected.");
+                break s;
+            }
         }
 
         std::thread::sleep(std::time::Duration::from_secs(1));
-    }
+    };
 
     let abci_app = tokio::task::spawn_blocking(move || {
         AbciApp::create(omni_app, Identity::anonymous()).unwrap()
@@ -133,7 +140,7 @@ async fn main() {
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&omni_pem).unwrap()).unwrap();
     let omni_server =
-        omni::transport::http::HttpServer::new(AbciHttpServer::new(abci_client, key).await);
+        omni::transport::http::HttpServer::new(AbciHttpServer::new(abci_client, status, key).await);
 
     let _j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
 

@@ -23,7 +23,7 @@ main() {
   tmux_name="${2:-omni}"
 
   cargo build
-  cargo install --root ./target -- toml-cli
+  #cargo install --root ./target -- toml-cli
   tmux kill-session -t "$tmux_name" || true
 
   TMHOME="$root_dir/ledger" tendermint init validator

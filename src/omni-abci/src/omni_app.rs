@@ -1,20 +1,23 @@
+use crate::module::ABCI_SERVER;
 use crate::types::{AbciInit, EndpointInfo};
 use async_trait::async_trait;
 use minicose::CoseSign1;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::message::{
-    decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessageBuilder,
-    ResponseMessage,
+    decode_response_from_cose_sign1, encode_cose_sign1_from_request,
+    encode_cose_sign1_from_response, RequestMessageBuilder, ResponseMessage,
 };
+use omni::protocol::{Attribute, Status, StatusBuilder};
 use omni::transport::LowLevelOmniRequestHandler;
 use omni::OmniError;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Debug, Formatter};
 use tendermint_rpc::Client;
 
 pub struct AbciHttpServer<C: Client> {
     client: C,
     identity: CoseKeyIdentity,
+    backend_status: Status,
     endpoints: BTreeMap<String, EndpointInfo>,
 }
 
@@ -28,7 +31,7 @@ impl<C: Client> Debug for AbciHttpServer<C> {
 }
 
 impl<C: Client + Send + Sync> AbciHttpServer<C> {
-    pub async fn new(client: C, identity: CoseKeyIdentity) -> Self {
+    pub async fn new(client: C, backend_status: Status, identity: CoseKeyIdentity) -> Self {
         let init_message = RequestMessageBuilder::default()
             .from(identity.identity)
             .method("abci.init".to_string())
@@ -48,12 +51,32 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
             client,
             identity,
             endpoints: init_message.endpoints,
+            backend_status,
         }
     }
 
-    async fn execute_inner(&self, envelope: CoseSign1) -> Result<CoseSign1, OmniError> {
-        let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
+    fn status(&self) -> Status {
+        let attributes: BTreeSet<Attribute> = self
+            .backend_status
+            .attributes
+            .iter()
+            .filter(|x| x.id != ABCI_SERVER.id)
+            .cloned()
+            .collect();
 
+        StatusBuilder::default()
+            .name(format!("AbciModule({})", self.backend_status.name))
+            .version(1)
+            .public_key(self.identity.public_key())
+            .identity(self.identity.identity)
+            .internal_version(std::env!("CARGO_PKG_VERSION").to_string())
+            .attributes(attributes.into_iter().collect())
+            .build()
+            .unwrap()
+    }
+
+    async fn execute_message(&self, envelope: CoseSign1) -> Result<CoseSign1, OmniError> {
+        let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
         if let Some(info) = self.endpoints.get(&message.method) {
             let is_command = info.should_commit;
             eprintln!("execute inner ({}): \n{:#?}------\n", is_command, message);
@@ -92,13 +115,47 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
             Err(OmniError::invalid_method_name(message.method))
         }
     }
+
+    async fn execute_inner(&self, envelope: CoseSign1) -> Result<CoseSign1, OmniError> {
+        let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
+        if let Some(payload) = match message.method.as_str() {
+            "status" => Some(
+                self.status()
+                    .to_bytes()
+                    .map_err(OmniError::serialization_error)?,
+            ),
+            "heartbeat" => Some(Vec::new()),
+            "echo" => Some(message.data.clone()),
+            "endpoints" => Some(
+                minicbor::to_vec(self.endpoints())
+                    .map_err(|e| OmniError::serialization_error(e.to_string()))?,
+            ),
+            _ => None,
+        } {
+            let response =
+                ResponseMessage::from_request(&message, &self.identity.identity, Ok(payload));
+            encode_cose_sign1_from_response(response, &self.identity)
+                .map_err(|e| OmniError::unknown(e))
+        } else {
+            self.execute_message(envelope).await
+        }
+    }
+    fn endpoints(&self) -> Vec<&str> {
+        let mut result = vec![
+            self.endpoints.keys().map(|x| x.as_str()).collect(),
+            vec!["echo", "endpoints", "heartbeat", "status"],
+        ]
+        .concat();
+        result.sort();
+        result
+    }
 }
 
 #[async_trait]
 impl<C: Client + Send + Sync> LowLevelOmniRequestHandler for AbciHttpServer<C> {
     async fn execute(&self, envelope: CoseSign1) -> Result<CoseSign1, String> {
         self.execute_inner(envelope).await.or_else(|err| {
-            omni::message::encode_cose_sign1_from_response(
+            encode_cose_sign1_from_response(
                 ResponseMessage::error(&self.identity.identity, err),
                 &self.identity,
             )
