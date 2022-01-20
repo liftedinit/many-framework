@@ -106,10 +106,9 @@ impl<C: Client + Send + Sync> AbciHttpServer<C> {
                     .abci_query(None, data, None, false)
                     .await
                     .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
-                eprintln!("bytes: {}", hex::encode(&response.value));
-                let response = CoseSign1::from_bytes(&response.value)
-                    .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
-                Ok(response)
+
+                CoseSign1::from_bytes(&response.value)
+                    .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))
             }
         } else {
             Err(OmniError::invalid_method_name(message.method))

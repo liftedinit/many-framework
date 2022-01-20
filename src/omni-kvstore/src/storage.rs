@@ -118,6 +118,7 @@ impl KvStoreStorage {
         false
     }
 
+    #[allow(dead_code)]
     pub fn query(&self, prefix: Option<&[u8]>) -> Result<StorageIterator<'_>, OmniError> {
         if let Some(prefix) = prefix {
             Ok(StorageIterator::prefixed(&self.persistent_store, prefix))
@@ -155,6 +156,7 @@ pub struct StorageIterator<'a> {
     inner: fmerk::rocksdb::DBIterator<'a>,
 }
 
+#[allow(dead_code)]
 impl<'a> StorageIterator<'a> {
     pub fn new(merk: &'a fmerk::Merk) -> Self {
         Self {

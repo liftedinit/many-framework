@@ -1,6 +1,5 @@
 use crate::error;
-use crate::module::ledger::list::{Transaction, TransactionContent, TransactionId};
-use crate::utils::TokenAmount;
+use crate::utils::{TokenAmount, Transaction, TransactionId};
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
 use std::cmp::Ordering;
@@ -15,7 +14,7 @@ pub(crate) fn key_for_account(id: &Identity, symbol: &str) -> Vec<u8> {
 }
 
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    vec![b"/transactions/".to_vec(), id.0].concat()
+    vec![b"/transactions/".to_vec(), id.into()].concat()
 }
 
 pub struct LedgerStorage {
@@ -159,7 +158,7 @@ impl LedgerStorage {
 
     fn new_transaction_id(&mut self) -> TransactionId {
         self.latest_tid += 1;
-        TransactionId(self.latest_tid.to_be_bytes().to_vec())
+        TransactionId(self.latest_tid)
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
@@ -251,22 +250,6 @@ impl LedgerStorage {
         }
     }
 
-    pub fn generate_proof(
-        &mut self,
-        identity: &Identity,
-        symbols: &BTreeSet<String>,
-    ) -> Result<Vec<u8>, OmniError> {
-        self.persistent_store
-            .prove(
-                symbols
-                    .iter()
-                    .map(|s| key_for_account(identity, s))
-                    .collect::<Vec<Vec<u8>>>()
-                    .as_slice(),
-            )
-            .map_err(|e| OmniError::unknown(e.to_string()))
-    }
-
     pub fn mint(
         &mut self,
         to: &Identity,
@@ -294,15 +277,13 @@ impl LedgerStorage {
             .unwrap();
 
         let id = self.new_transaction_id();
-        self.add_transaction(Transaction {
+        self.add_transaction(Transaction::mint(
             id,
-            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
-            content: TransactionContent::Mint {
-                account: to.clone(),
-                symbol: symbol.to_string(),
-                amount: amount.clone(),
-            },
-        });
+            self.current_time.unwrap_or_else(SystemTime::now),
+            to.clone(),
+            symbol.to_string(),
+            amount.clone(),
+        ));
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
@@ -337,15 +318,13 @@ impl LedgerStorage {
             .unwrap();
 
         let id = self.new_transaction_id();
-        self.add_transaction(Transaction {
+        self.add_transaction(Transaction::burn(
             id,
-            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
-            content: TransactionContent::Burn {
-                account: to.clone(),
-                symbol: symbol.to_string(),
-                amount: amount.clone(),
-            },
-        });
+            self.current_time.unwrap_or_else(SystemTime::now),
+            to.clone(),
+            symbol.to_string(),
+            amount.clone(),
+        ));
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
@@ -398,16 +377,14 @@ impl LedgerStorage {
         self.persistent_store.apply(&batch).unwrap();
 
         let id = self.new_transaction_id();
-        self.add_transaction(Transaction {
+        self.add_transaction(Transaction::send(
             id,
-            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
-            content: TransactionContent::Send {
-                from: from.clone(),
-                to: to.clone(),
-                symbol: symbol.to_string(),
-                amount: amount.clone(),
-            },
-        });
+            self.current_time.unwrap_or_else(SystemTime::now),
+            from.clone(),
+            to.clone(),
+            symbol.to_string(),
+            amount.clone(),
+        ));
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();

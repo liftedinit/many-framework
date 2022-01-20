@@ -1,4 +1,5 @@
-use async_trait::async_trait;
+use crate::storage::AclBTreeMap;
+use crate::{error, storage::KvStoreStorage};
 use minicbor::decode;
 use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
@@ -11,15 +12,13 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tracing::info;
 
-pub mod get;
-pub mod info;
-pub mod put;
+mod get;
+mod info;
+mod put;
 
-use crate::storage::AclBTreeMap;
-use crate::{error, storage::KvStoreStorage};
-use get::{GetArgs, GetReturns};
-use info::InfoReturns;
-use put::{PutArgs, PutReturns};
+pub use get::*;
+pub use info::*;
+pub use put::*;
 
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
@@ -29,21 +28,20 @@ pub struct InitialStateJson {
 }
 
 /// A simple kv-store.
-#[derive(Debug, Clone)]
-pub struct KvStoreModule {
-    storage: Arc<Mutex<KvStoreStorage>>,
+#[derive(Debug)]
+pub struct KvStoreModuleImpl {
+    storage: KvStoreStorage,
 }
 
-impl KvStoreModule {
+impl KvStoreModuleImpl {
     pub fn load<P: AsRef<Path>>(
         persistent_store_path: P,
         blockchain: bool,
     ) -> Result<Self, OmniError> {
         let storage = KvStoreStorage::load(persistent_store_path, blockchain)
             .map_err(|e| OmniError::unknown(e))?;
-        Ok(Self {
-            storage: Arc::new(Mutex::new(storage)),
-        })
+
+        Ok(Self { storage })
     }
 
     pub fn new<P: AsRef<Path>>(
@@ -67,48 +65,15 @@ impl KvStoreModule {
             hash = hex::encode(storage.hash()).as_str()
         );
 
-        Ok(Self {
-            storage: Arc::new(Mutex::new(storage)),
-        })
-    }
-
-    fn info(&self, _payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let storage = self.storage.lock().unwrap();
-
-        // Hash the storage.
-        let hash = storage.hash();
-
-        minicbor::to_vec(InfoReturns { hash: hash.into() })
-            .map_err(|e| OmniError::serialization_error(e.to_string()))
-    }
-
-    fn get(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let args: GetArgs = minicbor::decode(payload)
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-
-        let storage = self.storage.lock().unwrap();
-
-        let value = storage.get(from, &args.key)?;
-        minicbor::to_vec(GetReturns { value })
-            .map_err(|e| OmniError::serialization_error(e.to_string()))
-    }
-
-    fn put(&self, from: &Identity, payload: &[u8]) -> Result<Vec<u8>, OmniError> {
-        let args: PutArgs = minicbor::decode(payload)
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-
-        let mut storage = self.storage.lock().unwrap();
-
-        storage.put(from, &args.key, args.value)?;
-        minicbor::to_vec(PutReturns {}).map_err(|e| OmniError::serialization_error(e.to_string()))
+        Ok(Self { storage })
     }
 }
 
 // This module is always supported, but will only be added when created using an ABCI
 // flag.
-impl OmniAbciModuleBackend for KvStoreModule {
+impl OmniAbciModuleBackend for KvStoreModuleImpl {
     #[rustfmt::skip]
-    fn init(&self) -> AbciInit {
+    fn init(&mut self) -> AbciInit {
         AbciInit {
             endpoints: BTreeMap::from([
                 ("kvstore.info".to_string(), EndpointInfo { should_commit: false }),
@@ -118,22 +83,39 @@ impl OmniAbciModuleBackend for KvStoreModule {
         }
     }
 
-    fn init_chain(&self) -> Result<(), OmniError> {
+    fn init_chain(&mut self) -> Result<(), OmniError> {
         Ok(())
     }
 
     fn info(&self) -> Result<AbciInfo, OmniError> {
-        let storage = self.storage.lock().unwrap();
         Ok(AbciInfo {
-            height: storage.height(),
-            hash: storage.hash().into(),
+            height: self.storage.height(),
+            hash: self.storage.hash().into(),
         })
     }
 
-    fn commit(&self) -> Result<AbciCommitInfo, OmniError> {
-        let mut storage = self.storage.lock().unwrap();
-        let info = storage.commit();
+    fn commit(&mut self) -> Result<AbciCommitInfo, OmniError> {
+        let info = self.storage.commit();
         Ok(info)
+    }
+}
+
+impl KvStoreModuleBackend for KvStoreModuleImpl {
+    fn info(&self, _sender: &Identity, _args: InfoArgs) -> Result<InfoReturns, OmniError> {
+        // Hash the storage.
+        let hash = self.storage.hash();
+
+        Ok(InfoReturns { hash: hash.into() })
+    }
+
+    fn get(&self, sender: &Identity, args: GetArgs) -> Result<GetReturns, OmniError> {
+        let value = self.storage.get(sender, &args.key)?;
+        Ok(GetReturns { value })
+    }
+
+    fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, OmniError> {
+        self.storage.put(sender, &args.key, args.value)?;
+        Ok(PutReturns {})
     }
 }
 
@@ -151,15 +133,53 @@ lazy_static::lazy_static!(
     };
 );
 
-#[async_trait]
-impl OmniModule for KvStoreModule {
+pub trait KvStoreModuleBackend: Send {
+    fn info(&self, sender: &Identity, args: InfoArgs) -> Result<InfoReturns, OmniError>;
+    fn get(&self, sender: &Identity, args: GetArgs) -> Result<GetReturns, OmniError>;
+    fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, OmniError>;
+}
+
+#[derive(Clone)]
+pub struct KvStoreModule<T>
+where
+    T: KvStoreModuleBackend,
+{
+    backend: Arc<Mutex<T>>,
+}
+
+impl<T> std::fmt::Debug for KvStoreModule<T>
+where
+    T: KvStoreModuleBackend,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("KvStoreModule").finish()
+    }
+}
+
+impl<T> KvStoreModule<T>
+where
+    T: KvStoreModuleBackend,
+{
+    pub fn new(backend: Arc<Mutex<T>>) -> Self {
+        Self { backend }
+    }
+}
+
+#[async_trait::async_trait]
+impl<T> OmniModule for KvStoreModule<T>
+where
+    T: KvStoreModuleBackend,
+{
     fn info(&self) -> &OmniModuleInfo {
         &KVSTORE_MODULE_INFO
     }
 
     fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
         match message.method.as_str() {
-            "kvstore.info" => return Ok(()),
+            "kvstore.info" => {
+                decode::<'_, InfoArgs>(message.data.as_slice())
+                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+            }
             "kvstore.get" => {
                 decode::<'_, GetArgs>(message.data.as_slice())
                     .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
@@ -168,25 +188,33 @@ impl OmniModule for KvStoreModule {
                 decode::<'_, PutArgs>(message.data.as_slice())
                     .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
             }
-            _ => {
-                return Err(OmniError::internal_server_error());
-            }
+
+            _ => return Err(OmniError::invalid_method_name(message.method.clone())),
         };
         Ok(())
     }
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let data = match message.method.as_str() {
-            "kvstore.info" => self.info(&message.data),
-            "kvstore.get" => self.get(&message.from.unwrap_or_default(), &message.data),
-            "kvstore.put" => self.put(&message.from.unwrap_or_default(), &message.data),
+        fn decode<'a, T: minicbor::Decode<'a>>(data: &'a [u8]) -> Result<T, OmniError> {
+            minicbor::decode(data).map_err(|e| OmniError::deserialization_error(e.to_string()))
+        }
+        fn encode<T: minicbor::Encode>(result: Result<T, OmniError>) -> Result<Vec<u8>, OmniError> {
+            minicbor::to_vec(result?).map_err(|e| OmniError::serialization_error(e.to_string()))
+        }
+
+        let from = message.from.unwrap_or_default();
+        let mut backend = self.backend.lock().unwrap();
+        let result = match message.method.as_str() {
+            "kvstore.info" => encode(backend.info(&from, decode(&message.data)?)),
+            "kvstore.get" => encode(backend.get(&from, decode(&message.data)?)),
+            "kvstore.put" => encode(backend.put(&from, decode(&message.data)?)),
             _ => Err(OmniError::internal_server_error()),
         }?;
 
         Ok(ResponseMessage::from_request(
             &message,
             &message.to,
-            Ok(data),
+            Ok(result),
         ))
     }
 }

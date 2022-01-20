@@ -5,13 +5,8 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
-use omni_ledger::module::account::balance::{BalanceArgs, BalanceReturns};
-use omni_ledger::module::account::burn::BurnArgs;
-use omni_ledger::module::account::info::InfoReturns;
-use omni_ledger::module::account::mint::MintArgs;
-use omni_ledger::module::account::send::SendArgs;
+use omni_ledger::module::account::{BalanceArgs, BalanceReturns, BurnArgs, MintArgs, SendArgs};
 use omni_ledger::utils::TokenAmount;
-use omni_ledger::verify_proof;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -92,10 +87,6 @@ struct BalanceOpt {
 
     /// The symbol to check the balance of.
     symbols: Vec<String>,
-
-    /// Whether to return a proof or not.
-    #[clap(long)]
-    proof: bool,
 }
 
 #[derive(Parser)]
@@ -114,7 +105,6 @@ fn balance(
     client: OmniClient,
     account: Option<Identity>,
     symbols: Vec<String>,
-    proof: bool,
 ) -> Result<(), OmniError> {
     let argument = BalanceArgs {
         account,
@@ -123,9 +113,8 @@ fn balance(
         } else {
             Some(symbols.clone().into())
         },
-        proof: Some(proof),
     };
-    let payload = client.call_("account.balance", argument)?;
+    let payload = client.call_("ledger.balance", argument)?;
 
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
@@ -135,23 +124,9 @@ fn balance(
             for (symbol, amount) in balances {
                 println!("{} {}", symbol, amount);
             }
-        } else if let Some(p) = balance.proof {
-            let info = client.call_("account.info", ())?;
-            let info: InfoReturns = minicbor::decode(&info).unwrap();
-            let balances = verify_proof(
-                p.as_slice(),
-                account.as_ref().unwrap_or(&client.id.identity),
-                symbols.as_slice(),
-                &info.hash.to_vec().try_into().unwrap(),
-            )
-            .unwrap();
-
-            for (symbol, amount) in balances {
-                println!("{} {}", symbol, amount);
-            }
         } else {
             return Err(OmniError::unknown(
-                "Server did not response with either a balance record or proof. This is an error"
+                "Server did not response with either a balance record. This is an error"
                     .to_string(),
             ));
         }
@@ -171,7 +146,7 @@ fn mint(
         symbol: symbol.as_str(),
         amount: TokenAmount::from(amount),
     };
-    let payload = client.call_("account.mint", arguments)?;
+    let payload = client.call_("ledger.mint", arguments)?;
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
     } else {
@@ -191,7 +166,7 @@ fn burn(
         symbol: symbol.as_str(),
         amount: TokenAmount::from(amount),
     };
-    let payload = client.call_("account.burn", arguments)?;
+    let payload = client.call_("ledger.burn", arguments)?;
     if payload.is_empty() {
         Err(OmniError::unexpected_empty_response())
     } else {
@@ -215,7 +190,7 @@ fn send(
             symbol: symbol.as_str(),
             amount: TokenAmount::from(amount),
         };
-        let payload = client.call_("account.send", arguments)?;
+        let payload = client.call_("ledger.send", arguments)?;
         if payload.is_empty() {
             Err(OmniError::unexpected_empty_response())
         } else {
@@ -254,11 +229,7 @@ fn main() {
 
     let client = OmniClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
-        SubCommand::Balance(BalanceOpt {
-            identity,
-            symbols,
-            proof,
-        }) => {
+        SubCommand::Balance(BalanceOpt { identity, symbols }) => {
             let identity = identity.map(|ref identity| {
                 Identity::from_str(identity)
                     .or_else(|_| {
@@ -270,7 +241,7 @@ fn main() {
                     .unwrap()
             });
 
-            balance(client, identity, symbols, proof)
+            balance(client, identity, symbols)
         }
         SubCommand::Mint(TargetCommandOpt {
             identity,

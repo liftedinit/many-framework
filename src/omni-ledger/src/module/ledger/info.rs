@@ -1,7 +1,7 @@
 use minicbor::{decode, Decode, Decoder, Encode};
 
-pub struct InfoArgs;
-impl<'de> Decode<'de> for InfoArgs {
+pub struct TransactionsArgs;
+impl<'de> Decode<'de> for TransactionsArgs {
     fn decode(_d: &mut Decoder<'de>) -> Result<Self, decode::Error> {
         Ok(Self)
     }
@@ -9,7 +9,7 @@ impl<'de> Decode<'de> for InfoArgs {
 
 #[derive(Decode, Encode)]
 #[cbor(map)]
-pub struct InfoReturns {
+pub struct TransactionsReturns {
     #[n(0)]
     pub nb_transactions: u64,
 }

@@ -7,6 +7,7 @@ members = [
     "src/omni-abci",
     "src/omni-echo",
     "src/omni-ledger",
+    "src/omni-module",
     "src/omni-kvstore",
 ]
 

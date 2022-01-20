@@ -4,6 +4,7 @@ use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
@@ -99,12 +100,20 @@ fn main() {
         serde_json::from_str(&content).unwrap()
     });
 
-    let module = LedgerModule::new(state, persistent, abci).unwrap();
-    let omni = OmniServer::new("omni-ledger", key.clone());
+    let module_backend = LedgerModuleImpl::new(state, persistent, abci).unwrap();
+    let module_backend = Arc::new(Mutex::new(module_backend));
+    let omni = OmniServer::new("omni-ledger", key.clone())
+        .with_module(account::LedgerModule::new(module_backend.clone()))
+        .with_module(ledger::LedgerTransactionsModule::new(
+            module_backend.clone(),
+        ));
     let omni = if abci {
-        omni.with_module(omni_abci::module::AbciModule::new(module))
+        omni.with_module(omni_abci::module::AbciModule::new(
+            module_backend.clone(),
+            "ledger".to_string(),
+        ))
     } else {
-        omni.with_module(module)
+        omni
     };
 
     HttpServer::simple(key, omni).bind(addr).unwrap();

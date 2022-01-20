@@ -3,6 +3,7 @@ use omni::identity::cose::CoseKeyIdentity;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
 
 mod error;
@@ -10,6 +11,7 @@ mod module;
 mod storage;
 
 use module::*;
+use omni_abci::module::AbciModule;
 
 #[derive(Parser)]
 struct Opts {
@@ -87,15 +89,19 @@ fn main() {
     });
 
     let module = if let Some(state) = state {
-        KvStoreModule::new(state, persistent, abci).unwrap()
+        KvStoreModuleImpl::new(state, persistent, abci).unwrap()
     } else {
-        KvStoreModule::load(persistent, abci).unwrap()
+        KvStoreModuleImpl::load(persistent, abci).unwrap()
     };
-    let omni = OmniServer::new("omni-ledger", key.clone());
+
+    let module = Arc::new(Mutex::new(module));
+
+    let omni =
+        OmniServer::new("omni-ledger", key.clone()).with_module(KvStoreModule::new(module.clone()));
     let omni = if abci {
-        omni.with_module(omni_abci::module::AbciModule::new(module))
+        omni.with_module(AbciModule::new(module.clone(), "kvstore".to_string()))
     } else {
-        omni.with_module(module)
+        omni
     };
 
     HttpServer::simple(key, omni)

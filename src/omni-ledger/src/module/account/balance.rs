@@ -1,5 +1,4 @@
 use crate::utils::TokenAmount;
-use minicbor::bytes::ByteVec;
 use minicbor::data::Type;
 use minicbor::{decode, Decode, Decoder, Encode};
 use omni::Identity;
@@ -38,9 +37,6 @@ pub struct BalanceArgs {
 
     #[n(1)]
     pub symbols: Option<SymbolList>,
-
-    #[n(2)]
-    pub proof: Option<bool>,
 }
 
 #[derive(Encode, Decode)]
@@ -48,10 +44,4 @@ pub struct BalanceArgs {
 pub struct BalanceReturns {
     #[n(0)]
     pub balances: Option<BTreeMap<String, TokenAmount>>,
-
-    #[n(1)]
-    pub proof: Option<ByteVec>,
-
-    #[n(2)]
-    pub hash: ByteVec,
 }

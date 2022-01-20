@@ -5,22 +5,22 @@ use omni::message::{RequestMessage, ResponseMessage};
 use omni::protocol::Attribute;
 use omni::server::module::OmniModuleInfo;
 use omni::{OmniError, OmniModule};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub const ABCI_SERVER: Attribute = Attribute::id(1000);
 
-pub trait OmniAbciModuleBackend: OmniModule {
+pub trait OmniAbciModuleBackend: std::fmt::Debug + Send + Sync {
     /// Called when the ABCI frontend is initialized. No action should be taken here, only
     /// information should be returned. If the ABCI frontend is restarted, this method
     /// will be called again.
-    fn init(&self) -> AbciInit;
+    fn init(&mut self) -> AbciInit;
 
     // -- LIFECYCLE METHODS --
     /// Called at Genesis of the Tendermint blockchain.
-    fn init_chain(&self) -> Result<(), OmniError>;
+    fn init_chain(&mut self) -> Result<(), OmniError>;
 
     /// Called at the start of a block.
-    fn block_begin(&self, _info: AbciBlock) -> Result<(), OmniError> {
+    fn block_begin(&mut self, _info: AbciBlock) -> Result<(), OmniError> {
         Ok(())
     }
 
@@ -28,12 +28,12 @@ pub trait OmniAbciModuleBackend: OmniModule {
     fn info(&self) -> Result<AbciInfo, OmniError>;
 
     /// Called at the end of a block.
-    fn block_end(&self) -> Result<(), OmniError> {
+    fn block_end(&mut self) -> Result<(), OmniError> {
         Ok(())
     }
 
     /// Called after a block. The app should take this call and serialize its state.
-    fn commit(&self) -> Result<AbciCommitInfo, OmniError>;
+    fn commit(&mut self) -> Result<AbciCommitInfo, OmniError>;
 }
 
 /// A module that adapt an OMNI application to an ABCI-OMNI bridge.
@@ -43,48 +43,45 @@ pub trait OmniAbciModuleBackend: OmniModule {
 /// considered secure (just like an ABCI app would not).
 #[derive(Debug, Clone)]
 pub struct AbciModule<B: OmniAbciModuleBackend> {
-    backend: Arc<B>,
+    backend: Arc<Mutex<B>>,
     module_info: OmniModuleInfo,
 }
 
 impl<B: OmniAbciModuleBackend> AbciModule<B> {
-    pub fn new(backend: B) -> Self {
-        let backend_info = OmniModule::info(&backend);
+    // TODO: remove dead_code by splitting omni-abci library and CLI into separate packages.
+    #[allow(dead_code)]
+    pub fn new(backend: Arc<Mutex<B>>, name: String) -> Self {
         let module_info = OmniModuleInfo {
-            name: format!("abci-{}", backend_info.name),
-            attributes: [vec![ABCI_SERVER], backend_info.attributes.clone()]
-                .concat()
-                .to_vec(),
+            name,
+            attributes: vec![ABCI_SERVER],
             endpoints: vec![
-                vec![
-                    "abci.info".to_string(),
-                    "abci.init".to_string(),
-                    "abci.initChain".to_string(),
-                    "abci.commit".to_string(),
-                    "abci.beginBlock".to_string(),
-                    "abci.endBlock".to_string(),
-                ],
-                backend_info.endpoints.clone(),
-            ]
-            .concat(),
+                "abci.info".to_string(),
+                "abci.init".to_string(),
+                "abci.initChain".to_string(),
+                "abci.commit".to_string(),
+                "abci.beginBlock".to_string(),
+                "abci.endBlock".to_string(),
+            ],
         };
 
         Self {
-            backend: Arc::new(backend),
+            backend,
             module_info,
         }
     }
 
     fn abci_init(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let mut backend = self.backend.lock().unwrap();
         Ok(ResponseMessage::from_request(
             &message,
             &message.to,
-            minicbor::to_vec(self.backend.init())
+            minicbor::to_vec(backend.init())
                 .map_err(|e| OmniError::serialization_error(e.to_string())),
         ))
     }
     fn abci_info(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let info = OmniAbciModuleBackend::info(self.backend.as_ref())?;
+        let backend = self.backend.lock().unwrap();
+        let info = backend.info()?;
         let bytes =
             minicbor::to_vec(info).map_err(|e| OmniError::serialization_error(e.to_string()))?;
 
@@ -96,7 +93,8 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
     }
 
     fn abci_commit(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        let info = self.backend.commit()?;
+        let mut backend = self.backend.lock().unwrap();
+        let info = backend.commit()?;
         Ok(ResponseMessage::from_request(
             &message,
             &message.to,
@@ -106,9 +104,10 @@ impl<B: OmniAbciModuleBackend> AbciModule<B> {
     }
 
     fn abci_begin_block(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
+        let mut backend = self.backend.lock().unwrap();
         let info: AbciBlock =
             decode(&message.data).map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-        let result = self.backend.block_begin(info)?;
+        let result = backend.block_begin(info)?;
 
         Ok(ResponseMessage::from_request(
             &message,
@@ -134,7 +133,7 @@ impl<B: OmniAbciModuleBackend> OmniModule for AbciModule<B> {
             "abci.commit" => Ok(()),
             "abci.beginBlock" => Ok(()),
             "abci.endBlock" => Ok(()),
-            _ => self.backend.validate(message),
+            x => Err(OmniError::invalid_method_name(x.to_string())),
         }
     }
 
@@ -145,11 +144,7 @@ impl<B: OmniAbciModuleBackend> OmniModule for AbciModule<B> {
             "abci.commit" => self.abci_commit(message),
             "abci.beginBlock" => self.abci_begin_block(message),
             "abci.endBlock" => Err(OmniError::internal_server_error()),
-            _ => {
-                // Forward the message to the backend. If we got here, the contract is the message
-                // is a command message and have been through the blockchain.
-                self.backend.execute(message).await
-            }
+            x => Err(OmniError::invalid_method_name(x.to_string())),
         }
     }
 }
