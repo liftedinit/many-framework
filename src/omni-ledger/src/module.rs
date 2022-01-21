@@ -273,7 +273,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
         let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
 
-        let transactions: Vec<Transaction> = iter.take(count)`.collect::<Result<_, _>>()?;
+        let transactions: Vec<Transaction> = iter.take(count).collect::<Result<_, _>>()?;
 
         Ok(ledger::ListReturns {
             nb_transactions,
