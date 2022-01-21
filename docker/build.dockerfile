@@ -14,6 +14,8 @@ COPY /src/omni-abci/Cargo.toml ./src/omni-abci/
 COPY /src/omni-echo/Cargo.toml ./src/omni-echo/
 COPY /src/omni-kvstore/Cargo.toml ./src/omni-kvstore/
 COPY /src/omni-ledger/Cargo.toml ./src/omni-ledger/
+COPY /src/omni-module/Cargo.toml ./src/omni-module/
+RUN find /src/
 RUN --mount=type=ssh cargo chef prepare  --recipe-path recipe.json
 
 FROM chef as builder
