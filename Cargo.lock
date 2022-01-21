@@ -1850,6 +1850,7 @@ dependencies = [
  "lazy_static",
  "minicbor",
  "num-bigint 0.4.3",
+ "num-traits",
  "omni",
  "omni-abci",
  "omni-kvstore",

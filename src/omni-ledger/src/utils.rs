@@ -75,19 +75,32 @@ impl std::ops::SubAssign for TokenAmount {
 
 impl Encode for TokenAmount {
     fn encode<W: encode::Write>(&self, e: &mut Encoder<W>) -> Result<(), encode::Error<W::Error>> {
-        e.tag(Tag::PosBignum)?.bytes(&self.0.to_bytes_be())?;
+        use num_traits::cast::ToPrimitive;
+
+        // Encode efficiently.
+        if let Some(amount) = self.0.to_u64() {
+            e.u64(amount)?;
+        } else {
+            e.tag(Tag::PosBignum)?.bytes(&self.0.to_bytes_be())?;
+        }
         Ok(())
     }
 }
 
 impl<'b> Decode<'b> for TokenAmount {
     fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
-        if d.tag()? != Tag::PosBignum {
-            return Err(minicbor::decode::Error::Message("Invalid tag."));
-        }
+        // Decode either.
+        match d.datatype()? {
+            Type::Tag => {
+                if d.tag()? != Tag::PosBignum {
+                    return Err(minicbor::decode::Error::Message("Invalid tag."));
+                }
 
-        let bytes = d.bytes()?.to_vec();
-        Ok(TokenAmount::from(bytes))
+                let bytes = d.bytes()?.to_vec();
+                Ok(TokenAmount::from(bytes))
+            }
+            _ => Ok(d.u64()?.into()),
+        }
     }
 }
 
