@@ -1,9 +1,10 @@
 use minicbor::data::{Tag, Type};
-use minicbor::encode::Write;
+use minicbor::encode::{Error, Write};
 use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
 use num_bigint::BigUint;
 use omni::Identity;
 use std::fmt::{Debug, Display, Formatter};
+use std::ops::{Bound, RangeBounds};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 type TokenAmountStorage = num_bigint::BigUint;
@@ -129,7 +130,7 @@ where
 }
 
 #[repr(transparent)]
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Timestamp(pub SystemTime);
 
 impl Encode for Timestamp {
@@ -173,7 +174,8 @@ impl Into<SystemTime> for Timestamp {
     }
 }
 
-#[derive(Clone, Debug, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq)]
+#[repr(transparent)]
 pub struct TransactionId(pub u64);
 
 impl Encode for TransactionId {
@@ -192,6 +194,22 @@ impl<'b> Decode<'b> for TransactionId {
 impl Into<Vec<u8>> for TransactionId {
     fn into(self) -> Vec<u8> {
         self.0.to_be_bytes().to_vec()
+    }
+}
+
+impl std::ops::Add<u64> for TransactionId {
+    type Output = TransactionId;
+
+    fn add(self, rhs: u64) -> Self::Output {
+        TransactionId(self.0 + rhs)
+    }
+}
+
+impl std::ops::Sub<u64> for TransactionId {
+    type Output = TransactionId;
+
+    fn sub(self, rhs: u64) -> Self::Output {
+        TransactionId(self.0 - rhs)
     }
 }
 
@@ -422,5 +440,212 @@ impl<'b> Decode<'b> for TransactionContent {
                 "Invalid TransactionContent array.",
             )),
         }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct CborRange<T> {
+    pub start: std::ops::Bound<T>,
+    pub end: std::ops::Bound<T>,
+}
+
+impl<T> RangeBounds<T> for CborRange<T> {
+    fn start_bound(&self) -> Bound<&T> {
+        match self.start {
+            Bound::Included(ref x) => Bound::Included(x),
+            Bound::Excluded(ref x) => Bound::Excluded(x),
+            Bound::Unbounded => Bound::Unbounded,
+        }
+    }
+
+    fn end_bound(&self) -> Bound<&T> {
+        match self.end {
+            Bound::Included(ref x) => Bound::Included(x),
+            Bound::Excluded(ref x) => Bound::Excluded(x),
+            Bound::Unbounded => Bound::Unbounded,
+        }
+    }
+
+    fn contains<U>(&self, item: &U) -> bool
+    where
+        T: PartialOrd<U>,
+        U: ?Sized + PartialOrd<T>,
+    {
+        (match self.start_bound() {
+            Bound::Included(start) => start <= item,
+            Bound::Excluded(start) => start < item,
+            Bound::Unbounded => true,
+        }) && (match self.end_bound() {
+            Bound::Included(end) => item <= end,
+            Bound::Excluded(end) => item < end,
+            Bound::Unbounded => true,
+        })
+    }
+}
+
+impl<T: Debug> Debug for CborRange<T> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        self.start.fmt(fmt)?;
+        write!(fmt, "..")?;
+        self.end.fmt(fmt)?;
+        Ok(())
+    }
+}
+
+impl<T> Default for CborRange<T> {
+    fn default() -> Self {
+        Self {
+            start: Bound::Unbounded,
+            end: Bound::Unbounded,
+        }
+    }
+}
+
+impl<T: PartialOrd<T>> CborRange<T> {
+    pub fn contains<U>(&self, item: &U) -> bool
+    where
+        T: PartialOrd<U>,
+        U: ?Sized + PartialOrd<T>,
+    {
+        <Self as std::ops::RangeBounds<T>>::contains(self, item)
+    }
+}
+
+impl<T> Encode for CborRange<T>
+where
+    T: Encode,
+{
+    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        fn encode_bound<'a, T: Encode, W: Write>(
+            b: &Bound<T>,
+            e: &'a mut Encoder<W>,
+        ) -> Result<(), Error<W::Error>> {
+            match b {
+                Bound::Included(v) => {
+                    e.array(2)?.u8(0)?.encode(v)?;
+                }
+                Bound::Excluded(v) => {
+                    e.array(2)?.u8(1)?.encode(v)?;
+                }
+                Bound::Unbounded => {
+                    e.array(0)?;
+                }
+            };
+            Ok(())
+        }
+
+        match (&self.start, &self.end) {
+            (Bound::Unbounded, Bound::Unbounded) => {
+                e.map(0)?;
+            }
+            (st, Bound::Unbounded) => {
+                e.map(1)?.u8(0)?;
+                encode_bound(st, e)?;
+            }
+            (Bound::Unbounded, en) => {
+                e.map(1)?.u8(1)?;
+                encode_bound(en, e)?;
+            }
+            (st, en) => {
+                e.map(2)?;
+                e.u8(0)?;
+                encode_bound(st, e)?;
+                e.u8(1)?;
+                encode_bound(en, e)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl<'b, T: Decode<'b>> Decode<'b> for CborRange<T> {
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, decode::Error> {
+        struct BoundDecoder<T>(pub Bound<T>);
+        impl<'b, T: Decode<'b>> Decode<'b> for BoundDecoder<T> {
+            fn decode(d: &mut Decoder<'b>) -> Result<Self, decode::Error> {
+                let len = d.array()?;
+                let bound = match len {
+                    Some(x) => match x {
+                        0 => Bound::Unbounded,
+                        2 => match d.u32()? {
+                            0 => Bound::Included(d.decode()?),
+                            1 => Bound::Excluded(d.decode()?),
+                            x => return Err(decode::Error::UnknownVariant(x)),
+                        },
+                        x => return Err(decode::Error::UnknownVariant(x as u32)),
+                    },
+                    None => return Err(decode::Error::TypeMismatch(Type::ArrayIndef, "Array")),
+                };
+                Ok(Self(bound))
+            }
+        }
+
+        let mut start: Bound<T> = Bound::Unbounded;
+        let mut end: Bound<T> = Bound::Unbounded;
+
+        for item in d.map_iter()? {
+            let (key, value) = item?;
+            match key {
+                0u8 => start = value,
+                1u8 => end = value,
+                _ => {}
+            }
+        }
+
+        Ok(Self { start, end })
+    }
+}
+
+#[derive(Default, Encode, Decode)]
+#[cbor(map)]
+pub struct TransactionFilter {
+    #[n(0)]
+    pub account: Option<VecOrSingle<Identity>>,
+
+    #[n(1)]
+    pub kind: Option<VecOrSingle<TransactionKind>>,
+
+    #[n(2)]
+    pub symbol: Option<VecOrSingle<String>>,
+
+    #[n(3)]
+    pub id_range: Option<CborRange<TransactionId>>,
+
+    #[n(4)]
+    pub date_range: Option<CborRange<Timestamp>>,
+}
+
+pub enum SortOrder {
+    Indeterminate = 0,
+    Ascending = 1,
+    Descending = 2,
+}
+
+impl Default for SortOrder {
+    fn default() -> Self {
+        Self::Indeterminate
+    }
+}
+
+impl Encode for SortOrder {
+    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        e.u8(match self {
+            SortOrder::Indeterminate => 0,
+            SortOrder::Ascending => 1,
+            SortOrder::Descending => 2,
+        })?;
+        Ok(())
+    }
+}
+
+impl<'b> Decode<'b> for SortOrder {
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, decode::Error> {
+        Ok(match d.u8()? {
+            0 => Self::Indeterminate,
+            1 => Self::Ascending,
+            2 => Self::Descending,
+            x => return Err(decode::Error::UnknownVariant(x as u32)),
+        })
     }
 }

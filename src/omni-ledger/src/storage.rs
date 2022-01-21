@@ -1,12 +1,15 @@
 use crate::error;
-use crate::utils::{TokenAmount, Transaction, TransactionId};
+use crate::utils::{CborRange, SortOrder, TokenAmount, Transaction, TransactionId};
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, Bound};
+use std::ops::RangeBounds;
 use std::path::Path;
 use std::time::SystemTime;
 use tracing::info;
+
+pub(crate) const TRANSACTIONS_ROOT: &'static [u8] = b"/transactions/";
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &str) -> Vec<u8> {
@@ -14,7 +17,7 @@ pub(crate) fn key_for_account(id: &Identity, symbol: &str) -> Vec<u8> {
 }
 
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    vec![b"/transactions/".to_vec(), id.into()].concat()
+    vec![TRANSACTIONS_ROOT.to_vec(), id.into()].concat()
 }
 
 pub struct LedgerStorage {
@@ -397,8 +400,8 @@ impl LedgerStorage {
         self.persistent_store.root_hash().to_vec()
     }
 
-    pub fn iter(&self, start: Option<TransactionId>) -> LedgerIterator {
-        LedgerIterator::scoped_by_id(&self.persistent_store, start)
+    pub fn iter(&self, start: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
+        LedgerIterator::scoped_by_id(&self.persistent_store, start, order)
     }
 }
 
@@ -407,15 +410,33 @@ pub struct LedgerIterator<'a> {
 }
 
 impl<'a> LedgerIterator<'a> {
-    pub fn scoped_by_id(merk: &'a fmerk::Merk, start: Option<TransactionId>) -> Self {
-        use fmerk::rocksdb::{Direction, IteratorMode, ReadOptions};
+    pub fn scoped_by_id(
+        merk: &'a fmerk::Merk,
+        range: CborRange<TransactionId>,
+        order: SortOrder,
+    ) -> Self {
+        use fmerk::rocksdb::{IteratorMode, ReadOptions};
         let mut opts = ReadOptions::default();
-        let start_key = start
-            .map(|x| key_for_transaction(x.into()))
-            .unwrap_or(b"/transactions/".to_vec());
 
-        opts.set_iterate_upper_bound(b"/transactions0".to_vec());
-        let mode = IteratorMode::From(&start_key, Direction::Forward);
+        match range.start_bound() {
+            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(*x - 1)),
+            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(*x)),
+            Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
+        }
+        match range.end_bound() {
+            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_transaction(*x + 1)),
+            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_transaction(*x)),
+            Bound::Unbounded => {
+                let mut bound = TRANSACTIONS_ROOT.to_vec();
+                bound[TRANSACTIONS_ROOT.len() - 1] += 1;
+                opts.set_iterate_upper_bound(bound);
+            }
+        }
+
+        let mode = match order {
+            SortOrder::Indeterminate | SortOrder::Ascending => IteratorMode::Start,
+            SortOrder::Descending => IteratorMode::End,
+        };
 
         Self {
             inner: merk.iter_opt(mode, opts),

@@ -1,4 +1,4 @@
-use crate::utils::{Timestamp, Transaction, TransactionKind, VecOrSingle};
+use crate::utils::{CborRange, Timestamp, Transaction, TransactionKind, VecOrSingle};
 use crate::{error, storage::LedgerStorage};
 use minicbor::decode;
 use omni::{Identity, OmniError};
@@ -65,29 +65,13 @@ fn filter_symbol<'a>(
 
 fn filter_date<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    start: Option<Timestamp>,
-    end: Option<Timestamp>,
+    range: CborRange<Timestamp>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
-    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(start) = start {
-        Box::new(it.filter(move |t| match t {
-            // Propagate the errors.
-            Err(_) => true,
-            Ok(Transaction { time, .. }) => time >= &start,
-        }))
-    } else {
-        it
-    };
-    let new_it: Box<dyn Iterator<Item = TxResult>> = if let Some(end) = end {
-        Box::new(new_it.take_while(move |t| match t {
-            // Propagate the errors.
-            Err(_) => true,
-            Ok(Transaction { time, .. }) => time <= &end,
-        }))
-    } else {
-        new_it
-    };
-
-    new_it
+    Box::new(it.filter(move |t| match t {
+        // Propagate the errors.
+        Err(_) => true,
+        Ok(Transaction { time, .. }) => range.contains(time),
+    }))
 }
 
 /// The initial state schema, loaded from JSON.
@@ -264,13 +248,10 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
     ) -> Result<ledger::ListReturns, OmniError> {
         let ledger::ListArgs {
             count,
-            account,
-            min_id,
-            transaction_type,
-            date_start,
-            date_end,
-            symbol,
+            order,
+            filter,
         } = args;
+        let filter = filter.unwrap_or_default();
 
         let count = count.map_or(MAXIMUM_TRANSACTION_COUNT, |c| {
             max(c as usize, MAXIMUM_TRANSACTION_COUNT)
@@ -278,17 +259,20 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
 
         let storage = &self.storage;
         let nb_transactions = storage.nb_transactions();
-        let iter = storage.iter(min_id);
+        let iter = storage.iter(
+            filter.id_range.unwrap_or_default(),
+            order.unwrap_or_default(),
+        );
 
         let iter = Box::new(iter.take(count).map(|(_k, v)| {
             decode::<Transaction>(v.as_slice())
                 .map_err(|e| OmniError::deserialization_error(e.to_string()))
         }));
 
-        let iter = filter_account(iter, account);
-        let iter = filter_transaction_kind(iter, transaction_type);
-        let iter = filter_symbol(iter, symbol);
-        let iter = filter_date(iter, date_start, date_end);
+        let iter = filter_account(iter, filter.account);
+        let iter = filter_transaction_kind(iter, filter.kind);
+        let iter = filter_symbol(iter, filter.symbol);
+        let iter = filter_date(iter, filter.date_range.unwrap_or_default());
 
         let transactions: Vec<Transaction> = iter.collect::<Result<_, _>>()?;
 
