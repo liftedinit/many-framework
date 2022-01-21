@@ -4,7 +4,6 @@ use minicbor::decode;
 use omni::{Identity, OmniError};
 use omni_abci::module::OmniAbciModuleBackend;
 use omni_abci::types::{AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
-use std::cmp::max;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
@@ -254,7 +253,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
         let filter = filter.unwrap_or_default();
 
         let count = count.map_or(MAXIMUM_TRANSACTION_COUNT, |c| {
-            max(c as usize, MAXIMUM_TRANSACTION_COUNT)
+            std::cmp::min(c as usize, MAXIMUM_TRANSACTION_COUNT)
         });
 
         let storage = &self.storage;
@@ -264,7 +263,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
             order.unwrap_or_default(),
         );
 
-        let iter = Box::new(iter.take(count).map(|(_k, v)| {
+        let iter = Box::new(iter.map(|(_k, v)| {
             decode::<Transaction>(v.as_slice())
                 .map_err(|e| OmniError::deserialization_error(e.to_string()))
         }));
@@ -274,7 +273,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
         let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
 
-        let transactions: Vec<Transaction> = iter.collect::<Result<_, _>>()?;
+        let transactions: Vec<Transaction> = iter.take(count)`.collect::<Result<_, _>>()?;
 
         Ok(ledger::ListReturns {
             nb_transactions,
