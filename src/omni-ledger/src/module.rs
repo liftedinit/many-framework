@@ -232,7 +232,6 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
 impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
     fn transactions(
         &self,
-        _sender: &Identity,
         _args: ledger::TransactionsArgs,
     ) -> Result<ledger::TransactionsReturns, OmniError> {
         Ok(ledger::TransactionsReturns {
@@ -240,11 +239,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
         })
     }
 
-    fn list(
-        &mut self,
-        _sender: &Identity,
-        args: ledger::ListArgs,
-    ) -> Result<ledger::ListReturns, OmniError> {
+    fn list(&mut self, args: ledger::ListArgs) -> Result<ledger::ListReturns, OmniError> {
         let ledger::ListArgs {
             count,
             order,

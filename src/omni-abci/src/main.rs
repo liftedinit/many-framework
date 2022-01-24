@@ -94,10 +94,10 @@ async fn main() {
         match result {
             Err(e) => {
                 if start.elapsed().unwrap().as_secs() > 60 {
-                    eprintln!(
+                    tracing::error!(
                         "\nCould not connect to the ABCI server in 60 seconds... Terminating."
                     );
-                    eprintln!("Latest error:\n{}\n", e);
+                    tracing::error!(error = e.to_string().as_str());
                     std::process::exit(1);
                 }
                 eprint!(".");
