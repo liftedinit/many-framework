@@ -1,5 +1,5 @@
 use crate::error;
-use crate::utils::{CborRange, SortOrder, TokenAmount, Transaction, TransactionId};
+use crate::utils::{CborRange, SortOrder, Symbol, TokenAmount, Transaction, TransactionId};
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
 use std::cmp::Ordering;
@@ -12,7 +12,7 @@ use tracing::info;
 pub(crate) const TRANSACTIONS_ROOT: &'static [u8] = b"/transactions/";
 
 /// Returns the key for the persistent kv-store.
-pub(crate) fn key_for_account(id: &Identity, symbol: &str) -> Vec<u8> {
+pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
 }
 
@@ -21,8 +21,8 @@ pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
 }
 
 pub struct LedgerStorage {
-    symbols: BTreeSet<String>,
-    minters: BTreeMap<String, Vec<Identity>>,
+    symbols: BTreeMap<Symbol, String>,
+    minters: BTreeMap<Symbol, Vec<Identity>>,
 
     persistent_store: fmerk::Merk,
 
@@ -55,7 +55,7 @@ impl LedgerStorage {
         let symbols = persistent_store
             .get(b"/config/symbols")
             .map_err(|e| e.to_string())?;
-        let symbols: BTreeSet<String> = symbols
+        let symbols: BTreeMap<Symbol, String> = symbols
             .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
             .map_err(|e| e.to_string())?;
 
@@ -85,9 +85,9 @@ impl LedgerStorage {
     }
 
     pub fn new<P: AsRef<Path>>(
-        symbols: BTreeSet<String>,
-        initial_balances: BTreeMap<Identity, BTreeMap<String, u128>>,
-        minters: BTreeMap<String, Vec<Identity>>,
+        symbols: BTreeMap<Symbol, String>,
+        initial_balances: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
+        minters: BTreeMap<Symbol, Vec<Identity>>,
         persistent_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
@@ -97,12 +97,12 @@ impl LedgerStorage {
 
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
-                if !symbols.contains(&symbol) {
+                if !symbols.contains_key(&symbol) {
                     return Err(format!(r#"Unknown symbol "{}" for identity {}"#, symbol, k));
                 }
 
                 let key = key_for_account(&k, &symbol);
-                batch.push((key, fmerk::Op::Put(TokenAmount::from(tokens).to_vec())));
+                batch.push((key, fmerk::Op::Put(tokens.to_vec())));
             }
         }
 
@@ -130,11 +130,11 @@ impl LedgerStorage {
         })
     }
 
-    pub fn get_symbols(&self) -> Vec<&str> {
-        self.symbols.iter().map(|x| x.as_str()).collect()
+    pub fn get_symbols(&self) -> BTreeMap<Symbol, String> {
+        self.symbols.clone()
     }
 
-    pub fn can_mint(&self, id: &Identity, symbol: &str) -> bool {
+    pub fn can_mint(&self, id: &Identity, symbol: &Symbol) -> bool {
         self.minters.get(symbol).map_or(false, |x| x.contains(id))
     }
 
@@ -203,7 +203,7 @@ impl LedgerStorage {
             .unwrap();
     }
 
-    pub fn get_balance(&self, identity: &Identity, symbol: &str) -> TokenAmount {
+    pub fn get_balance(&self, identity: &Identity, symbol: &Symbol) -> TokenAmount {
         if identity.is_anonymous() {
             TokenAmount::zero()
         } else {
@@ -215,20 +215,20 @@ impl LedgerStorage {
         }
     }
 
-    fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&str, TokenAmount> {
+    fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&Symbol, TokenAmount> {
         if identity.is_anonymous() {
             // Anonymous cannot hold funds.
             BTreeMap::new()
         } else {
             let mut result = BTreeMap::new();
-            for symbol in &self.symbols {
+            for (symbol, _) in &self.symbols {
                 match self
                     .persistent_store
                     .get(&key_for_account(identity, symbol))
                 {
                     Ok(None) => {}
                     Ok(Some(value)) => {
-                        result.insert(symbol.as_str(), TokenAmount::from(value));
+                        result.insert(symbol, TokenAmount::from(value));
                     }
                     Err(_) => {}
                 }
@@ -241,8 +241,8 @@ impl LedgerStorage {
     pub fn get_multiple_balances(
         &self,
         identity: &Identity,
-        symbols: &BTreeSet<String>,
-    ) -> BTreeMap<&str, TokenAmount> {
+        symbols: &BTreeSet<Symbol>,
+    ) -> BTreeMap<&Symbol, TokenAmount> {
         if symbols.is_empty() {
             self.get_all_balances(identity)
         } else {
@@ -256,7 +256,7 @@ impl LedgerStorage {
     pub fn mint(
         &mut self,
         to: &Identity,
-        symbol: &str,
+        symbol: &Symbol,
         amount: TokenAmount,
     ) -> Result<(), OmniError> {
         if amount.is_zero() {
@@ -297,7 +297,7 @@ impl LedgerStorage {
     pub fn burn(
         &mut self,
         to: &Identity,
-        symbol: &str,
+        symbol: &Symbol,
         amount: TokenAmount,
     ) -> Result<(), OmniError> {
         if amount.is_zero() {
@@ -340,7 +340,7 @@ impl LedgerStorage {
         &mut self,
         from: &Identity,
         to: &Identity,
-        symbol: &str,
+        symbol: &Symbol,
         amount: TokenAmount,
     ) -> Result<(), OmniError> {
         if amount.is_zero() || from == to {

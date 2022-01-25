@@ -1,5 +1,5 @@
 use crate::storage::key_for_account;
-use crate::utils::TokenAmount;
+use crate::utils::{Symbol, TokenAmount};
 use omni::Identity;
 use std::collections::BTreeMap;
 
@@ -12,9 +12,9 @@ pub mod utils;
 pub fn verify_proof(
     bytes: &[u8],
     identity: &Identity,
-    symbols: &[String],
+    symbols: &[Symbol],
     expected_hash: &[u8; 32],
-) -> Result<BTreeMap<String, TokenAmount>, String> {
+) -> Result<BTreeMap<Symbol, TokenAmount>, String> {
     let keys: Vec<Vec<u8>> = symbols
         .iter()
         .map(|s| key_for_account(identity, s))

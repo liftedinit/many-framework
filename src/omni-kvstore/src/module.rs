@@ -1,15 +1,11 @@
 use crate::storage::AclBTreeMap;
 use crate::{error, storage::KvStoreStorage};
-use minicbor::decode;
-use omni::message::{RequestMessage, ResponseMessage};
-use omni::protocol::Attribute;
-use omni::server::module::OmniModuleInfo;
-use omni::{Identity, OmniError, OmniModule};
+use omni::{Identity, OmniError};
 use omni_abci::module::OmniAbciModuleBackend;
 use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
+use omni_module::omni_module;
 use std::collections::BTreeMap;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 use tracing::info;
 
 mod get;
@@ -119,102 +115,9 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
     }
 }
 
-const KVSTORE_ATTRIBUTE: Attribute = Attribute::id(3);
-
-lazy_static::lazy_static!(
-    pub static ref KVSTORE_MODULE_INFO: OmniModuleInfo = OmniModuleInfo {
-        name: "KvStoreModule".to_string(),
-        attributes: vec![KVSTORE_ATTRIBUTE],
-        endpoints: vec![
-            "kvstore.info".to_string(),
-            "kvstore.get".to_string(),
-            "kvstore.put".to_string(),
-        ]
-    };
-);
-
+#[omni_module(name = KvStoreModule, id = 3, namespace = kvstore)]
 pub trait KvStoreModuleBackend: Send {
     fn info(&self, sender: &Identity, args: InfoArgs) -> Result<InfoReturns, OmniError>;
     fn get(&self, sender: &Identity, args: GetArgs) -> Result<GetReturns, OmniError>;
     fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, OmniError>;
-}
-
-#[derive(Clone)]
-pub struct KvStoreModule<T>
-where
-    T: KvStoreModuleBackend,
-{
-    backend: Arc<Mutex<T>>,
-}
-
-impl<T> std::fmt::Debug for KvStoreModule<T>
-where
-    T: KvStoreModuleBackend,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("KvStoreModule").finish()
-    }
-}
-
-impl<T> KvStoreModule<T>
-where
-    T: KvStoreModuleBackend,
-{
-    pub fn new(backend: Arc<Mutex<T>>) -> Self {
-        Self { backend }
-    }
-}
-
-#[async_trait::async_trait]
-impl<T> OmniModule for KvStoreModule<T>
-where
-    T: KvStoreModuleBackend,
-{
-    fn info(&self) -> &OmniModuleInfo {
-        &KVSTORE_MODULE_INFO
-    }
-
-    fn validate(&self, message: &RequestMessage) -> Result<(), OmniError> {
-        match message.method.as_str() {
-            "kvstore.info" => {
-                decode::<'_, InfoArgs>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-            }
-            "kvstore.get" => {
-                decode::<'_, GetArgs>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-            }
-            "kvstore.put" => {
-                decode::<'_, PutArgs>(message.data.as_slice())
-                    .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
-            }
-
-            _ => return Err(OmniError::invalid_method_name(message.method.clone())),
-        };
-        Ok(())
-    }
-
-    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, OmniError> {
-        fn decode<'a, T: minicbor::Decode<'a>>(data: &'a [u8]) -> Result<T, OmniError> {
-            minicbor::decode(data).map_err(|e| OmniError::deserialization_error(e.to_string()))
-        }
-        fn encode<T: minicbor::Encode>(result: Result<T, OmniError>) -> Result<Vec<u8>, OmniError> {
-            minicbor::to_vec(result?).map_err(|e| OmniError::serialization_error(e.to_string()))
-        }
-
-        let from = message.from.unwrap_or_default();
-        let mut backend = self.backend.lock().unwrap();
-        let result = match message.method.as_str() {
-            "kvstore.info" => encode(backend.info(&from, decode(&message.data)?)),
-            "kvstore.get" => encode(backend.get(&from, decode(&message.data)?)),
-            "kvstore.put" => encode(backend.put(&from, decode(&message.data)?)),
-            _ => Err(OmniError::internal_server_error()),
-        }?;
-
-        Ok(ResponseMessage::from_request(
-            &message,
-            &message.to,
-            Ok(result),
-        ))
-    }
 }

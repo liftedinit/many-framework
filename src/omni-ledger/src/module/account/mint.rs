@@ -4,7 +4,7 @@ use omni::Identity;
 
 #[derive(Encode, Decode)]
 #[cbor(map)]
-pub struct MintArgs<'a> {
+pub struct MintArgs {
     #[n(0)]
     pub account: Identity,
 
@@ -12,5 +12,5 @@ pub struct MintArgs<'a> {
     pub amount: TokenAmount,
 
     #[n(2)]
-    pub symbol: &'a str,
+    pub symbol: Identity,
 }

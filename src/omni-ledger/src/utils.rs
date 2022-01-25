@@ -2,10 +2,69 @@ use minicbor::data::{Tag, Type};
 use minicbor::encode::{Error, Write};
 use minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
 use num_bigint::BigUint;
+use num_traits::Num;
 use omni::Identity;
+use serde::Deserialize;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Bound, RangeBounds};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+/// A deterministic (fixed point) percent value that can be multiplied with
+/// numbers and rounded down.
+pub struct Percent(pub fixed::types::U32F32);
+
+impl Percent {
+    pub fn new(i: u32, fraction: u32) -> Self {
+        Self(fixed::types::U32F32::from_bits(
+            (i as u64) << 32 + (fraction as u64),
+        ))
+    }
+
+    pub fn apply(&self, n: TokenAmount) -> TokenAmount {
+        let mut n: num_bigint::BigUint = n.into();
+        n = n * self.0.to_bits() >> 32;
+        n.into()
+    }
+}
+
+impl Encode for Percent {
+    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+        e.u64(self.0.to_bits())?;
+        Ok(())
+    }
+}
+
+impl<'b> Decode<'b> for Percent {
+    fn decode(d: &mut Decoder<'b>) -> Result<Self, decode::Error> {
+        Ok(Self(fixed::types::U32F32::from_bits(d.u64()?)))
+    }
+}
+
+/// A Symbol is represented by a non-anonymous identity.
+pub type Symbol = omni::Identity;
+
+/// Transaction fees.
+#[derive(Encode, Decode)]
+pub struct TransactionFee {
+    #[n(0)]
+    pub fixed: Option<TokenAmount>,
+    #[n(1)]
+    pub percent: Option<Percent>,
+}
+
+impl TransactionFee {
+    /// Calculates the actual fees of a transaction. The returned amount is the
+    /// fees calculated, and not (amount + fees).
+    pub fn calculate_fees(&self, amount: TokenAmount) -> TokenAmount {
+        let mut fees = self.fixed.clone().unwrap_or_default();
+        fees += if let Some(ref p) = self.percent {
+            p.apply(amount)
+        } else {
+            TokenAmount::zero()
+        };
+        fees
+    }
+}
 
 type TokenAmountStorage = num_bigint::BigUint;
 
@@ -48,6 +107,12 @@ impl From<Vec<u8>> for TokenAmount {
 impl From<num_bigint::BigUint> for TokenAmount {
     fn from(v: BigUint) -> Self {
         TokenAmount(v)
+    }
+}
+
+impl Into<num_bigint::BigUint> for TokenAmount {
+    fn into(self) -> BigUint {
+        self.0
     }
 }
 
@@ -104,6 +169,40 @@ impl<'b> Decode<'b> for TokenAmount {
     }
 }
 
+impl<'de> Deserialize<'de> for TokenAmount {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = TokenAmount;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                formatter.write_str("amount in number or string")
+            }
+
+            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(TokenAmount(v.into()))
+            }
+
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                let storage = TokenAmountStorage::from_str_radix(v, 10).map_err(E::custom)?;
+                Ok(TokenAmount(storage))
+            }
+        }
+
+        deserializer.deserialize_any(Visitor)
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct VecOrSingle<T>(pub Vec<T>);
 
 impl<T> Into<Vec<T>> for VecOrSingle<T> {

@@ -1,10 +1,10 @@
-use crate::utils::TokenAmount;
+use crate::utils::{Symbol, TokenAmount};
 use minicbor::{Decode, Encode};
 use omni::Identity;
 
 #[derive(Encode, Decode)]
 #[cbor(map)]
-pub struct SendArgs<'a> {
+pub struct SendArgs {
     #[n(0)]
     pub from: Option<Identity>,
 
@@ -15,5 +15,5 @@ pub struct SendArgs<'a> {
     pub amount: TokenAmount,
 
     #[n(3)]
-    pub symbol: &'a str,
+    pub symbol: Symbol,
 }

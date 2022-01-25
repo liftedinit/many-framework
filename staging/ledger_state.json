@@ -1,16 +1,16 @@
 {
   "initial": {
     "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
-      "FBT": 1000000
+      "oqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000
     }
   },
   "minters": {
-    "FBT": [
+    "oqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": [
       "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
     ]
   },
-  "symbols": [
-    "FBT"
-  ],
-  "hash": "7e246bc67230c644c6b6e4e2e2aad38a2e89edc18995b18a9ee59a97d7d93815"
+  "symbols": {
+    "oqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "FBT"
+  },
+  "hash": "0df74bfacd4fbab31ff36c3b9846d4557b4ed9dae886f4b9652c5161e4cbe1b6"
 }

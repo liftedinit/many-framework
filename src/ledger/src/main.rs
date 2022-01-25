@@ -5,8 +5,11 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use omni::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
-use omni_ledger::module::account::{BalanceArgs, BalanceReturns, BurnArgs, MintArgs, SendArgs};
-use omni_ledger::utils::TokenAmount;
+use omni_ledger::module::account::{
+    BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
+};
+use omni_ledger::utils::{Symbol, TokenAmount};
+use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -85,7 +88,9 @@ struct BalanceOpt {
     /// and if there is none, it will ignore the call.
     identity: Option<String>,
 
-    /// The symbol to check the balance of.
+    /// The symbol to check the balance of. This can either be an identity or
+    /// a local name for a symbol. If it doesn't parse to an identity an
+    /// additional call will be made to retrieve local names.
     symbols: Vec<String>,
 }
 
@@ -97,8 +102,24 @@ struct TargetCommandOpt {
     /// The amount of token to mint.
     amount: BigUint,
 
-    /// The symbol to check the balance of.
+    /// The symbol to use.  This can either be an identity or
+    /// a local name for a symbol. If it doesn't parse to an identity an
+    /// additional call will be made to retrieve local names.
     symbol: String,
+}
+
+fn resolve_symbol(client: &OmniClient, symbol: String) -> Result<Identity, OmniError> {
+    if let Ok(symbol) = Identity::from_str(&symbol) {
+        Ok(symbol)
+    } else {
+        // Get info.
+        let info: InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
+        info.local_names
+            .into_iter()
+            .find(|(_, y)| y == &symbol)
+            .map(|(x, _)| x)
+            .ok_or_else(|| OmniError::unknown(format!("Could not resolve symbol '{}'", &symbol)))
+    }
 }
 
 fn balance(
@@ -106,12 +127,37 @@ fn balance(
     account: Option<Identity>,
     symbols: Vec<String>,
 ) -> Result<(), OmniError> {
+    // Get info.
+    let info: InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
+    let local_names: BTreeMap<String, Symbol> = info
+        .local_names
+        .iter()
+        .map(|(x, y)| (y.clone(), x.clone()))
+        .collect();
+
     let argument = BalanceArgs {
         account,
         symbols: if symbols.is_empty() {
             None
         } else {
-            Some(symbols.clone().into())
+            Some(
+                symbols
+                    .iter()
+                    .map(|x| {
+                        if let Ok(i) = Identity::from_str(&x) {
+                            Ok(i)
+                        } else if let Some(i) = local_names.get(x.as_str()) {
+                            Ok(i.clone())
+                        } else {
+                            Err(OmniError::unknown(format!(
+                                "Could not resolve symbol '{}'",
+                                x
+                            )))
+                        }
+                    })
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into(),
+            )
         },
     };
     let payload = client.call_("ledger.balance", argument)?;
@@ -120,15 +166,12 @@ fn balance(
         Err(OmniError::unexpected_empty_response())
     } else {
         let balance: BalanceReturns = minicbor::decode(&payload).unwrap();
-        if let Some(balances) = balance.balances {
-            for (symbol, amount) in balances {
-                println!("{} {}", symbol, amount);
+        for (symbol, amount) in balance.balances {
+            if let Some(symbol_name) = info.local_names.get(&symbol) {
+                println!("{:>12} {} ({})", amount, symbol_name, symbol);
+            } else {
+                println!("{:>12} {}", amount, symbol);
             }
-        } else {
-            return Err(OmniError::unknown(
-                "Server did not response with either a balance record. This is an error"
-                    .to_string(),
-            ));
         }
 
         Ok(())
@@ -141,9 +184,11 @@ fn mint(
     amount: BigUint,
     symbol: String,
 ) -> Result<(), OmniError> {
+    let symbol = resolve_symbol(&client, symbol)?;
+
     let arguments = MintArgs {
         account,
-        symbol: symbol.as_str(),
+        symbol,
         amount: TokenAmount::from(amount),
     };
     let payload = client.call_("ledger.mint", arguments)?;
@@ -161,9 +206,11 @@ fn burn(
     amount: BigUint,
     symbol: String,
 ) -> Result<(), OmniError> {
+    let symbol = resolve_symbol(&client, symbol)?;
+
     let arguments = BurnArgs {
         account,
-        symbol: symbol.as_str(),
+        symbol,
         amount: TokenAmount::from(amount),
     };
     let payload = client.call_("ledger.burn", arguments)?;
@@ -181,13 +228,15 @@ fn send(
     amount: BigUint,
     symbol: String,
 ) -> Result<(), OmniError> {
+    let symbol = resolve_symbol(&client, symbol)?;
+
     if client.id.identity.is_anonymous() {
         Err(OmniError::invalid_identity())
     } else {
         let arguments = SendArgs {
             from: None,
             to,
-            symbol: symbol.as_str(),
+            symbol,
             amount: TokenAmount::from(amount),
         };
         let payload = client.call_("ledger.send", arguments)?;

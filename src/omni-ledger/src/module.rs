@@ -1,4 +1,6 @@
-use crate::utils::{CborRange, Timestamp, Transaction, TransactionKind, VecOrSingle};
+use crate::utils::{
+    CborRange, Symbol, Timestamp, TokenAmount, Transaction, TransactionKind, VecOrSingle,
+};
 use crate::{error, storage::LedgerStorage};
 use minicbor::decode;
 use omni::{Identity, OmniError};
@@ -76,9 +78,9 @@ fn filter_date<'a>(
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
 pub struct InitialStateJson {
-    initial: BTreeMap<Identity, BTreeMap<String, u128>>,
-    symbols: BTreeSet<String>,
-    minters: Option<BTreeMap<String, Vec<Identity>>>,
+    initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
+    symbols: BTreeMap<Identity, String>,
+    minters: Option<BTreeMap<Symbol, Vec<Identity>>>,
     hash: Option<String>,
 }
 
@@ -136,7 +138,7 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
 
         // Hash the storage.
         let hash = storage.hash();
-        let symbols: Vec<&str> = storage.get_symbols();
+        let symbols = storage.get_symbols();
 
         info!(
             "info(): hash={} symbols={:?}",
@@ -145,8 +147,9 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
         );
 
         Ok(account::InfoReturns {
-            symbols: symbols.iter().map(|x| x.to_string()).collect(),
+            symbols: symbols.keys().map(|x| x.clone()).collect(),
             hash: hash.into(),
+            local_names: symbols.clone(),
         })
     }
 
@@ -160,19 +163,13 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
         let identity = account.as_ref().unwrap_or(sender);
 
         let storage = &self.storage;
-        let symbols = symbols
-            .unwrap_or_else(|| account::SymbolList(BTreeSet::new()))
-            .0;
+        let symbols = symbols.unwrap_or_default().0;
 
-        let balances = storage.get_multiple_balances(identity, &symbols);
+        let balances = storage
+            .get_multiple_balances(identity, &BTreeSet::from_iter(symbols.clone().into_iter()));
         info!("balance({}, {:?}): {:?}", identity, &symbols, &balances);
         Ok(account::BalanceReturns {
-            balances: Some(
-                balances
-                    .into_iter()
-                    .map(|(k, v)| (k.to_string(), v))
-                    .collect(),
-            ),
+            balances: balances.into_iter().map(|(k, v)| (k.clone(), v)).collect(),
         })
     }
 
@@ -184,8 +181,8 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
         } = args;
 
         let storage = &mut self.storage;
-        if storage.can_mint(sender, symbol) {
-            storage.mint(&account, &symbol.to_string(), amount)?;
+        if storage.can_mint(sender, &symbol) {
+            storage.mint(&account, &symbol, amount)?;
         } else {
             return Err(error::unauthorized());
         }
@@ -200,8 +197,8 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
             symbol,
         } = args;
 
-        if self.storage.can_mint(sender, symbol) {
-            self.storage.burn(&account, &symbol.to_string(), amount)?;
+        if self.storage.can_mint(sender, &symbol) {
+            self.storage.burn(&account, &symbol, amount)?;
         } else {
             return Err(error::unauthorized());
         }
@@ -224,7 +221,7 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
             return Err(error::unauthorized());
         }
 
-        self.storage.send(from, &to, &symbol.to_string(), amount)?;
+        self.storage.send(from, &to, &symbol, amount)?;
         Ok(())
     }
 }
