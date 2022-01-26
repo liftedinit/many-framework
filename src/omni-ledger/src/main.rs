@@ -1,7 +1,8 @@
 use clap::Parser;
-use omni::identity::cose::CoseKeyIdentity;
+use omni::server::module::{ledger, ledger_transactions};
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
+use omni::types::identity::cose::CoseKeyIdentity;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -11,7 +12,6 @@ use tracing::level_filters::LevelFilter;
 mod error;
 mod module;
 mod storage;
-mod utils;
 
 use module::*;
 
@@ -100,21 +100,24 @@ fn main() {
         serde_json::from_str(&content).unwrap()
     });
 
-    let module_backend = LedgerModuleImpl::new(state, persistent, abci).unwrap();
-    let module_backend = Arc::new(Mutex::new(module_backend));
-    let omni = OmniServer::new("omni-ledger", key.clone())
-        .with_module(account::LedgerModule::new(module_backend.clone()))
-        .with_module(ledger::LedgerTransactionsModule::new(
-            module_backend.clone(),
+    let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
+    let module_impl = Arc::new(Mutex::new(module_impl));
+    let omni = OmniServer::new(
+        "omni-ledger",
+        key.clone(),
+        Some(std::env!("CARGO_PKG_VERSION").to_string()),
+    );
+
+    {
+        let mut s = omni.lock().unwrap();
+        s.add_module(ledger::LedgerModule::new(module_impl.clone()));
+        s.add_module(ledger_transactions::LedgerTransactionsModule::new(
+            module_impl.clone(),
         ));
-    let omni = if abci {
-        omni.with_module(omni_abci::module::AbciModule::new(
-            module_backend.clone(),
-            "ledger".to_string(),
-        ))
-    } else {
-        omni
-    };
+        if abci {
+            s.add_module(omni_abci::module::AbciModule::new(module_impl.clone()));
+        }
+    }
 
     HttpServer::simple(key, omni).bind(addr).unwrap();
 }

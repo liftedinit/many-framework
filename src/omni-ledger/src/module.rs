@@ -1,8 +1,9 @@
-use crate::utils::{
-    CborRange, Symbol, Timestamp, TokenAmount, Transaction, TransactionKind, VecOrSingle,
-};
 use crate::{error, storage::LedgerStorage};
 use minicbor::decode;
+use omni::server::module::{ledger, ledger_transactions};
+use omni::types::{
+    CborRange, Symbol, Timestamp, TokenAmount, Transaction, TransactionKind, VecOrSingle,
+};
 use omni::{Identity, OmniError};
 use omni_abci::module::OmniAbciModuleBackend;
 use omni_abci::types::{AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
@@ -10,9 +11,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
-
-pub mod account;
-pub mod ledger;
 
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 
@@ -128,12 +126,12 @@ impl LedgerModuleImpl {
     }
 }
 
-impl account::LedgerModuleBackend for LedgerModuleImpl {
+impl ledger::LedgerModuleBackend for LedgerModuleImpl {
     fn info(
         &self,
         _sender: &Identity,
-        _args: account::InfoArgs,
-    ) -> Result<account::InfoReturns, OmniError> {
+        _args: ledger::InfoArgs,
+    ) -> Result<ledger::InfoReturns, OmniError> {
         let storage = &self.storage;
 
         // Hash the storage.
@@ -146,7 +144,7 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
             symbols
         );
 
-        Ok(account::InfoReturns {
+        Ok(ledger::InfoReturns {
             symbols: symbols.keys().map(|x| x.clone()).collect(),
             hash: hash.into(),
             local_names: symbols.clone(),
@@ -156,9 +154,9 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
     fn balance(
         &self,
         sender: &Identity,
-        args: account::BalanceArgs,
-    ) -> Result<account::BalanceReturns, OmniError> {
-        let account::BalanceArgs { account, symbols } = args;
+        args: ledger::BalanceArgs,
+    ) -> Result<ledger::BalanceReturns, OmniError> {
+        let ledger::BalanceArgs { account, symbols } = args;
 
         let identity = account.as_ref().unwrap_or(sender);
 
@@ -168,13 +166,13 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
         let balances = storage
             .get_multiple_balances(identity, &BTreeSet::from_iter(symbols.clone().into_iter()));
         info!("balance({}, {:?}): {:?}", identity, &symbols, &balances);
-        Ok(account::BalanceReturns {
+        Ok(ledger::BalanceReturns {
             balances: balances.into_iter().map(|(k, v)| (k.clone(), v)).collect(),
         })
     }
 
-    fn mint(&mut self, sender: &Identity, args: account::MintArgs) -> Result<(), OmniError> {
-        let account::MintArgs {
+    fn mint(&mut self, sender: &Identity, args: ledger::MintArgs) -> Result<(), OmniError> {
+        let ledger::MintArgs {
             account,
             amount,
             symbol,
@@ -190,8 +188,8 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
         Ok(())
     }
 
-    fn burn(&mut self, sender: &Identity, args: account::BurnArgs) -> Result<(), OmniError> {
-        let account::BurnArgs {
+    fn burn(&mut self, sender: &Identity, args: ledger::BurnArgs) -> Result<(), OmniError> {
+        let ledger::BurnArgs {
             account,
             amount,
             symbol,
@@ -206,8 +204,8 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
         Ok(())
     }
 
-    fn send(&mut self, sender: &Identity, args: account::SendArgs) -> Result<(), OmniError> {
-        let account::SendArgs {
+    fn send(&mut self, sender: &Identity, args: ledger::SendArgs) -> Result<(), OmniError> {
+        let ledger::SendArgs {
             from,
             to,
             amount,
@@ -226,18 +224,21 @@ impl account::LedgerModuleBackend for LedgerModuleImpl {
     }
 }
 
-impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
+impl ledger_transactions::LedgerTransactionsModuleBackend for LedgerModuleImpl {
     fn transactions(
         &self,
-        _args: ledger::TransactionsArgs,
-    ) -> Result<ledger::TransactionsReturns, OmniError> {
-        Ok(ledger::TransactionsReturns {
+        _args: ledger_transactions::TransactionsArgs,
+    ) -> Result<ledger_transactions::TransactionsReturns, OmniError> {
+        Ok(ledger_transactions::TransactionsReturns {
             nb_transactions: self.storage.nb_transactions(),
         })
     }
 
-    fn list(&mut self, args: ledger::ListArgs) -> Result<ledger::ListReturns, OmniError> {
-        let ledger::ListArgs {
+    fn list(
+        &mut self,
+        args: ledger_transactions::ListArgs,
+    ) -> Result<ledger_transactions::ListReturns, OmniError> {
+        let ledger_transactions::ListArgs {
             count,
             order,
             filter,
@@ -267,7 +268,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
 
         let transactions: Vec<Transaction> = iter.take(count).collect::<Result<_, _>>()?;
 
-        Ok(ledger::ListReturns {
+        Ok(ledger_transactions::ListReturns {
             nb_transactions,
             transactions,
         })
@@ -278,8 +279,8 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
 // flag.
 impl OmniAbciModuleBackend for LedgerModuleImpl {
     #[rustfmt::skip]
-    fn init(&mut self) -> AbciInit {
-        AbciInit {
+    fn init(&mut self) -> Result<AbciInit, OmniError> {
+        Ok(AbciInit {
             endpoints: BTreeMap::from([
                 ("ledger.info".to_string(), EndpointInfo { should_commit: false }),
                 ("ledger.balance".to_string(), EndpointInfo { should_commit: false }),
@@ -289,7 +290,7 @@ impl OmniAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.transactions".to_string(), EndpointInfo { should_commit: false }),
                 ("ledger.list".to_string(), EndpointInfo { should_commit: false }),
             ]),
-        }
+        })
     }
 
     fn init_chain(&mut self) -> Result<(), OmniError> {

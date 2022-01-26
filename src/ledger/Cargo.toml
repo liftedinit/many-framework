@@ -8,7 +8,7 @@ name = "ledger"
 doc = false
 
 [dependencies]
-clap = "3.0.0-beta.5"
+clap = { version = "3.0.0", features = ["derive"] }
 crc-any = "2.4.0"
 derive_builder = "0.10.2"
 fmerk = { git = "https://github.com/hansl/fmerk" }
@@ -17,7 +17,6 @@ lazy_static = "1.4.0"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
 num-bigint = "0.4.3"
 omni = { git = "ssh://git@github.com/l-1-labs/omni-rust.git" }
-omni-ledger = { path = "../omni-ledger" }
 regex = "1.5.4"
 ring = "0.17.0-alpha.10"
 tracing = "0.1.29"

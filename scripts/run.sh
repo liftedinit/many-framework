@@ -23,18 +23,25 @@ main() {
   tmux_name="${2:-omni}"
 
   cargo build
-  #cargo install --root ./target -- toml-cli
+  [ -x ./target/bin/toml ] || cargo install --root ./target -- toml-cli
   tmux kill-session -t "$tmux_name" || true
 
-  TMHOME="$root_dir/ledger" tendermint init validator
-  TMHOME="$root_dir/kvstore" tendermint init validator
+  [ -x $root_dir/ledger ] || {
+    TMHOME="$root_dir/ledger" tendermint init validator
+    TMHOME="$root_dir/kvstore" tendermint init validator
 
-  toml_set "$root_dir/ledger/config/config.toml" p2p.laddr "tcp://127.0.0.1:26656"
-  toml_set "$root_dir/ledger/config/config.toml" rpc.laddr "tcp://127.0.0.1:26657"
-  toml_set "$root_dir/ledger/config/config.toml" proxy-app "tcp://127.0.0.1:26658"
-  toml_set "$root_dir/kvstore/config/config.toml" p2p.laddr "tcp://127.0.0.1:16656"
-  toml_set "$root_dir/kvstore/config/config.toml" rpc.laddr "tcp://127.0.0.1:16657"
-  toml_set "$root_dir/kvstore/config/config.toml" proxy-app "tcp://127.0.0.1:16658"
+    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks "false"
+    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks-interval "30s"
+    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-commit "20s"
+    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-precommit "20s"
+
+    toml_set "$root_dir/ledger/config/config.toml" p2p.laddr "tcp://127.0.0.1:26656"
+    toml_set "$root_dir/ledger/config/config.toml" rpc.laddr "tcp://127.0.0.1:26657"
+    toml_set "$root_dir/ledger/config/config.toml" proxy-app "tcp://127.0.0.1:26658"
+    toml_set "$root_dir/kvstore/config/config.toml" p2p.laddr "tcp://127.0.0.1:16656"
+    toml_set "$root_dir/kvstore/config/config.toml" rpc.laddr "tcp://127.0.0.1:16657"
+    toml_set "$root_dir/kvstore/config/config.toml" proxy-app "tcp://127.0.0.1:16658"
+  }
 
   tmux new-session -s "$tmux_name" -n tendermint-ledger -d "TMHOME=\"$root_dir/ledger\" tendermint start 2>&1 | tee \"$root_dir/tendermint-ledger.log\""
   tmux new-window -t "$tmux_name" -n tendermint-kvstore "TMHOME=\"$root_dir/kvstore\" tendermint start 2>&1 | tee \"$root_dir/tendermint-kvstore.log\""

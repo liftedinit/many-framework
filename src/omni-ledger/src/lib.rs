@@ -1,12 +1,11 @@
 use crate::storage::key_for_account;
-use crate::utils::{Symbol, TokenAmount};
+use omni::types::{Symbol, TokenAmount};
 use omni::Identity;
 use std::collections::BTreeMap;
 
 pub mod error;
 pub mod module;
 pub mod storage;
-pub mod utils;
 
 /// Verify a proof.
 pub fn verify_proof(

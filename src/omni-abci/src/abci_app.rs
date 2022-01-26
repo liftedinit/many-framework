@@ -1,7 +1,7 @@
 use crate::types::{AbciBlock, AbciCommitInfo, AbciInfo};
 use minicose::CoseSign1;
-use omni::identity::cose::CoseKeyIdentity;
 use omni::message::ResponseMessage;
+use omni::types::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
 use std::time::SystemTime;

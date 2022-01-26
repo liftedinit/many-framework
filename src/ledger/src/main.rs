@@ -3,12 +3,12 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
-use omni::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient, OmniError};
-use omni_ledger::module::account::{
+use omni::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
 };
-use omni_ledger::utils::{Symbol, TokenAmount};
+use omni::types::identity::cose::CoseKeyIdentity;
+use omni::types::{Symbol, TokenAmount};
+use omni::{Identity, OmniClient, OmniError};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;

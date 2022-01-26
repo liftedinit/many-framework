@@ -1,20 +1,14 @@
 use crate::storage::AclBTreeMap;
 use crate::{error, storage::KvStoreStorage};
+use omni::server::module::kvstore::{
+    GetArgs, GetReturns, InfoArgs, InfoReturns, KvStoreModuleBackend, PutArgs, PutReturns,
+};
 use omni::{Identity, OmniError};
 use omni_abci::module::OmniAbciModuleBackend;
 use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
-use omni_module::omni_module;
 use std::collections::BTreeMap;
 use std::path::Path;
 use tracing::info;
-
-mod get;
-mod info;
-mod put;
-
-pub use get::*;
-pub use info::*;
-pub use put::*;
 
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
@@ -69,14 +63,14 @@ impl KvStoreModuleImpl {
 // flag.
 impl OmniAbciModuleBackend for KvStoreModuleImpl {
     #[rustfmt::skip]
-    fn init(&mut self) -> AbciInit {
-        AbciInit {
+    fn init(&mut self) -> Result<AbciInit, OmniError> {
+        Ok(AbciInit {
             endpoints: BTreeMap::from([
                 ("kvstore.info".to_string(), EndpointInfo { should_commit: false }),
                 ("kvstore.get".to_string(), EndpointInfo { should_commit: false }),
                 ("kvstore.put".to_string(), EndpointInfo { should_commit: true }),
             ]),
-        }
+        })
     }
 
     fn init_chain(&mut self) -> Result<(), OmniError> {
@@ -113,11 +107,4 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
         self.storage.put(sender, &args.key, args.value)?;
         Ok(PutReturns {})
     }
-}
-
-#[omni_module(name = KvStoreModule, id = 3, namespace = kvstore)]
-pub trait KvStoreModuleBackend: Send {
-    fn info(&self, sender: &Identity, args: InfoArgs) -> Result<InfoReturns, OmniError>;
-    fn get(&self, sender: &Identity, args: GetArgs) -> Result<GetReturns, OmniError>;
-    fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, OmniError>;
 }

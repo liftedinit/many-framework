@@ -5,10 +5,8 @@ members = [
     "src/ledger",
     "src/kvstore",
     "src/omni-abci",
-    "src/omni-echo",
     "src/omni-kvstore",
     "src/omni-ledger",
-    "src/omni-module",
 ]
 
 # Uncomment this for local builds of minicose.

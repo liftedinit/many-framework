@@ -1,7 +1,8 @@
 use clap::Parser;
-use omni::identity::cose::CoseKeyIdentity;
+use omni::server::module::kvstore::KvStoreModule;
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
+use omni::types::identity::cose::CoseKeyIdentity;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
@@ -96,13 +97,19 @@ fn main() {
 
     let module = Arc::new(Mutex::new(module));
 
-    let omni =
-        OmniServer::new("omni-ledger", key.clone()).with_module(KvStoreModule::new(module.clone()));
-    let omni = if abci {
-        omni.with_module(AbciModule::new(module.clone(), "kvstore".to_string()))
-    } else {
-        omni
-    };
+    let omni = OmniServer::new(
+        "omni-ledger",
+        key.clone(),
+        Some(std::env!("CARGO_PKG_VERSION").to_string()),
+    );
+    {
+        let mut s = omni.lock().unwrap();
+
+        s.add_module(KvStoreModule::new(module.clone()));
+        if abci {
+            s.add_module(AbciModule::new(module.clone()));
+        }
+    }
 
     HttpServer::simple(key, omni)
         .bind(format!("127.0.0.1:{}", port))

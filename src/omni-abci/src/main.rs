@@ -1,5 +1,5 @@
 use clap::Parser;
-use omni::identity::cose::CoseKeyIdentity;
+use omni::types::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient};
 use std::path::PathBuf;
 use tendermint_abci::ServerBuilder;
@@ -100,6 +100,7 @@ async fn main() {
                     tracing::error!(error = e.to_string().as_str());
                     std::process::exit(1);
                 }
+                tracing::debug!(error = e.to_string().as_str());
                 eprint!(".");
             }
             Ok(s) => {
@@ -142,7 +143,13 @@ async fn main() {
     let omni_server =
         omni::transport::http::HttpServer::new(AbciHttpServer::new(abci_client, status, key).await);
 
-    let _j_omni = std::thread::spawn(move || omni_server.bind(omni).unwrap());
+    let _j_omni = std::thread::spawn(move || match omni_server.bind(omni) {
+        Ok(_) => {}
+        Err(error) => {
+            tracing::error!("{}", error);
+            panic!("Error happened in omni: {:?}", error);
+        }
+    });
 
     j_abci.join().unwrap();
     // When ABCI is done, just kill the whole process.

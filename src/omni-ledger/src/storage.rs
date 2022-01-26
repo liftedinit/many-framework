@@ -1,5 +1,5 @@
 use crate::error;
-use crate::utils::{CborRange, SortOrder, Symbol, TokenAmount, Transaction, TransactionId};
+use omni::types::{CborRange, SortOrder, Symbol, TokenAmount, Transaction, TransactionId};
 use omni::{Identity, OmniError};
 use omni_abci::types::AbciCommitInfo;
 use std::cmp::Ordering;
@@ -165,10 +165,11 @@ impl LedgerStorage {
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
-        let retain_height = self.inc_height();
+        let height = self.inc_height();
+        let retain_height = 0;
         self.persistent_store.commit(&[]).unwrap();
 
-        self.latest_tid = retain_height << 32;
+        self.latest_tid = height << 32;
 
         AbciCommitInfo {
             retain_height,
