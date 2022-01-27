@@ -1,5 +1,3 @@
-use crate::module::ABCI_MODULE_ATTRIBUTE;
-use crate::types::{AbciInit, EndpointInfo};
 use async_trait::async_trait;
 use minicose::CoseSign1;
 use omni::message::{
@@ -7,6 +5,7 @@ use omni::message::{
     encode_cose_sign1_from_response, RequestMessageBuilder, ResponseMessage,
 };
 use omni::protocol::Attribute;
+use omni::server::module::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
 use omni::server::module::base::{Status, StatusBuilder};
 use omni::transport::LowLevelOmniRequestHandler;
 use omni::types::identity::cose::CoseKeyIdentity;

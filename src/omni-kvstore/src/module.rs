@@ -1,11 +1,12 @@
 use crate::storage::AclBTreeMap;
 use crate::{error, storage::KvStoreStorage};
+use omni::server::module::abci_backend::{
+    AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, OmniAbciModuleBackend,
+};
 use omni::server::module::kvstore::{
     GetArgs, GetReturns, InfoArgs, InfoReturns, KvStoreModuleBackend, PutArgs, PutReturns,
 };
 use omni::{Identity, OmniError};
-use omni_abci::module::OmniAbciModuleBackend;
-use omni_abci::types::{AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
 use std::collections::BTreeMap;
 use std::path::Path;
 use tracing::info;

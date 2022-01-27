@@ -1,12 +1,13 @@
 use crate::{error, storage::LedgerStorage};
 use minicbor::decode;
+use omni::server::module::abci_backend::{
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, OmniAbciModuleBackend,
+};
 use omni::server::module::{ledger, ledger_transactions};
 use omni::types::{
     CborRange, Symbol, Timestamp, TokenAmount, Transaction, TransactionKind, VecOrSingle,
 };
 use omni::{Identity, OmniError};
-use omni_abci::module::OmniAbciModuleBackend;
-use omni_abci::types::{AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};

@@ -12,7 +12,7 @@ mod module;
 mod storage;
 
 use module::*;
-use omni_abci::module::AbciModule;
+use omni::server::module::abci_backend::AbciModule;
 
 #[derive(Parser)]
 struct Opts {
@@ -98,7 +98,7 @@ fn main() {
     let module = Arc::new(Mutex::new(module));
 
     let omni = OmniServer::new(
-        "omni-ledger",
+        "omni-kvstore",
         key.clone(),
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
     );

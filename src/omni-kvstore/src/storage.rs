@@ -1,7 +1,7 @@
 use crate::error::unauthorized;
 use fmerk::Op;
+use omni::server::module::abci_backend::AbciCommitInfo;
 use omni::{Identity, OmniError};
-use omni_abci::types::AbciCommitInfo;
 use std::collections::BTreeMap;
 use std::path::Path;
 

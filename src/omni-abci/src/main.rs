@@ -7,9 +7,7 @@ use tendermint_rpc::Client;
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
-mod module;
 mod omni_app;
-mod types;
 
 use abci_app::AbciApp;
 use omni_app::AbciHttpServer;

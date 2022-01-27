@@ -1,5 +1,5 @@
 use clap::Parser;
-use omni::server::module::{ledger, ledger_transactions};
+use omni::server::module::{abci_backend, ledger, ledger_transactions};
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::types::identity::cose::CoseKeyIdentity;
@@ -115,7 +115,7 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
-            s.add_module(omni_abci::module::AbciModule::new(module_impl.clone()));
+            s.add_module(abci_backend::AbciModule::new(module_impl.clone()));
         }
     }
 

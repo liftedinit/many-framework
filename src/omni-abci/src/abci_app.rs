@@ -1,6 +1,6 @@
-use crate::types::{AbciBlock, AbciCommitInfo, AbciInfo};
 use minicose::CoseSign1;
 use omni::message::ResponseMessage;
+use omni::server::module::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use omni::types::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniError};
 use reqwest::{IntoUrl, Url};
