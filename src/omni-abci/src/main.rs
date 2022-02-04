@@ -1,5 +1,5 @@
 use clap::Parser;
-use omni::server::module::base::BaseModuleBackend;
+use omni::server::module::base;
 use omni::types::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniServer};
 use std::path::PathBuf;
@@ -143,10 +143,7 @@ async fn main() {
     let backend = AbciModuleOmni::new(abci_client, status, key).await;
     {
         let mut s = server.lock().unwrap();
-        s.add_module(omni::server::module::base::StaticBaseModuleImpl::module(
-            backend.endpoints().unwrap(),
-            backend.status().unwrap(),
-        ));
+        s.add_module(base::BaseModule::new(server.clone()));
         s.set_fallback_module(backend);
     }
 

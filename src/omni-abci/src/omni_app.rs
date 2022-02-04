@@ -6,7 +6,7 @@ use omni::message::{
 };
 use omni::protocol::Attribute;
 use omni::server::module::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
-use omni::server::module::base::{Endpoints, Status, StatusBuilder};
+use omni::server::module::base;
 use omni::transport::LowLevelOmniRequestHandler;
 use omni::types::identity::cose::CoseKeyIdentity;
 use omni::OmniError;
@@ -17,13 +17,13 @@ use tendermint_rpc::Client;
 
 pub struct AbciModuleOmni<C: Client> {
     client: C,
-    backend_status: Status,
+    backend_status: base::Status,
     identity: CoseKeyIdentity,
     backend_endpoints: BTreeMap<String, EndpointInfo>,
 }
 
 impl<C: Client + Sync> AbciModuleOmni<C> {
-    pub async fn new(client: C, backend_status: Status, identity: CoseKeyIdentity) -> Self {
+    pub async fn new(client: C, backend_status: base::Status, identity: CoseKeyIdentity) -> Self {
         let init_message = RequestMessageBuilder::default()
             .from(identity.identity)
             .method("abci.init".to_string())
@@ -103,13 +103,13 @@ impl<C: Client + Sync + Send> LowLevelOmniRequestHandler for AbciModuleOmni<C> {
 }
 
 impl<C: Client + Sync + Send> omni::server::module::base::BaseModuleBackend for AbciModuleOmni<C> {
-    fn endpoints(&self) -> Result<Endpoints, OmniError> {
-        Ok(Endpoints(BTreeSet::from_iter(
+    fn endpoints(&self) -> Result<base::Endpoints, OmniError> {
+        Ok(base::Endpoints(BTreeSet::from_iter(
             self.backend_endpoints.keys().cloned(),
         )))
     }
 
-    fn status(&self) -> Result<Status, OmniError> {
+    fn status(&self) -> Result<base::Status, OmniError> {
         let attributes: BTreeSet<Attribute> = self
             .backend_status
             .attributes
@@ -118,7 +118,7 @@ impl<C: Client + Sync + Send> omni::server::module::base::BaseModuleBackend for 
             .cloned()
             .collect();
 
-        let mut builder = StatusBuilder::default();
+        let mut builder = base::StatusBuilder::default();
 
         builder
             .name(format!("AbciModule({})", self.backend_status.name))
