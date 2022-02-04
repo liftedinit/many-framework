@@ -1,5 +1,5 @@
 use clap::Parser;
-use omni::server::module::kvstore::KvStoreModule;
+use omni::server::module::{abci_backend, kvstore};
 use omni::server::OmniServer;
 use omni::transport::http::HttpServer;
 use omni::types::identity::cose::CoseKeyIdentity;
@@ -12,7 +12,6 @@ mod module;
 mod storage;
 
 use module::*;
-use omni::server::module::abci_backend::AbciModule;
 
 #[derive(Parser)]
 struct Opts {
@@ -97,21 +96,22 @@ fn main() {
 
     let module = Arc::new(Mutex::new(module));
 
-    let omni = OmniServer::new(
+    let omni = OmniServer::simple(
         "omni-kvstore",
         key.clone(),
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
     );
+
     {
         let mut s = omni.lock().unwrap();
+        s.add_module(kvstore::KvStoreModule::new(module.clone()));
 
-        s.add_module(KvStoreModule::new(module.clone()));
         if abci {
-            s.add_module(AbciModule::new(module.clone()));
+            s.add_module(abci_backend::AbciModule::new(module.clone()));
         }
     }
 
-    HttpServer::simple(key, omni)
+    HttpServer::new(omni)
         .bind(format!("127.0.0.1:{}", port))
         .unwrap();
 }

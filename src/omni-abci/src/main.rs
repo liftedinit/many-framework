@@ -1,6 +1,7 @@
 use clap::Parser;
+use omni::server::module::base::BaseModuleBackend;
 use omni::types::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient};
+use omni::{Identity, OmniClient, OmniServer};
 use std::path::PathBuf;
 use tendermint_abci::ServerBuilder;
 use tendermint_rpc::Client;
@@ -9,8 +10,8 @@ use tracing_subscriber::filter::LevelFilter;
 mod abci_app;
 mod omni_app;
 
+use crate::omni_app::AbciModuleOmni;
 use abci_app::AbciApp;
-use omni_app::AbciHttpServer;
 
 #[derive(Parser)]
 struct Opts {
@@ -138,8 +139,18 @@ async fn main() {
     }
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&omni_pem).unwrap()).unwrap();
-    let omni_server =
-        omni::transport::http::HttpServer::new(AbciHttpServer::new(abci_client, status, key).await);
+    let server = OmniServer::new(format!("AbciModule({})", &status.name), key.clone());
+    let backend = AbciModuleOmni::new(abci_client, status, key).await;
+    {
+        let mut s = server.lock().unwrap();
+        s.add_module(omni::server::module::base::StaticBaseModuleImpl::module(
+            backend.endpoints().unwrap(),
+            backend.status().unwrap(),
+        ));
+        s.set_fallback_module(backend);
+    }
+
+    let omni_server = omni::transport::http::HttpServer::new(server);
 
     let _j_omni = std::thread::spawn(move || match omni_server.bind(omni) {
         Ok(_) => {}

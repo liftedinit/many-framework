@@ -102,7 +102,7 @@ fn main() {
 
     let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
-    let omni = OmniServer::new(
+    let omni = OmniServer::simple(
         "omni-ledger",
         key.clone(),
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
@@ -119,5 +119,5 @@ fn main() {
         }
     }
 
-    HttpServer::simple(key, omni).bind(addr).unwrap();
+    HttpServer::new(omni).bind(addr).unwrap();
 }
