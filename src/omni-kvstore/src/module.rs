@@ -101,11 +101,13 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
 
     fn get(&self, sender: &Identity, args: GetArgs) -> Result<GetReturns, OmniError> {
         let value = self.storage.get(sender, &args.key)?;
-        Ok(GetReturns { value })
+        Ok(GetReturns {
+            value: value.map(|x| x.into()),
+        })
     }
 
     fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, OmniError> {
-        self.storage.put(sender, &args.key, args.value)?;
+        self.storage.put(sender, &args.key, args.value.into())?;
         Ok(PutReturns {})
     }
 }

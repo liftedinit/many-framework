@@ -331,7 +331,7 @@ impl OmniAbciModuleBackend for LedgerModuleImpl {
         info!(
             "abci.commit(): retain_height={} hash={}",
             result.retain_height,
-            hex::encode(&result.hash).as_str()
+            hex::encode(result.hash.as_slice()).as_str()
         );
         Ok(result)
     }

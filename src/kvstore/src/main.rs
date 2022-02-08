@@ -74,8 +74,7 @@ struct PutOpt {
 
 fn get(client: OmniClient, key: &[u8], hex: bool) -> Result<(), OmniError> {
     let arguments = GetArgs {
-        proof: None,
-        key: key.to_vec(),
+        key: key.to_vec().into(),
     };
 
     let payload = client.call_("kvstore.get", arguments)?;
@@ -87,7 +86,7 @@ fn get(client: OmniClient, key: &[u8], hex: bool) -> Result<(), OmniError> {
         let value = result.value.unwrap();
 
         if hex {
-            println!("{}", hex::encode(&value));
+            println!("{}", hex::encode(value.as_slice()));
         } else {
             std::io::Write::write_all(&mut std::io::stdout(), &value).unwrap();
         }
@@ -97,8 +96,8 @@ fn get(client: OmniClient, key: &[u8], hex: bool) -> Result<(), OmniError> {
 
 fn put(client: OmniClient, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> {
     let arguments = PutArgs {
-        key: key.to_vec(),
-        value,
+        key: key.to_vec().into(),
+        value: value.into(),
     };
 
     let response = client.call("kvstore.put", arguments)?;

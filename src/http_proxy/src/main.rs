@@ -72,8 +72,7 @@ fn main() {
                 let result = client.call_(
                     "kvstore.get",
                     GetArgs {
-                        key: format!("http/{}", path).into_bytes(),
-                        proof: None,
+                        key: format!("http/{}", path).into_bytes().into(),
                     },
                 );
                 match result {

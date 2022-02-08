@@ -173,7 +173,7 @@ impl LedgerStorage {
 
         AbciCommitInfo {
             retain_height,
-            hash: self.hash(),
+            hash: self.hash().to_vec().into(),
         }
     }
 

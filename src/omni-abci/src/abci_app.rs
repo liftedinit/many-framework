@@ -186,7 +186,7 @@ impl Application for AbciApp {
             |msg| {
                 let info: AbciCommitInfo = minicbor::decode(&msg).unwrap();
                 ResponseCommit {
-                    data: info.hash.into(),
+                    data: info.hash.to_vec().into(),
                     retain_height: info.retain_height as i64,
                 }
             },

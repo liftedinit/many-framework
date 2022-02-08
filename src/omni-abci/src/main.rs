@@ -1,17 +1,20 @@
 use clap::Parser;
-use omni::server::module::base;
+use omni::server::module::{base, blockchain};
 use omni::types::identity::cose::CoseKeyIdentity;
 use omni::{Identity, OmniClient, OmniServer};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
 use tendermint_rpc::Client;
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
+mod module;
 mod omni_app;
 
-use crate::omni_app::AbciModuleOmni;
 use abci_app::AbciApp;
+use module::AbciBlockchainModuleImpl;
+use omni_app::AbciModuleOmni;
 
 #[derive(Parser)]
 struct Opts {
@@ -140,10 +143,13 @@ async fn main() {
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&omni_pem).unwrap()).unwrap();
     let server = OmniServer::new(format!("AbciModule({})", &status.name), key.clone());
-    let backend = AbciModuleOmni::new(abci_client, status, key).await;
+    let backend = AbciModuleOmni::new(abci_client.clone(), status, key).await;
+    let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
+
     {
         let mut s = server.lock().unwrap();
         s.add_module(base::BaseModule::new(server.clone()));
+        s.add_module(blockchain::BlockchainModule::new(blockchain_impl.clone()));
         s.set_fallback_module(backend);
     }
 
