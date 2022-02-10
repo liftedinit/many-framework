@@ -7,7 +7,7 @@ use omni::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
 };
 use omni::types::identity::cose::CoseKeyIdentity;
-use omni::types::{Symbol, TokenAmount};
+use omni::types::ledger::{Symbol, TokenAmount};
 use omni::{Identity, OmniClient, OmniError};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};

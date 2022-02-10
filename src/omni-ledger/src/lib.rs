@@ -1,5 +1,5 @@
 use crate::storage::key_for_account;
-use omni::types::{Symbol, TokenAmount};
+use omni::types::ledger::{Symbol, TokenAmount};
 use omni::Identity;
 use std::collections::BTreeMap;
 

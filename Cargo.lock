@@ -1929,7 +1929,7 @@ dependencies = [
 [[package]]
 name = "omni"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#12904114d8d01ce49a37915630c38a215cbce82e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#6f9fc9b332e772713ffed0a74bd9580b9a9e1b0b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1984,6 +1984,7 @@ dependencies = [
  "omni",
  "omni-module",
  "reqwest",
+ "sha2 0.10.1",
  "smol",
  "tendermint",
  "tendermint-abci",
@@ -2045,7 +2046,7 @@ dependencies = [
 [[package]]
 name = "omni-module"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#12904114d8d01ce49a37915630c38a215cbce82e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#6f9fc9b332e772713ffed0a74bd9580b9a9e1b0b"
 dependencies = [
  "inflections",
  "proc-macro2",

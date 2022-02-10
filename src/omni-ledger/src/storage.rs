@@ -1,6 +1,7 @@
 use crate::error;
 use omni::server::module::abci_backend::AbciCommitInfo;
-use omni::types::{CborRange, SortOrder, Symbol, TokenAmount, Transaction, TransactionId};
+use omni::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
+use omni::types::{CborRange, SortOrder};
 use omni::{Identity, OmniError};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
