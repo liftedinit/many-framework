@@ -5,6 +5,7 @@ members = [
     "src/ledger",
     "src/kvstore",
     "src/omni-abci",
+    "src/omni-hwinfo",
     "src/omni-kvstore",
     "src/omni-ledger",
 ]

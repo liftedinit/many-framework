@@ -5,8 +5,49 @@ use omni::types::blockchain::{
 use omni::types::Timestamp;
 use omni::OmniError;
 use tendermint::Time;
-use tendermint_rpc::query::Query;
-use tendermint_rpc::{Client, Order};
+use tendermint_rpc::Client;
+
+fn _omni_block_from_tendermint_block(block: tendermint::Block) -> Block {
+    let height = block.header.height.value();
+    let txs_count = block.data.len() as u64;
+    let txs = block
+        .data
+        .into_iter()
+        .map(|b| {
+            use sha2::Digest;
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(&b);
+            Transaction {
+                id: TransactionIdentifier {
+                    hash: hasher.finalize().to_vec(),
+                },
+                content: Some(b),
+            }
+        })
+        .collect();
+    Block {
+        id: BlockIdentifier {
+            hash: block.header.hash().into(),
+            height,
+        },
+        parent: if height <= 1 {
+            BlockIdentifier::genesis()
+        } else {
+            BlockIdentifier::new(block.header.last_block_id.unwrap().hash.into(), height - 1)
+        },
+        timestamp: Timestamp::new(
+            block
+                .header
+                .time
+                .duration_since(Time::unix_epoch())
+                .unwrap()
+                .as_secs() as u64,
+        )
+        .unwrap(),
+        txs_count,
+        txs,
+    }
+}
 
 pub struct AbciBlockchainModuleImpl<C: Client> {
     client: C,
@@ -38,20 +79,20 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
     fn block(&self, args: blockchain::BlockArgs) -> Result<blockchain::BlockReturns, OmniError> {
         let block = smol::block_on(async {
             match args.query {
-                SingleBlockQuery::Hash(hash) => self
-                    .client
-                    .block_search(
-                        Query::eq("hash", format!("0x{}", hex::encode(hash.as_slice()))),
-                        0,
-                        1,
-                        Order::Ascending,
-                    )
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("abci transport: {}", e.to_string());
-                        abci_frontend::abci_transport_error(e.to_string())
-                    })
-                    .map(|search| search.blocks.into_iter().take(1).map(|b| b.block).next()),
+                SingleBlockQuery::Hash(hash) => {
+                    if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
+                        self.client
+                            .block_by_hash(tendermint::Hash::Sha256(hash))
+                            .await
+                            .map_err(|e| {
+                                tracing::error!("abci transport: {}", e.to_string());
+                                abci_frontend::abci_transport_error(e.to_string())
+                            })
+                            .map(|search| search.block)
+                    } else {
+                        Err(OmniError::unknown("Invalid hash length.".to_string()))
+                    }
+                }
                 SingleBlockQuery::Height(height) => self
                     .client
                     .block(height as u32)
@@ -65,50 +106,8 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         })?;
 
         if let Some(block) = block {
-            let height = block.header.height.value();
-            let txs_count = block.data.len() as u64;
-            let txs = block
-                .data
-                .into_iter()
-                .map(|b| {
-                    use sha2::Digest;
-                    let mut hasher = sha2::Sha256::new();
-                    hasher.update(&b);
-                    Transaction {
-                        id: TransactionIdentifier {
-                            hash: hasher.finalize().to_vec(),
-                        },
-                        content: Some(b),
-                    }
-                })
-                .collect();
-            Ok(blockchain::BlockReturns {
-                block: Block {
-                    id: BlockIdentifier {
-                        hash: block.header.hash().into(),
-                        height,
-                    },
-                    parent: if height <= 1 {
-                        BlockIdentifier::genesis()
-                    } else {
-                        BlockIdentifier::new(
-                            block.header.last_block_id.unwrap().hash.into(),
-                            height - 1,
-                        )
-                    },
-                    timestamp: Timestamp::new(
-                        block
-                            .header
-                            .time
-                            .duration_since(Time::unix_epoch())
-                            .unwrap()
-                            .as_secs() as u64,
-                    )
-                    .unwrap(),
-                    txs_count,
-                    txs,
-                },
-            })
+            let block = _omni_block_from_tendermint_block(block);
+            Ok(blockchain::BlockReturns { block })
         } else {
             Err(blockchain::unknown_block())
         }
