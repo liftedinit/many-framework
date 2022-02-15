@@ -67,9 +67,9 @@ impl OmniAbciModuleBackend for KvStoreModuleImpl {
     fn init(&mut self) -> Result<AbciInit, OmniError> {
         Ok(AbciInit {
             endpoints: BTreeMap::from([
-                ("kvstore.info".to_string(), EndpointInfo { should_commit: false }),
-                ("kvstore.get".to_string(), EndpointInfo { should_commit: false }),
-                ("kvstore.put".to_string(), EndpointInfo { should_commit: true }),
+                ("kvstore.info".to_string(), EndpointInfo { is_command: false }),
+                ("kvstore.get".to_string(), EndpointInfo { is_command: false }),
+                ("kvstore.put".to_string(), EndpointInfo { is_command: true }),
             ]),
         })
     }

@@ -46,6 +46,9 @@ fn main() {
         i += 1;
     }
     eprintln!("g: {:?}", sys.global_processor_info());
+
+    eprintln!("---- sys-info ----");
+    eprintln!("cpu_speed: {:?}", sys_info::cpu_speed());
     std::process::exit(1);
 
     // let verbose_level = 2 + verbose - quiet;

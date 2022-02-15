@@ -35,6 +35,7 @@ pub struct LedgerStorage {
     latest_tid: u64,
 
     current_time: Option<SystemTime>,
+    current_hash: Option<Vec<u8>>,
 }
 
 impl std::fmt::Debug for LedgerStorage {
@@ -82,6 +83,7 @@ impl LedgerStorage {
             blockchain,
             latest_tid,
             current_time: None,
+            current_hash: None,
         })
     }
 
@@ -128,6 +130,7 @@ impl LedgerStorage {
             blockchain,
             latest_tid: 0,
             current_time: None,
+            current_hash: None,
         })
     }
 
@@ -139,7 +142,7 @@ impl LedgerStorage {
         self.minters.get(symbol).map_or(false, |x| x.contains(id))
     }
 
-    pub fn inc_height(&mut self) -> u64 {
+    fn inc_height(&mut self) -> u64 {
         let current_height = self.get_height();
         self.persistent_store
             .apply(&[(
@@ -170,11 +173,14 @@ impl LedgerStorage {
         let retain_height = 0;
         self.persistent_store.commit(&[]).unwrap();
 
+        let hash = self.persistent_store.root_hash().to_vec();
+        self.current_hash = Some(hash.clone());
+
         self.latest_tid = height << 32;
 
         AbciCommitInfo {
             retain_height,
-            hash: self.hash().to_vec().into(),
+            hash: hash.into(),
         }
     }
 
@@ -399,7 +405,9 @@ impl LedgerStorage {
     }
 
     pub fn hash(&self) -> Vec<u8> {
-        self.persistent_store.root_hash().to_vec()
+        self.current_hash
+            .as_ref()
+            .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
     }
 
     pub fn iter(&self, start: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {

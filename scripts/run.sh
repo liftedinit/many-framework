@@ -30,10 +30,10 @@ main() {
     TMHOME="$root_dir/ledger" tendermint init validator
     TMHOME="$root_dir/kvstore" tendermint init validator
 
-    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks "false"
-    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks-interval "30s"
-    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-commit "20s"
-    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-precommit "20s"
+#    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks "false"
+#    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks-interval "30s"
+#    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-commit "20s"
+#    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-precommit "20s"
 
     toml_set "$root_dir/ledger/config/config.toml" p2p.laddr "tcp://127.0.0.1:26656"
     toml_set "$root_dir/ledger/config/config.toml" rpc.laddr "tcp://127.0.0.1:26657"

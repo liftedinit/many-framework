@@ -282,13 +282,13 @@ impl OmniAbciModuleBackend for LedgerModuleImpl {
     fn init(&mut self) -> Result<AbciInit, OmniError> {
         Ok(AbciInit {
             endpoints: BTreeMap::from([
-                ("ledger.info".to_string(), EndpointInfo { should_commit: false }),
-                ("ledger.balance".to_string(), EndpointInfo { should_commit: false }),
-                ("ledger.mint".to_string(), EndpointInfo { should_commit: true }),
-                ("ledger.burn".to_string(), EndpointInfo { should_commit: true }),
-                ("ledger.send".to_string(), EndpointInfo { should_commit: true }),
-                ("ledger.transactions".to_string(), EndpointInfo { should_commit: false }),
-                ("ledger.list".to_string(), EndpointInfo { should_commit: false }),
+                ("ledger.info".to_string(), EndpointInfo { is_command: false }),
+                ("ledger.balance".to_string(), EndpointInfo { is_command: false }),
+                ("ledger.mint".to_string(), EndpointInfo { is_command: true }),
+                ("ledger.burn".to_string(), EndpointInfo { is_command: true }),
+                ("ledger.send".to_string(), EndpointInfo { is_command: true }),
+                ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
+                ("ledger.list".to_string(), EndpointInfo { is_command: false }),
             ]),
         })
     }

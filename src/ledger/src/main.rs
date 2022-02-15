@@ -3,6 +3,8 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
+use omni::message::ResponseMessage;
+use omni::protocol::attributes::response::AsyncAttribute;
 use omni::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
 };
@@ -239,9 +241,15 @@ fn send(
             symbol,
             amount: TokenAmount::from(amount),
         };
-        let payload = client.call_("ledger.send", arguments)?;
+        let ResponseMessage {
+            data, attributes, ..
+        } = client.call("ledger.send", arguments)?;
+
+        let payload = data?;
         if payload.is_empty() {
-            Err(OmniError::unexpected_empty_response())
+            let attr = attributes.get::<AsyncAttribute>()?;
+            eprintln!("Async token: {}", hex::encode(&attr.token));
+            Ok(())
         } else {
             minicbor::display(&payload);
             Ok(())

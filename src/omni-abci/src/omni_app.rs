@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use minicose::CoseSign1;
+use omni::cbor::CborAny;
 use omni::message::{
     decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessageBuilder,
     ResponseMessage,
@@ -50,7 +51,7 @@ impl<C: Client + Sync> AbciModuleOmni<C> {
     async fn execute_message(&self, envelope: CoseSign1) -> Result<CoseSign1, OmniError> {
         let message = omni::message::decode_request_from_cose_sign1(envelope.clone())?;
         if let Some(info) = self.backend_endpoints.get(&message.method) {
-            let is_command = info.should_commit;
+            let is_command = info.is_command;
             let data = envelope
                 .to_bytes()
                 .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
@@ -62,13 +63,19 @@ impl<C: Client + Sync> AbciModuleOmni<C> {
                     .await
                     .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
 
+                eprintln!("... 1: {}", hex::encode(&response.hash));
+
                 let _ = minicbor::to_vec(response.data.value().to_vec())
                     .map_err(|e| OmniError::serialization_error(e.to_string()))?;
+                eprintln!("... 2: {}", hex::encode(&response.hash));
 
                 // A command will always return an empty payload with an ASYNC attribute.
                 let response =
                     ResponseMessage::from_request(&message, &self.identity.identity, Ok(vec![]))
-                        .with_attribute(omni::protocol::attributes::response::ASYNC);
+                        .with_attribute(
+                            omni::protocol::attributes::response::ASYNC
+                                .with_argument(CborAny::Bytes(response.hash.as_bytes().to_vec())),
+                        );
                 omni::message::encode_cose_sign1_from_response(response, &self.identity)
                     .map_err(OmniError::unexpected_transport_error)
             } else {
