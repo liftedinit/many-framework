@@ -10,7 +10,8 @@ use omni::server::module::ledger::{
 };
 use omni::types::identity::cose::CoseKeyIdentity;
 use omni::types::ledger::{Symbol, TokenAmount};
-use omni::{Identity, OmniClient, OmniError};
+use omni::{Identity, OmniError};
+use omni_client::OmniClient;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;

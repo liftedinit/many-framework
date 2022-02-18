@@ -2,7 +2,8 @@ use minicose::CoseSign1;
 use omni::message::ResponseMessage;
 use omni::server::module::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use omni::types::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient, OmniError};
+use omni::{Identity, OmniError};
+use omni_client::OmniClient;
 use reqwest::{IntoUrl, Url};
 use std::time::SystemTime;
 use tendermint_abci::Application;
@@ -170,6 +171,7 @@ impl Application for AbciApp {
     }
 
     fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
+        let _ = self.omni_client.call_("abci.endBlock", block);
         Default::default()
     }
 

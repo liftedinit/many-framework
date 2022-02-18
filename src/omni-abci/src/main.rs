@@ -1,7 +1,8 @@
 use clap::Parser;
 use omni::server::module::{base, blockchain};
 use omni::types::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient, OmniServer};
+use omni::{Identity, OmniServer};
+use omni_client::OmniClient;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
@@ -76,6 +77,17 @@ async fn main() {
     };
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
+    tracing::info!(
+        abci = abci.as_str(),
+        tendermint = tendermint.as_str(),
+        omni_app = omni_app.as_str(),
+        omni = omni.as_str(),
+        omni_pem = omni_pem.to_string_lossy().as_ref(),
+        abci_read_buf_size,
+        verbose,
+        quiet,
+    );
+
     // Try to get the status of the backend OMNI app.
     let omni_client = OmniClient::new(
         &omni_app,
@@ -125,21 +137,27 @@ async fn main() {
         .unwrap();
     let j_abci = std::thread::spawn(move || abci_server.listen().unwrap());
 
-    let abci_client = tendermint_rpc::HttpClient::new(tendermint.as_str()).unwrap();
+    // Spin this in a separate thread.
+    let j_client = tokio::spawn(async move {
+        let abci_client = tendermint_rpc::HttpClient::new(tendermint.as_str()).unwrap();
 
-    // Wait for 60 seconds until we can contact the ABCI server.
-    let start = std::time::SystemTime::now();
-    loop {
-        if abci_client.abci_info().await.is_ok() {
-            break;
-        }
-        if start.elapsed().unwrap().as_secs() > 60 {
-            eprintln!("\nCould not connect to the ABCI server in 60 seconds... Terminating.");
-            std::process::exit(1);
+        // Wait for 60 seconds until we can contact the ABCI server.
+        let start = std::time::SystemTime::now();
+        loop {
+            if abci_client.abci_info().await.is_ok() {
+                break;
+            }
+            if start.elapsed().unwrap().as_secs() > 300 {
+                eprintln!("\nCould not connect to the ABCI server in 300 seconds... Terminating.");
+                std::process::exit(1);
+            }
+
+            std::thread::sleep(std::time::Duration::from_secs(1));
         }
 
-        std::thread::sleep(std::time::Duration::from_secs(1));
-    }
+        abci_client
+    });
+    let abci_client = j_client.await.unwrap();
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&omni_pem).unwrap()).unwrap();
     let server = OmniServer::new(format!("AbciModule({})", &status.name), key.clone());

@@ -1,7 +1,8 @@
 use clap::Parser;
 use omni::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturns};
 use omni::types::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient, OmniError};
+use omni::{Identity, OmniError};
+use omni_client::OmniClient;
 use std::io::Read;
 use std::path::PathBuf;
 use tracing_subscriber::filter::LevelFilter;

@@ -1,7 +1,8 @@
 use clap::Parser;
 use omni::server::module::kvstore::{GetArgs, GetReturns};
 use omni::types::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniClient};
+use omni::Identity;
+use omni_client::OmniClient;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tiny_http::{Header, Method, Response, StatusCode};

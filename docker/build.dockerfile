@@ -11,6 +11,7 @@ COPY /src/http_proxy/Cargo.toml ./src/http_proxy/
 COPY /src/kvstore/Cargo.toml ./src/kvstore/
 COPY /src/ledger/Cargo.toml ./src/ledger/
 COPY /src/omni-abci/Cargo.toml ./src/omni-abci/
+COPY /src/omni-hwinfo/Cargo.toml ./src/omni-hwinfo/
 COPY /src/omni-kvstore/Cargo.toml ./src/omni-kvstore/
 COPY /src/omni-ledger/Cargo.toml ./src/omni-ledger/
 RUN find /src/

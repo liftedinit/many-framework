@@ -1,2 +1,3 @@
 target/
 .idea/
+docker/e2e
