@@ -10,6 +10,7 @@ RUN apt-get update && \
 
 # Contains the ledger.db store.
 VOLUME /persistent
+VOLUME /state
 
 STOPSIGNAL SIGTERM
 
@@ -18,11 +19,7 @@ WORKDIR /app
 
 EXPOSE 8000
 
-# Generate the private key.
-RUN openssl genpkey -algorithm Ed25519 -out /app/id.pem
-
-COPY /docker/ledger/local/ledger.json /app/state.json
 COPY --from=builder /src/target/release/omni-ledger /app/omni-ledger
 
 ENTRYPOINT ["./omni-ledger"]
-CMD ["--addr", "0.0.0.0:8000", "-v", "-v", "--state", "/app/state.json", "--persistent", "/persistent/ledger.db", "--pem", "/app/id.pem"]
+CMD ["--addr", "0.0.0.0:8000", "-v", "-v", "--state", "/state/state.json", "--persistent", "/persistent/ledger.db", "--pem", "/state/id.pem"]

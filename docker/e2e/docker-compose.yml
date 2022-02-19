@@ -5,7 +5,6 @@ services:
     image: "omni/abci"
     ports:
       - "8000:8000"
-      - "26658:26658"
     volumes:
       - ./genfiles/node0:/node0:ro
     command:
@@ -21,22 +20,12 @@ services:
       - http://tendermint-0:26657/
     depends_on:
       - ledger-0
-    networks:
-      frontend:
-        ipv4_address: 172.16.1.10
-  #    networks:
-#      frontend:
-#      node0-net:
   ledger-0:
     image: "omni/ledger"
-    ports:
-      - "8001:8000"
     volumes:
       - ./genfiles/node0/persistent-ledger:/persistent
       - ./genfiles/node0:/node0:ro
     command:
-      - -v
-      - -v
       - --abci
       - --addr
       - 0.0.0.0:8000
@@ -46,31 +35,172 @@ services:
       - /persistent/ledger.db
       - --pem
       - /node0/ledger.pem
-    networks:
-      frontend:
-        ipv4_address: 172.16.1.11
-#    networks:
-#      node0-net:
   tendermint-0:
-    image: "tendermint/tendermint:v0.35.1"
+    image: "tendermint/tendermint:v0.35.0"
     command:
       - --log-level
-      - trace
-      - node
+      - info
+      - --trace
+      - start
+      - --rpc.laddr
+      - tcp://0.0.0.0:26657
       - --proxy-app
       - tcp://abci-0:26658
     ports:
       - "26600:26600"
-    depends_on:
-      - abci-0
+      - "26657:26657"
     volumes:
       - ./genfiles/node0/tendermint:/tendermint:Z
-    networks:
-      frontend:
-        ipv4_address: 172.16.1.12
-#    networks:
-#      tendermint-net:
-#      node0-net:
+
+  abci-1:
+    image: "omni/abci"
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./genfiles/node1:/node1:ro
+    command:
+      - --omni
+      - 0.0.0.0:8000
+      - --omni-app
+      - http://ledger-1:8000
+      - --omni-pem
+      - /node1/abci.pem
+      - --abci
+      - 0.0.0.0:26658
+      - --tendermint
+      - http://tendermint-1:26657/
+    depends_on:
+      - ledger-1
+  ledger-1:
+    image: "omni/ledger"
+    volumes:
+      - ./genfiles/node1/persistent-ledger:/persistent
+      - ./genfiles/node1:/node1:ro
+    command:
+      - --abci
+      - --addr
+      - 0.0.0.0:8000
+      - --state
+      - /node1/ledger_state.json
+      - --persistent
+      - /persistent/ledger.db
+      - --pem
+      - /node1/ledger.pem
+  tendermint-1:
+    image: "tendermint/tendermint:v0.35.0"
+    command:
+      - --log-level
+      - info
+      - --trace
+      - start
+      - --rpc.laddr
+      - tcp://0.0.0.0:26657
+      - --proxy-app
+      - tcp://abci-1:26658
+    ports:
+      - "26601:26600"
+    volumes:
+      - ./genfiles/node1/tendermint:/tendermint:Z
+
+  abci-2:
+    image: "omni/abci"
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./genfiles/node2:/node2:ro
+    command:
+      - --omni
+      - 0.0.0.0:8000
+      - --omni-app
+      - http://ledger-2:8000
+      - --omni-pem
+      - /node2/abci.pem
+      - --abci
+      - 0.0.0.0:26658
+      - --tendermint
+      - http://tendermint-2:26657/
+    depends_on:
+      - ledger-2
+  ledger-2:
+    image: "omni/ledger"
+    volumes:
+      - ./genfiles/node2/persistent-ledger:/persistent
+      - ./genfiles/node2:/node2:ro
+    command:
+      - --abci
+      - --addr
+      - 0.0.0.0:8000
+      - --state
+      - /node2/ledger_state.json
+      - --persistent
+      - /persistent/ledger.db
+      - --pem
+      - /node2/ledger.pem
+  tendermint-2:
+    image: "tendermint/tendermint:v0.35.0"
+    command:
+      - --log-level
+      - info
+      - --trace
+      - start
+      - --rpc.laddr
+      - tcp://0.0.0.0:26657
+      - --proxy-app
+      - tcp://abci-2:26658
+    ports:
+      - "26602:26600"
+    volumes:
+      - ./genfiles/node2/tendermint:/tendermint:Z
+
+  abci-3:
+    image: "omni/abci"
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./genfiles/node3:/node3:ro
+    command:
+      - --omni
+      - 0.0.0.0:8000
+      - --omni-app
+      - http://ledger-3:8000
+      - --omni-pem
+      - /node3/abci.pem
+      - --abci
+      - 0.0.0.0:26658
+      - --tendermint
+      - http://tendermint-3:26657/
+    depends_on:
+      - ledger-3
+  ledger-3:
+    image: "omni/ledger"
+    volumes:
+      - ./genfiles/node3/persistent-ledger:/persistent
+      - ./genfiles/node3:/node3:ro
+    command:
+      - --abci
+      - --addr
+      - 0.0.0.0:8000
+      - --state
+      - /node3/ledger_state.json
+      - --persistent
+      - /persistent/ledger.db
+      - --pem
+      - /node3/ledger.pem
+  tendermint-3:
+    image: "tendermint/tendermint:v0.35.0"
+    command:
+      - --log-level
+      - info
+      - --trace
+      - start
+      - --rpc.laddr
+      - tcp://0.0.0.0:26657
+      - --proxy-app
+      - tcp://abci-3:26658
+    ports:
+      - "26603:26600"
+    volumes:
+      - ./genfiles/node3/tendermint:/tendermint:Z
 
 #networks:
 #  frontend:
@@ -91,11 +221,3 @@ services:
 #      driver: default
 #      config:
 #        - subnet: 172.20.100.0/24
-
-networks:
-  frontend:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.16.0.0/16

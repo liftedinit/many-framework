@@ -63,11 +63,8 @@ impl<C: Client + Sync> AbciModuleOmni<C> {
                     .await
                     .map_err(|e| OmniError::unexpected_transport_error(e.to_string()))?;
 
-                eprintln!("... 1: {}", hex::encode(&response.hash));
-
                 let _ = minicbor::to_vec(response.data.value().to_vec())
                     .map_err(|e| OmniError::serialization_error(e.to_string()))?;
-                eprintln!("... 2: {}", hex::encode(&response.hash));
 
                 // A command will always return an empty payload with an ASYNC attribute.
                 let response =

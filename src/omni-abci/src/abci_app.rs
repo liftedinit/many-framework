@@ -171,7 +171,7 @@ impl Application for AbciApp {
     }
 
     fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
-        let _ = self.omni_client.call_("abci.endBlock", block);
+        let _ = self.omni_client.call_("abci.endBlock", ());
         Default::default()
     }
 

@@ -298,7 +298,7 @@ impl OmniAbciModuleBackend for LedgerModuleImpl {
         Ok(())
     }
 
-    fn block_begin(&mut self, info: AbciBlock) -> Result<(), OmniError> {
+    fn begin_block(&mut self, info: AbciBlock) -> Result<(), OmniError> {
         let time = info.time;
         info!("abci.block_begin(): time={:?}", time);
 

@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-get_node_id() {
-  local node_id
-  node_id="$(jq -r .id < "./genfiles/node$1/tendermint/config/node_key.json")"
-  echo "$node_id"
-}
-
 update_toml_key() {
   local file section key value temp_file
   file="$1"
@@ -14,10 +8,9 @@ update_toml_key() {
   value="$4"
   temp_file="$(mktemp)"
 
-  if [[ "$section" -eq '' ]]; then
+  if [[ "$section" = '' ]]; then
     split -p "^\[" "$file" "${temp_file}_"
 
-    echo "sed \"s/^${key}.*$/${key} = ${value}/\" \"${temp_file}_aa\""
     (
       sed "s/^${key}.*$/${key} = ${value}/" "${temp_file}_aa"
       rm "${temp_file}_aa"
@@ -29,7 +22,7 @@ update_toml_key() {
 
     (
       cat "${temp_file}_aa"
-      sed "s/^${key}.*$/${key} = ${value}/" "${temp_file}_ab"
+      sed "s/^${key} .*$/${key} = ${value}/" "${temp_file}_ab"
     ) > "$file"
   else
     (
@@ -45,8 +38,8 @@ usage() {
 
 Usage: $0 -f CONFIG_FILE [-i IP_ADDRESS_RANGE] [-p PORT] <start> <end>
 
-    -f CONFIG_FILE       A path to the config.toml file to change, with
-                         \"%\" replaced by the node id.
+    -c CONFIG_ROOT       A path to the config root containing the config.toml and
+                         node_key.json, with \"%\" replaced by the node id.
     -i IP_ADDRESS_RANGE  An IP Address start for nodes, which replaces
                          \"%\" with the node id. Default \"10.254.254.%\".
     -p PORT              The port instances are listening to, default 26656.
@@ -57,15 +50,15 @@ END_OF_USAGE
 
 ip_range=10.254.254.%
 port=26656
-file=""
-while getopts ":i:p:f:" opt; do
+config_root=""
+while getopts ":i:p:c:" opt; do
     case "${opt}" in
         i)  ip_range="${OPTARG}"
             ;;
         p)  port="${OPTARG}"
             [[ "$port" =~ ^[0-9]+$ ]] || usage
             ;;
-        f)  file="${OPTARG}"
+        c)  config_root="${OPTARG}"
             ;;
         *)  usage
             ;;
@@ -73,18 +66,47 @@ while getopts ":i:p:f:" opt; do
 done
 shift $((OPTIND-1))
 
-[ "$file" ] || usage
+[ "$config_root" ] || usage
+
+all_validators="$(
+  for node in $(seq "$1" "$2"); do
+    jq '{ address: .address, pub_key: .pub_key }' "${config_root//%/$node}/priv_validator_key.json" | jq ".name = \"tendermint-$node\" | .power = \"1000\""
+  done | jq -s -c
+)"
 
 for node in $(seq "$1" "$2"); do
-  config_toml_path=${file//%/$node}
+  root="${config_root//%/$node}"
+  config_toml_path="$root"/config.toml
+  genesis_json_path="$root"/genesis.json
+
+  if ! [ -f "$config_toml_path" ]; then
+     echo Configuration file "'$config_toml_path'" could not be found. 1>&2
+     exit 1
+  fi
+  if ! [ -f "$genesis_json_path" ]; then
+     echo Configuration file "'$genesis_json_path'" could not be found. 1>&2
+     exit 1
+  fi
+
+  echo Updating \""$root"\"...
+
   peer_ids=$(seq "$1" "$2" | grep -v "$node")
   peers=$(for peer in $peer_ids; do
-    node_id=$(get_node_id "$peer")
+    node_id=$(jq -r .id < "${config_root//%/$peer}"/node_key.json)
     ip_address=${ip_range//%/$peer}
 
     printf '%s' "$node_id@$ip_address:$port,"
   done | sed 's/,$//')
 
-#  update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
+  update_toml_key "$config_toml_path" '' proxy-app "\"tcp:\\/\\/abci-${node}:26658\\/\""
   update_toml_key "$config_toml_path" '' moniker "\"omni-tendermint-${node}\""
+  update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
+  # update_toml_key "$config_toml_path" p2p bootstrap-peers "\"$peers\""
+done
+
+# Same genesis data for all.
+genesis_temp_file=$(mktemp)
+jq ".validators = ${all_validators} | .chain_id = \"omni-e2e-ledger\"" "${config_root//%/1}/genesis.json" > "$genesis_temp_file"
+for node in $(seq "$1" "$2"); do
+  cp "$genesis_temp_file" "${config_root//%/$node}/genesis.json"
 done
