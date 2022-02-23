@@ -68,13 +68,15 @@ shift $((OPTIND-1))
 
 [ "$config_root" ] || usage
 
+NB_NODES=$(( $1 - 1 ))
+
 all_validators="$(
-  for node in $(seq "$1" "$2"); do
+  for node in $(seq 0 "$NB_NODES"); do
     jq '{ address: .address, pub_key: .pub_key }' "${config_root//%/$node}/priv_validator_key.json" | jq ".name = \"tendermint-$node\" | .power = \"1000\""
   done | jq -s -c
 )"
 
-for node in $(seq "$1" "$2"); do
+for node in $(seq 0 "$NB_NODES"); do
   root="${config_root//%/$node}"
   config_toml_path="$root"/config.toml
   genesis_json_path="$root"/genesis.json
@@ -90,7 +92,7 @@ for node in $(seq "$1" "$2"); do
 
   echo Updating \""$root"\"...
 
-  peer_ids=$(seq "$1" "$2" | grep -v "$node")
+  peer_ids=$(seq 0 "$NB_NODES" | grep -v "$node")
   peers=$(for peer in $peer_ids; do
     node_id=$(jq -r .id < "${config_root//%/$peer}"/node_key.json)
     ip_address=${ip_range//%/$peer}
@@ -107,6 +109,6 @@ done
 # Same genesis data for all.
 genesis_temp_file=$(mktemp)
 jq ".validators = ${all_validators} | .chain_id = \"omni-e2e-ledger\"" "${config_root//%/1}/genesis.json" > "$genesis_temp_file"
-for node in $(seq "$1" "$2"); do
+for node in $(seq 0 "$NB_NODES"); do
   cp "$genesis_temp_file" "${config_root//%/$node}/genesis.json"
 done
