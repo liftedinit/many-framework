@@ -58,9 +58,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.53"
+version = "1.0.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
+checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
 
 [[package]]
 name = "arrayvec"
@@ -134,9 +134,9 @@ dependencies = [
 
 [[package]]
 name = "async-lock"
-version = "2.4.0"
+version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6a8ea61bf9947a1007c5cada31e647dbc77b103c679858150003ba697ea798b"
+checksum = "e97a171d191782fba31bb902b14ad94e24a68145032b7eedf871ab0bc0d077b6"
 dependencies = [
  "event-listener",
 ]
@@ -452,7 +452,7 @@ dependencies = [
 [[package]]
 name = "ciborium"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#b77f979c35a00f1fc65fb09bcf452e6ce0a90bcf"
+source = "git+https://github.com/enarx/ciborium#e719537c99b564c3674a56defe53713c702c6f46"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
  "ciborium-ll 0.2.0 (git+https://github.com/enarx/ciborium)",
@@ -467,7 +467,7 @@ source = "git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104ca
 [[package]]
 name = "ciborium-io"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#b77f979c35a00f1fc65fb09bcf452e6ce0a90bcf"
+source = "git+https://github.com/enarx/ciborium#e719537c99b564c3674a56defe53713c702c6f46"
 
 [[package]]
 name = "ciborium-ll"
@@ -481,7 +481,7 @@ dependencies = [
 [[package]]
 name = "ciborium-ll"
 version = "0.2.0"
-source = "git+https://github.com/enarx/ciborium#b77f979c35a00f1fc65fb09bcf452e6ce0a90bcf"
+source = "git+https://github.com/enarx/ciborium#e719537c99b564c3674a56defe53713c702c6f46"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
  "half",
@@ -509,9 +509,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.1.0"
+version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5f1fea81f183005ced9e59cdb01737ef2423956dac5a6d731b06b2ecfaa3467"
+checksum = "5177fac1ab67102d8989464efd043c6ff44191b1557ec1ddd489b4f7e1447e77"
 dependencies = [
  "atty",
  "bitflags",
@@ -526,9 +526,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.1.0"
+version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fd1122e63869df2cb309f449da1ad54a7c6dfeb7c7e6ccd8e0825d9eb93bb72"
+checksum = "01d42c94ce7c2252681b5fed4d3627cc807b13dfc033246bd05d5b252399000e"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -873,9 +873,9 @@ dependencies = [
 
 [[package]]
 name = "ed25519"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74e1069e39f1454367eb2de793ed062fac4c35c2934b76a81d90dd9abcd28816"
+checksum = "eed12bbf7b5312f8da1c2722bc06d8c6b12c2d86a7fb35a194c7f3e6fc2bbe39"
 dependencies = [
  "signature",
 ]
@@ -946,9 +946,9 @@ checksum = "77f3309417938f28bf8228fcff79a4a37103981e3e186d2ccd19c74b38f4eb71"
 
 [[package]]
 name = "eyre"
-version = "0.6.6"
+version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc225d8f637923fe585089fcf03e705c222131232d2c1fb622e84ecf725d0eb8"
+checksum = "9289ed2c0440a6536e65119725cf91fc2c6b5e513bfd2e36e1134d7cca6ca12f"
 dependencies = [
  "indenter",
  "once_cell",
@@ -997,9 +997,9 @@ dependencies = [
 
 [[package]]
 name = "fixed"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "710fb80b798972643e40dc9eff017d9d3146dc4a3d01d35cddb4bde90bd93d47"
+checksum = "4d38004fb072c44da88a322343c7c784bd1ff6f2e3f5b332050de60c5eea3e0e"
 dependencies = [
  "az",
  "bytemuck",
@@ -1199,9 +1199,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "418d37c8b1d42553c93648be529cb70f920d3baf8ef469b74b9638df426e0b4c"
+checksum = "d39cd93900197114fa1fcb7ae84ca742095eed9442088988ae74fa744e930e77"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -1618,9 +1618,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.118"
+version = "0.2.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06e509672465a0504304aa87f9f176f2b2b716ed8fb105ebe5c02dc6dce96a94"
+checksum = "1bf2e165bb3457c8e098ea76f3e3bc9db55f87aa90d52d0e6be741470916aaa4"
 
 [[package]]
 name = "libloading"
@@ -1733,7 +1733,7 @@ dependencies = [
 [[package]]
 name = "minicose"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/rust-minicose.git#31507e18bbaff9f93d83ef3ff15e6d66a14c4470"
+source = "git+ssh://git@github.com/l-1-labs/rust-minicose.git#3b8cd133fe028bc78f26eae30ea87e23f2f9e91b"
 dependencies = [
  "ciborium 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
  "ciborium-ll 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
@@ -1941,7 +1941,7 @@ dependencies = [
 [[package]]
 name = "omni"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#ed398dbab5158913d227de7a259b9b840f33c0bd"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#e4d07481bad3462a2b869a72392d49848204f55a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2011,7 +2011,7 @@ dependencies = [
 [[package]]
 name = "omni-client"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#ed398dbab5158913d227de7a259b9b840f33c0bd"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#e4d07481bad3462a2b869a72392d49848204f55a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2118,7 +2118,7 @@ dependencies = [
 [[package]]
 name = "omni-module"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#ed398dbab5158913d227de7a259b9b840f33c0bd"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#e4d07481bad3462a2b869a72392d49848204f55a"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2577,7 +2577,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
- "getrandom 0.2.4",
+ "getrandom 0.2.5",
 ]
 
 [[package]]
@@ -3217,9 +3217,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.23.2"
+version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92d82ade9d6621d4ca052a00bb6ea9ed513d223cba75a84625c5e9c0698ab6f5"
+checksum = "70d06c623c041b6aec9830080e9069b4ab6a84de3b4b4d14b4bbb09c629efdc0"
 dependencies = [
  "cfg-if",
  "core-foundation-sys",
@@ -3323,7 +3323,7 @@ dependencies = [
  "bytes",
  "flex-error",
  "futures",
- "getrandom 0.2.4",
+ "getrandom 0.2.5",
  "http",
  "hyper",
  "hyper-proxy",
