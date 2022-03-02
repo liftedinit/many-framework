@@ -410,8 +410,8 @@ impl LedgerStorage {
             .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
     }
 
-    pub fn iter(&self, start: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
-        LedgerIterator::scoped_by_id(&self.persistent_store, start, order)
+    pub fn iter(&self, range: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
+        LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
     }
 }
 
@@ -429,8 +429,8 @@ impl<'a> LedgerIterator<'a> {
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
-            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(*x - 1)),
-            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(*x)),
+            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(*x)),
+            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(*x + 1)),
             Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
         }
         match range.end_bound() {
