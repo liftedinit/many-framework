@@ -10,11 +10,11 @@ use std::path::Path;
 use std::time::SystemTime;
 use tracing::info;
 
-pub(crate) const TRANSACTIONS_ROOT: &'static [u8] = b"/transactions/";
+pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
-    format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
+    format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
@@ -194,13 +194,13 @@ impl LedgerStorage {
                 u64::from_be_bytes(bytes)
             })
     }
-    fn add_transaction(&mut self, transaction: Transaction) -> () {
+    fn add_transaction(&mut self, transaction: Transaction) {
         let current_nb_transactions = self.nb_transactions();
 
         self.persistent_store
             .apply(&[
                 (
-                    key_for_transaction(transaction.id.clone()),
+                    key_for_transaction(transaction.id),
                     fmerk::Op::Put(minicbor::to_vec(&transaction).unwrap()),
                 ),
                 (
@@ -229,7 +229,7 @@ impl LedgerStorage {
             BTreeMap::new()
         } else {
             let mut result = BTreeMap::new();
-            for (symbol, _) in &self.symbols {
+            for symbol in self.symbols.keys() {
                 match self
                     .persistent_store
                     .get(&key_for_account(identity, symbol))
@@ -291,9 +291,9 @@ impl LedgerStorage {
         self.add_transaction(Transaction::mint(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
-            to.clone(),
+            *to,
             symbol.to_string(),
-            amount.clone(),
+            amount,
         ));
 
         if !self.blockchain {
@@ -332,9 +332,9 @@ impl LedgerStorage {
         self.add_transaction(Transaction::burn(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
-            to.clone(),
+            *to,
             symbol.to_string(),
-            amount.clone(),
+            amount,
         ));
 
         if !self.blockchain {
@@ -391,10 +391,10 @@ impl LedgerStorage {
         self.add_transaction(Transaction::send(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
-            from.clone(),
-            to.clone(),
+            *from,
+            *to,
             symbol.to_string(),
-            amount.clone(),
+            amount,
         ));
 
         if !self.blockchain {

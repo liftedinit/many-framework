@@ -98,7 +98,7 @@ fn main() {
 
     let omni = OmniServer::simple(
         "omni-kvstore",
-        key.clone(),
+        key,
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
     );
 
@@ -107,7 +107,7 @@ fn main() {
         s.add_module(kvstore::KvStoreModule::new(module.clone()));
 
         if abci {
-            s.add_module(abci_backend::AbciModule::new(module.clone()));
+            s.add_module(abci_backend::AbciModule::new(module));
         }
     }
 

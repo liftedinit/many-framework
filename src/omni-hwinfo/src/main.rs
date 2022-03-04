@@ -1,13 +1,9 @@
 use clap::Parser;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use sysinfo::{ProcessorExt, System, SystemExt};
-use tracing::level_filters::LevelFilter;
+use sysinfo::{System, SystemExt};
 
 mod error;
 mod module;
-
-use module::*;
 
 #[derive(Parser)]
 struct Opts {
@@ -30,20 +26,18 @@ struct Opts {
 
 fn main() {
     let Opts {
-        verbose,
-        quiet,
-        pem,
-        port,
+        verbose: _,
+        quiet: _,
+        pem: _,
+        port: _,
     } = Opts::parse();
 
     let mut sys = System::new();
     sys.refresh_all();
-    let mut i = 0;
     eprintln!("... {}", System::IS_SUPPORTED);
     eprintln!("CPU... {}", sys.processors().len());
-    for cpu in sys.processors() {
+    for (i, cpu) in sys.processors().iter().enumerate() {
         eprintln!("{} {:?}", i, cpu);
-        i += 1;
     }
     eprintln!("g: {:?}", sys.global_processor_info());
 
