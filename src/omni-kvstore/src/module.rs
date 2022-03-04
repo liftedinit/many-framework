@@ -29,8 +29,8 @@ impl KvStoreModuleImpl {
         persistent_store_path: P,
         blockchain: bool,
     ) -> Result<Self, OmniError> {
-        let storage = KvStoreStorage::load(persistent_store_path, blockchain)
-            .map_err(|e| OmniError::unknown(e))?;
+        let storage =
+            KvStoreStorage::load(persistent_store_path, blockchain).map_err(OmniError::unknown)?;
 
         Ok(Self { storage })
     }

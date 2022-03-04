@@ -24,7 +24,7 @@ pub fn verify_proof(
     let mut result = BTreeMap::new();
     for (symbol, amount) in symbols.iter().zip(values.iter()) {
         result.insert(
-            symbol.clone(),
+            *symbol,
             amount
                 .as_ref()
                 .map_or(TokenAmount::zero(), |x| TokenAmount::from(x.clone())),
