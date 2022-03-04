@@ -31,4 +31,6 @@ typenum = "1.15.0"
 
 [dev-dependencies]
 omni-client = { git = "ssh://git@github.com/l-1-labs/omni-rust.git" }
+omni = { git = "ssh://git@github.com/l-1-labs/omni-rust.git", features = [ "pem", "raw" ] }
 tempfile = "3.3.0"
+
