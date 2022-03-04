@@ -82,7 +82,7 @@ fn range_works() {
     );
 
     let mut iter = iter_asc(&storage, Bound::Unbounded, Bound::Excluded(last_id.clone()));
-    assert_eq!(iter.next().expect("Should have a last item").id, first_id);
+    assert_eq!(iter.next().expect("Should have a first item").id, first_id);
 
     // Make sure inclusive bounds include first_id.
     let mut iter = iter_asc(
