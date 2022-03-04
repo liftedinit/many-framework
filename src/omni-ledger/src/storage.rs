@@ -1,5 +1,5 @@
 use crate::error;
-use minicbor::bytes::ByteVec;
+use fixed::traits::Fixed;
 use omni::server::module::abci_backend::AbciCommitInfo;
 use omni::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use omni::types::{CborRange, SortOrder};
@@ -12,6 +12,9 @@ use std::time::SystemTime;
 use tracing::info;
 
 pub(crate) const TRANSACTIONS_ROOT: &'static [u8] = b"/transactions/";
+
+// Left-shift the height by this amount of bits
+const HEIGHT_TXID_SHIFT: u64 = 32;
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
@@ -33,7 +36,7 @@ pub struct LedgerStorage {
     /// persistent store.
     blockchain: bool,
 
-    latest_tid: u64,
+    latest_tid: TransactionId,
 
     current_time: Option<SystemTime>,
     current_hash: Option<Vec<u8>>,
@@ -75,7 +78,7 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
-        let latest_tid = height << 32;
+        let latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         Ok(Self {
             symbols,
@@ -129,7 +132,7 @@ impl LedgerStorage {
             minters,
             persistent_store,
             blockchain,
-            latest_tid: 0,
+            latest_tid: TransactionId::from(vec![0]),
             current_time: None,
             current_hash: None,
         })
@@ -166,7 +169,7 @@ impl LedgerStorage {
 
     fn new_transaction_id(&mut self) -> TransactionId {
         self.latest_tid += 1;
-        TransactionId(ByteVec::from(self.latest_tid.to_be_bytes().to_vec()))
+        self.latest_tid.clone()
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
@@ -177,7 +180,7 @@ impl LedgerStorage {
         let hash = self.persistent_store.root_hash().to_vec();
         self.current_hash = Some(hash.clone());
 
-        self.latest_tid = height << 32;
+        self.latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         AbciCommitInfo {
             retain_height,
