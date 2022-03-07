@@ -28,3 +28,9 @@ simple_asn1 = "0.5.4"
 tracing = "0.1.28"
 tracing-subscriber = "0.2.24"
 typenum = "1.15.0"
+
+[dev-dependencies]
+omni-client = { git = "ssh://git@github.com/l-1-labs/omni-rust.git" }
+omni = { git = "ssh://git@github.com/l-1-labs/omni-rust.git", features = [ "pem", "raw" ] }
+tempfile = "3.3.0"
+
