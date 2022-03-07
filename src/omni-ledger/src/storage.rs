@@ -1,5 +1,4 @@
 use crate::error;
-use fixed::traits::Fixed;
 use omni::server::module::abci_backend::AbciCommitInfo;
 use omni::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use omni::types::{CborRange, SortOrder};
