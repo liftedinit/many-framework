@@ -12,6 +12,9 @@ use tracing::info;
 
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 
+// Left-shift the height by this amount of bits
+const HEIGHT_TXID_SHIFT: u64 = 32;
+
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
@@ -32,7 +35,7 @@ pub struct LedgerStorage {
     /// persistent store.
     blockchain: bool,
 
-    latest_tid: u64,
+    latest_tid: TransactionId,
 
     current_time: Option<SystemTime>,
     current_hash: Option<Vec<u8>>,
@@ -74,7 +77,7 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
-        let latest_tid = height << 32;
+        let latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         Ok(Self {
             symbols,
@@ -128,7 +131,7 @@ impl LedgerStorage {
             minters,
             persistent_store,
             blockchain,
-            latest_tid: 0,
+            latest_tid: TransactionId::from(vec![0]),
             current_time: None,
             current_hash: None,
         })
@@ -165,7 +168,7 @@ impl LedgerStorage {
 
     fn new_transaction_id(&mut self) -> TransactionId {
         self.latest_tid += 1;
-        TransactionId(self.latest_tid)
+        self.latest_tid.clone()
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
@@ -176,7 +179,7 @@ impl LedgerStorage {
         let hash = self.persistent_store.root_hash().to_vec();
         self.current_hash = Some(hash.clone());
 
-        self.latest_tid = height << 32;
+        self.latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         AbciCommitInfo {
             retain_height,
@@ -388,6 +391,7 @@ impl LedgerStorage {
         self.persistent_store.apply(&batch).unwrap();
 
         let id = self.new_transaction_id();
+
         self.add_transaction(Transaction::send(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
@@ -429,13 +433,13 @@ impl<'a> LedgerIterator<'a> {
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
-            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(*x - 1)),
-            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(*x)),
+            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone() - 1)),
+            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone())),
             Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
         }
         match range.end_bound() {
-            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_transaction(*x + 1)),
-            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_transaction(*x)),
+            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_transaction(x.clone() + 1)),
+            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_transaction(x.clone())),
             Bound::Unbounded => {
                 let mut bound = TRANSACTIONS_ROOT.to_vec();
                 bound[TRANSACTIONS_ROOT.len() - 1] += 1;
