@@ -135,7 +135,7 @@ fn balance(
     let local_names: BTreeMap<String, Symbol> = info
         .local_names
         .iter()
-        .map(|(x, y)| (y.clone(), x.clone()))
+        .map(|(x, y)| (y.clone(), *x))
         .collect();
 
     let argument = BalanceArgs {
@@ -147,10 +147,10 @@ fn balance(
                 symbols
                     .iter()
                     .map(|x| {
-                        if let Ok(i) = Identity::from_str(&x) {
+                        if let Ok(i) = Identity::from_str(x) {
                             Ok(i)
                         } else if let Some(i) = local_names.get(x.as_str()) {
-                            Ok(i.clone())
+                            Ok(*i)
                         } else {
                             Err(OmniError::unknown(format!(
                                 "Could not resolve symbol '{}'",

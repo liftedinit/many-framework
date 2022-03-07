@@ -155,7 +155,7 @@ async fn main() {
     {
         let mut s = server.lock().unwrap();
         s.add_module(base::BaseModule::new(server.clone()));
-        s.add_module(blockchain::BlockchainModule::new(blockchain_impl.clone()));
+        s.add_module(blockchain::BlockchainModule::new(blockchain_impl));
         s.set_fallback_module(backend);
     }
     eprintln!("... :5");

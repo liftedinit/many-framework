@@ -145,9 +145,9 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
         );
 
         Ok(ledger::InfoReturns {
-            symbols: symbols.keys().map(|x| x.clone()).collect(),
+            symbols: symbols.keys().copied().collect(),
             hash: hash.into(),
-            local_names: symbols.clone(),
+            local_names: symbols,
         })
     }
 
@@ -167,7 +167,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
             .get_multiple_balances(identity, &BTreeSet::from_iter(symbols.clone().into_iter()));
         info!("balance({}, {:?}): {:?}", identity, &symbols, &balances);
         Ok(ledger::BalanceReturns {
-            balances: balances.into_iter().map(|(k, v)| (k.clone(), v)).collect(),
+            balances: balances.into_iter().map(|(k, v)| (*k, v)).collect(),
         })
     }
 

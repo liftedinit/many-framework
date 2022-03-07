@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+#
+# Requirements
+# - The `tendermint` binary should be in your $PATH
+# - `tmux` should be installed and in your $PATH
+# - The certificate `id1.pem` should exist in $HOME/Identities
+# - A `debug` build of the `omni-ledger` repository
+#
+# Usage
+# $ cd /path/to/omni-ledger
+# $ ./script/run.sh
+
 set -pube  # .. snicker ..
 
 toml_set() {
@@ -46,10 +57,10 @@ main() {
   tmux new-session -s "$tmux_name" -n tendermint-ledger -d "TMHOME=\"$root_dir/ledger\" tendermint start 2>&1 | tee \"$root_dir/tendermint-ledger.log\""
   tmux new-window -t "$tmux_name" -n tendermint-kvstore "TMHOME=\"$root_dir/kvstore\" tendermint start 2>&1 | tee \"$root_dir/tendermint-kvstore.log\""
 
-  tmux new-window -t "$tmux_name" -n ledger "./target/debug/omni-ledger -v -v --abci --addr 127.0.0.1:8001 --pem ~/Identities/id1.pem --state ./staging/ledger_state.json --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/omni-ledger.log\""
+  tmux new-window -t "$tmux_name" -n ledger "./target/debug/omni-ledger -v -v --abci --addr 127.0.0.1:8001 --pem $HOME/Identities/id1.pem --state ./staging/ledger_state.json --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/omni-ledger.log\""
   tmux new-window -t "$tmux_name" -n ledger-abci "./target/debug/omni-abci -v -v --omni 0.0.0.0:8000 --omni-app http://localhost:8001 --omni-pem $HOME/Identities/id1.pem --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee \"$root_dir/omni-abci-ledger.log\""
 
-  tmux new-window -t "$tmux_name" -n kvstore "./target/debug/omni-kvstore --abci --port 8010 --pem ~/Identities/id1.pem --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/omni-kvstore.log\""
+  tmux new-window -t "$tmux_name" -n kvstore "./target/debug/omni-kvstore --abci --port 8010 --pem $HOME/Identities/id1.pem --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/omni-kvstore.log\""
   tmux new-window -t "$tmux_name" -n kvstore-abci "./target/debug/omni-abci -v --omni 0.0.0.0:8011 --omni-app http://localhost:8010 --omni-pem $HOME/Identities/id1.pem --abci 127.0.0.1:16658 --tendermint http://localhost:16657/ 2>&1 | tee \"$root_dir/omni-abci-kvstore.log\""
 
   tmux new-window -t "$tmux_name" -n http "./target/debug/http_proxy -v http://localhost:8011 --pem $HOME/Identities/id1.pem --addr 0.0.0.0:8888 2>&1 | tee \"$root_dir/http.log\""

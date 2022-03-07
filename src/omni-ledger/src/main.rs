@@ -84,7 +84,7 @@ fn main() {
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => {
-                panic!("Error: {}", e.to_string())
+                panic!("Error: {}", e)
             }
         }
     } else if persistent.exists() {
@@ -104,7 +104,7 @@ fn main() {
     let module_impl = Arc::new(Mutex::new(module_impl));
     let omni = OmniServer::simple(
         "omni-ledger",
-        key.clone(),
+        key,
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
     );
 
@@ -115,7 +115,7 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
-            s.add_module(abci_backend::AbciModule::new(module_impl.clone()));
+            s.add_module(abci_backend::AbciModule::new(module_impl));
         }
     }
 

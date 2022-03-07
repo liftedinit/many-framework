@@ -10,11 +10,14 @@ use std::path::Path;
 use std::time::SystemTime;
 use tracing::info;
 
-pub(crate) const TRANSACTIONS_ROOT: &'static [u8] = b"/transactions/";
+pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
+
+// Left-shift the height by this amount of bits
+const HEIGHT_TXID_SHIFT: u64 = 32;
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
-    format!("/balances/{}/{}", id.to_string(), symbol).into_bytes()
+    format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
@@ -32,7 +35,7 @@ pub struct LedgerStorage {
     /// persistent store.
     blockchain: bool,
 
-    latest_tid: u64,
+    latest_tid: TransactionId,
 
     current_time: Option<SystemTime>,
     current_hash: Option<Vec<u8>>,
@@ -74,7 +77,7 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
-        let latest_tid = height << 32;
+        let latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         Ok(Self {
             symbols,
@@ -128,7 +131,7 @@ impl LedgerStorage {
             minters,
             persistent_store,
             blockchain,
-            latest_tid: 0,
+            latest_tid: TransactionId::from(vec![0]),
             current_time: None,
             current_hash: None,
         })
@@ -165,7 +168,7 @@ impl LedgerStorage {
 
     fn new_transaction_id(&mut self) -> TransactionId {
         self.latest_tid += 1;
-        TransactionId(self.latest_tid)
+        self.latest_tid.clone()
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
@@ -176,7 +179,7 @@ impl LedgerStorage {
         let hash = self.persistent_store.root_hash().to_vec();
         self.current_hash = Some(hash.clone());
 
-        self.latest_tid = height << 32;
+        self.latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         AbciCommitInfo {
             retain_height,
@@ -194,13 +197,13 @@ impl LedgerStorage {
                 u64::from_be_bytes(bytes)
             })
     }
-    fn add_transaction(&mut self, transaction: Transaction) -> () {
+    fn add_transaction(&mut self, transaction: Transaction) {
         let current_nb_transactions = self.nb_transactions();
 
         self.persistent_store
             .apply(&[
                 (
-                    key_for_transaction(transaction.id.clone()),
+                    key_for_transaction(transaction.id),
                     fmerk::Op::Put(minicbor::to_vec(&transaction).unwrap()),
                 ),
                 (
@@ -229,7 +232,7 @@ impl LedgerStorage {
             BTreeMap::new()
         } else {
             let mut result = BTreeMap::new();
-            for (symbol, _) in &self.symbols {
+            for symbol in self.symbols.keys() {
                 match self
                     .persistent_store
                     .get(&key_for_account(identity, symbol))
@@ -291,9 +294,9 @@ impl LedgerStorage {
         self.add_transaction(Transaction::mint(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
-            to.clone(),
+            *to,
             symbol.to_string(),
-            amount.clone(),
+            amount,
         ));
 
         if !self.blockchain {
@@ -332,9 +335,9 @@ impl LedgerStorage {
         self.add_transaction(Transaction::burn(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
-            to.clone(),
+            *to,
             symbol.to_string(),
-            amount.clone(),
+            amount,
         ));
 
         if !self.blockchain {
@@ -388,13 +391,14 @@ impl LedgerStorage {
         self.persistent_store.apply(&batch).unwrap();
 
         let id = self.new_transaction_id();
+
         self.add_transaction(Transaction::send(
             id,
             self.current_time.unwrap_or_else(SystemTime::now),
-            from.clone(),
-            to.clone(),
+            *from,
+            *to,
             symbol.to_string(),
-            amount.clone(),
+            amount,
         ));
 
         if !self.blockchain {
@@ -429,13 +433,13 @@ impl<'a> LedgerIterator<'a> {
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
-            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(*x)),
-            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(*x + 1)),
+            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone())),
+            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone() + 1)),
             Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
         }
         match range.end_bound() {
-            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_transaction(*x + 1)),
-            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_transaction(*x)),
+            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_transaction(x.clone() + 1)),
+            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_transaction(x.clone())),
             Bound::Unbounded => {
                 let mut bound = TRANSACTIONS_ROOT.to_vec();
                 bound[TRANSACTIONS_ROOT.len() - 1] += 1;
