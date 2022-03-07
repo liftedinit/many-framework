@@ -203,7 +203,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[
                 (
-                    key_for_transaction(transaction.id),
+                    key_for_transaction(transaction.id.clone()),
                     fmerk::Op::Put(minicbor::to_vec(&transaction).unwrap()),
                 ),
                 (
