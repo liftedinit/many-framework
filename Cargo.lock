@@ -509,9 +509,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.1.5"
+version = "3.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced1892c55c910c1219e98d6fc8d71f6bddba7905866ce740066d8bfea859312"
+checksum = "d8c93436c21e4698bacadf42917db28b23017027a4deccb35dbe47a7e7840123"
 dependencies = [
  "atty",
  "bitflags",
@@ -602,9 +602,9 @@ dependencies = [
 
 [[package]]
 name = "crc-any"
-version = "2.4.1"
+version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "073375684a58dece169afbdc9879a027f3698118ad3814938316c6002b7aa921"
+checksum = "a3fc9f32c34de51ba0a727fd84d2cc83587efeca519cfca1105e3efa9c1c78fb"
 dependencies = [
  "debug-helper",
 ]
@@ -763,9 +763,9 @@ checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
 
 [[package]]
 name = "debug-helper"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76fbd10dce159c002b9c688ae8ab7cd531151e185e0ad360f4bfea3b0eede3a8"
+checksum = "f578e8e2c440e7297e008bb5486a3a8a194775224bbc23729b0dbdfaeebf162e"
 
 [[package]]
 name = "der"
@@ -1504,9 +1504,9 @@ dependencies = [
 
 [[package]]
 name = "ipnet"
-version = "2.3.1"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68f2d64f2edebec4ce84ad108148e67e1064789bee435edc5b60ad398714a3a9"
+checksum = "35e70ee094dc02fd9c13fdad4940090f22dbd6ac7c9e7094a46cf0232a50bc7c"
 
 [[package]]
 name = "itertools"
@@ -1941,7 +1941,7 @@ dependencies = [
 [[package]]
 name = "omni"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#0ad3ba1b66fec2c87c4e4583fd2feba02b20687e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#fe8c4c92cac9b24c85e7d704f9b13ed1a175328e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2011,7 +2011,7 @@ dependencies = [
 [[package]]
 name = "omni-client"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#0ad3ba1b66fec2c87c4e4583fd2feba02b20687e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#fe8c4c92cac9b24c85e7d704f9b13ed1a175328e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2120,7 +2120,7 @@ dependencies = [
 [[package]]
 name = "omni-module"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#0ad3ba1b66fec2c87c4e4583fd2feba02b20687e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#fe8c4c92cac9b24c85e7d704f9b13ed1a175328e"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -3249,7 +3249,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#33a48411a080692b3b962330d9f4492829a25c60"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#3ba454051a3a2dbd360c95ca1276c2542adae84d"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3277,7 +3277,7 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#33a48411a080692b3b962330d9f4492829a25c60"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#3ba454051a3a2dbd360c95ca1276c2542adae84d"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3289,7 +3289,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#33a48411a080692b3b962330d9f4492829a25c60"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#3ba454051a3a2dbd360c95ca1276c2542adae84d"
 dependencies = [
  "flex-error",
  "serde",
@@ -3302,7 +3302,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#33a48411a080692b3b962330d9f4492829a25c60"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#3ba454051a3a2dbd360c95ca1276c2542adae84d"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3319,7 +3319,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#33a48411a080692b3b962330d9f4492829a25c60"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#3ba454051a3a2dbd360c95ca1276c2542adae84d"
 dependencies = [
  "async-trait",
  "bytes",
