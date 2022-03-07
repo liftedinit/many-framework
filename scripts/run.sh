@@ -19,7 +19,34 @@ toml_set() {
   rm $tmp
 }
 
+# Ver1 <= Ver2
+verlte() {
+    printf '%s\n%s' "$1" "$2" | sort -C -V
+}
+
+# Ver1 < Ver2
+verlt() {
+    ! verlte "$2" "$1"
+}
+
 main() {
+  TM_MIN_VERSION=0.35.0  # The minimum tendermint version supported
+
+  if ! command -v tendermint &> /dev/null
+  then
+      echo "The command 'tendermint' could not be found."
+      echo "Please install 'tendermint' from https://github.com/tendermint/tendermint/releases"
+      echo "The 'tendermint' binary should be in your '$PATH'"
+      exit
+  fi
+
+  tm_current_version=$(tendermint version | cut -d '-' -f 1)
+  verlt $tm_current_version $TM_MIN_VERSION && \
+    printf "Tendermint version should be at least $TM_MIN_VERSION.\nCurrent version is $tm_current_version\n" && \
+    exit 1
+
+  echo "Current Tendermint version: $tm_current_version"
+
   cd "$(dirname "$0")/.."
 
   local root_dir
