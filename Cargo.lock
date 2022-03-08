@@ -58,9 +58,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.55"
+version = "1.0.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
+checksum = "4361135be9122e0870de935d7c439aef945b9f9ddd4199a553b5270b49c82a27"
 
 [[package]]
 name = "arrayvec"
@@ -1941,7 +1941,7 @@ dependencies = [
 [[package]]
 name = "omni"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#fe8c4c92cac9b24c85e7d704f9b13ed1a175328e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#65837dca730380a4d3f728627c8f9398e0dc0c85"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2011,7 +2011,7 @@ dependencies = [
 [[package]]
 name = "omni-client"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#fe8c4c92cac9b24c85e7d704f9b13ed1a175328e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#65837dca730380a4d3f728627c8f9398e0dc0c85"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2120,7 +2120,7 @@ dependencies = [
 [[package]]
 name = "omni-module"
 version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#fe8c4c92cac9b24c85e7d704f9b13ed1a175328e"
+source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#65837dca730380a4d3f728627c8f9398e0dc0c85"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2636,9 +2636,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
+checksum = "1a11647b6b25ff05a515cb92c365cec08801e83423a235b51e231e1808747286"
 dependencies = [
  "aho-corasick",
  "memchr",
