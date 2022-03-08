@@ -1,17 +1,17 @@
 use clap::Parser;
+use many::message::ResponseMessage;
+use many::protocol::attributes::response::AsyncAttribute;
+use many::server::module::ledger::{
+    BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
+};
+use many::types::identity::cose::CoseKeyIdentity;
+use many::types::ledger::{Symbol, TokenAmount};
+use many::{Identity, ManyError};
+use many_client::ManyClient;
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
-use omni::message::ResponseMessage;
-use omni::protocol::attributes::response::AsyncAttribute;
-use omni::server::module::ledger::{
-    BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
-};
-use omni::types::identity::cose::CoseKeyIdentity;
-use omni::types::ledger::{Symbol, TokenAmount};
-use omni::{Identity, OmniError};
-use omni_client::OmniClient;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
@@ -46,7 +46,7 @@ impl<'b> minicbor::Decode<'b> for Amount {
 
 #[derive(Parser)]
 struct Opts {
-    /// Omni server URL to connect to.
+    /// Many server URL to connect to.
     #[clap(default_value = "http://localhost:8000")]
     server: String,
 
@@ -111,7 +111,7 @@ struct TargetCommandOpt {
     symbol: String,
 }
 
-fn resolve_symbol(client: &OmniClient, symbol: String) -> Result<Identity, OmniError> {
+fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, ManyError> {
     if let Ok(symbol) = Identity::from_str(&symbol) {
         Ok(symbol)
     } else {
@@ -121,15 +121,15 @@ fn resolve_symbol(client: &OmniClient, symbol: String) -> Result<Identity, OmniE
             .into_iter()
             .find(|(_, y)| y == &symbol)
             .map(|(x, _)| x)
-            .ok_or_else(|| OmniError::unknown(format!("Could not resolve symbol '{}'", &symbol)))
+            .ok_or_else(|| ManyError::unknown(format!("Could not resolve symbol '{}'", &symbol)))
     }
 }
 
 fn balance(
-    client: OmniClient,
+    client: ManyClient,
     account: Option<Identity>,
     symbols: Vec<String>,
-) -> Result<(), OmniError> {
+) -> Result<(), ManyError> {
     // Get info.
     let info: InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
     let local_names: BTreeMap<String, Symbol> = info
@@ -152,7 +152,7 @@ fn balance(
                         } else if let Some(i) = local_names.get(x.as_str()) {
                             Ok(*i)
                         } else {
-                            Err(OmniError::unknown(format!(
+                            Err(ManyError::unknown(format!(
                                 "Could not resolve symbol '{}'",
                                 x
                             )))
@@ -166,7 +166,7 @@ fn balance(
     let payload = client.call_("ledger.balance", argument)?;
 
     if payload.is_empty() {
-        Err(OmniError::unexpected_empty_response())
+        Err(ManyError::unexpected_empty_response())
     } else {
         let balance: BalanceReturns = minicbor::decode(&payload).unwrap();
         for (symbol, amount) in balance.balances {
@@ -182,11 +182,11 @@ fn balance(
 }
 
 fn mint(
-    client: OmniClient,
+    client: ManyClient,
     account: Identity,
     amount: BigUint,
     symbol: String,
-) -> Result<(), OmniError> {
+) -> Result<(), ManyError> {
     let symbol = resolve_symbol(&client, symbol)?;
 
     let arguments = MintArgs {
@@ -196,7 +196,7 @@ fn mint(
     };
     let payload = client.call_("ledger.mint", arguments)?;
     if payload.is_empty() {
-        Err(OmniError::unexpected_empty_response())
+        Err(ManyError::unexpected_empty_response())
     } else {
         minicbor::display(&payload);
         Ok(())
@@ -204,11 +204,11 @@ fn mint(
 }
 
 fn burn(
-    client: OmniClient,
+    client: ManyClient,
     account: Identity,
     amount: BigUint,
     symbol: String,
-) -> Result<(), OmniError> {
+) -> Result<(), ManyError> {
     let symbol = resolve_symbol(&client, symbol)?;
 
     let arguments = BurnArgs {
@@ -218,7 +218,7 @@ fn burn(
     };
     let payload = client.call_("ledger.burn", arguments)?;
     if payload.is_empty() {
-        Err(OmniError::unexpected_empty_response())
+        Err(ManyError::unexpected_empty_response())
     } else {
         minicbor::display(&payload);
         Ok(())
@@ -226,15 +226,15 @@ fn burn(
 }
 
 fn send(
-    client: OmniClient,
+    client: ManyClient,
     to: Identity,
     amount: BigUint,
     symbol: String,
-) -> Result<(), OmniError> {
+) -> Result<(), ManyError> {
     let symbol = resolve_symbol(&client, symbol)?;
 
     if client.id.identity.is_anonymous() {
-        Err(OmniError::invalid_identity())
+        Err(ManyError::invalid_identity())
     } else {
         let arguments = SendArgs {
             from: None,
@@ -285,7 +285,7 @@ fn main() {
         CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
     });
 
-    let client = OmniClient::new(&server, server_id, key).unwrap();
+    let client = ManyClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
             let identity = identity.map(|ref identity| {

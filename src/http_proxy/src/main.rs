@@ -1,8 +1,8 @@
 use clap::Parser;
-use omni::server::module::kvstore::{GetArgs, GetReturns};
-use omni::types::identity::cose::CoseKeyIdentity;
-use omni::Identity;
-use omni_client::OmniClient;
+use many::server::module::kvstore::{GetArgs, GetReturns};
+use many::types::identity::cose::CoseKeyIdentity;
+use many::Identity;
+use many_client::ManyClient;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tiny_http::{Header, Method, Response, StatusCode};
@@ -11,7 +11,7 @@ use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser)]
 struct Opts {
-    /// Omni server URL to connect to. It must implement a KV-Store attribute.
+    /// Many server URL to connect to. It must implement a KV-Store attribute.
     #[clap(default_value = "http://localhost:8000")]
     server: String,
 
@@ -62,7 +62,7 @@ fn main() {
         CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
     });
 
-    let client = OmniClient::new(server, server_id, key).unwrap();
+    let client = ManyClient::new(server, server_id, key).unwrap();
     let http = tiny_http::Server::http(addr).unwrap();
 
     // TODO: parallelize this.

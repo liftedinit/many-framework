@@ -1,15 +1,15 @@
 use clap::Parser;
-use omni::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturns};
-use omni::types::identity::cose::CoseKeyIdentity;
-use omni::{Identity, OmniError};
-use omni_client::OmniClient;
+use many::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturns};
+use many::types::identity::cose::CoseKeyIdentity;
+use many::{Identity, ManyError};
+use many_client::ManyClient;
 use std::io::Read;
 use std::path::PathBuf;
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser)]
 struct Opts {
-    /// Omni server URL to connect to.
+    /// Many server URL to connect to.
     #[clap(default_value = "http://localhost:8000")]
     server: String,
 
@@ -73,17 +73,17 @@ struct PutOpt {
     stdin: bool,
 }
 
-fn get(client: OmniClient, key: &[u8], hex: bool) -> Result<(), OmniError> {
+fn get(client: ManyClient, key: &[u8], hex: bool) -> Result<(), ManyError> {
     let arguments = GetArgs {
         key: key.to_vec().into(),
     };
 
     let payload = client.call_("kvstore.get", arguments)?;
     if payload.is_empty() {
-        Err(OmniError::unexpected_empty_response())
+        Err(ManyError::unexpected_empty_response())
     } else {
         let result: GetReturns = minicbor::decode(&payload)
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
         let value = result.value.unwrap();
 
         if hex {
@@ -95,7 +95,7 @@ fn get(client: OmniClient, key: &[u8], hex: bool) -> Result<(), OmniError> {
     }
 }
 
-fn put(client: OmniClient, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> {
+fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
     let arguments = PutArgs {
         key: key.to_vec().into(),
         value: value.into(),
@@ -106,16 +106,16 @@ fn put(client: OmniClient, key: &[u8], value: Vec<u8>) -> Result<(), OmniError> 
     if payload.is_empty() {
         if response
             .attributes
-            .contains(&omni::protocol::attributes::response::ASYNC)
+            .contains(&many::protocol::attributes::response::ASYNC)
         {
             eprintln!("Async response received...");
             Ok(())
         } else {
-            Err(OmniError::unexpected_empty_response())
+            Err(ManyError::unexpected_empty_response())
         }
     } else {
         let _: PutReturns = minicbor::decode(payload)
-            .map_err(|e| OmniError::deserialization_error(e.to_string()))?;
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
         Ok(())
     }
 }
@@ -147,7 +147,7 @@ fn main() {
         CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
     });
 
-    let client = OmniClient::new(&server, server_id, key).unwrap();
+    let client = ManyClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Get(GetOpt { key, hex_key, hex }) => {
             let key = if hex_key {

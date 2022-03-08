@@ -4,15 +4,15 @@ members = [
     "src/http_proxy",
     "src/ledger",
     "src/kvstore",
-    "src/omni-abci",
-    "src/omni-hwinfo",
-    "src/omni-kvstore",
-    "src/omni-ledger",
+    "src/many-abci",
+    "src/many-hwinfo",
+    "src/many-kvstore",
+    "src/many-ledger",
 ]
 
 # Uncomment this for local builds of minicose.
 #[patch."https://github.com/l-1-labs/rust-minicose"]
 #minicose = { path = "../rust-minicose" }
 
-#[patch."ssh://git@github.com/l-1-labs/omni-rust.git"]
-#omni = { path = "../omni-rust" }
+#[patch."ssh://git@github.com/l-1-labs/many-rs.git"]
+#many = { path = "../many-rs" }
