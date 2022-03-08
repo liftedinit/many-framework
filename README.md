@@ -1,2 +1,2 @@
 # many-ledger
-A Blockchain ledger node that supports the Manyverse protocol
+A Blockchain ledger node that supports the TBD-Verse protocol
