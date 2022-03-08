@@ -38,11 +38,11 @@ fn setup() -> LedgerStorage {
     storage
 }
 
-fn iter_asc<'a>(
-    storage: &'a LedgerStorage,
+fn iter_asc(
+    storage: &LedgerStorage,
     start: Bound<TransactionId>,
     end: Bound<TransactionId>,
-) -> impl Iterator<Item = Transaction> + 'a {
+) -> impl Iterator<Item = Transaction> + '_ {
     storage
         .iter(CborRange { start, end }, SortOrder::Ascending)
         .into_iter()
