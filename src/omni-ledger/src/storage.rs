@@ -203,7 +203,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[
                 (
-                    key_for_transaction(transaction.id),
+                    key_for_transaction(transaction.id.clone()),
                     fmerk::Op::Put(minicbor::to_vec(&transaction).unwrap()),
                 ),
                 (
@@ -414,8 +414,8 @@ impl LedgerStorage {
             .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
     }
 
-    pub fn iter(&self, start: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
-        LedgerIterator::scoped_by_id(&self.persistent_store, start, order)
+    pub fn iter(&self, range: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
+        LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
     }
 }
 
@@ -433,8 +433,8 @@ impl<'a> LedgerIterator<'a> {
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
-            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone() - 1)),
-            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone())),
+            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone())),
+            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone() + 1)),
             Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
         }
         match range.end_bound() {
