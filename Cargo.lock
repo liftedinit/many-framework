@@ -1357,11 +1357,11 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "hex",
+ "many",
+ "many-client",
+ "many-kvstore",
  "minicbor",
  "new_mime_guess",
- "omni",
- "omni-client",
- "omni-kvstore",
  "tiny_http",
  "tokio",
  "tracing",
@@ -1574,10 +1574,10 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "hex",
+ "many",
+ "many-client",
+ "many-kvstore",
  "minicbor",
- "omni",
- "omni-client",
- "omni-kvstore",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.9",
@@ -1605,10 +1605,10 @@ dependencies = [
  "fmerk",
  "hex",
  "lazy_static",
+ "many",
+ "many-client",
  "minicbor",
  "num-bigint 0.4.3",
- "omni",
- "omni-client",
  "regex",
  "ring 0.17.0-alpha.11",
  "tokio",
@@ -1660,6 +1660,198 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "many"
+version = "0.1.0"
+source = "git+ssh://git@github.com/l-1-labs/many-rs.git?rev=bc3d0ee671c49eef95f9b068fb3a98a262dc62b5#bc3d0ee671c49eef95f9b068fb3a98a262dc62b5"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backtrace",
+ "base32",
+ "base64 0.13.0",
+ "cbor-diag",
+ "crc-any",
+ "derive_builder",
+ "ecdsa",
+ "ed25519",
+ "ed25519-dalek",
+ "fixed",
+ "hex",
+ "lazy_static",
+ "many-macros",
+ "minicbor",
+ "minicose",
+ "num-bigint 0.4.3",
+ "num-derive",
+ "num-traits",
+ "openssh-keys",
+ "p256",
+ "pem",
+ "pkcs8 0.8.0",
+ "rand 0.8.5",
+ "regex",
+ "reqwest",
+ "ring 0.16.20",
+ "ring-compat",
+ "serde",
+ "sha3",
+ "signature",
+ "simple_asn1 0.5.4",
+ "static_assertions",
+ "thiserror",
+ "tiny_http",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "many-abci"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "ciborium 0.2.0 (git+https://github.com/enarx/ciborium)",
+ "clap",
+ "hex",
+ "lazy_static",
+ "many",
+ "many-client",
+ "minicbor",
+ "minicose",
+ "reqwest",
+ "sha2 0.10.2",
+ "smol",
+ "tendermint",
+ "tendermint-abci",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "many-client"
+version = "0.1.0"
+source = "git+ssh://git@github.com/l-1-labs/many-rs.git?rev=bc3d0ee671c49eef95f9b068fb3a98a262dc62b5#bc3d0ee671c49eef95f9b068fb3a98a262dc62b5"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backtrace",
+ "base32",
+ "base64 0.13.0",
+ "cbor-diag",
+ "crc-any",
+ "derive_builder",
+ "ecdsa",
+ "ed25519",
+ "ed25519-dalek",
+ "fixed",
+ "hex",
+ "lazy_static",
+ "many",
+ "minicbor",
+ "minicose",
+ "num-bigint 0.4.3",
+ "num-derive",
+ "num-traits",
+ "openssh-keys",
+ "p256",
+ "pkcs8 0.8.0",
+ "rand 0.8.5",
+ "regex",
+ "reqwest",
+ "ring 0.16.20",
+ "ring-compat",
+ "serde",
+ "sha3",
+ "signature",
+ "simple_asn1 0.5.4",
+ "static_assertions",
+ "thiserror",
+ "tiny_http",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "many-hwinfo"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "hex",
+ "many",
+ "minicbor",
+ "sys-info",
+ "sysinfo",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "many-kvstore"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "fmerk",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "many",
+ "many-abci",
+ "minicbor",
+ "num-bigint 0.4.3",
+ "serde",
+ "serde_json",
+ "sha3",
+ "simple_asn1 0.5.4",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "many-ledger"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "fixed",
+ "fmerk",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "many",
+ "many-abci",
+ "many-client",
+ "many-kvstore",
+ "minicbor",
+ "num-bigint 0.4.3",
+ "num-traits",
+ "serde",
+ "serde_json",
+ "sha3",
+ "simple_asn1 0.5.4",
+ "tempfile",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+ "typenum",
+]
+
+[[package]]
+name = "many-macros"
+version = "0.1.0"
+source = "git+ssh://git@github.com/l-1-labs/many-rs.git?rev=bc3d0ee671c49eef95f9b068fb3a98a262dc62b5#bc3d0ee671c49eef95f9b068fb3a98a262dc62b5"
+dependencies = [
+ "inflections",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_tokenstream",
+ "syn",
 ]
 
 [[package]]
@@ -1936,198 +2128,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67ac1d3f9a1d3616fd9a60c8d74296f22406a238b6a72f5cc1e6f314df4ffbf9"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "omni"
-version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#65837dca730380a4d3f728627c8f9398e0dc0c85"
-dependencies = [
- "anyhow",
- "async-trait",
- "backtrace",
- "base32",
- "base64 0.13.0",
- "cbor-diag",
- "crc-any",
- "derive_builder",
- "ecdsa",
- "ed25519",
- "ed25519-dalek",
- "fixed",
- "hex",
- "lazy_static",
- "minicbor",
- "minicose",
- "num-bigint 0.4.3",
- "num-derive",
- "num-traits",
- "omni-module",
- "openssh-keys",
- "p256",
- "pem",
- "pkcs8 0.8.0",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "ring 0.16.20",
- "ring-compat",
- "serde",
- "sha3",
- "signature",
- "simple_asn1 0.5.4",
- "static_assertions",
- "thiserror",
- "tiny_http",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "omni-abci"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "ciborium 0.2.0 (git+https://github.com/enarx/ciborium)",
- "clap",
- "hex",
- "lazy_static",
- "minicbor",
- "minicose",
- "omni",
- "omni-client",
- "reqwest",
- "sha2 0.10.2",
- "smol",
- "tendermint",
- "tendermint-abci",
- "tendermint-proto",
- "tendermint-rpc",
- "tokio",
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
-name = "omni-client"
-version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#65837dca730380a4d3f728627c8f9398e0dc0c85"
-dependencies = [
- "anyhow",
- "async-trait",
- "backtrace",
- "base32",
- "base64 0.13.0",
- "cbor-diag",
- "crc-any",
- "derive_builder",
- "ecdsa",
- "ed25519",
- "ed25519-dalek",
- "fixed",
- "hex",
- "lazy_static",
- "minicbor",
- "minicose",
- "num-bigint 0.4.3",
- "num-derive",
- "num-traits",
- "omni",
- "openssh-keys",
- "p256",
- "pkcs8 0.8.0",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "ring 0.16.20",
- "ring-compat",
- "serde",
- "sha3",
- "signature",
- "simple_asn1 0.5.4",
- "static_assertions",
- "thiserror",
- "tiny_http",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "omni-hwinfo"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "clap",
- "hex",
- "minicbor",
- "omni",
- "sys-info",
- "sysinfo",
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
-name = "omni-kvstore"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "clap",
- "fmerk",
- "hex",
- "itertools",
- "lazy_static",
- "minicbor",
- "num-bigint 0.4.3",
- "omni",
- "omni-abci",
- "serde",
- "serde_json",
- "sha3",
- "simple_asn1 0.5.4",
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
-name = "omni-ledger"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "clap",
- "fixed",
- "fmerk",
- "hex",
- "itertools",
- "lazy_static",
- "minicbor",
- "num-bigint 0.4.3",
- "num-traits",
- "omni",
- "omni-abci",
- "omni-client",
- "omni-kvstore",
- "serde",
- "serde_json",
- "sha3",
- "simple_asn1 0.5.4",
- "tempfile",
- "tracing",
- "tracing-subscriber 0.2.25",
- "typenum",
-]
-
-[[package]]
-name = "omni-module"
-version = "0.1.0"
-source = "git+ssh://git@github.com/l-1-labs/omni-rust.git#65837dca730380a4d3f728627c8f9398e0dc0c85"
-dependencies = [
- "inflections",
- "proc-macro2",
- "quote",
- "serde",
- "serde_tokenstream",
- "syn",
 ]
 
 [[package]]
@@ -3534,9 +3534,9 @@ checksum = "360dfd1d6d30e05fda32ace2c8c70e9c0a9da713275777f5a4dbb8a1893930c6"
 
 [[package]]
 name = "tracing"
-version = "0.1.31"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6c650a8ef0cd2dd93736f033d21cbd1224c5a967aa0c258d00fcf7dafef9b9f"
+checksum = "4a1bdf54a7c28a2bbf701e1d2233f6c77f473486b94bee4f9678da5a148dca7f"
 dependencies = [
  "cfg-if",
  "pin-project-lite",
@@ -3546,9 +3546,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.19"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8276d9a4a3a558d7b7ad5303ad50b53d58264641b82914b7ada36bd762e7a716"
+checksum = "2e65ce065b4b5c53e73bb28912318cb8c9e9ad3921f1d669eb0e68b4c8143a2b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3557,9 +3557,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.22"
+version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03cfcb51380632a72d3111cb8d3447a8d908e577d31beeac006f836383d29a23"
+checksum = "aa31669fa42c09c34d94d8165dd2012e8ff3c66aca50f3bb226b68f216f2706c"
 dependencies = [
  "lazy_static",
  "valuable",

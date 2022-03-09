@@ -1,9 +1,9 @@
-FROM omni_local/repo_build:latest as builder
+FROM many_local/repo_build:latest as builder
 
 # ==== STAGE 2 ====
 FROM debian:bullseye as runtime
 
-RUN useradd -ms /bin/bash omni
+RUN useradd -ms /bin/bash many
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get -y install openssl
@@ -14,12 +14,12 @@ VOLUME /state
 
 STOPSIGNAL SIGTERM
 
-USER omni
+USER many
 WORKDIR /app
 
 EXPOSE 8000
 
-COPY --from=builder /src/target/release/omni-ledger /app/omni-ledger
+COPY --from=builder /src/target/release/many-ledger /app/many-ledger
 
-ENTRYPOINT ["./omni-ledger"]
+ENTRYPOINT ["./many-ledger"]
 CMD ["--addr", "0.0.0.0:8000", "-v", "-v", "--state", "/state/state.json", "--persistent", "/persistent/ledger.db", "--pem", "/state/id.pem"]

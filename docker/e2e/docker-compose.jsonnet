@@ -1,13 +1,13 @@
 //
 
 local abci(i) = {
-    image: "omni/abci",
+    image: "many/abci",
     ports: [ (8000 + i) + ":8000" ],
     volumes: [ "./node" + i + ":/genfiles:ro" ],
     command: [
-        "--omni", "0.0.0.0:8000",
-        "--omni-app", "http://ledger-" + i + ":8000",
-        "--omni-pem", "/genfiles/abci.pem",
+        "--many", "0.0.0.0:8000",
+        "--many-app", "http://ledger-" + i + ":8000",
+        "--many-pem", "/genfiles/abci.pem",
         "--abci", "0.0.0.0:26658",
         "--tendermint", "http://tendermint-0:26657/"
     ],
@@ -15,7 +15,7 @@ local abci(i) = {
 };
 
 local ledger(i) = {
-    image: "omni/ledger",
+    image: "many/ledger",
     volumes: [
         "./node" + i + "/persistent-ledger:/persistent",
         "./node" + i + ":/genfiles:ro",

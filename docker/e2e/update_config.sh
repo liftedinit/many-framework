@@ -101,14 +101,14 @@ for node in $(seq 0 "$NB_NODES"); do
   done | sed 's/,$//')
 
   update_toml_key "$config_toml_path" '' proxy-app "\"tcp:\\/\\/abci-${node}:26658\\/\""
-  update_toml_key "$config_toml_path" '' moniker "\"omni-tendermint-${node}\""
+  update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
   update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
   # update_toml_key "$config_toml_path" p2p bootstrap-peers "\"$peers\""
 done
 
 # Same genesis data for all.
 genesis_temp_file=$(mktemp)
-jq ".validators = ${all_validators} | .chain_id = \"omni-e2e-ledger\"" "${config_root//%/1}/genesis.json" > "$genesis_temp_file"
+jq ".validators = ${all_validators} | .chain_id = \"many-e2e-ledger\"" "${config_root//%/1}/genesis.json" > "$genesis_temp_file"
 for node in $(seq 0 "$NB_NODES"); do
   cp "$genesis_temp_file" "${config_root//%/$node}/genesis.json"
 done

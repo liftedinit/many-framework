@@ -10,17 +10,17 @@ clean:
 build: build-repo build-ledger
 
 build-repo:
-	docker build --ssh default --tag omni_local/repo_build ../.. --target builder -f ../build.dockerfile
+	docker build --ssh default --tag many_local/repo_build ../.. --target builder -f ../build.dockerfile
 
 build-ledger: build-repo
-	docker build --ssh default --tag omni/ledger ../.. --target runtime -f ../ledger/Dockerfile
+	docker build --ssh default --tag many/ledger ../.. --target runtime -f ../ledger/Dockerfile
 
 build-abci: build-repo
-	docker build --ssh default --tag omni/abci ../.. --target runtime -f ../abci/Dockerfile
+	docker build --ssh default --tag many/abci ../.. --target runtime -f ../abci/Dockerfile
 
 .PHONY: start-ledger-local
 start-ledger-local: build-ledger
-	docker run -d --name ledger -p 8000:8000 --volume ${PWD}/../volumes/ledger:/persistent omni/ledger
+	docker run -d --name ledger -p 8000:8000 --volume ${PWD}/../volumes/ledger:/persistent many/ledger
 
 .PHONY: tendermint-docker openssl-docker jsonnet-docker
 

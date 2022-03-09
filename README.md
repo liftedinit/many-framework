@@ -1,2 +1,2 @@
-# omni-ledger
-A Blockchain ledger node that supports the Omniverse protocol
+# many-ledger
+A Blockchain ledger node that supports the TBD-Verse protocol
