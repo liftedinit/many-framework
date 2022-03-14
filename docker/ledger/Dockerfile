@@ -4,9 +4,6 @@ FROM many_local/repo_build:latest as builder
 FROM debian:bullseye as runtime
 
 RUN useradd -ms /bin/bash many
-RUN apt-get update && \
-    apt-get -y upgrade && \
-    apt-get -y install openssl
 
 # Contains the ledger.db store.
 VOLUME /persistent
