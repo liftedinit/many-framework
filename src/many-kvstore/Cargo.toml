@@ -16,7 +16,7 @@ itertools = "0.10.3"
 lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "ssh://git@github.com/l-1-labs/many-rs.git", rev = "bc3d0ee671c49eef95f9b068fb3a98a262dc62b5", features = ["pem"] }
+many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "ea842bb5c67a76bec284c4addbda38147c57cbc6", features = ["pem"] }
 many-abci = { path = "../many-abci" }
 serde = "1.0.130"
 serde_json = "1.0.72"
