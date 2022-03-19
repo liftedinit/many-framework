@@ -14,7 +14,7 @@ members = [
 #[patch."https://github.com/l-1-labs/rust-minicose"]
 #minicose = { path = "../rust-minicose" }
 
-#[patch."ssh://git@github.com/l-1-labs/many-rs.git"]
+#[patch."https://github.com/l-1-labs/many-rs.git"]
 #many = { path = "../many-rs/src/many" }
 #many-cli = { path = "../many-rs/src/many-cli" }
 #many-client = { path = "../many-rs/src/many-client" }
