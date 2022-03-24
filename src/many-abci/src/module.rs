@@ -1,6 +1,6 @@
 use many::server::module::{abci_frontend, blockchain};
 use many::types::blockchain::{
-    Block, BlockIdentifier, SingleBlockQuery, Transaction, TransactionIdentifier,
+    Block, BlockIdentifier, SingleBlockQuery, Transaction, TransactionIdentifier, SingleTransactionQuery,
 };
 use many::types::Timestamp;
 use many::ManyError;
@@ -75,6 +75,36 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             retained_height: None,
         })
     }
+
+    fn transaction(&self, args: blockchain::TransactionArgs) -> Result<blockchain::TransactionReturns, ManyError> {
+        let block = smol::block_on(async {
+            match args.query {
+                SingleTransactionQuery::Hash(hash) => {
+                    if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
+                        self.client
+                            .tx(tendermint_rpc::abci::transaction::Hash::new(hash), true)
+                            .await
+                            .map_err(|e| {
+                                tracing::error!("abci transport: {}", e.to_string());
+                                abci_frontend::abci_transport_error(e.to_string())
+                            })
+                    } else {
+                        Err(ManyError::unknown("Invalid transaction hash .".to_string()))
+                    }
+                }
+            }
+        })?;
+
+        let tx_hash = block.hash.as_bytes().to_vec();
+        Ok(blockchain::TransactionReturns { 
+            txn: Transaction { 
+                id: TransactionIdentifier {
+                    hash:  tx_hash
+                },
+                 content: None
+                }
+         })
+        }
 
     fn block(&self, args: blockchain::BlockArgs) -> Result<blockchain::BlockReturns, ManyError> {
         let block = smol::block_on(async {
