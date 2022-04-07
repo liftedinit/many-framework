@@ -1,4 +1,5 @@
-use clap::Parser;
+use clap::{ArgGroup, Parser};
+use many::hsm::{HSMMechanismType, HSMSessionType, HSMUserType, HSM};
 use many::message::ResponseMessage;
 use many::protocol::attributes::response::AsyncAttribute;
 use many::server::module::ledger::{
@@ -12,11 +13,13 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
+use tracing::{debug, error, trace};
+use tracing_subscriber::filter::LevelFilter;
+
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
-use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Clone, Debug)]
 #[repr(transparent)]
@@ -45,6 +48,14 @@ impl<'b> minicbor::Decode<'b> for Amount {
 }
 
 #[derive(Parser)]
+#[clap(
+    group(
+        ArgGroup::new("hsm")
+        .multiple(true)
+        .args(&["module", "slot", "keyid"])
+        .requires_all(&["module", "slot", "keyid"])
+    )
+)]
 struct Opts {
     /// Many server URL to connect to.
     #[clap(default_value = "http://localhost:8000")]
@@ -56,6 +67,18 @@ struct Opts {
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
     pem: Option<PathBuf>,
+
+    /// HSM PKCS#11 module path
+    #[clap(long, conflicts_with("pem"))]
+    module: Option<PathBuf>,
+
+    /// HSM PKCS#11 slot ID
+    #[clap(long, conflicts_with("pem"))]
+    slot: Option<u64>,
+
+    /// HSM PKCS#11 key ID
+    #[clap(long, conflicts_with("pem"))]
+    keyid: Option<String>,
 
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
@@ -87,13 +110,13 @@ enum SubCommand {
 #[derive(Parser)]
 struct BalanceOpt {
     /// The identity to check. This can be a Pem file (which will be used to calculate a public
-    /// identity) or an identity string. If omitted it will use the identity of the caller,
-    /// and if there is none, it will ignore the call.
+    /// identity) or an identity string. If omitted it will use the identity of the caller.
     identity: Option<String>,
 
     /// The symbol to check the balance of. This can either be an identity or
     /// a local name for a symbol. If it doesn't parse to an identity an
     /// additional call will be made to retrieve local names.
+    #[clap(last = true)]
     symbols: Vec<String>,
 }
 
@@ -249,7 +272,7 @@ fn send(
         let payload = data?;
         if payload.is_empty() {
             let attr = attributes.get::<AsyncAttribute>()?;
-            eprintln!("Async token: {}", hex::encode(&attr.token));
+            debug!("Async token: {}", hex::encode(&attr.token));
             Ok(())
         } else {
             minicbor::display(&payload);
@@ -261,6 +284,9 @@ fn send(
 fn main() {
     let Opts {
         pem,
+        module,
+        slot,
+        keyid,
         server,
         server_id,
         subcommand,
@@ -281,22 +307,44 @@ fn main() {
     tracing_subscriber::fmt().with_max_level(log_level).init();
 
     let server_id = server_id.unwrap_or_default();
-    let key = pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
-        CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
-    });
+    let key = if let (Some(module), Some(slot), Some(keyid)) = (module, slot, keyid) {
+        trace!("Getting user PIN");
+        let pin = rpassword::prompt_password("Please enter the HSM user PIN: ")
+            .expect("I/O error when reading HSM PIN");
+        let keyid = hex::decode(keyid).expect("Failed to decode keyid to hex");
+
+        {
+            let mut hsm = HSM::get_instance().expect("HSM mutex poisoned");
+            hsm.init(module, keyid)
+                .expect("Failed to initialize HSM module");
+
+            // The session will stay open until the application terminates
+            hsm.open_session(slot, HSMSessionType::RO, Some(HSMUserType::User), Some(pin))
+                .expect("Failed to open HSM session");
+        }
+
+        trace!("Creating CoseKeyIdentity");
+        // Only ECDSA is supported at the moment. It should be easy to add support for new EC mechanisms
+        CoseKeyIdentity::from_hsm(HSMMechanismType::ECDSA)
+            .expect("Unable to create CoseKeyIdentity from HSM")
+    } else {
+        pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
+            CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
+        })
+    };
 
     let client = ManyClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
-            let identity = identity.map(|ref identity| {
-                Identity::from_str(identity)
+            let identity = identity.map(|identity| {
+                Identity::from_str(&identity)
                     .or_else(|_| {
                         let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 
                         Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().identity)
                     })
                     .map_err(|_: std::io::Error| ())
-                    .unwrap()
+                    .expect("Unable to decode identity command-line argument")
             });
 
             balance(client, identity, symbols)
@@ -319,7 +367,7 @@ fn main() {
     };
 
     if let Err(err) = result {
-        eprintln!(
+        error!(
             "Error returned by server:\n|  {}\n",
             err.to_string()
                 .split('\n')
