@@ -9,20 +9,20 @@ update_toml_key() {
   temp_file="$(mktemp)"
 
   if [[ "$section" = '' ]]; then
-    split -p "^\[" "$file" "${temp_file}_"
+    csplit -s -f "${temp_file}_" "${file}" "/^\[/"
 
     (
-      sed "s/^${key}.*$/${key} = ${value}/" "${temp_file}_aa"
-      rm "${temp_file}_aa"
+      sed "s/^${key}.*$/${key} = ${value}/" "${temp_file}_00"
+      rm "${temp_file}_00"
       cat "${temp_file}_"*
     ) > "$file"
   elif grep -E "^\\[${section}]\$" "$file" > /dev/null; then
     cp "$file" "$temp_file"
-    split -p "\[${section}\]" "$temp_file" "${temp_file}_"
+    csplit -s -f "${temp_file}_" "${file}" "/\[${section}\]/"
 
     (
-      cat "${temp_file}_aa"
-      sed "s/^${key} .*$/${key} = ${value}/" "${temp_file}_ab"
+      cat "${temp_file}_00"
+      sed "s/^${key} .*$/${key} = ${value}/" "${temp_file}_01"
     ) > "$file"
   else
     (
