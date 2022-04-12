@@ -3,9 +3,7 @@ use crate::{error, storage::KvStoreStorage};
 use many::server::module::abci_backend::{
     AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::kvstore::{
-    GetArgs, GetReturns, InfoArgs, InfoReturns, KvStoreModuleBackend, PutArgs, PutReturns,
-};
+use many::server::module::kvstore::{GetArgs, GetReturns, InfoArgs, InfoReturns, KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturns};
 use many::{Identity, ManyError};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -105,7 +103,9 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
             value: value.map(|x| x.into()),
         })
     }
+}
 
+impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
     fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, ManyError> {
         self.storage.put(sender, &args.key, args.value.into())?;
         Ok(PutReturns {})

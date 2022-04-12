@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, ledger, ledger_transactions};
+use many::server::module::{abci_backend, ledger};
 use many::server::ManyServer;
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -111,7 +111,8 @@ fn main() {
     {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
-        s.add_module(ledger_transactions::LedgerTransactionsModule::new(
+        s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
+        s.add_module(ledger::LedgerTransactionsModule::new(
             module_impl.clone(),
         ));
         if abci {

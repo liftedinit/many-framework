@@ -1,7 +1,6 @@
 use clap::{ArgGroup, Parser};
 use many::hsm::{HSMMechanismType, HSMSessionType, HSMUserType, HSM};
 use many::message::ResponseMessage;
-use many::protocol::attributes::response::AsyncAttribute;
 use many::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
 };
@@ -13,8 +12,9 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
-use tracing::{debug, error, trace};
+use tracing::{error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
+use many::server::module::r#async::attributes::AsyncAttribute;
 
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
@@ -272,7 +272,7 @@ fn send(
         let payload = data?;
         if payload.is_empty() {
             let attr = attributes.get::<AsyncAttribute>()?;
-            debug!("Async token: {}", hex::encode(&attr.token));
+            info!("Async token: {}", hex::encode(&attr.token));
             Ok(())
         } else {
             minicbor::display(&payload);
