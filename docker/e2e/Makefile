@@ -6,6 +6,11 @@ clean:
 	fi
 	rm -rf genfiles/
 
+.PHONY: clean-tm-data
+clean-tm-data:
+	rm -rf genfiles/node*/tendermint/data/
+	rm -rf genfiles/node*/persistent-ledger/
+
 .PHONY: build
 build: build-repo build-ledger
 
