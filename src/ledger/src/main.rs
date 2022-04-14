@@ -4,6 +4,7 @@ use many::message::ResponseMessage;
 use many::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
 };
+use many::server::module::r#async::attributes::AsyncAttribute;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::types::ledger::{Symbol, TokenAmount};
 use many::{Identity, ManyError};
@@ -14,7 +15,6 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use tracing::{error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
-use many::server::module::r#async::attributes::AsyncAttribute;
 
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};

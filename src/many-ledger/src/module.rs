@@ -236,10 +236,7 @@ impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
         })
     }
 
-    fn list(
-        &mut self,
-        args: ledger::ListArgs,
-    ) -> Result<ledger::ListReturns, ManyError> {
+    fn list(&mut self, args: ledger::ListArgs) -> Result<ledger::ListReturns, ManyError> {
         let ledger::ListArgs {
             count,
             order,

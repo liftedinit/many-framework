@@ -112,9 +112,7 @@ fn main() {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
-        s.add_module(ledger::LedgerTransactionsModule::new(
-            module_impl.clone(),
-        ));
+        s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
         if abci {
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
