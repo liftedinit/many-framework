@@ -1,11 +1,11 @@
 use clap::Parser;
 use many::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturns};
+use many::server::module::r#async;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
 use std::io::Read;
 use std::path::PathBuf;
-use many::server::module::r#async;
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser)]
@@ -105,7 +105,10 @@ fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> 
     let response = client.call("kvstore.put", arguments)?;
     let payload = &response.data?;
     if payload.is_empty() {
-        if response.attributes.get::<r#async::attributes::AsyncAttribute>().is_ok()
+        if response
+            .attributes
+            .get::<r#async::attributes::AsyncAttribute>()
+            .is_ok()
         {
             eprintln!("Async response received...");
             Ok(())
