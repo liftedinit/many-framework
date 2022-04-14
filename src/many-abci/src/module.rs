@@ -1,3 +1,4 @@
+use coset::{CborSerializable, CoseSign1};
 use many::server::module::r#async::{StatusArgs, StatusReturn};
 use many::server::module::{abci_frontend, blockchain, r#async};
 use many::types::blockchain::{
@@ -6,7 +7,6 @@ use many::types::blockchain::{
 };
 use many::types::Timestamp;
 use many::{Identity, ManyError};
-use minicose::CoseSign1;
 use tendermint::Time;
 use tendermint_rpc::Client;
 
@@ -74,8 +74,10 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                     .await
                 {
                     Ok(tx) => Ok(StatusReturn::Done {
-                        response: CoseSign1::from_bytes(tx.tx.as_bytes())
-                            .map_err(|e| abci_frontend::abci_transport_error(e.to_string()))?,
+                        response: Box::new(
+                            CoseSign1::from_slice(tx.tx.as_bytes())
+                                .map_err(|e| abci_frontend::abci_transport_error(e.to_string()))?,
+                        ),
                     }),
 
                     Err(_) => Ok(StatusReturn::Unknown),

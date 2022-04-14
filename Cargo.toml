@@ -10,12 +10,8 @@ members = [
     "src/many-ledger",
 ]
 
-# Uncomment this for local builds of minicose.
-#[patch."https://github.com/l-1-labs/rust-minicose"]
-#minicose = { path = "../rust-minicose" }
-
-#[patch."https://github.com/l-1-labs/many-rs.git"]
-#many = { path = "../many-rs/src/many" }
-#many-cli = { path = "../many-rs/src/many-cli" }
-#many-client = { path = "../many-rs/src/many-client" }
-#many-macros = { path = "../many-rs/src/many-macros" }
+# [patch."https://github.com/l-1-labs/many-rs.git"]
+# many = { path = "../many-rs/src/many" }
+# many-cli = { path = "../many-rs/src/many-cli" }
+# many-client = { path = "../many-rs/src/many-client" }
+# many-macros = { path = "../many-rs/src/many-macros" }

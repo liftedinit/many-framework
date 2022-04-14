@@ -11,10 +11,10 @@ doc = false
 async-trait = "0.1.51"
 ciborium = { git = "https://github.com/enarx/ciborium" }
 clap = { version = "3.0.0", features = ["derive"] }
+coset = "0.3"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-minicose = { git = "https://github.com/l-1-labs/rust-minicose.git" }
 many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "454d5375f00d56e2718f1a3ba275082901298653" }
 many-client = { git = "https://github.com/l-1-labs/many-rs.git", rev = "454d5375f00d56e2718f1a3ba275082901298653" }
 reqwest = "0.11.6"
