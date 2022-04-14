@@ -150,6 +150,21 @@ impl KvStoreStorage {
         }
         Ok(())
     }
+
+    pub fn delete(&mut self, id: &Identity, key: &[u8]) -> Result<(), ManyError> {
+        if !self.can_write(id, key) {
+            return Err(unauthorized());
+        }
+
+        self.persistent_store
+            .apply(&[(vec![b"/store/".to_vec(), key.to_vec()].concat(), Op::Delete)])
+            .map_err(|e| ManyError::unknown(e.to_string()))?;
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+        Ok(())
+    }
 }
 
 pub struct StorageIterator<'a> {
