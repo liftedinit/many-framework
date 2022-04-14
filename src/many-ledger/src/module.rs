@@ -2,7 +2,7 @@ use crate::{error, storage::LedgerStorage};
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::{ledger, ledger_transactions};
+use many::server::module::ledger;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
@@ -170,7 +170,9 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
             balances: balances.into_iter().map(|(k, v)| (*k, v)).collect(),
         })
     }
+}
 
+impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
     fn mint(&mut self, sender: &Identity, args: ledger::MintArgs) -> Result<(), ManyError> {
         let ledger::MintArgs {
             account,
@@ -224,21 +226,21 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
     }
 }
 
-impl ledger_transactions::LedgerTransactionsModuleBackend for LedgerModuleImpl {
+impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
     fn transactions(
         &self,
-        _args: ledger_transactions::TransactionsArgs,
-    ) -> Result<ledger_transactions::TransactionsReturns, ManyError> {
-        Ok(ledger_transactions::TransactionsReturns {
+        _args: ledger::TransactionsArgs,
+    ) -> Result<ledger::TransactionsReturns, ManyError> {
+        Ok(ledger::TransactionsReturns {
             nb_transactions: self.storage.nb_transactions(),
         })
     }
 
     fn list(
         &mut self,
-        args: ledger_transactions::ListArgs,
-    ) -> Result<ledger_transactions::ListReturns, ManyError> {
-        let ledger_transactions::ListArgs {
+        args: ledger::ListArgs,
+    ) -> Result<ledger::ListReturns, ManyError> {
+        let ledger::ListArgs {
             count,
             order,
             filter,
@@ -268,7 +270,7 @@ impl ledger_transactions::LedgerTransactionsModuleBackend for LedgerModuleImpl {
 
         let transactions: Vec<Transaction> = iter.take(count).collect::<Result<_, _>>()?;
 
-        Ok(ledger_transactions::ListReturns {
+        Ok(ledger::ListReturns {
             nb_transactions,
             transactions,
         })

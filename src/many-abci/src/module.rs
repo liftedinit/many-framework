@@ -1,10 +1,12 @@
-use many::server::module::{abci_frontend, blockchain};
+use many::server::module::r#async::{StatusArgs, StatusReturn};
+use many::server::module::{abci_frontend, blockchain, r#async};
 use many::types::blockchain::{
     Block, BlockIdentifier, SingleBlockQuery, SingleTransactionQuery, Transaction,
     TransactionIdentifier,
 };
 use many::types::Timestamp;
-use many::ManyError;
+use many::{Identity, ManyError};
+use minicose::CoseSign1;
 use tendermint::Time;
 use tendermint_rpc::Client;
 
@@ -57,6 +59,31 @@ pub struct AbciBlockchainModuleImpl<C: Client> {
 impl<C: Client> AbciBlockchainModuleImpl<C> {
     pub fn new(client: C) -> Self {
         Self { client }
+    }
+}
+
+impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModuleImpl<C> {
+    fn status(&mut self, _sender: &Identity, args: StatusArgs) -> Result<StatusReturn, ManyError> {
+        let hash = args.token.as_ref();
+
+        if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
+            smol::block_on(async {
+                match self
+                    .client
+                    .tx(tendermint_rpc::abci::transaction::Hash::new(hash), false)
+                    .await
+                {
+                    Ok(tx) => Ok(StatusReturn::Done {
+                        response: CoseSign1::from_bytes(tx.tx.as_bytes())
+                            .map_err(|e| abci_frontend::abci_transport_error(e.to_string()))?,
+                    }),
+
+                    Err(_) => Ok(StatusReturn::Unknown),
+                }
+            })
+        } else {
+            Err(ManyError::unknown("Invalid async token .".to_string()))
+        }
     }
 }
 

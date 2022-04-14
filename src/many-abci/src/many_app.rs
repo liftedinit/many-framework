@@ -70,7 +70,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                 let response =
                     ResponseMessage::from_request(&message, &self.identity.identity, Ok(vec![]))
                         .with_attribute(
-                            many::protocol::attributes::response::ASYNC
+                            many::server::module::r#async::attributes::ASYNC
                                 .with_argument(CborAny::Bytes(response.hash.as_bytes().to_vec())),
                         );
                 many::message::encode_cose_sign1_from_response(response, &self.identity)

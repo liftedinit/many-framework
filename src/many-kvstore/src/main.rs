@@ -105,6 +105,7 @@ fn main() {
     {
         let mut s = many.lock().unwrap();
         s.add_module(kvstore::KvStoreModule::new(module.clone()));
+        s.add_module(kvstore::KvStoreCommandsModule::new(module.clone()));
 
         if abci {
             s.add_module(abci_backend::AbciModule::new(module));

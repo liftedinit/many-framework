@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{base, blockchain};
+use many::server::module::{base, blockchain, r#async};
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyServer};
 use many_client::ManyClient;
@@ -155,7 +155,8 @@ async fn main() {
     {
         let mut s = server.lock().unwrap();
         s.add_module(base::BaseModule::new(server.clone()));
-        s.add_module(blockchain::BlockchainModule::new(blockchain_impl));
+        s.add_module(blockchain::BlockchainModule::new(blockchain_impl.clone()));
+        s.add_module(r#async::AsyncModule::new(blockchain_impl));
         s.set_fallback_module(backend);
     }
     eprintln!("... :5");
