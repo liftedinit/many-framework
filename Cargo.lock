@@ -466,16 +466,6 @@ dependencies = [
 [[package]]
 name = "ciborium"
 version = "0.2.0"
-source = "git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86#230e84cf939cfef9d00958f104cafe72774ffc86"
-dependencies = [
- "ciborium-io 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
- "ciborium-ll 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
- "serde",
-]
-
-[[package]]
-name = "ciborium"
-version = "0.2.0"
 source = "git+https://github.com/enarx/ciborium#2ca375e6b33d1ade5a5798792278b35a807b748e"
 dependencies = [
  "ciborium-io 0.2.0 (git+https://github.com/enarx/ciborium)",
@@ -492,11 +482,6 @@ checksum = "346de753af073cc87b52b2083a506b38ac176a44cfb05497b622e27be899b369"
 [[package]]
 name = "ciborium-io"
 version = "0.2.0"
-source = "git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86#230e84cf939cfef9d00958f104cafe72774ffc86"
-
-[[package]]
-name = "ciborium-io"
-version = "0.2.0"
 source = "git+https://github.com/enarx/ciborium#2ca375e6b33d1ade5a5798792278b35a807b748e"
 
 [[package]]
@@ -506,15 +491,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213030a2b5a4e0c0892b6652260cf6ccac84827b83a85a534e178e3906c4cf1b"
 dependencies = [
  "ciborium-io 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "half",
-]
-
-[[package]]
-name = "ciborium-ll"
-version = "0.2.0"
-source = "git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86#230e84cf939cfef9d00958f104cafe72774ffc86"
-dependencies = [
- "ciborium-io 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
  "half",
 ]
 
@@ -843,12 +819,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "data-encoding"
-version = "2.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
 
 [[package]]
 name = "debug-helper"
@@ -1786,7 +1756,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=454d5375f00d56e2718f1a3ba275082901298653#454d5375f00d56e2718f1a3ba275082901298653"
+source = "git+https://github.com/l-1-labs/many-rs.git?rev=6c193b317a5f2f8f5394da59ea7ad88049592fc7#6c193b317a5f2f8f5394da59ea7ad88049592fc7"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1794,6 +1764,7 @@ dependencies = [
  "base32",
  "base64 0.13.0",
  "cbor-diag",
+ "coset",
  "crc-any",
  "cryptoki",
  "derive_builder",
@@ -1805,7 +1776,6 @@ dependencies = [
  "lazy_static",
  "many-macros",
  "minicbor",
- "minicose",
  "num-bigint 0.4.3",
  "num-derive",
  "num-traits",
@@ -1823,7 +1793,7 @@ dependencies = [
  "sha2 0.10.2",
  "sha3",
  "signature",
- "simple_asn1 0.5.4",
+ "simple_asn1",
  "static_assertions",
  "thiserror",
  "tiny_http",
@@ -1859,7 +1829,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=454d5375f00d56e2718f1a3ba275082901298653#454d5375f00d56e2718f1a3ba275082901298653"
+source = "git+https://github.com/l-1-labs/many-rs.git?rev=6c193b317a5f2f8f5394da59ea7ad88049592fc7#6c193b317a5f2f8f5394da59ea7ad88049592fc7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1867,6 +1837,7 @@ dependencies = [
  "base32",
  "base64 0.13.0",
  "cbor-diag",
+ "coset",
  "crc-any",
  "derive_builder",
  "ecdsa",
@@ -1877,7 +1848,6 @@ dependencies = [
  "lazy_static",
  "many",
  "minicbor",
- "minicose",
  "num-bigint 0.4.3",
  "num-derive",
  "num-traits",
@@ -1892,7 +1862,7 @@ dependencies = [
  "serde",
  "sha3",
  "signature",
- "simple_asn1 0.5.4",
+ "simple_asn1",
  "static_assertions",
  "thiserror",
  "tiny_http",
@@ -1932,7 +1902,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3",
- "simple_asn1 0.5.4",
+ "simple_asn1",
  "tracing",
  "tracing-subscriber 0.2.25",
 ]
@@ -1958,7 +1928,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3",
- "simple_asn1 0.5.4",
+ "simple_asn1",
  "tempfile",
  "tracing",
  "tracing-subscriber 0.2.25",
@@ -1968,7 +1938,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=454d5375f00d56e2718f1a3ba275082901298653#454d5375f00d56e2718f1a3ba275082901298653"
+source = "git+https://github.com/l-1-labs/many-rs.git?rev=6c193b317a5f2f8f5394da59ea7ad88049592fc7#6c193b317a5f2f8f5394da59ea7ad88049592fc7"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2044,20 +2014,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "minicose"
-version = "0.1.0"
-source = "git+https://github.com/l-1-labs/rust-minicose.git#3b8cd133fe028bc78f26eae30ea87e23f2f9e91b"
-dependencies = [
- "ciborium 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
- "ciborium-ll 0.2.0 (git+https://github.com/hansl/ciborium?rev=230e84cf939cfef9d00958f104cafe72774ffc86)",
- "data-encoding",
- "derive_builder",
- "serde",
- "serde_bytes",
- "simple_asn1 0.6.1",
 ]
 
 [[package]]
@@ -2623,15 +2579,6 @@ checksum = "2d0a014229361011dc8e69c8a1ec6c2e8d0f2af7c91e3ea3f5b2170298461e68"
 dependencies = [
  "bytes",
  "prost",
-]
-
-[[package]]
-name = "quickcheck"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "588f6378e4dd99458b60ec275b4477add41ce4fa9f64dcba6f15adccb19b50d6"
-dependencies = [
- "rand 0.8.5",
 ]
 
 [[package]]
@@ -3210,18 +3157,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple_asn1"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a762b1c38b9b990c694b9c2f8abe3372ce6a9ceaae6bca39cfc46e054f45745"
-dependencies = [
- "num-bigint 0.4.3",
- "num-traits",
- "thiserror",
- "time 0.3.9",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3566,10 +3501,8 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
 dependencies = [
- "itoa",
  "libc",
  "num_threads",
- "quickcheck",
  "time-macros",
 ]
 

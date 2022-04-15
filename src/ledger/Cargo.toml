@@ -16,8 +16,8 @@ hex = "0.4.3"
 lazy_static = "1.4.0"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
 num-bigint = "0.4.3"
-many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "454d5375f00d56e2718f1a3ba275082901298653" }
-many-client = { git = "https://github.com/l-1-labs/many-rs.git", rev = "454d5375f00d56e2718f1a3ba275082901298653" }
+many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "6c193b317a5f2f8f5394da59ea7ad88049592fc7" }
+many-client = { git = "https://github.com/l-1-labs/many-rs.git", rev = "6c193b317a5f2f8f5394da59ea7ad88049592fc7" }
 regex = "1.5.4"
 ring = "0.17.0-alpha.10"
 rpassword = "6.0"
