@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use coset::{CborSerializable, CoseSign1};
 use many::cbor::CborAny;
 use many::message::{
     decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessageBuilder,
@@ -10,7 +11,6 @@ use many::server::module::base;
 use many::transport::LowLevelManyRequestHandler;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::ManyError;
-use minicose::CoseSign1;
 use std::collections::{BTreeMap, BTreeSet};
 use std::default::Default;
 use std::fmt::{Debug, Formatter};
@@ -32,11 +32,11 @@ impl<C: Client + Sync> AbciModuleMany<C> {
             .unwrap();
         let data = encode_cose_sign1_from_request(init_message, &identity)
             .unwrap()
-            .to_bytes()
+            .to_vec()
             .unwrap();
 
         let response = client.abci_query(None, data, None, false).await.unwrap();
-        let response = CoseSign1::from_bytes(&response.value).unwrap();
+        let response = CoseSign1::from_slice(&response.value).unwrap();
         let response = decode_response_from_cose_sign1(response, None).unwrap();
         let init_message: AbciInit = minicbor::decode(&response.data.unwrap()).unwrap();
 
@@ -53,7 +53,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
         if let Some(info) = self.backend_endpoints.get(&message.method) {
             let is_command = info.is_command;
             let data = envelope
-                .to_bytes()
+                .to_vec()
                 .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
 
             if is_command {
@@ -82,7 +82,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                     .await
                     .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
 
-                CoseSign1::from_bytes(&response.value)
+                CoseSign1::from_slice(&response.value)
                     .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))
             }
         } else {

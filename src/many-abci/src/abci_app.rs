@@ -1,9 +1,9 @@
+use coset::{CborSerializable, CoseSign1};
 use many::message::ResponseMessage;
 use many::server::module::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
-use minicose::CoseSign1;
 use reqwest::{IntoUrl, Url};
 use std::time::SystemTime;
 use tendermint_abci::Application;
@@ -79,7 +79,7 @@ impl Application for AbciApp {
         Default::default()
     }
     fn query(&self, request: RequestQuery) -> ResponseQuery {
-        let cose = match CoseSign1::from_bytes(&request.data) {
+        let cose = match CoseSign1::from_slice(&request.data) {
             Ok(x) => x,
             Err(err) => {
                 return ResponseQuery {
@@ -100,7 +100,8 @@ impl Application for AbciApp {
                 }
             }
         };
-        match value.to_bytes() {
+
+        match value.to_vec() {
             Ok(value) => ResponseQuery {
                 code: 0,
                 value: value.into(),
@@ -126,7 +127,7 @@ impl Application for AbciApp {
     }
 
     fn deliver_tx(&self, request: RequestDeliverTx) -> ResponseDeliverTx {
-        let cose = match CoseSign1::from_bytes(&request.tx) {
+        let cose = match CoseSign1::from_slice(&request.tx) {
             Ok(x) => x,
             Err(err) => {
                 return ResponseDeliverTx {
