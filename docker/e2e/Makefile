@@ -46,10 +46,13 @@ genfiles/docker-compose.json: jsonnet-docker
 
 genfiles/node%: tendermint-docker openssl-docker
 	mkdir -p "$@/tendermint"
-	docker run -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v0.35.1 testnet
+	docker run -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v0.35.1 init validator
 	docker run -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
 	docker run -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
 	cp ledger_state.json $@/ledger_state.json
+
+generate-testnet:
+	docker run -it --rm -v ${PWD}/genfiles:/export tendermint/tendermint:v0.35.1 testnet
 
 generate-tendermint-e2e-config:
 	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
@@ -61,3 +64,4 @@ generate-tendermint-e2e-config:
 
 start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up
+
