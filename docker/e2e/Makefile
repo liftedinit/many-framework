@@ -63,6 +63,13 @@ generate-tendermint-e2e-config:
 	done
 	sh update_config.sh -c "genfiles/node%/tendermint/config" -i tendermint-% $(NB_NODES)
 
-start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json
+.PHONY: start-all-nodes stop-node
+start-all-nodes:
 	docker-compose -f genfiles/docker-compose.json -p e2e up
+
+# use docker-compose to stop container by name
+stop-node:
+	docker-compose -f genfiles/docker-compose.json -p e2e down 
+
+start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes
 

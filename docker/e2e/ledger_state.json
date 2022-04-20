@@ -1,16 +1,16 @@
 {
   "initial": {
-    "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
-      "oqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000
+    "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
+      "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000
     }
   },
   "minters": {
-    "oqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": [
-      "oaffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
+    "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": [
+      "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
     ]
   },
   "symbols": {
-    "oqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "FBT"
+    "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "FBT"
   },
-  "hash": "0df74bfacd4fbab31ff36c3b9846d4557b4ed9dae886f4b9652c5161e4cbe1b6"
+  "hash": "7ffc5e9f9aa66a10989ce67a9eb322b72aa7c0ee4adc6896d65838c5a11f18f8"
 }
