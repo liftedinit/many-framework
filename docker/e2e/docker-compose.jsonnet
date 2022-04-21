@@ -9,7 +9,7 @@ local abci(i) = {
         "--many-app", "http://ledger-" + i + ":8000",
         "--many-pem", "/genfiles/abci.pem",
         "--abci", "0.0.0.0:26658",
-        "--tendermint", "http://tendermint-0:26657/"
+        "--tendermint", "http://tendermint-" + i + ":26657/"
     ],
     depends_on: [ "ledger-" + i ],
 };
