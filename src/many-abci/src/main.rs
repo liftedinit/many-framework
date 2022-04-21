@@ -130,10 +130,8 @@ async fn main() {
 
     // Wait for 60 seconds until we can contact the ABCI server.
     let start = std::time::SystemTime::now();
-    eprintln!("... :1");
     loop {
         let info = abci_client.abci_info().await;
-        eprintln!("... :2 {:?}", info);
         if info.is_ok() {
             break;
         }
@@ -144,13 +142,11 @@ async fn main() {
 
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
-    eprintln!("... :3");
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
     let server = ManyServer::new(format!("AbciModule({})", &status.name), key.clone());
     let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
-    eprintln!("... :4");
 
     {
         let mut s = server.lock().unwrap();
@@ -159,7 +155,6 @@ async fn main() {
         s.add_module(r#async::AsyncModule::new(blockchain_impl));
         s.set_fallback_module(backend);
     }
-    eprintln!("... :5");
 
     let many_server = many::transport::http::HttpServer::new(server);
 
