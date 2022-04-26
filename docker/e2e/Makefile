@@ -70,4 +70,4 @@ stop-node:
 start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes 
 
 chaos: 
-	sh chaos.sh
+	sh chaos.sh 
