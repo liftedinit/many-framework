@@ -67,9 +67,11 @@ generate-tendermint-e2e-config:
 start-all-nodes:
 	docker-compose -f genfiles/docker-compose.json -p e2e up
 
-# use docker-compose to stop container by name
 stop-node:
 	docker-compose -f genfiles/docker-compose.json -p e2e down 
 
-start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes
+start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes 
 
+start-docker-compose-pause: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes \
+	docker stop 
+	docker-compose -f genfiles/docker-compose.json -p e2e pause
