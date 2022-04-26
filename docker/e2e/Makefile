@@ -51,9 +51,6 @@ genfiles/node%: tendermint-docker openssl-docker
 	docker run -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
 	cp ledger_state.json $@/ledger_state.json
 
-generate-testnet:
-	docker run -it --rm -v ${PWD}/genfiles:/export tendermint/tendermint:v0.35.1 testnet --v 4 --n 2 --o . --populate-persistent-peers 
-
 
 generate-tendermint-e2e-config:
 	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
@@ -71,7 +68,3 @@ stop-node:
 	docker-compose -f genfiles/docker-compose.json -p e2e down 
 
 start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes 
-
-start-docker-compose-pause: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes \
-	docker stop 
-	docker-compose -f genfiles/docker-compose.json -p e2e pause
