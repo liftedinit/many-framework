@@ -63,7 +63,7 @@ impl<C: Client> AbciBlockchainModuleImpl<C> {
 }
 
 impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModuleImpl<C> {
-    fn status(&mut self, _sender: &Identity, args: StatusArgs) -> Result<StatusReturn, ManyError> {
+    fn status(&self, _sender: &Identity, args: StatusArgs) -> Result<StatusReturn, ManyError> {
         let hash = args.token.as_ref();
 
         if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
