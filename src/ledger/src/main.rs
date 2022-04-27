@@ -1,5 +1,5 @@
 use clap::{ArgGroup, Parser};
-use many::hsm::{HsmMechanismType, HsmSessionType, HsmUserType, Hsm};
+use many::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
 use many::message::ResponseMessage;
 use many::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,

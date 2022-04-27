@@ -6,6 +6,7 @@ use many::{Identity, ManyError};
 use many_client::ManyClient;
 use std::io::Read;
 use std::path::PathBuf;
+use tracing::{error, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser)]
@@ -110,7 +111,7 @@ fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> 
             .get::<r#async::attributes::AsyncAttribute>()
             .is_ok()
         {
-            eprintln!("Async response received...");
+            trace!("Async response received...");
             Ok(())
         } else {
             Err(ManyError::unexpected_empty_response())
@@ -182,7 +183,7 @@ fn main() {
     };
 
     if let Err(err) = result {
-        eprintln!(
+        error!(
             "Error returned by server:\n|  {}\n",
             err.to_string()
                 .split('\n')
