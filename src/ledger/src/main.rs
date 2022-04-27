@@ -1,5 +1,5 @@
 use clap::{ArgGroup, Parser};
-use many::hsm::{HSMMechanismType, HSMSessionType, HSMUserType, HSM};
+use many::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
 use many::message::ResponseMessage;
 use many::server::module::ledger::{
     BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
@@ -314,18 +314,18 @@ fn main() {
         let keyid = hex::decode(keyid).expect("Failed to decode keyid to hex");
 
         {
-            let mut hsm = HSM::get_instance().expect("HSM mutex poisoned");
+            let mut hsm = Hsm::get_instance().expect("HSM mutex poisoned");
             hsm.init(module, keyid)
                 .expect("Failed to initialize HSM module");
 
             // The session will stay open until the application terminates
-            hsm.open_session(slot, HSMSessionType::RO, Some(HSMUserType::User), Some(pin))
+            hsm.open_session(slot, HsmSessionType::RO, Some(HsmUserType::User), Some(pin))
                 .expect("Failed to open HSM session");
         }
 
         trace!("Creating CoseKeyIdentity");
         // Only ECDSA is supported at the moment. It should be easy to add support for new EC mechanisms
-        CoseKeyIdentity::from_hsm(HSMMechanismType::ECDSA)
+        CoseKeyIdentity::from_hsm(HsmMechanismType::ECDSA)
             .expect("Unable to create CoseKeyIdentity from HSM")
     } else {
         pem.map_or_else(CoseKeyIdentity::anonymous, |p| {

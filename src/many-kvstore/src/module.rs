@@ -4,7 +4,7 @@ use many::server::module::abci_backend::{
     AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
 use many::server::module::kvstore::{
-    DeleteArgs, DeleteReturns, GetArgs, GetReturns, InfoArgs, InfoReturns,
+    DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArgs, InfoReturns,
     KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturns,
 };
 use many::{Identity, ManyError};
@@ -114,8 +114,8 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
         Ok(PutReturns {})
     }
 
-    fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<DeleteReturns, ManyError> {
+    fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<DeleteReturn, ManyError> {
         self.storage.delete(sender, &args.key)?;
-        Ok(DeleteReturns {})
+        Ok(DeleteReturn {})
     }
 }

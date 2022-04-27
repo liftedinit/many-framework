@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
 use tendermint_rpc::Client;
+use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 mod abci_app;
@@ -86,7 +87,7 @@ async fn main() {
     .unwrap();
 
     let start = std::time::SystemTime::now();
-    eprintln!("Connecting to the backend app...");
+    trace!("Connecting to the backend app...");
 
     let status = loop {
         let many_client = many_client.clone();
@@ -97,17 +98,14 @@ async fn main() {
         match result {
             Err(e) => {
                 if start.elapsed().unwrap().as_secs() > 60 {
-                    tracing::error!(
-                        "\nCould not connect to the ABCI server in 60 seconds... Terminating."
-                    );
-                    tracing::error!(error = e.to_string().as_str());
+                    error!("\nCould not connect to the ABCI server in 60 seconds... Terminating.");
+                    error!(error = e.to_string().as_str());
                     std::process::exit(1);
                 }
-                tracing::debug!(error = e.to_string().as_str());
-                eprint!(".");
+                debug!(error = e.to_string().as_str());
             }
             Ok(s) => {
-                eprintln!(" Connected.");
+                trace!(" Connected.");
                 break s;
             }
         }
@@ -136,7 +134,7 @@ async fn main() {
             break;
         }
         if start.elapsed().unwrap().as_secs() > 300 {
-            eprintln!("\nCould not connect to the ABCI server in 300 seconds... Terminating.");
+            error!("\nCould not connect to the ABCI server in 300 seconds... Terminating.");
             std::process::exit(1);
         }
 
@@ -158,11 +156,11 @@ async fn main() {
 
     let many_server = many::transport::http::HttpServer::new(server);
 
-    tracing::info!("Starting MANY server on addr {}", many.clone());
+    info!("Starting MANY server on addr {}", many.clone());
     let _j_many = std::thread::spawn(move || match many_server.bind(many) {
         Ok(_) => {}
         Err(error) => {
-            tracing::error!("{}", error);
+            error!("{}", error);
             panic!("Error happened in many: {:?}", error);
         }
     });
