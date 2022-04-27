@@ -1,10 +1,10 @@
 #!/bin/bash
 CHAIN_ID="many-ledger"
-SNAP_PATH="/volumes/ledger"
-LOG_PATH="ledger_log.txt"
-DATA_PATH="/"
+SNAP_PATH="$PWD/ledger-snapshots/"
+LOG_PATH="$PWD/ledger-snapshots/many-ledger_log.txt"
+DATA_PATH="$PWD/genfiles/node1/persistent-ledger/ledger.db"
 SERVICE_NAME="ledger.service"
-RPC_ADDRESS="http://127.0.0.1:26557"
+RPC_ADDRESS="http://localhost:26657"
 SNAP_NAME=$(echo "${CHAIN_ID}_$(date '+%Y-%m-%d').tar")
 OLD_SNAP=$(ls ${SNAP_PATH} | egrep -o "${CHAIN_ID}.*tar")
 
@@ -12,7 +12,6 @@ OLD_SNAP=$(ls ${SNAP_PATH} | egrep -o "${CHAIN_ID}.*tar")
 now_date() {
     echo -n $(TZ=":America/Los_Angeles" date '+%Y-%m-%d_%H:%M:%S')
 }
-
 
 log_this() {
     YEL='\033[1;33m' # yellow
@@ -23,11 +22,12 @@ log_this() {
 
 LAST_BLOCK_HEIGHT=$(curl -s ${RPC_ADDRESS}/status | jq -r .result.sync_info.latest_block_height)
 log_this "LAST_BLOCK_HEIGHT ${LAST_BLOCK_HEIGHT}"
+log_this "Stopping ${PWD}"
 
 log_this "Stopping ${SERVICE_NAME}"
 
 log_this "Creating new snapshot"
-time tar cf ${HOME}/${SNAP_NAME} -C ${DATA_PATH}
+time tar cf ${HOME}/${SNAP_NAME} -C ${DATA_PATH} . >> ${LOG_PATH}
 
 log_this "Starting ${SERVICE_NAME}"
 

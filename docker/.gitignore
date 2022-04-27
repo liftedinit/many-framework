@@ -1,3 +1,3 @@
 */genfiles/
 e2e/docker-compose.json
-e2e/ledger_log.txt
+e2e/ledger-snapshots/
