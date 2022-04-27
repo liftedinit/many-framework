@@ -1,0 +1,87 @@
+|2022-04-27_23:29:47| LAST_BLOCK_HEIGHT 
+|2022-04-27_23:29:47| Stopping ledger.service
+|2022-04-27_23:29:47| Creating new snapshot
+|2022-04-27_23:29:48| Starting ledger.service
+|2022-04-27_23:29:48| Removing old snapshot(s):
+|2022-04-27_23:31:17| LAST_BLOCK_HEIGHT 
+|2022-04-27_23:31:17| Stopping ledger.service
+|2022-04-27_23:31:17| Creating new snapshot
+|2022-04-27_23:31:17| Starting ledger.service
+|2022-04-27_23:31:17| Removing old snapshot(s):
+|2022-04-27_23:31:17| Moving new snapshot to ledger_snapshot
+|2022-04-27_23:31:17| Done
+---------------------------
+
+|2022-04-27_23:32:01| LAST_BLOCK_HEIGHT 
+|2022-04-27_23:32:01| Stopping ledger.service
+|2022-04-27_23:32:01| Creating new snapshot
+|2022-04-27_23:32:01| Starting ledger.service
+|2022-04-27_23:32:01| Removing old snapshot(s):
+|2022-04-27_23:32:01| Moving new snapshot to ledger
+|2022-04-27_23:32:01| Done
+---------------------------
+
+|2022-04-27_23:32:28| LAST_BLOCK_HEIGHT 
+|2022-04-27_23:32:28| Stopping ledger.service
+|2022-04-27_23:32:28| Creating new snapshot
+|2022-04-27_23:32:28| Starting ledger.service
+|2022-04-27_23:32:28| Removing old snapshot(s):
+|2022-04-27_23:32:28| Moving new snapshot to ledger
+|2022-04-27_23:32:28| Done
+---------------------------
+
+|2022-04-27_13:45:41| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:45:41| Stopping ledger.service
+|2022-04-27_13:45:41| Creating new snapshot
+|2022-04-27_13:45:41| Starting ledger.service
+|2022-04-27_13:45:41| Removing old snapshot(s):
+|2022-04-27_13:45:41| Moving new snapshot to ledger
+|2022-04-27_13:45:41| Done
+---------------------------
+
+|2022-04-27_13:47:21| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:47:21| Stopping ledger.service
+|2022-04-27_13:47:21| Creating new snapshot
+|2022-04-27_13:47:21| Starting ledger.service
+|2022-04-27_13:47:21| Removing old snapshot(s):
+|2022-04-27_13:47:21| Moving new snapshot to ledger
+|2022-04-27_13:47:21| Done
+---------------------------
+
+|2022-04-27_13:47:28| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:47:28| Stopping ledger.service
+|2022-04-27_13:47:28| Creating new snapshot
+|2022-04-27_13:47:29| Starting ledger.service
+|2022-04-27_13:47:29| Removing old snapshot(s):
+|2022-04-27_13:47:29| Moving new snapshot to ledger
+|2022-04-27_13:47:29| Done
+---------------------------
+
+|2022-04-27_13:47:49| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:47:49| Stopping ledger.service
+|2022-04-27_13:47:49| Creating new snapshot
+|2022-04-27_13:47:49| Starting ledger.service
+|2022-04-27_13:47:49| Removing old snapshot(s):
+|2022-04-27_13:47:49| Moving new snapshot to ledger
+|2022-04-27_13:47:49| Done
+---------------------------
+
+|2022-04-27_13:48:19| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:48:19| Stopping ledger.service
+|2022-04-27_13:48:19| Creating new snapshot
+|2022-04-27_13:48:19| Starting ledger.service
+|2022-04-27_13:48:19| Removing old snapshot(s):
+|2022-04-27_13:49:53| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:49:53| Stopping ledger.service
+|2022-04-27_13:49:53| Creating new snapshot
+|2022-04-27_13:49:53| Starting ledger.service
+|2022-04-27_13:49:53| Removing old snapshot(s):
+|2022-04-27_13:51:15| LAST_BLOCK_HEIGHT 
+|2022-04-27_13:51:15| Stopping ledger.service
+|2022-04-27_13:51:15| Creating new snapshot
+|2022-04-27_13:51:15| Starting ledger.service
+|2022-04-27_13:51:15| Removing old snapshot(s):
+|2022-04-27_13:51:15| Moving new snapshot to /volumes/ledger
+|2022-04-27_13:51:15| Done
+---------------------------
+
