@@ -46,6 +46,19 @@ local tendermint(i, tendermint_tag="v0.35.1") = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
+local prometheus(i) = {
+    image: "prom/prometheus",
+    ports: [9090],
+    volumes: [ "./prometheus.yml:/etc/prometheus/prometheus" ],
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+};
+
+local grafana(i) = {
+    image: "grafana/grafana",
+    ports: [3000],
+    volumes: [ "./grafana:/grafana"],
+};
+
 function(nb_nodes=4) {
     version: '3',
     services: {
@@ -54,5 +67,9 @@ function(nb_nodes=4) {
         ["ledger-" + i]: ledger(i) for i in std.range(0, nb_nodes - 1)
     } + {
         ["tendermint-" + i]: tendermint(i) for i in std.range(0, nb_nodes - 1)
-    }
+    } + {
+        ["prometheus" + i]: prometheus(i) for i in std.range(0, nb_nodes - 1)
+    } + {
+        ["grafana" + i]: grafana(i) for i in std.range(0, nb_nodes - 1)
+    },
 }
