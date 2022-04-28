@@ -32,9 +32,7 @@ no_sleep () {
       docker start e2e-tendermint-3-1 
 
       echo "${NC}NO SLEEP TEST OVER${NC}"
-
     done
-    rapid_fire
 }
 
 rapid_fire () {
@@ -73,7 +71,6 @@ rapid_fire () {
 
     done
     echo "${NC}RAPID FIRE TEST OVER${NC}"
-    random_time
 }
 
 random_time () {
@@ -111,9 +108,7 @@ random_time () {
       docker start e2e-tendermint-2-1 
 	    sleep 3
       echo "${NC}RANDOM TIME TEST OVER${NC}"
-
     done
-    [[ "@" ]] && echo "options: $@"
 }
 
 no_sleep
