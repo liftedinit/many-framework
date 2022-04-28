@@ -1,9 +1,7 @@
 use clap::{ArgGroup, Parser};
 use many::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
 use many::message::ResponseMessage;
-use many::server::module::ledger::{
-    BalanceArgs, BalanceReturns, BurnArgs, InfoReturns, MintArgs, SendArgs,
-};
+use many::server::module::ledger::{BalanceArgs, BalanceReturns, InfoReturns, SendArgs};
 use many::server::module::r#async::attributes::AsyncAttribute;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::types::ledger::{Symbol, TokenAmount};
@@ -96,12 +94,6 @@ struct Opts {
 enum SubCommand {
     /// Read the balance of an account.
     Balance(BalanceOpt),
-
-    /// Mint new tokens into an account.
-    Mint(TargetCommandOpt),
-
-    /// Burn tokens from an account.
-    Burn(TargetCommandOpt),
 
     /// Send tokens to an account.
     Send(TargetCommandOpt),
@@ -200,50 +192,6 @@ fn balance(
             }
         }
 
-        Ok(())
-    }
-}
-
-fn mint(
-    client: ManyClient,
-    account: Identity,
-    amount: BigUint,
-    symbol: String,
-) -> Result<(), ManyError> {
-    let symbol = resolve_symbol(&client, symbol)?;
-
-    let arguments = MintArgs {
-        account,
-        symbol,
-        amount: TokenAmount::from(amount),
-    };
-    let payload = client.call_("ledger.mint", arguments)?;
-    if payload.is_empty() {
-        Err(ManyError::unexpected_empty_response())
-    } else {
-        minicbor::display(&payload);
-        Ok(())
-    }
-}
-
-fn burn(
-    client: ManyClient,
-    account: Identity,
-    amount: BigUint,
-    symbol: String,
-) -> Result<(), ManyError> {
-    let symbol = resolve_symbol(&client, symbol)?;
-
-    let arguments = BurnArgs {
-        account,
-        symbol,
-        amount: TokenAmount::from(amount),
-    };
-    let payload = client.call_("ledger.burn", arguments)?;
-    if payload.is_empty() {
-        Err(ManyError::unexpected_empty_response())
-    } else {
-        minicbor::display(&payload);
         Ok(())
     }
 }
@@ -349,16 +297,6 @@ fn main() {
 
             balance(client, identity, symbols)
         }
-        SubCommand::Mint(TargetCommandOpt {
-            identity,
-            amount,
-            symbol,
-        }) => mint(client, identity, amount, symbol),
-        SubCommand::Burn(TargetCommandOpt {
-            identity,
-            amount,
-            symbol,
-        }) => burn(client, identity, amount, symbol),
         SubCommand::Send(TargetCommandOpt {
             identity,
             amount,

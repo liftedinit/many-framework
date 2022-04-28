@@ -26,8 +26,9 @@ pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
 
 pub struct LedgerStorage {
     symbols: BTreeMap<Symbol, String>,
+    // TODO: Remove the following flag when Minting is implemented
+    #[allow(dead_code)]
     minters: BTreeMap<Symbol, Vec<Identity>>,
-
     persistent_store: fmerk::Merk,
 
     /// When this is true, we do not commit every transactions as they come,
@@ -141,9 +142,10 @@ impl LedgerStorage {
         self.symbols.clone()
     }
 
-    pub fn can_mint(&self, id: &Identity, symbol: &Symbol) -> bool {
-        self.minters.get(symbol).map_or(false, |x| x.contains(id))
-    }
+    // TODO: Re-enable this when Minting is implemented
+    // pub fn can_mint(&self, id: &Identity, symbol: &Symbol) -> bool {
+    //     self.minters.get(symbol).map_or(false, |x| x.contains(id))
+    // }
 
     fn inc_height(&mut self) -> u64 {
         let current_height = self.get_height();
@@ -155,6 +157,7 @@ impl LedgerStorage {
             .unwrap();
         current_height
     }
+
     pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
@@ -197,6 +200,7 @@ impl LedgerStorage {
                 u64::from_be_bytes(bytes)
             })
     }
+
     fn add_transaction(&mut self, transaction: Transaction) {
         let current_nb_transactions = self.nb_transactions();
 
@@ -264,88 +268,47 @@ impl LedgerStorage {
         }
     }
 
-    pub fn mint(
-        &mut self,
-        to: &Identity,
-        symbol: &Symbol,
-        amount: TokenAmount,
-    ) -> Result<(), ManyError> {
-        if amount.is_zero() {
-            // NOOP.
-            return Ok(());
-        }
-        if to.is_anonymous() {
-            return Err(error::anonymous_cannot_hold_funds());
-        }
+    // TODO: Re-enable this when Minting is implemented
+    // pub fn mint(
+    //     &mut self,
+    //     to: &Identity,
+    //     symbol: &Symbol,
+    //     amount: TokenAmount,
+    // ) -> Result<(), ManyError> {
+    //     if amount.is_zero() {
+    //         // NOOP.
+    //         return Ok(());
+    //     }
+    //     if to.is_anonymous() {
+    //         return Err(error::anonymous_cannot_hold_funds());
+    //     }
 
-        info!("mint({}, {} {})", to, &amount, symbol);
+    //     info!("mint({}, {} {})", to, &amount, symbol);
 
-        let mut balance = self.get_balance(to, symbol);
-        balance += amount.clone();
+    //     let mut balance = self.get_balance(to, symbol);
+    //     balance += amount.clone();
 
-        self.persistent_store
-            .apply(&[(
-                key_for_account(to, symbol),
-                fmerk::Op::Put(balance.to_vec()),
-            )])
-            .unwrap();
+    //     self.persistent_store
+    //         .apply(&[(
+    //             key_for_account(to, symbol),
+    //             fmerk::Op::Put(balance.to_vec()),
+    //         )])
+    //         .unwrap();
 
-        let id = self.new_transaction_id();
-        self.add_transaction(Transaction::mint(
-            id,
-            self.current_time.unwrap_or_else(SystemTime::now),
-            *to,
-            symbol.to_string(),
-            amount,
-        ));
+    //     let id = self.new_transaction_id();
+    //     self.add_transaction(Transaction::mint(
+    //         id,
+    //         self.current_time.unwrap_or_else(SystemTime::now),
+    //         *to,
+    //         symbol.to_string(),
+    //         amount,
+    //     ));
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
-        Ok(())
-    }
-
-    pub fn burn(
-        &mut self,
-        to: &Identity,
-        symbol: &Symbol,
-        amount: TokenAmount,
-    ) -> Result<(), ManyError> {
-        if amount.is_zero() {
-            // NOOP.
-            return Ok(());
-        }
-        if to.is_anonymous() {
-            return Err(error::anonymous_cannot_hold_funds());
-        }
-
-        info!("burn({}, {} {})", to, &amount, symbol);
-
-        let mut balance = self.get_balance(to, symbol);
-        balance -= amount.clone();
-
-        self.persistent_store
-            .apply(&[(
-                key_for_account(to, symbol),
-                fmerk::Op::Put(balance.to_vec()),
-            )])
-            .unwrap();
-
-        let id = self.new_transaction_id();
-        self.add_transaction(Transaction::burn(
-            id,
-            self.current_time.unwrap_or_else(SystemTime::now),
-            *to,
-            symbol.to_string(),
-            amount,
-        ));
-
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
-
-        Ok(())
-    }
+    //     if !self.blockchain {
+    //         self.persistent_store.commit(&[]).unwrap();
+    //     }
+    //     Ok(())
+    // }
 
     pub fn send(
         &mut self,
