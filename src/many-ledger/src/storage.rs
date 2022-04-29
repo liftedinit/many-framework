@@ -3,10 +3,14 @@ use many::server::module::abci_backend::AbciCommitInfo;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
+use rand::{distributions::Alphanumeric, Rng};
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use std::fs::File;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use tracing::info;
 
@@ -29,6 +33,8 @@ pub struct LedgerStorage {
     minters: BTreeMap<Symbol, Vec<Identity>>,
 
     persistent_store: fmerk::Merk,
+    // This is the path to the directory where the persistent store is stored.
+    snapshot_path: PathBuf,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
@@ -55,8 +61,9 @@ impl LedgerStorage {
     }
 
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
-        let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let snapshot_path = persistent_path.as_ref().parent().unwrap().to_path_buf();
 
+        let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
         let symbols = persistent_store
             .get(b"/config/symbols")
             .map_err(|e| e.to_string())?;
@@ -83,6 +90,7 @@ impl LedgerStorage {
             symbols,
             minters,
             persistent_store,
+            snapshot_path,
             blockchain,
             latest_tid,
             current_time: None,
@@ -97,8 +105,9 @@ impl LedgerStorage {
         persistent_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
-        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let snapshot_path = persistent_path.as_ref().parent().unwrap().to_path_buf();
 
+        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
         let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
 
         for (k, v) in initial_balances.into_iter() {
@@ -130,6 +139,7 @@ impl LedgerStorage {
             symbols,
             minters,
             persistent_store,
+            snapshot_path,
             blockchain,
             latest_tid: TransactionId::from(vec![0]),
             current_time: None,
@@ -171,6 +181,45 @@ impl LedgerStorage {
         self.latest_tid.clone()
     }
 
+    pub fn create_snapshot(&self, height: u64) -> Result<(), ManyError> {
+        let snapshot = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?
+            .as_millis()
+            .to_string();
+
+        let s: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(7)
+            .map(char::from)
+            .collect();
+        let snapshot_name = format!("{}-{}-{}", "snapshot", snapshot, s);
+
+        self.persistent_store
+            .snapshot(
+                self.snapshot_path
+                    .join(format!("{}-{}", snapshot_name, height)),
+            )
+            .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+
+        let gz = File::create(
+            self.snapshot_path
+                .join(format!("{}-{}.tar.gz", snapshot_name, &height)),
+        )
+        .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+
+        let encoder = GzEncoder::new(gz, Compression::default());
+        let mut tar = tar::Builder::new(encoder);
+        tar.append_dir_all(
+            &snapshot_name,
+            self.snapshot_path
+                .join(format!("{}-{}", &snapshot_name, &height)),
+        )
+        .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+        Ok(())
+    }
+
     pub fn commit(&mut self) -> AbciCommitInfo {
         let height = self.inc_height();
         let retain_height = 0;
@@ -180,6 +229,12 @@ impl LedgerStorage {
         self.current_hash = Some(hash.clone());
 
         self.latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
+
+        if height % 1000 == 0 {
+            if let Err(e) = self.create_snapshot(height) {
+                println!("{}", e);
+            }
+        }
 
         AbciCommitInfo {
             retain_height,
