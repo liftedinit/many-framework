@@ -1,7 +1,7 @@
 use crate::storage::AclBTreeMap;
 use crate::{error, storage::KvStoreStorage};
 use many::server::module::abci_backend::{
-    AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
+    AbciCommitInfo, AbciInfo, AbciInit, AbciSnapshots, EndpointInfo, ManyAbciModuleBackend,
 };
 use many::server::module::kvstore::{
     DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArgs, InfoReturns,
@@ -89,6 +89,12 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
     fn commit(&mut self) -> Result<AbciCommitInfo, ManyError> {
         let info = self.storage.commit();
         Ok(info)
+    }
+
+    fn list_snapshots(&mut self) -> Result<AbciSnapshots, ManyError> {
+        Ok(AbciSnapshots {
+            path: None,
+        })
     }
 }
 
