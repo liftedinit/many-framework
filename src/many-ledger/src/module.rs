@@ -79,7 +79,6 @@ fn filter_date<'a>(
 pub struct InitialStateJson {
     initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
     symbols: BTreeMap<Identity, String>,
-    minters: Option<BTreeMap<Symbol, Vec<Identity>>>,
     hash: Option<String>,
 }
 
@@ -100,7 +99,6 @@ impl LedgerModuleImpl {
             let storage = LedgerStorage::new(
                 state.symbols,
                 state.initial,
-                state.minters.unwrap_or_default(),
                 persistence_store_path,
                 snapshot_path,
                 blockchain,
@@ -176,39 +174,6 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
 }
 
 impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
-    fn mint(&mut self, sender: &Identity, args: ledger::MintArgs) -> Result<(), ManyError> {
-        let ledger::MintArgs {
-            account,
-            amount,
-            symbol,
-        } = args;
-
-        let storage = &mut self.storage;
-        if storage.can_mint(sender, &symbol) {
-            storage.mint(&account, &symbol, amount)?;
-        } else {
-            return Err(error::unauthorized());
-        }
-
-        Ok(())
-    }
-
-    fn burn(&mut self, sender: &Identity, args: ledger::BurnArgs) -> Result<(), ManyError> {
-        let ledger::BurnArgs {
-            account,
-            amount,
-            symbol,
-        } = args;
-
-        if self.storage.can_mint(sender, &symbol) {
-            self.storage.burn(&account, &symbol, amount)?;
-        } else {
-            return Err(error::unauthorized());
-        }
-
-        Ok(())
-    }
-
     fn send(&mut self, sender: &Identity, args: ledger::SendArgs) -> Result<(), ManyError> {
         let ledger::SendArgs {
             from,
@@ -286,8 +251,6 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
             endpoints: BTreeMap::from([
                 ("ledger.info".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.balance".to_string(), EndpointInfo { is_command: false }),
-                ("ledger.mint".to_string(), EndpointInfo { is_command: true }),
-                ("ledger.burn".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.list".to_string(), EndpointInfo { is_command: false }),

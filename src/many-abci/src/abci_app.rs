@@ -118,8 +118,7 @@ impl Application for AbciApp {
     fn begin_block(&self, request: RequestBeginBlock) -> ResponseBeginBlock {
         let time = request
             .header
-            .map(|x| x.time.map(|x| x.seconds as u64))
-            .flatten();
+            .and_then(|x| x.time.map(|x| x.seconds as u64));
 
         let block = AbciBlock { time };
         let _ = self.many_client.call_("abci.beginBlock", block);
