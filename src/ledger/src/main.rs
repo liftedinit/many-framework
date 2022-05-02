@@ -117,7 +117,7 @@ struct TargetCommandOpt {
     /// The account or target identity.
     identity: Identity,
 
-    /// The amount of token to mint.
+    /// The amount of tokens.
     amount: BigUint,
 
     /// The symbol to use.  This can either be an identity or
