@@ -45,6 +45,10 @@ struct Opts {
     #[clap(long)]
     persistent: PathBuf,
 
+    /// Path to snapshot
+    #[clap(long)]
+    snapshots: PathBuf,
+
     /// Delete the persistent storage to start from a clean state.
     /// If this is not specified the initial state will not be used.
     #[clap(long, short)]
@@ -60,6 +64,7 @@ fn main() {
         abci,
         mut state,
         persistent,
+        snapshots,
         clean,
     } = Opts::parse();
 
@@ -100,7 +105,7 @@ fn main() {
         serde_json::from_str(&content).unwrap()
     });
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
+    let module_impl = LedgerModuleImpl::new(state, persistent, snapshots, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
     let many = ManyServer::simple(
         "many-ledger",

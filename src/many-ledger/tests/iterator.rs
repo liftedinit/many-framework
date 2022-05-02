@@ -13,19 +13,21 @@ fn setup() -> LedgerStorage {
     let symbols = BTreeMap::from_iter(vec![(symbol0, "FBT".to_string())].into_iter());
     let balances = BTreeMap::new();
     let persistent_path = tempfile::tempdir().unwrap();
+    let snapshot_path = tempfile::tempdir().unwrap();
 
     let mut storage = many_ledger::storage::LedgerStorage::new(
         symbols,
         balances,
         BTreeMap::new(),
         persistent_path,
+        snapshot_path,
         false,
     )
     .unwrap();
 
-    storage
-        .mint(&id0, &symbol0, TokenAmount::from(1000u16))
-        .unwrap();
+    //  storage
+    //      .mint(&id0, &symbol0, TokenAmount::from(1000u16))
+    //      .unwrap();
     for _ in 0..5 {
         storage
             .send(&id0, &id1, &symbol0, TokenAmount::from(100u16))

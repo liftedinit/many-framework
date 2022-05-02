@@ -92,6 +92,7 @@ impl LedgerModuleImpl {
     pub fn new<P: AsRef<Path>>(
         initial_state: Option<InitialStateJson>,
         persistence_store_path: P,
+        snapshot_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
@@ -100,6 +101,7 @@ impl LedgerModuleImpl {
                 state.initial,
                 state.minters.unwrap_or_default(),
                 persistence_store_path,
+                snapshot_path,
                 blockchain,
             )
             .map_err(ManyError::unknown)?;
@@ -114,7 +116,7 @@ impl LedgerModuleImpl {
 
             storage
         } else {
-            LedgerStorage::load(persistence_store_path, blockchain).unwrap()
+            LedgerStorage::load(persistence_store_path, snapshot_path, blockchain).unwrap()
         };
 
         info!(

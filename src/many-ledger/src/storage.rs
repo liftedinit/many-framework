@@ -8,7 +8,7 @@ use many::{Identity, ManyError};
 use rand::{distributions::Alphanumeric, Rng};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
-use std::fs::File;
+use std::fs::{self, File};
 use std::ops::RangeBounds;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -33,8 +33,7 @@ pub struct LedgerStorage {
     minters: BTreeMap<Symbol, Vec<Identity>>,
 
     persistent_store: fmerk::Merk,
-    // This is the path to the directory where the persistent store is stored.
-    snapshot_path: PathBuf,
+    snapshots: PathBuf,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
@@ -60,9 +59,12 @@ impl LedgerStorage {
         self.current_time = Some(time);
     }
 
-    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
-        let snapshot_path = persistent_path.as_ref().parent().unwrap().to_path_buf();
-
+    pub fn load<P: AsRef<Path>>(
+        persistent_path: P,
+        snapshot_path: P,
+        blockchain: bool,
+    ) -> Result<Self, String> {
+        let snapshots = snapshot_path.as_ref().to_path_buf();
         let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
         let symbols = persistent_store
             .get(b"/config/symbols")
@@ -90,7 +92,7 @@ impl LedgerStorage {
             symbols,
             minters,
             persistent_store,
-            snapshot_path,
+            snapshots,
             blockchain,
             latest_tid,
             current_time: None,
@@ -103,9 +105,10 @@ impl LedgerStorage {
         initial_balances: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
         minters: BTreeMap<Symbol, Vec<Identity>>,
         persistent_path: P,
+        snapshot_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
-        let snapshot_path = persistent_path.as_ref().parent().unwrap().to_path_buf();
+        let snapshots = snapshot_path.as_ref().to_path_buf();
 
         let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
         let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
@@ -139,7 +142,7 @@ impl LedgerStorage {
             symbols,
             minters,
             persistent_store,
-            snapshot_path,
+            snapshots,
             blockchain,
             latest_tid: TransactionId::from(vec![0]),
             current_time: None,
@@ -182,7 +185,7 @@ impl LedgerStorage {
     }
 
     pub fn create_snapshot(&self, height: u64) -> Result<(), ManyError> {
-        let snapshot = SystemTime::now()
+        let snapshot_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?
             .as_millis()
@@ -193,29 +196,22 @@ impl LedgerStorage {
             .take(7)
             .map(char::from)
             .collect();
-        let snapshot_name = format!("{}-{}-{}", "snapshot", snapshot, s);
+        let snapshot_name = format!("{}-{}-{}", "snapshot", snapshot_time, s);
 
         self.persistent_store
-            .snapshot(
-                self.snapshot_path
-                    .join(format!("{}-{}", snapshot_name, height)),
-            )
-            .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+            .snapshot(&self.snapshots)
+            .map_err(|e| ManyError::snapshot_creation_error(e.to_string()))?;
 
-        let gz = File::create(
-            self.snapshot_path
-                .join(format!("{}-{}.tar.gz", snapshot_name, &height)),
-        )
-        .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+        let gz = File::create(format!("many-ledger-snapshot-{}.tar.gz", &height))
+            .map_err(|e| ManyError::snapshot_not_found(e.to_string()))?;
 
         let encoder = GzEncoder::new(gz, Compression::default());
         let mut tar = tar::Builder::new(encoder);
-        tar.append_dir_all(
-            &snapshot_name,
-            self.snapshot_path
-                .join(format!("{}-{}", &snapshot_name, &height)),
-        )
-        .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        tar.append_dir_all(&snapshot_name, &self.snapshots)
+            .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
+
+        fs::remove_dir_all(&self.snapshots)
+            .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
 
         Ok(())
     }
@@ -232,7 +228,7 @@ impl LedgerStorage {
 
         if height % 1000 == 0 {
             if let Err(e) = self.create_snapshot(height) {
-                println!("{}", e);
+                tracing::error!("snapshot error: {}", e.to_string());
             }
         }
 
