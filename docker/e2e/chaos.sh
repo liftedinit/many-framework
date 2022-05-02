@@ -6,35 +6,6 @@ PURPLE='\033[0;35m'
 GREEN='\033[0;32m'
 
 c=0
-no_sleep () {
-    echo "${GREEN}RUN TENDERMINT NO SLEEP CHAOS TEST ${GREEN}"
-    while [ $c -le 14 ]
-    do
-      echo "${RED}STOP TENDERMINT NODE 0 $c times${RED}"
-      ((c++))
-      docker stop e2e-tendermint-0-1 
-      echo "${GREEN}START TENDERMINT NODE 0 $c times${GREEN}"
-	    docker start e2e-tendermint-0-1
-
-      echo "${RED}STOP TENDERMINT NODE 1  $c times${RED}"
-      docker stop e2e-tendermint-1-1 
-      echo "${GREEN}START TENDERMINT NODE 1  $c times${GREEN}"
-      docker start e2e-tendermint-1-1 
-
-      echo "${RED}STOP TENDERMINT NODE 2  $c times${RED}"
-      docker stop e2e-tendermint-2-1 
-      echo "${GREEN}START TENDERMINT NODE 2  $c times${GREEN}"
-      docker start e2e-tendermint-2-1 
-
-      echo "${RED}STOP TENDERMINT NODE 3  $c times${RED}"
-      docker stop e2e-tendermint-3-1 
-      echo "${GREEN}START TENDERMINT NODE 3  $c times${GREEN}"
-      docker start e2e-tendermint-3-1 
-
-      echo "${NC}NO SLEEP TEST OVER${NC}"
-    done
-}
-
 rapid_fire () {
     echo "${RED}RUN TENDERMINT RAPID FIRE CHAOS ${RED}"
     while [ $c -le 30 ]
@@ -111,6 +82,5 @@ random_time () {
     done
 }
 
-no_sleep
 rapid_fire
 random_time
