@@ -78,7 +78,6 @@ fn filter_date<'a>(
 pub struct InitialStateJson {
     initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
     symbols: BTreeMap<Identity, String>,
-    minters: Option<BTreeMap<Symbol, Vec<Identity>>>,
     hash: Option<String>,
 }
 
@@ -98,7 +97,6 @@ impl LedgerModuleImpl {
             let storage = LedgerStorage::new(
                 state.symbols,
                 state.initial,
-                state.minters.unwrap_or_default(),
                 persistence_store_path,
                 blockchain,
             )
@@ -250,8 +248,6 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
             endpoints: BTreeMap::from([
                 ("ledger.info".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.balance".to_string(), EndpointInfo { is_command: false }),
-                // TODO: Re-enable this when Minting is implemented
-                // ("ledger.mint".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.list".to_string(), EndpointInfo { is_command: false }),

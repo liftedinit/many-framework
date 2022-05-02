@@ -4,13 +4,8 @@
       "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000
     }
   },
-  "minters": {
-    "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": [
-      "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp"
-    ]
-  },
   "symbols": {
     "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "FBT"
   },
-  "hash": "7ffc5e9f9aa66a10989ce67a9eb322b72aa7c0ee4adc6896d65838c5a11f18f8"
+  "hash": "cb619c8805b749b23486bbe3dfdb8134d9df5251763cfb48d48ecd763cea215e"
 }
