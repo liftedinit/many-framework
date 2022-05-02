@@ -11,29 +11,21 @@ fn setup() -> LedgerStorage {
     let id1 = Identity::public_key_raw([1; 28]);
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "FBT".to_string())].into_iter());
-    let balances = BTreeMap::new();
+    let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
-    let mut storage = many_ledger::storage::LedgerStorage::new(
-        symbols,
-        balances,
-        BTreeMap::new(),
-        persistent_path,
-        false,
-    )
-    .unwrap();
+    let mut storage =
+        many_ledger::storage::LedgerStorage::new(symbols, balances, persistent_path, false)
+            .unwrap();
 
-    storage
-        .mint(&id0, &symbol0, TokenAmount::from(1000u16))
-        .unwrap();
     for _ in 0..5 {
         storage
             .send(&id0, &id1, &symbol0, TokenAmount::from(100u16))
             .unwrap();
     }
 
-    // Check that we have 6 transactions (5 sends and a mint).
-    assert_eq!(storage.nb_transactions(), 6);
+    // Check that we have 5 transactions (5 sends).
+    assert_eq!(storage.nb_transactions(), 5);
 
     storage
 }
