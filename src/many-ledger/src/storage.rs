@@ -15,13 +15,26 @@ pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
 
+/// Minimum number of bytes in a transaction ID. If a transaction ID would be
+/// larger than this, panics.
+const TRANSACTION_ID_KEY_SIZE: usize = 32;
+
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
+/// Returns the storage key for a transaction in the kv-store.
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    vec![TRANSACTIONS_ROOT.to_vec(), id.into()].concat()
+    let mut id: Vec<u8> = id.0.into();
+    id.extend(
+        std::iter::repeat(0).take(
+            TRANSACTION_ID_KEY_SIZE
+                .checked_sub(id.len())
+                .expect("Transaction ID larger than max size."),
+        ),
+    );
+    vec![TRANSACTIONS_ROOT.to_vec(), id].concat()
 }
 
 pub struct LedgerStorage {
