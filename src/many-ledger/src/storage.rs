@@ -17,25 +17,13 @@ pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
 
-/// Minimum number of bytes in a transaction ID. If a transaction ID would be
-/// larger than this, panics.
-const TRANSACTION_ID_KEY_SIZE: usize = 32;
-
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    let mut id: Vec<u8> = id.0.into();
-    id.extend(
-        std::iter::repeat(0).take(
-            TRANSACTION_ID_KEY_SIZE
-                .checked_sub(id.len())
-                .expect("Transaction ID larger than max size."),
-        ),
-    );
-    vec![TRANSACTIONS_ROOT.to_vec(), id].concat()
+    vec![TRANSACTIONS_ROOT.to_vec(), id.0.into()].concat()
 }
 
 pub struct LedgerStorage {
@@ -348,8 +336,20 @@ impl LedgerStorage {
         LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
     }
 
+    pub fn account_map(&self) -> &AccountMap {
+        self.account_map
+    }
+
     pub fn add_account(&mut self, account: account::Account) -> Result<Identity, ManyError> {
         self.account_map.insert(account).map(|(id, _)| id)
+    }
+
+    pub fn get_account(&self, id: &Identity) -> Option<&account::Account> {
+        self.account_map.get(id)
+    }
+
+    pub fn get_account_mut(&mut self, id: &Identity) -> Option<&mut account::Account> {
+        self.account_map.get_mut(id)
     }
 }
 

@@ -7,6 +7,7 @@ use many::server::module::account::features::multisig::{
     ApproveArg, ExecuteArg, InfoArg, RevokeArg, SubmitTransactionArg, SubmitTransactionReturn,
     WithdrawArg,
 };
+use many::server::module::account::features::FeatureSet;
 use many::server::module::account::{
     Account, AddFeaturesArgs, AddRolesArgs, CreateArgs, CreateReturn, DeleteArgs, GetRolesArgs,
     GetRolesReturn, InfoArgs, InfoReturn, ListRolesArgs, ListRolesReturn, RemoveRolesArgs,
@@ -96,6 +97,7 @@ pub struct InitialStateJson {
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
     storage: LedgerStorage,
+    features: FeatureSet,
 }
 
 impl LedgerModuleImpl {
@@ -321,7 +323,17 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: SetDescriptionArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        let account = self
+            .storage
+            .get_account_mut(&args.id)
+            .ok_or_else(|| account::errors::unknown_account(args.id))?;
+
+        if account.has_role(sender, "owner") {
+            account.set_description(Some(args.description));
+            Ok(EmptyReturn)
+        } else {
+            Err(account::errors::user_needs_role("owner"))
+        }
     }
 
     fn list_roles(
@@ -329,7 +341,6 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: ListRolesArgs,
     ) -> Result<ListRolesReturn, ManyError> {
-        todo!()
     }
 
     fn get_roles(
