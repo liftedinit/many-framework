@@ -15,8 +15,9 @@ pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
 
-/// Minimum number of bytes in a transaction ID. If a transaction ID would be
-/// larger than this, panics.
+/// Number of bytes in a transaction ID when serialized. Keys smaller than this
+/// will have `\0` prepended, and keys larger will be cut to this number of
+/// bytes.
 const TRANSACTION_ID_KEY_SIZE_IN_BYTES: usize = 32;
 
 /// Returns the key for the persistent kv-store.
@@ -26,8 +27,15 @@ pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
 
 /// Returns the storage key for a transaction in the kv-store.
 pub(super) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
+    let id = id.0.as_slice();
+    let id = if id.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
+        &id[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
+    } else {
+        id
+    };
+
     let mut exp_id = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
-    exp_id[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.0.len())..].copy_from_slice(&id.0);
+    exp_id[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
     vec![TRANSACTIONS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
@@ -408,4 +416,23 @@ fn transaction_key_size() {
         ))
         .len()
     );
+
+    // Trim the Tx ID if it's too long.
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(
+            b"0123456789012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    );
+    assert_eq!(
+        key_for_transaction(TransactionId::from(
+            b"01234567890123456789012345678901".to_vec()
+        ))
+        .len(),
+        key_for_transaction(TransactionId::from(
+            b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    )
 }
