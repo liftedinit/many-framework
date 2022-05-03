@@ -17,7 +17,7 @@ const HEIGHT_TXID_SHIFT: u64 = 32;
 
 /// Minimum number of bytes in a transaction ID. If a transaction ID would be
 /// larger than this, panics.
-const TRANSACTION_ID_KEY_SIZE: usize = 32;
+const TRANSACTION_ID_KEY_SIZE_IN_BYTES: usize = 32;
 
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
@@ -25,16 +25,10 @@ pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
 }
 
 /// Returns the storage key for a transaction in the kv-store.
-pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    let mut id: Vec<u8> = id.0.into();
-    id.extend(
-        std::iter::repeat(0).take(
-            TRANSACTION_ID_KEY_SIZE
-                .checked_sub(id.len())
-                .expect("Transaction ID larger than max size."),
-        ),
-    );
-    vec![TRANSACTIONS_ROOT.to_vec(), id].concat()
+pub(super) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
+    let mut exp_id = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
+    exp_id[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.0.len())..].copy_from_slice(&id.0);
+    vec![TRANSACTIONS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
 pub struct LedgerStorage {
@@ -380,4 +374,38 @@ impl<'a> Iterator for LedgerIterator<'a> {
             (k, new_v.value().to_vec())
         })
     }
+}
+
+#[test]
+fn transaction_key_size() {
+    let golden_size = key_for_transaction(TransactionId::from(0)).len();
+
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(u64::MAX)).len()
+    );
+
+    // Test at 1 byte, 2 bytes and 4 bytes boundaries.
+    for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i - 1)).len()
+        );
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i)).len()
+        );
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i + 1)).len()
+        );
+    }
+
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(
+            b"012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    );
 }
