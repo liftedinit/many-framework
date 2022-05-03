@@ -1,6 +1,6 @@
 use crate::error::unauthorized;
 use fmerk::Op;
-use many::server::module::abci_backend::AbciCommitInfo;
+use many::server::module::abci_backend::{AbciCommitInfo, AbciListSnapshot, Snapshot};
 use many::{Identity, ManyError};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -71,6 +71,12 @@ impl KvStoreStorage {
                 u64::from_be_bytes(bytes)
             })
     }
+
+    pub fn list_snapshots(&mut self) -> AbciListSnapshot {
+          AbciListSnapshot {
+              all_snapshots: vec![],
+          }
+      }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
         let current_height = self.height() + 1;

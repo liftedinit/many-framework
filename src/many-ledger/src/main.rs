@@ -95,8 +95,6 @@ fn main() {
     } else if persistent.exists() {
         // Initial state is ignored.
         state = None;
-    } else if snapshots.exists() {
-        state = None;
     }
 
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");

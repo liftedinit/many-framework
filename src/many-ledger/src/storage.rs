@@ -1,11 +1,12 @@
 use crate::error;
+use chrono::Utc;
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use many::server::module::abci_backend::AbciCommitInfo;
+use many::server::module::abci_backend::{AbciCommitInfo, AbciListSnapshot, Snapshot};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
-use rand::{distributions::Alphanumeric, Rng};
+use regex::Regex;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::fs::{self, File};
@@ -165,36 +166,79 @@ impl LedgerStorage {
         self.latest_tid.clone()
     }
 
-    pub fn create_snapshot(&self, height: u64) -> Result<(), ManyError> {
-        let snapshot_time = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?
-            .as_millis()
-            .to_string();
-
-        let s: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(7)
-            .map(char::from)
-            .collect();
-        let snapshot_name = format!("{}-{}-{}", "snapshot", snapshot_time, s);
-
+    pub fn create_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
+        let dnt = chrono::Utc::now().date();
+        let snapshot_name = format!("{}-{}-{}", height, "snapshot", dnt);
         self.persistent_store
-            .snapshot(&self.snapshots)
+            .snapshot(self.snapshots.join(&snapshot_name))
             .map_err(|e| ManyError::snapshot_creation_error(e.to_string()))?;
 
-        let gz = File::create(format!("many-ledger-snapshot-{}.tar.gz", &height))
-            .map_err(|e| ManyError::snapshot_not_found(e.to_string()))?;
+        let gz = File::create(
+            self.snapshots
+                .join(format!("many-ledger-snapshot-{}.tar.gz", height)),
+        )
+        .map_err(|e| ManyError::snapshot_not_found(e.to_string()))?;
 
-        let encoder = GzEncoder::new(gz, Compression::default());
+        let encoder = GzEncoder::new(gz, Compression::fast());
+
         let mut tar = tar::Builder::new(encoder);
-        tar.append_dir_all(&snapshot_name, &self.snapshots)
+        tar.append_dir_all(&snapshot_name, self.snapshots.join(&snapshot_name))
             .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
 
-        fs::remove_dir_all(&self.snapshots)
+        fs::remove_dir_all(self.snapshots.join(&snapshot_name).as_path())
             .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
 
-        Ok(())
+        // get size of snapshot
+        let sz = fs::metadata(
+            self.snapshots
+                .join(format!("many-ledger-snapshot-{}.tar.gz", height)),
+        )
+        .map_err(|e| ManyError::attribute_not_found(e.to_string()))?
+        .len();
+
+        let hash = self.hash();
+        let pathz = self.snapshots.join(format!("many-ledger-snapshot-{}.tar.gz", height));
+        
+        Ok(Snapshot {
+            path: pathz,
+            height,
+            hash: hash,
+            chunks: sz,
+        })
+    }
+
+    pub fn get_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
+        let tar = format!("many-ledger-snapshot-{}.tar.gz", height);
+        let path = self.snapshots.clone().join(tar); 
+        let hash = self.hash();
+        let sz = fs::metadata(
+            &path,
+        ).map_err(|e| ManyError::attribute_not_found(e.to_string()))?
+        .len();
+        Ok(Snapshot {
+            path,
+            height,
+            hash: hash,
+            chunks: sz,
+        })
+    }
+
+    pub fn list_snapshots(&mut self) -> AbciListSnapshot {
+        let height = self.get_height();
+        // TODO: this is a hack, we should be able to get the list of snapshots using height
+        let mut list = self.get_snapshot(height).unwrap();
+        
+
+
+        AbciListSnapshot {
+            all_snapshots: vec![list],
+        }
+    }
+
+    /// Check if "many-ledger-snapshot-<height>.tar.gz" exist
+    fn is_snapshot(&self, path: &str) -> bool {
+        let re = regex::Regex::new(r"^many-ledger-snapshot-\d+$").unwrap();
+        re.is_match(path)
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {

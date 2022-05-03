@@ -1,6 +1,6 @@
 use crate::{error, storage::LedgerStorage};
 use many::server::module::abci_backend::{
-    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, AbciSnapshots, EndpointInfo,
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, AbciListSnapshot, EndpointInfo,
     ManyAbciModuleBackend,
 };
 use many::server::module::ledger;
@@ -300,10 +300,12 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
         Ok(result)
     }
 
-    fn list_snapshots(&mut self) -> Result<AbciSnapshots, ManyError> {
-        // let storage = &self.storage;
-        Ok(AbciSnapshots {
-            path: None,
-        })
+    fn list_snapshots(&mut self) -> Result<AbciListSnapshot, ManyError> {
+        let result = self.storage.list_snapshots();
+        info!(
+            "abci.list_snapshots(): Snapshot={:?}",
+            result.all_snapshots,
+        );
+        Ok(result)
     }
 }
