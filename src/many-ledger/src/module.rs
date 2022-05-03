@@ -1,8 +1,18 @@
 use crate::{error, storage::LedgerStorage};
+use many::message::ResponseMessage;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::ledger;
+use many::server::module::account::features::multisig::{
+    ApproveArg, ExecuteArg, InfoArg, RevokeArg, SubmitTransactionArg, SubmitTransactionReturn,
+    WithdrawArg,
+};
+use many::server::module::account::{
+    Account, AddFeaturesArgs, AddRolesArgs, CreateArgs, CreateReturn, DeleteArgs, GetRolesArgs,
+    GetRolesReturn, InfoArgs, InfoReturn, ListRolesArgs, ListRolesReturn, RemoveRolesArgs,
+    SetDescriptionArgs,
+};
+use many::server::module::{account, ledger, EmptyReturn};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
@@ -76,6 +86,7 @@ fn filter_date<'a>(
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Debug, Default)]
 pub struct InitialStateJson {
+    identity: Identity,
     initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
     symbols: BTreeMap<Identity, String>,
     hash: Option<String>,
@@ -98,6 +109,7 @@ impl LedgerModuleImpl {
                 state.symbols,
                 state.initial,
                 persistence_store_path,
+                state.identity,
                 blockchain,
             )
             .map_err(ManyError::unknown)?;
@@ -295,5 +307,118 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
             hex::encode(result.hash.as_slice()).as_str()
         );
         Ok(result)
+    }
+}
+
+impl account::AccountModuleBackend for LedgerModuleImpl {
+    fn create(&mut self, sender: &Identity, args: CreateArgs) -> Result<CreateReturn, ManyError> {
+        let id = self.storage.add_account(Account::create(sender, args))?;
+        Ok(CreateReturn { id })
+    }
+
+    fn set_description(
+        &mut self,
+        sender: &Identity,
+        args: SetDescriptionArgs,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+
+    fn list_roles(
+        &self,
+        sender: &Identity,
+        args: ListRolesArgs,
+    ) -> Result<ListRolesReturn, ManyError> {
+        todo!()
+    }
+
+    fn get_roles(
+        &self,
+        sender: &Identity,
+        args: GetRolesArgs,
+    ) -> Result<GetRolesReturn, ManyError> {
+        todo!()
+    }
+
+    fn add_roles(
+        &mut self,
+        sender: &Identity,
+        args: AddRolesArgs,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+
+    fn remove_roles(
+        &mut self,
+        sender: &Identity,
+        args: RemoveRolesArgs,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+
+    fn info(&self, sender: &Identity, args: InfoArgs) -> Result<InfoReturn, ManyError> {
+        todo!()
+    }
+
+    fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+
+    fn add_features(
+        &mut self,
+        sender: &Identity,
+        args: AddFeaturesArgs,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+}
+
+impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
+    fn multisig_submit_transaction(
+        &mut self,
+        sender: &Identity,
+        args: SubmitTransactionArg,
+    ) -> Result<SubmitTransactionReturn, ManyError> {
+        todo!()
+    }
+
+    fn multisig_info(
+        &self,
+        sender: &Identity,
+        args: InfoArg,
+    ) -> Result<account::features::multisig::InfoReturn, ManyError> {
+        todo!()
+    }
+
+    fn multisig_approve(
+        &self,
+        sender: &Identity,
+        args: ApproveArg,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+
+    fn multisig_revoke(
+        &self,
+        sender: &Identity,
+        args: RevokeArg,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
+    }
+
+    fn multisig_execute(
+        &self,
+        sender: &Identity,
+        args: ExecuteArg,
+    ) -> Result<ResponseMessage, ManyError> {
+        todo!()
+    }
+
+    fn multisig_withdraw(
+        &self,
+        sender: &Identity,
+        args: WithdrawArg,
+    ) -> Result<EmptyReturn, ManyError> {
+        todo!()
     }
 }

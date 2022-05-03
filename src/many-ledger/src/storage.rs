@@ -1,5 +1,7 @@
 use crate::error;
 use many::server::module::abci_backend::AbciCommitInfo;
+use many::server::module::account;
+use many::server::module::account::AccountMap;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
@@ -15,13 +17,25 @@ pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
 
+/// Minimum number of bytes in a transaction ID. If a transaction ID would be
+/// larger than this, panics.
+const TRANSACTION_ID_KEY_SIZE: usize = 32;
+
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
 pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    vec![TRANSACTIONS_ROOT.to_vec(), id.into()].concat()
+    let mut id: Vec<u8> = id.0.into();
+    id.extend(
+        std::iter::repeat(0).take(
+            TRANSACTION_ID_KEY_SIZE
+                .checked_sub(id.len())
+                .expect("Transaction ID larger than max size."),
+        ),
+    );
+    vec![TRANSACTIONS_ROOT.to_vec(), id].concat()
 }
 
 pub struct LedgerStorage {
@@ -37,6 +51,8 @@ pub struct LedgerStorage {
 
     current_time: Option<SystemTime>,
     current_hash: Option<Vec<u8>>,
+
+    account_map: account::AccountMap,
 }
 
 impl std::fmt::Debug for LedgerStorage {
@@ -62,6 +78,14 @@ impl LedgerStorage {
             .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
             .map_err(|e| e.to_string())?;
 
+        let identity: Identity = Identity::from_bytes(
+            &persistent_store
+                .get(b"/config/identity")
+                .expect("Could not open storage.")
+                .expect("Could not find key '/config/identity' in storage."),
+        )
+        .map_err(|e| e.to_string())?;
+
         let height = persistent_store.get(b"/height").unwrap().map_or(0u64, |x| {
             let mut bytes = [0u8; 8];
             bytes.copy_from_slice(x.as_slice());
@@ -75,6 +99,7 @@ impl LedgerStorage {
             persistent_store,
             blockchain,
             latest_tid,
+            account_map: AccountMap::new(identity),
             current_time: None,
             current_hash: None,
         })
@@ -84,6 +109,7 @@ impl LedgerStorage {
         symbols: BTreeMap<Symbol, String>,
         initial_balances: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
         persistent_path: P,
+        identity: Identity,
         blockchain: bool,
     ) -> Result<Self, String> {
         let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
@@ -102,6 +128,10 @@ impl LedgerStorage {
         }
 
         batch.push((
+            b"/config/identity".to_vec(),
+            fmerk::Op::Put(identity.to_vec()),
+        ));
+        batch.push((
             b"/config/symbols".to_vec(),
             fmerk::Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
         ));
@@ -116,6 +146,7 @@ impl LedgerStorage {
             persistent_store,
             blockchain,
             latest_tid: TransactionId::from(vec![0]),
+            account_map: AccountMap::new(identity),
             current_time: None,
             current_hash: None,
         })
@@ -315,6 +346,10 @@ impl LedgerStorage {
 
     pub fn iter(&self, range: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
         LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
+    }
+
+    pub fn add_account(&mut self, account: account::Account) -> Result<Identity, ManyError> {
+        self.account_map.insert(account).map(|(id, _)| id)
     }
 }
 
