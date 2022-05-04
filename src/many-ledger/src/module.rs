@@ -302,10 +302,7 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 
     fn list_snapshots(&mut self) -> Result<AbciListSnapshot, ManyError> {
         let result = self.storage.list_snapshots();
-        info!(
-            "abci.list_snapshots(): Snapshot={:?}",
-            result.all_snapshots,
-        );
+        info!("abci.list_snapshots(): Snapshot={:?}", result.all_snapshots,);
         Ok(result)
     }
 }

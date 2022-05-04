@@ -6,7 +6,6 @@ use many::server::module::abci_backend::{AbciCommitInfo, AbciListSnapshot, Snaps
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
-use regex::Regex;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::fs::{self, File};
@@ -188,57 +187,32 @@ impl LedgerStorage {
         fs::remove_dir_all(self.snapshots.join(&snapshot_name).as_path())
             .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
 
-        // get size of snapshot
-        let sz = fs::metadata(
-            self.snapshots
-                .join(format!("many-ledger-snapshot-{}.tar.gz", height)),
-        )
-        .map_err(|e| ManyError::attribute_not_found(e.to_string()))?
-        .len();
+        let hash = self.persistent_store.root_hash().to_vec();
+        let path = self
+            .snapshots
+            .join(format!("many-ledger-snapshot-{}.tar.gz", height));
 
-        let hash = self.hash();
-        let pathz = self.snapshots.join(format!("many-ledger-snapshot-{}.tar.gz", height));
-        
-        Ok(Snapshot {
-            path: pathz,
-            height,
-            hash: hash,
-            chunks: sz,
-        })
+        Ok(Snapshot { path, height, hash })
     }
 
     pub fn get_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
-        let tar = format!("many-ledger-snapshot-{}.tar.gz", height);
-        let path = self.snapshots.clone().join(tar); 
-        let hash = self.hash();
-        let sz = fs::metadata(
-            &path,
-        ).map_err(|e| ManyError::attribute_not_found(e.to_string()))?
-        .len();
-        Ok(Snapshot {
-            path,
-            height,
-            hash: hash,
-            chunks: sz,
-        })
+        let snapshot_name = format!("many-ledger-snapshot-{}.tar.gz", height);
+        let path = self.snapshots.join(&snapshot_name);
+        let hash = self.persistent_store.root_hash().to_vec();
+
+        Ok(Snapshot { path, height, hash })
     }
 
     pub fn list_snapshots(&mut self) -> AbciListSnapshot {
-        let height = self.get_height();
-        // TODO: this is a hack, we should be able to get the list of snapshots using height
-        let mut list = self.get_snapshot(height).unwrap();
-        
-
-
-        AbciListSnapshot {
-            all_snapshots: vec![list],
+        let all = self.get_snapshot(self.get_height()).unwrap();
+        let mut snapshots = Vec::new();
+        for i in 0..=all.height {
+            let snapshot = self.get_snapshot(i).unwrap();
+            snapshots.push(snapshot);
         }
-    }
-
-    /// Check if "many-ledger-snapshot-<height>.tar.gz" exist
-    fn is_snapshot(&self, path: &str) -> bool {
-        let re = regex::Regex::new(r"^many-ledger-snapshot-\d+$").unwrap();
-        re.is_match(path)
+        AbciListSnapshot {
+            all_snapshots: snapshots,
+        }
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {

@@ -73,10 +73,10 @@ impl KvStoreStorage {
     }
 
     pub fn list_snapshots(&mut self) -> AbciListSnapshot {
-          AbciListSnapshot {
-              all_snapshots: vec![],
-          }
-      }
+        AbciListSnapshot {
+            all_snapshots: vec![],
+        }
+    }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
         let current_height = self.height() + 1;

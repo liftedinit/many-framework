@@ -4,7 +4,6 @@ use many::Identity;
 use many_ledger::storage::LedgerStorage;
 use std::collections::BTreeMap;
 use std::ops::Bound;
-use dirs::home_dir;
 
 fn setup() -> LedgerStorage {
     let symbol0 = Identity::anonymous();
@@ -13,8 +12,8 @@ fn setup() -> LedgerStorage {
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "FBT".to_string())].into_iter());
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
-    let persistent_path = dirs::home_dir().unwrap().join(".many-ledger");
-    let snapshot_path = dirs::home_dir().unwrap();
+    let persistent_path = tempfile::tempdir().unwrap();
+    let snapshot_path = tempfile::tempdir().unwrap();
 
     let mut storage =
         many_ledger::storage::LedgerStorage::new(symbols, balances, persistent_path, snapshot_path, false)
@@ -45,26 +44,7 @@ fn iter_asc(
 
 #[test]
 fn range_works() {
-    let mut storage = setup();
-
-    let hei = storage.get_height();
-    
-    let z = storage.create_snapshot(hei + 1).unwrap();
-    let z = storage.create_snapshot(hei + 2).unwrap();
-
-    let z = storage.create_snapshot(hei + 12).unwrap();
-    let z = storage.create_snapshot(hei + 13).unwrap();
-
-
-    let q = storage.get_snapshot(1);
-    let qq = storage.get_snapshot(2);
-    let qqq = storage.get_snapshot(12);
-    let qqqq = storage.get_snapshot(13);
-
-    let res = storage.list_snapshots();
-
-    let r = res.all_snapshots;
-
+    let storage = setup();
 
     // Get the first transaction ID.
     let mut iter = iter_asc(&storage, Bound::Unbounded, Bound::Unbounded);
