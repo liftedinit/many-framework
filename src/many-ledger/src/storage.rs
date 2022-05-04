@@ -167,14 +167,15 @@ impl LedgerStorage {
 
     pub fn create_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
         let dnt = chrono::Utc::now().date();
-        let snapshot_name = format!("{}-{}-{}", height, "snapshot", dnt);
+        let day = dnt.format("%Y-%m-%d").to_string();
+        let snapshot_name = format!("{}-{}-{}", height, "snapshot", day);
         self.persistent_store
             .snapshot(self.snapshots.join(&snapshot_name))
             .map_err(|e| ManyError::snapshot_creation_error(e.to_string()))?;
 
         let gz = File::create(
             self.snapshots
-                .join(format!("many-ledger-snapshot-{}.tar.gz", height)),
+                .join(format!("{}-many-ledger-snapshot.tar.gz", day)),
         )
         .map_err(|e| ManyError::snapshot_not_found(e.to_string()))?;
 
@@ -190,28 +191,27 @@ impl LedgerStorage {
         let hash = self.persistent_store.root_hash().to_vec();
         let path = self
             .snapshots
-            .join(format!("many-ledger-snapshot-{}.tar.gz", height));
+            .join(format!("{}-many-ledger-snapshot.tar.gz", day));
 
         Ok(Snapshot { path, height, hash })
     }
 
     pub fn get_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
-        let snapshot_name = format!("many-ledger-snapshot-{}.tar.gz", height);
-        let path = self.snapshots.join(&snapshot_name);
-        let hash = self.persistent_store.root_hash().to_vec();
-
+        let dnt = chrono::Utc::now().date();
+        let day = dnt.format("%Y-%m-%d").to_string();
+        let snapshot_name = format!("{}-many-ledger-snapshot.tar.gz", day);
+        let path = self.snapshots.join(snapshot_name);
+        //    let sz = fs::metadata(path.as_path())
+        //        .map_err(|e| ManyError::attribute_not_found(e.to_string()))?
+        //        .len();
+        let hash = self.hash();
         Ok(Snapshot { path, height, hash })
     }
 
     pub fn list_snapshots(&mut self) -> AbciListSnapshot {
-        let all = self.get_snapshot(self.get_height()).unwrap();
-        let mut snapshots = Vec::new();
-        for i in 0..=all.height {
-            let snapshot = self.get_snapshot(i).unwrap();
-            snapshots.push(snapshot);
-        }
+        let snaps = self.get_snapshot(0).map_err(|e| e.to_string());
         AbciListSnapshot {
-            all_snapshots: snapshots,
+            all_snapshots: snaps.into_iter().map(Into::into).collect(),
         }
     }
 

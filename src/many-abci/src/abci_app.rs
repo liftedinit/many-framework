@@ -1,6 +1,8 @@
 use coset::{CborSerializable, CoseSign1};
 use many::message::ResponseMessage;
-use many::server::module::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
+use many::server::module::abci_backend::{
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciListSnapshot, Snapshot,
+};
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
@@ -176,6 +178,10 @@ impl Application for AbciApp {
     }
 
     fn flush(&self) -> ResponseFlush {
+        Default::default()
+    }
+
+    fn list_snapshots(&self) -> ResponseListSnapshots {
         Default::default()
     }
 
