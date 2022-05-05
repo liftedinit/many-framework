@@ -7,7 +7,7 @@ use many::server::module::account::features::multisig::{
     ApproveArg, ExecuteArg, InfoArg, RevokeArg, SubmitTransactionArg, SubmitTransactionReturn,
     WithdrawArg,
 };
-use many::server::module::account::features::FeatureSet;
+use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::account::{
     Account, AddFeaturesArgs, AddRolesArgs, CreateArgs, CreateReturn, DeleteArgs, GetRolesArgs,
     GetRolesReturn, InfoArgs, InfoReturn, ListRolesArgs, ListRolesReturn, RemoveRolesArgs,
@@ -17,6 +17,7 @@ use many::server::module::{account, ledger, EmptyReturn};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
+use minicbor::bytes::ByteVec;
 use minicbor::decode;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -24,6 +25,22 @@ use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
 
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
+
+fn get_roles_for_account(account: &Account) -> BTreeSet<String> {
+    let features = account.features();
+
+    let mut roles = BTreeSet::new();
+
+    // TODO: somehow keep this list updated
+    if features.has_id(account::features::multisig::MultisigAccountFeature::ID) {
+        roles.append(&mut account::features::multisig::MultisigAccountFeature::roles());
+    }
+    if features.has_id(account::features::ledger::AccountLedger::ID) {
+        roles.append(&mut account::features::ledger::AccountLedger::roles());
+    }
+
+    roles
+}
 
 type TxResult = Result<Transaction, ManyError>;
 fn filter_account<'a>(
@@ -59,10 +76,10 @@ fn filter_transaction_kind<'a>(
 
 fn filter_symbol<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    symbol: Option<VecOrSingle<String>>,
+    symbol: Option<VecOrSingle<Symbol>>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
     if let Some(s) = symbol {
-        let s: Vec<String> = s.into();
+        let s: BTreeSet<Symbol> = s.into();
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
@@ -97,7 +114,6 @@ pub struct InitialStateJson {
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
     storage: LedgerStorage,
-    features: FeatureSet,
 }
 
 impl LedgerModuleImpl {
@@ -323,13 +339,14 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: SetDescriptionArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        let account = self
+        let mut account = self
             .storage
-            .get_account_mut(&args.id)
-            .ok_or_else(|| account::errors::unknown_account(args.id))?;
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         if account.has_role(sender, "owner") {
             account.set_description(Some(args.description));
+            self.storage.commit_account(&args.account, account)?;
             Ok(EmptyReturn)
         } else {
             Err(account::errors::user_needs_role("owner"))
@@ -338,17 +355,34 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn list_roles(
         &self,
-        sender: &Identity,
+        _sender: &Identity,
         args: ListRolesArgs,
     ) -> Result<ListRolesReturn, ManyError> {
+        let account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+        Ok(ListRolesReturn {
+            roles: get_roles_for_account(&account),
+        })
     }
 
     fn get_roles(
         &self,
-        sender: &Identity,
+        _sender: &Identity,
         args: GetRolesArgs,
     ) -> Result<GetRolesReturn, ManyError> {
-        todo!()
+        let account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+        let mut roles = BTreeMap::new();
+        for id in args.identities {
+            roles.insert(id, account.get_roles(&id));
+        }
+
+        Ok(GetRolesReturn { roles })
     }
 
     fn add_roles(
@@ -356,7 +390,22 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: AddRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        let mut account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+        if !account.has_role(sender, "owner") {
+            return Err(account::errors::user_needs_role("owner"));
+        }
+        for (id, roles) in args.roles {
+            for r in roles {
+                account.add_role(&id, r);
+            }
+        }
+
+        self.storage.commit_account(&args.account, account)?;
+        Ok(EmptyReturn)
     }
 
     fn remove_roles(
@@ -368,7 +417,21 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     }
 
     fn info(&self, sender: &Identity, args: InfoArgs) -> Result<InfoReturn, ManyError> {
-        todo!()
+        let Account {
+            description,
+            roles,
+            features,
+        } = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?
+            .clone();
+
+        Ok(InfoReturn {
+            description,
+            roles,
+            features,
+        })
     }
 
     fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<EmptyReturn, ManyError> {
@@ -388,9 +451,12 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_submit_transaction(
         &mut self,
         sender: &Identity,
-        args: SubmitTransactionArg,
+        arg: SubmitTransactionArg,
     ) -> Result<SubmitTransactionReturn, ManyError> {
-        todo!()
+        let token = self.storage.create_multisig_transaction(sender, arg)?;
+        Ok(SubmitTransactionReturn {
+            token: ByteVec::from(token),
+        })
     }
 
     fn multisig_info(
@@ -398,7 +464,8 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
         sender: &Identity,
         args: InfoArg,
     ) -> Result<account::features::multisig::InfoReturn, ManyError> {
-        todo!()
+        let info = self.storage.get_multisig_info(&args.token)?;
+        Ok(info)
     }
 
     fn multisig_approve(

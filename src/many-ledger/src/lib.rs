@@ -1,4 +1,4 @@
-use crate::storage::key_for_account;
+use crate::storage::key_for_account_balance;
 use many::types::ledger::{Symbol, TokenAmount};
 use many::Identity;
 use std::collections::BTreeMap;
@@ -16,7 +16,7 @@ pub fn verify_proof(
 ) -> Result<BTreeMap<Symbol, TokenAmount>, String> {
     let keys: Vec<Vec<u8>> = symbols
         .iter()
-        .map(|s| key_for_account(identity, s))
+        .map(|s| key_for_account_balance(identity, s))
         .collect();
     let values =
         fmerk::verify_proof(bytes, keys.as_slice(), *expected_hash).map_err(|e| e.to_string())?;
