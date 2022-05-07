@@ -12,7 +12,21 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tracing::info;
 
-type TransactionStorage = account::features::multisig::InfoReturn;
+#[derive(minicbor::Encode, minicbor::Decode)]
+#[cbor(map)]
+pub struct TransactionStorage {
+    #[n(0)]
+    pub account: Identity,
+
+    #[n(1)]
+    pub info: account::features::multisig::InfoReturn,
+}
+
+impl TransactionStorage {
+    pub fn should_execute(&self) -> bool {
+        self.info.approvers.values().filter(|i| i.approved).count() >= self.info.threshold as usize
+    }
+}
 
 const MULTISIG_DEFAULT_THRESHOLD: u64 = 1;
 const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
@@ -33,6 +47,7 @@ pub struct AccountStorage {
 }
 
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
+pub(crate) const MULTISIG_TRANSACTIONS_ROOT: &[u8] = b"/multisig/";
 
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
@@ -66,7 +81,7 @@ pub(super) fn key_for_account(id: &Identity) -> Vec<u8> {
 }
 
 pub(super) fn key_for_multisig_transaction(token: &[u8]) -> Vec<u8> {
-    vec![b"/multisig/{}".as_slice(), token].concat().to_vec()
+    vec![MULTISIG_TRANSACTIONS_ROOT, token].concat().to_vec()
 }
 
 pub struct LedgerStorage {
@@ -239,7 +254,50 @@ impl LedgerStorage {
         self.latest_tid.clone()
     }
 
+    pub fn check_timed_out_transactions(&mut self) -> Result<(), ManyError> {
+        use fmerk::rocksdb::{Direction, IteratorMode, ReadOptions};
+
+        let mut options = ReadOptions::default();
+        let mut bound = TRANSACTIONS_ROOT.to_vec();
+        bound[MULTISIG_TRANSACTIONS_ROOT.len() - 1] += 1;
+        options.set_iterate_upper_bound(bound);
+
+        let it = self.persistent_store.iter_opt(
+            IteratorMode::From(TRANSACTIONS_ROOT, Direction::Forward),
+            options,
+        );
+
+        let mut keys_to_delete: Vec<Vec<u8>> = Vec::new();
+
+        for (k, v) in it {
+            let v = fmerk::tree::Tree::decode(k.to_vec(), v.as_ref());
+
+            let storage: TransactionStorage = minicbor::decode(v.value())
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+            if storage.info.timeout.0 > self.current_time.unwrap_or_else(SystemTime::now) {
+                keys_to_delete.push(k.to_vec());
+            }
+        }
+
+        for k in keys_to_delete {
+            self.persistent_store
+                .apply(&[(k, fmerk::Op::Delete)])
+                .unwrap();
+        }
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+
+        Ok(())
+    }
+
     pub fn commit(&mut self) -> AbciCommitInfo {
+        // First check if there's any need to clean up multisig transactions. Ignore
+        // errors.
+        let _ = self.check_timed_out_transactions();
+
         let height = self.inc_height();
         let retain_height = 0;
         self.persistent_store.commit(&[]).unwrap();
@@ -410,6 +468,19 @@ impl LedgerStorage {
         Ok(id)
     }
 
+    pub fn delete_account(&mut self, id: &Identity) -> Result<(), ManyError> {
+        self.persistent_store
+            .apply(&[(key_for_account(&id), fmerk::Op::Delete)])
+            .map_err(|e| ManyError::unknown(e.to_string()))?;
+
+        if !self.blockchain {
+            self.persistent_store
+                .commit(&[])
+                .expect("Could not commit to store.");
+        }
+        Ok(())
+    }
+
     pub fn get_account(&self, id: &Identity) -> Option<account::Account> {
         self.persistent_store
             .get(&key_for_account(id))
@@ -436,6 +507,12 @@ impl LedgerStorage {
                 ),
             )])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
+
+        if !self.blockchain {
+            self.persistent_store
+                .commit(&[])
+                .expect("Could not commit to store.");
+        }
         Ok(())
     }
 
@@ -467,7 +544,6 @@ impl LedgerStorage {
         arg: account::features::multisig::SubmitTransactionArg,
     ) -> Result<Vec<u8>, ManyError> {
         let tx_id = self.new_transaction_id();
-        let key = key_for_multisig_transaction(tx_id.0.as_slice());
 
         let account_id = arg
             .account
@@ -482,9 +558,10 @@ impl LedgerStorage {
             })?;
 
         // Validate the transaction's information.
+        #[allow(clippy::single_match)]
         match &arg.transaction {
             TransactionInfo::Send { from, .. } => {
-                if !from.matches(&account_id) {
+                if from != &account_id {
                     return Err(ManyError::unknown("Invalid transaction.".to_string()));
                 }
             }
@@ -535,13 +612,16 @@ impl LedgerStorage {
         let approvers = BTreeMap::new();
 
         let storage = TransactionStorage {
-            memo: arg.memo,
-            transaction: arg.transaction,
-            submitter: *sender,
-            approvers,
-            threshold,
-            execute_automatically,
-            timeout: Timestamp(time + Duration::from_secs(timeout_in_secs)),
+            account: account_id,
+            info: account::features::multisig::InfoReturn {
+                memo: arg.memo,
+                transaction: arg.transaction,
+                submitter: *sender,
+                approvers,
+                threshold,
+                execute_automatically,
+                timeout: Timestamp(time + Duration::from_secs(timeout_in_secs)),
+            },
         };
 
         self.commit_multisig_transaction(tx_id.0.as_slice(), &storage)?;
@@ -559,24 +639,19 @@ impl LedgerStorage {
             .map_err(|e| ManyError::deserialization_error(e.to_string()))
     }
 
-    pub fn approve_multisig(
-        &mut self,
-        sender: &Identity,
-        account: &Identity,
-        tx_id: &[u8],
-    ) -> Result<bool, ManyError> {
+    pub fn approve_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<bool, ManyError> {
+        let mut storage = self.get_multisig_info(tx_id)?;
+
         // Verify the sender has the rights to the account.
         let account = self
-            .get_account(account)
-            .ok_or_else(|| account::errors::unknown_account(account.to_string()))?;
+            .get_account(&storage.account)
+            .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         if !account.has_role(sender, "canMultisigApprove") {
             return Err(account::errors::user_needs_role("canMultisigApprove"));
         }
 
-        let mut storage = self.get_multisig_info(tx_id)?;
-
-        if let Some(info) = storage.approvers.get_mut(sender) {
+        if let Some(info) = storage.info.approvers.get_mut(sender) {
             info.approved = true;
         } else {
             return Err(account::features::multisig::errors::user_cannot_approve_transaction());
@@ -585,10 +660,7 @@ impl LedgerStorage {
         self.commit_multisig_transaction(tx_id, &storage)?;
 
         // If the transaction executes automatically, calculate number of approvers.
-        if storage.execute_automatically
-            && storage.approvers.values().filter(|i| i.approved).count()
-                >= storage.threshold as usize
-        {
+        if storage.info.execute_automatically && storage.should_execute() {
             self.execute_multisig_transaction_internal(tx_id, &storage)?;
             return Ok(true);
         }
@@ -596,28 +668,64 @@ impl LedgerStorage {
         Ok(false)
     }
 
-    pub fn execute_multisig(
-        &mut self,
-        sender: &Identity,
-        account: &Identity,
-        tx_id: &[u8],
-    ) -> Result<(), ManyError> {
+    pub fn revoke_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<bool, ManyError> {
         let mut storage = self.get_multisig_info(tx_id)?;
 
         // Verify the sender has the rights to the account.
         let account = self
-            .get_account(account)
-            .ok_or_else(|| account::errors::unknown_account(account.to_string()))?;
+            .get_account(&storage.account)
+            .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
-        if !(account.has_role(sender, "owner") || storage.submitter.matches(sender)) {
+        if !account.has_role(sender, "canMultisigApprove") {
             return Err(account::errors::user_needs_role("canMultisigApprove"));
         }
 
-        if storage.approvers.values().filter(|i| i.approved).count() >= storage.threshold as usize {
-            self.execute_multisig_transaction_internal(tx_id, &storage)?;
+        if let Some(info) = storage.info.approvers.get_mut(sender) {
+            info.approved = false;
+        } else {
+            return Err(account::features::multisig::errors::user_cannot_approve_transaction());
         }
 
-        Ok(())
+        self.commit_multisig_transaction(tx_id, &storage)?;
+        Ok(false)
+    }
+
+    pub fn execute_multisig(
+        &mut self,
+        sender: &Identity,
+        tx_id: &[u8],
+    ) -> Result<ResponseMessage, ManyError> {
+        let storage = self.get_multisig_info(tx_id)?;
+
+        // Verify the sender has the rights to the account.
+        let account = self
+            .get_account(&storage.account)
+            .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
+
+        if !(account.has_role(sender, "owner") || storage.info.submitter == *sender) {
+            return Err(account::errors::user_needs_role("canMultisigApprove"));
+        }
+
+        if storage.should_execute() {
+            self.execute_multisig_transaction_internal(tx_id, &storage)
+        } else {
+            Err(account::features::multisig::errors::cannot_execute_transaction())
+        }
+    }
+
+    pub fn withdraw_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<(), ManyError> {
+        let storage = self.get_multisig_info(tx_id)?;
+
+        // Verify the sender has the rights to the account.
+        let account = self
+            .get_account(&storage.account)
+            .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
+
+        if !(account.has_role(sender, "owner") || storage.info.submitter == *sender) {
+            return Err(account::features::multisig::errors::cannot_execute_transaction());
+        }
+
+        self.delete_multisig_transaction(tx_id)
     }
 
     fn delete_multisig_transaction(&mut self, tx_id: &[u8]) -> Result<(), ManyError> {
@@ -637,7 +745,7 @@ impl LedgerStorage {
         tx_id: &[u8],
         storage: &TransactionStorage,
     ) -> Result<ResponseMessage, ManyError> {
-        match &storage.transaction {
+        match &storage.info.transaction {
             TransactionInfo::Send {
                 from,
                 to,

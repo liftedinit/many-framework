@@ -38,6 +38,7 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
         } else {
             BlockIdentifier::new(block.header.last_block_id.unwrap().hash.into(), height - 1)
         },
+        app_hash: Some(block.header.app_hash.value()),
         timestamp: Timestamp::new(
             block
                 .header

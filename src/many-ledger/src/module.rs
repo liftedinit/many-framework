@@ -413,10 +413,25 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: RemoveRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        let mut account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+        if !account.has_role(sender, "owner") {
+            return Err(account::errors::user_needs_role("owner"));
+        }
+        for (id, roles) in args.roles {
+            for r in roles {
+                account.remove_role(&id, r);
+            }
+        }
+
+        self.storage.commit_account(&args.account, account)?;
+        Ok(EmptyReturn)
     }
 
-    fn info(&self, sender: &Identity, args: InfoArgs) -> Result<InfoReturn, ManyError> {
+    fn info(&self, _sender: &Identity, args: InfoArgs) -> Result<InfoReturn, ManyError> {
         let Account {
             description,
             roles,
@@ -435,15 +450,25 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     }
 
     fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        let account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+        if !account.has_role(sender, "owner") {
+            return Err(account::errors::user_needs_role("owner"));
+        }
+
+        self.storage.delete_account(&args.account)?;
+        Ok(EmptyReturn)
     }
 
     fn add_features(
         &mut self,
-        sender: &Identity,
-        args: AddFeaturesArgs,
+        _sender: &Identity,
+        _args: AddFeaturesArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        Err(ManyError::unknown("Unsupported.".to_string()))
     }
 }
 
@@ -461,42 +486,48 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
 
     fn multisig_info(
         &self,
-        sender: &Identity,
+        _sender: &Identity,
         args: InfoArg,
     ) -> Result<account::features::multisig::InfoReturn, ManyError> {
         let info = self.storage.get_multisig_info(&args.token)?;
-        Ok(info)
+        Ok(info.info)
     }
 
     fn multisig_approve(
-        &self,
+        &mut self,
         sender: &Identity,
         args: ApproveArg,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        self.storage
+            .approve_multisig(sender, args.token.as_slice())
+            .map(|_| EmptyReturn)
     }
 
     fn multisig_revoke(
-        &self,
+        &mut self,
         sender: &Identity,
         args: RevokeArg,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        self.storage
+            .revoke_multisig(sender, args.token.as_slice())
+            .map(|_| EmptyReturn)
     }
 
     fn multisig_execute(
-        &self,
+        &mut self,
         sender: &Identity,
         args: ExecuteArg,
     ) -> Result<ResponseMessage, ManyError> {
-        todo!()
+        self.storage.execute_multisig(sender, args.token.as_slice())
     }
 
     fn multisig_withdraw(
-        &self,
+        &mut self,
         sender: &Identity,
         args: WithdrawArg,
     ) -> Result<EmptyReturn, ManyError> {
-        todo!()
+        self.storage
+            .withdraw_multisig(sender, args.token.as_slice())
+            .map(|_| EmptyReturn)
     }
 }

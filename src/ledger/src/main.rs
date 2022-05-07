@@ -19,6 +19,8 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+mod multisig;
+
 #[derive(Clone, Debug)]
 #[repr(transparent)]
 struct Amount(pub BigUint);
@@ -97,6 +99,9 @@ enum SubCommand {
 
     /// Send tokens to an account.
     Send(TargetCommandOpt),
+
+    /// Perform a multisig operation.
+    Multisig(multisig::CommandOpt),
 }
 
 #[derive(Parser)]
@@ -113,7 +118,7 @@ struct BalanceOpt {
 }
 
 #[derive(Parser)]
-struct TargetCommandOpt {
+pub(crate) struct TargetCommandOpt {
     /// The account or target identity.
     identity: Identity,
 
@@ -126,7 +131,7 @@ struct TargetCommandOpt {
     symbol: String,
 }
 
-fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, ManyError> {
+pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, ManyError> {
     if let Ok(symbol) = Identity::from_str(&symbol) {
         Ok(symbol)
     } else {
@@ -302,6 +307,7 @@ fn main() {
             amount,
             symbol,
         }) => send(client, identity, amount, symbol),
+        SubCommand::Multisig(opts) => multisig::multisig(client, opts),
     };
 
     if let Err(err) = result {
