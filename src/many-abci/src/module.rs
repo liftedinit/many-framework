@@ -29,6 +29,7 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
         })
         .collect();
     Block {
+        app_hash: Some(block.header.app_hash.value()),
         id: BlockIdentifier {
             hash: block.header.hash().into(),
             height,
@@ -59,6 +60,12 @@ pub struct AbciBlockchainModuleImpl<C: Client> {
 impl<C: Client> AbciBlockchainModuleImpl<C> {
     pub fn new(client: C) -> Self {
         Self { client }
+    }
+}
+
+impl<C: Client> Drop for AbciBlockchainModuleImpl<C> {
+    fn drop(&mut self) {
+        tracing::info!("ABCI Blockchain Module being dropped.");
     }
 }
 

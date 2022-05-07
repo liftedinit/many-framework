@@ -19,6 +19,7 @@ many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "b8c6e89e23030e5
 many-client = { git = "https://github.com/l-1-labs/many-rs.git", rev = "b8c6e89e23030e592d9820f7498a58d522cbaf88" }
 reqwest = "0.11.6"
 sha2 = "0.10.1"
+signal-hook = "0.3.13"
 smol = "1.2.5"
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git" }
 tendermint-abci = { git = "https://github.com/informalsystems/tendermint-rs.git" }
