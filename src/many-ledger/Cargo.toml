@@ -18,7 +18,7 @@ lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 num-traits = "0.2.14"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "b8c6e89e23030e592d9820f7498a58d522cbaf88", features = ["pem", "raw"] }
+many = { git = "https://github.com/hansl/many-rs.git", rev = "b7017cec987491de83f581d7c0b188e6fb4be92d", features = ["pem", "raw"] }
 many-abci = { path = "../many-abci" }
 many-kvstore = { path = "../many-kvstore" }
 serde = "1.0.130"
@@ -31,7 +31,7 @@ tracing-subscriber = "0.2.24"
 typenum = "1.15.0"
 
 [dev-dependencies]
-many = { git = "https://github.com/l-1-labs/many-rs.git", rev = "b8c6e89e23030e592d9820f7498a58d522cbaf88" }
-many-client = { git = "https://github.com/l-1-labs/many-rs.git", rev = "b8c6e89e23030e592d9820f7498a58d522cbaf88" }
+many = { git = "https://github.com/hansl/many-rs.git", rev = "b7017cec987491de83f581d7c0b188e6fb4be92d" }
+many-client = { git = "https://github.com/hansl/many-rs.git", rev = "b7017cec987491de83f581d7c0b188e6fb4be92d" }
 tempfile = "3.3.0"
 
