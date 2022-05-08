@@ -25,6 +25,7 @@ const HEIGHT_TXID_SHIFT: u64 = 32;
 
 const CHUNK_SIZE: u64 = 10 * 1024 * 1024;
 pub const SNAPSHOT_INTERVAL: u64 = 1000;
+
 /// Number of bytes in a transaction ID when serialized. Keys smaller than this
 /// will have `\0` prepended, and keys larger will be cut to this number of
 /// bytes.
