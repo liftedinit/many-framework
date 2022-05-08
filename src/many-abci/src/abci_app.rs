@@ -1,8 +1,10 @@
 use coset::{CborSerializable, CoseSign1};
 use many::message::ResponseMessage;
 use many::server::module::abci_backend::{
-    AbciBlock, AbciCommitInfo, AbciInfo, AbciListSnapshot, Snapshot,
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciListSnapshot, AbciLoadSnapshotChunk,
+    AbciOfferSnapshot, Snapshots,
 };
+
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
@@ -182,6 +184,62 @@ impl Application for AbciApp {
     }
 
     fn list_snapshots(&self) -> ResponseListSnapshots {
+        self.many_client
+            .call_("abci.listSnapshots", ())
+            .map_or_else(
+                |_err| ResponseListSnapshots { snapshots: vec![] },
+                |msg| {
+                    let snapshotz: AbciListSnapshot = minicbor::decode(&msg).unwrap();
+                    let ss: Vec<Snapshot> = snapshotz
+                        .snapshots
+                        .into_iter()
+                        .map(|x| Snapshot {
+                            height: x.height,
+                            hash: x.hash.to_vec().into(),
+                            ..Default::default()
+                        })
+                        .collect();
+                    ResponseListSnapshots { snapshots: ss }
+                },
+            )
+    }
+
+    fn offer_snapshot(&self, req: RequestOfferSnapshot) -> ResponseOfferSnapshot {
+        let snap = req.snapshot.unwrap();
+        let snapshot = Snapshots {
+            height: snap.height,
+            hash: snap.hash.to_vec(),
+            format: snap.format,
+            chunks: snap.chunks,
+            metadata: snap.metadata.to_vec(),
+        };
+        let app = req.app_hash;
+
+        let offer = AbciOfferSnapshot {
+            snapshot: Some(snapshot),
+            app_hash: app.to_vec().into(),
+        };
+        let _ = self.many_client.call_("abci.offerSnapshot", offer);
+        ResponseOfferSnapshot { result: 1 }
+    }
+
+    fn load_snapshot_chunk(&self, req: RequestLoadSnapshotChunk) -> ResponseLoadSnapshotChunk {
+        //  let chunks = req.chunk;
+        let load = AbciLoadSnapshotChunk {
+            height: req.height,
+            format: req.format,
+            chunk: req.chunk,
+        };
+        let res = ResponseLoadSnapshotChunk::default();
+        let _ = self.many_client.call_("abci.loadSnapshotChunk", load);
+
+        ResponseLoadSnapshotChunk { chunk: res.chunk }
+    }
+
+    fn apply_snapshot_chunk(
+        &self,
+        _request: RequestApplySnapshotChunk,
+    ) -> ResponseApplySnapshotChunk {
         Default::default()
     }
 

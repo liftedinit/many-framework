@@ -1,6 +1,6 @@
 use crate::error::unauthorized;
 use fmerk::Op;
-use many::server::module::abci_backend::{AbciCommitInfo, AbciListSnapshot, Snapshot};
+use many::server::module::abci_backend::{AbciCommitInfo, AbciListSnapshot, AbciOfferSnapshot};
 use many::{Identity, ManyError};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -73,9 +73,12 @@ impl KvStoreStorage {
     }
 
     pub fn list_snapshots(&mut self) -> AbciListSnapshot {
-        AbciListSnapshot {
-            all_snapshots: vec![],
-        }
+        AbciListSnapshot { snapshots: vec![] }
+    }
+
+    pub fn offer_snapshot(&mut self, _snapshot: AbciOfferSnapshot) -> Result<(), ManyError> {
+        // TODO AbciOfferSnapshotResponse can return Enum of responses, Accepted, Rejected..
+        Ok(())
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {

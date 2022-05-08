@@ -2,16 +2,21 @@ use crate::error;
 use chrono::Utc;
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use many::server::module::abci_backend::{AbciCommitInfo, AbciListSnapshot, Snapshot};
+use many::server::module::abci_backend::{
+    AbciCommitInfo, AbciListSnapshot, AbciLoadSnapshotChunk, AbciOfferSnapshot, Snapshots,
+};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
+use sha2::Digest;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::fs::{self, File};
 use std::ops::RangeBounds;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use tendermint_proto::abci::{self, *};
+
 use tracing::info;
 
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
@@ -19,19 +24,38 @@ pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
 
+const CHUNK_SIZE: u64 = 10 * 1024 * 1024;
+pub const SNAPSHOT_INTERVAL: u64 = 1000;
+/// Number of bytes in a transaction ID when serialized. Keys smaller than this
+/// will have `\0` prepended, and keys larger will be cut to this number of
+/// bytes.
+const TRANSACTION_ID_KEY_SIZE_IN_BYTES: usize = 32;
+
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
-pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    vec![TRANSACTIONS_ROOT.to_vec(), id.into()].concat()
+/// Returns the storage key for a transaction in the kv-store.
+pub(super) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
+    let id = id.0.as_slice();
+    let id = if id.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
+        &id[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
+    } else {
+        id
+    };
+
+    let mut exp_id = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
+    exp_id[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
+    vec![TRANSACTIONS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
 pub struct LedgerStorage {
     symbols: BTreeMap<Symbol, String>,
     persistent_store: fmerk::Merk,
-    snapshots: PathBuf,
+    snapshot_home: PathBuf,
+    snapshots: Snapshots,
+    target_snapshot: Option<Snapshot>,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
@@ -62,7 +86,14 @@ impl LedgerStorage {
         snapshot_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
-        let snapshots = snapshot_path.as_ref().to_path_buf();
+        let snapshot_home = snapshot_path.as_ref().join("snapshots");
+        let no_snapshot = !snapshot_home.exists();
+        if no_snapshot {
+            std::fs::create_dir(&snapshot_home).expect("Error creating 'snapshots' directory");
+        }
+
+        let target_snapshot =
+            load_snapshots(snapshot_path.as_ref()).expect("Failed to load snapshots");
         let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
         let symbols = persistent_store
             .get(b"/config/symbols")
@@ -82,7 +113,15 @@ impl LedgerStorage {
         Ok(Self {
             symbols,
             persistent_store,
-            snapshots,
+            snapshot_home,
+            snapshots: Snapshots {
+                height: target_snapshot.height,
+                hash: target_snapshot.hash.to_vec(),
+                format: target_snapshot.format,
+                chunks: target_snapshot.chunks,
+                metadata: target_snapshot.metadata.to_vec(),
+            },
+            target_snapshot: Some(target_snapshot),
             blockchain,
             latest_tid,
             current_time: None,
@@ -97,8 +136,15 @@ impl LedgerStorage {
         snapshot_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
-        let snapshots = snapshot_path.as_ref().to_path_buf();
+        let snapshot_home = snapshot_path.as_ref().join("snapshots");
 
+        let no_snapshot = !snapshot_home.exists();
+        if no_snapshot {
+            std::fs::create_dir(&snapshot_home).expect("Error creating 'snapshots' directory");
+        }
+
+        let target_snapshot =
+            load_snapshots(snapshot_path.as_ref()).expect("Failed to load snapshots");
         let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
         let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
 
@@ -126,7 +172,15 @@ impl LedgerStorage {
         Ok(Self {
             symbols,
             persistent_store,
-            snapshots,
+            snapshot_home,
+            snapshots: Snapshots {
+                height: target_snapshot.height,
+                hash: target_snapshot.hash.to_vec(),
+                format: target_snapshot.format,
+                chunks: target_snapshot.chunks,
+                metadata: target_snapshot.metadata.to_vec(),
+            },
+            target_snapshot: Some(target_snapshot),
             blockchain,
             latest_tid: TransactionId::from(vec![0]),
             current_time: None,
@@ -136,6 +190,22 @@ impl LedgerStorage {
 
     pub fn get_symbols(&self) -> BTreeMap<Symbol, String> {
         self.symbols.clone()
+    }
+
+    fn store_snapshot(&mut self, snapshot: Snapshot) {
+        self.target_snapshot = Some(snapshot);
+        self.snapshots = Snapshots {
+            height: self.target_snapshot.as_ref().unwrap().height,
+            hash: self.target_snapshot.as_ref().unwrap().hash.to_vec(),
+            format: self.target_snapshot.as_ref().unwrap().format,
+            chunks: self.target_snapshot.as_ref().unwrap().chunks,
+            metadata: self.target_snapshot.as_ref().unwrap().metadata.to_vec(),
+        }
+    }
+
+    fn get_snapshot_by_height(&self, _height: u64) -> Snapshot {
+        let snap = self.target_snapshot.as_ref().unwrap();
+        Some(snap.clone()).unwrap()
     }
 
     fn inc_height(&mut self) -> u64 {
@@ -165,54 +235,95 @@ impl LedgerStorage {
         self.latest_tid.clone()
     }
 
-    pub fn create_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
+    pub fn create_snapshot(&mut self, height: u64) -> Result<Snapshot, ManyError> {
         let dnt = chrono::Utc::now().date();
         let day = dnt.format("%Y-%m-%d").to_string();
         let snapshot_name = format!("{}-{}-{}", height, "snapshot", day);
+
+        if !self.snapshot_home.exists() {
+            std::fs::create_dir_all(&self.snapshot_home)
+                .map_err(|e| ManyError::deserialization_error(format!("{}", e)))?;
+        }
         self.persistent_store
-            .snapshot(self.snapshots.join(&snapshot_name))
+            .snapshot(self.snapshot_home.join(&snapshot_name))
             .map_err(|e| ManyError::snapshot_creation_error(e.to_string()))?;
 
         let gz = File::create(
-            self.snapshots
-                .join(format!("{}-many-ledger-snapshot.tar.gz", day)),
+            self.snapshot_home
+                .join(format!("{}-many-snapshot-{}.tar.gz", day, height)),
         )
         .map_err(|e| ManyError::snapshot_not_found(e.to_string()))?;
 
         let encoder = GzEncoder::new(gz, Compression::fast());
 
         let mut tar = tar::Builder::new(encoder);
-        tar.append_dir_all(&snapshot_name, self.snapshots.join(&snapshot_name))
+        tar.append_dir_all(&snapshot_name, self.snapshot_home.join(&snapshot_name))
             .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
 
-        fs::remove_dir_all(self.snapshots.join(&snapshot_name).as_path())
+        let size = fs::metadata(self.snapshot_home.join(&snapshot_name))
+            .map_err(|e| ManyError::attribute_not_found(e.to_string()))?
+            .len();
+        let chunks = size / CHUNK_SIZE;
+
+        fs::remove_dir_all(self.snapshot_home.join(&snapshot_name).as_path())
             .map_err(|e| ManyError::snapshot_dir_error(e.to_string()))?;
 
-        let hash = self.persistent_store.root_hash().to_vec();
-        let path = self
-            .snapshots
-            .join(format!("{}-many-ledger-snapshot.tar.gz", day));
+        // make a SHA256  hash for metadata
+        let mut hasher = sha2::Sha256::new();
+        let meta = format!("{}-many-ledger-{}.tar.gz", day, height);
+        hasher.update(meta);
+        let id = hasher.finalize();
 
-        Ok(Snapshot { path, height, hash })
+        let b = Snapshot {
+            height,
+            hash: self.current_hash.as_ref().unwrap().clone(),
+            chunks: chunks as u32,
+            format: size as u32,
+            metadata: id.to_vec(),
+        };
+
+        self.store_snapshot(b);
+
+        Ok(Snapshot {
+            height,
+            hash: self.current_hash.as_ref().unwrap().clone(),
+            chunks: chunks as u32,
+            format: size as u32,
+            metadata: id.to_vec(),
+        })
     }
 
-    pub fn get_snapshot(&self, height: u64) -> Result<Snapshot, ManyError> {
-        let dnt = chrono::Utc::now().date();
-        let day = dnt.format("%Y-%m-%d").to_string();
-        let snapshot_name = format!("{}-many-ledger-snapshot.tar.gz", day);
-        let path = self.snapshots.join(snapshot_name);
-        //    let sz = fs::metadata(path.as_path())
-        //        .map_err(|e| ManyError::attribute_not_found(e.to_string()))?
-        //        .len();
-        let hash = self.hash();
-        Ok(Snapshot { path, height, hash })
-    }
+    pub fn list_snapshots(&self) -> AbciListSnapshot {
+        let g = self.get_snapshot_by_height(self.get_height());
 
-    pub fn list_snapshots(&mut self) -> AbciListSnapshot {
-        let snaps = self.get_snapshot(0).map_err(|e| e.to_string());
+        let abci_list = Snapshots {
+            height: g.height,
+            hash: g.hash,
+            format: g.format,
+            chunks: g.chunks,
+            metadata: g.metadata,
+        };
+
         AbciListSnapshot {
-            all_snapshots: snaps.into_iter().map(Into::into).collect(),
+            snapshots: vec![abci_list],
         }
+    }
+
+    pub fn load_snapshot_chunk(&self, _req: AbciLoadSnapshotChunk) -> Result<(), ManyError> {
+        Ok(())
+    }
+
+    pub fn offer_snapshot(&mut self, req: AbciOfferSnapshot) -> Result<(), ManyError> {
+        if let Some(snapshot) = req.snapshot {
+            if self.snapshots.height + SNAPSHOT_INTERVAL <= snapshot.height
+                && snapshot.height % SNAPSHOT_INTERVAL == 0
+                && snapshot.hash == req.app_hash.to_vec()
+            {
+                self.snapshots = snapshot;
+            }
+        };
+
+        Ok(())
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
@@ -225,7 +336,7 @@ impl LedgerStorage {
 
         self.latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
-        if height % 1000 == 0 {
+        if height % SNAPSHOT_INTERVAL == 0 {
             if let Err(e) = self.create_snapshot(height) {
                 tracing::error!("snapshot error: {}", e.to_string());
             }
@@ -436,4 +547,62 @@ impl<'a> Iterator for LedgerIterator<'a> {
             (k, new_v.value().to_vec())
         })
     }
+}
+
+pub fn load_snapshots(_home: &Path) -> Result<Snapshot, ManyError> {
+    let snapshots = Snapshot::default();
+    Ok(snapshots)
+}
+
+#[test]
+fn transaction_key_size() {
+    let golden_size = key_for_transaction(TransactionId::from(0)).len();
+
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(u64::MAX)).len()
+    );
+
+    // Test at 1 byte, 2 bytes and 4 bytes boundaries.
+    for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i - 1)).len()
+        );
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i)).len()
+        );
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i + 1)).len()
+        );
+    }
+
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(
+            b"012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    );
+
+    // Trim the Tx ID if it's too long.
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(
+            b"0123456789012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    );
+    assert_eq!(
+        key_for_transaction(TransactionId::from(
+            b"01234567890123456789012345678901".to_vec()
+        ))
+        .len(),
+        key_for_transaction(TransactionId::from(
+            b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    )
 }

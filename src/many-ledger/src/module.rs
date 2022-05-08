@@ -1,7 +1,7 @@
 use crate::{error, storage::LedgerStorage};
 use many::server::module::abci_backend::{
-    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, AbciListSnapshot, EndpointInfo,
-    ManyAbciModuleBackend,
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, AbciListSnapshot, AbciLoadSnapshotChunk,
+    AbciOfferSnapshot, EndpointInfo, ManyAbciModuleBackend,
 };
 use many::server::module::ledger;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
@@ -303,9 +303,21 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
     fn list_snapshots(&mut self) -> Result<AbciListSnapshot, ManyError> {
         let result = self.storage.list_snapshots();
         info!(
-            "abci.list_snapshots(): Snapshot={:#?}",
-            result.all_snapshots
+            "abci.list_snapshots(): ManySnapshot={:#?}",
+            result.snapshots
         );
         Ok(result)
+    }
+
+    fn offer_snapshot(&mut self, req: AbciOfferSnapshot) -> Result<(), ManyError> {
+        let result = self.storage.offer_snapshot(req).unwrap();
+        info!("abci.offerSnapshot(): ManySnapshot={:#?}", result);
+        Ok(result)
+    }
+
+    fn load_snapshot_chunk(&mut self, req: AbciLoadSnapshotChunk) -> Result<(), ManyError> {
+        let res = self.storage.load_snapshot_chunk(req).unwrap();
+        info!("abci.loadSnapshotChunk(): ManySnapshot={:#?}", res);
+        Ok(res)
     }
 }
