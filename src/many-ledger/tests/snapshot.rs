@@ -57,4 +57,11 @@ fn drop_used_snapshot() {
         snap_one.metadata, get_snap.snapshots[0].metadata
     );
     assert_eq!(snap_one.metadata, get_snap.snapshots[0].metadata);
+
+    let snap2 = storage.create_snapshot(SNAPSHOT_INTERVAL + 1).unwrap();
+    let list2 = storage.list_snapshots();
+
+    assert_eq!(snap2.height, list2.snapshots[0].height);
+    assert_eq!(snap2.hash, list2.snapshots[0].hash);
+    assert_eq!(snap2.metadata, list2.snapshots[0].metadata);
 }
