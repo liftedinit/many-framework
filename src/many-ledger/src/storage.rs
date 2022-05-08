@@ -15,19 +15,32 @@ pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
 
+/// Number of bytes in a transaction ID when serialized. Keys smaller than this
+/// will have `\0` prepended, and keys larger will be cut to this number of
+/// bytes.
+const TRANSACTION_ID_KEY_SIZE_IN_BYTES: usize = 32;
+
 /// Returns the key for the persistent kv-store.
 pub(crate) fn key_for_account(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
-pub(crate) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
-    vec![TRANSACTIONS_ROOT.to_vec(), id.into()].concat()
+/// Returns the storage key for a transaction in the kv-store.
+pub(super) fn key_for_transaction(id: TransactionId) -> Vec<u8> {
+    let id = id.0.as_slice();
+    let id = if id.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
+        &id[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
+    } else {
+        id
+    };
+
+    let mut exp_id = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
+    exp_id[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
+    vec![TRANSACTIONS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
 pub struct LedgerStorage {
     symbols: BTreeMap<Symbol, String>,
-    minters: BTreeMap<Symbol, Vec<Identity>>,
-
     persistent_store: fmerk::Merk,
 
     /// When this is true, we do not commit every transactions as they come,
@@ -64,13 +77,6 @@ impl LedgerStorage {
             .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
             .map_err(|e| e.to_string())?;
 
-        let minters = persistent_store
-            .get(b"/config/minters")
-            .map_err(|e| e.to_string())?;
-        let minters = minters
-            .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
-            .map_err(|e| e.to_string())?;
-
         let height = persistent_store.get(b"/height").unwrap().map_or(0u64, |x| {
             let mut bytes = [0u8; 8];
             bytes.copy_from_slice(x.as_slice());
@@ -81,7 +87,6 @@ impl LedgerStorage {
 
         Ok(Self {
             symbols,
-            minters,
             persistent_store,
             blockchain,
             latest_tid,
@@ -93,7 +98,6 @@ impl LedgerStorage {
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeMap<Symbol, String>,
         initial_balances: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
-        minters: BTreeMap<Symbol, Vec<Identity>>,
         persistent_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
@@ -113,10 +117,6 @@ impl LedgerStorage {
         }
 
         batch.push((
-            b"/config/minters".to_vec(),
-            fmerk::Op::Put(minicbor::to_vec(&minters).map_err(|e| e.to_string())?),
-        ));
-        batch.push((
             b"/config/symbols".to_vec(),
             fmerk::Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
         ));
@@ -128,7 +128,6 @@ impl LedgerStorage {
 
         Ok(Self {
             symbols,
-            minters,
             persistent_store,
             blockchain,
             latest_tid: TransactionId::from(vec![0]),
@@ -141,10 +140,6 @@ impl LedgerStorage {
         self.symbols.clone()
     }
 
-    pub fn can_mint(&self, id: &Identity, symbol: &Symbol) -> bool {
-        self.minters.get(symbol).map_or(false, |x| x.contains(id))
-    }
-
     fn inc_height(&mut self) -> u64 {
         let current_height = self.get_height();
         self.persistent_store
@@ -155,6 +150,7 @@ impl LedgerStorage {
             .unwrap();
         current_height
     }
+
     pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
@@ -197,6 +193,7 @@ impl LedgerStorage {
                 u64::from_be_bytes(bytes)
             })
     }
+
     fn add_transaction(&mut self, transaction: Transaction) {
         let current_nb_transactions = self.nb_transactions();
 
@@ -262,89 +259,6 @@ impl LedgerStorage {
                 .filter(|(k, _v)| symbols.contains(*k))
                 .collect()
         }
-    }
-
-    pub fn mint(
-        &mut self,
-        to: &Identity,
-        symbol: &Symbol,
-        amount: TokenAmount,
-    ) -> Result<(), ManyError> {
-        if amount.is_zero() {
-            // NOOP.
-            return Ok(());
-        }
-        if to.is_anonymous() {
-            return Err(error::anonymous_cannot_hold_funds());
-        }
-
-        info!("mint({}, {} {})", to, &amount, symbol);
-
-        let mut balance = self.get_balance(to, symbol);
-        balance += amount.clone();
-
-        self.persistent_store
-            .apply(&[(
-                key_for_account(to, symbol),
-                fmerk::Op::Put(balance.to_vec()),
-            )])
-            .unwrap();
-
-        let id = self.new_transaction_id();
-        self.add_transaction(Transaction::mint(
-            id,
-            self.current_time.unwrap_or_else(SystemTime::now),
-            *to,
-            symbol.to_string(),
-            amount,
-        ));
-
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
-        Ok(())
-    }
-
-    pub fn burn(
-        &mut self,
-        to: &Identity,
-        symbol: &Symbol,
-        amount: TokenAmount,
-    ) -> Result<(), ManyError> {
-        if amount.is_zero() {
-            // NOOP.
-            return Ok(());
-        }
-        if to.is_anonymous() {
-            return Err(error::anonymous_cannot_hold_funds());
-        }
-
-        info!("burn({}, {} {})", to, &amount, symbol);
-
-        let mut balance = self.get_balance(to, symbol);
-        balance -= amount.clone();
-
-        self.persistent_store
-            .apply(&[(
-                key_for_account(to, symbol),
-                fmerk::Op::Put(balance.to_vec()),
-            )])
-            .unwrap();
-
-        let id = self.new_transaction_id();
-        self.add_transaction(Transaction::burn(
-            id,
-            self.current_time.unwrap_or_else(SystemTime::now),
-            *to,
-            symbol.to_string(),
-            amount,
-        ));
-
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
-
-        Ok(())
     }
 
     pub fn send(
@@ -468,4 +382,57 @@ impl<'a> Iterator for LedgerIterator<'a> {
             (k, new_v.value().to_vec())
         })
     }
+}
+
+#[test]
+fn transaction_key_size() {
+    let golden_size = key_for_transaction(TransactionId::from(0)).len();
+
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(u64::MAX)).len()
+    );
+
+    // Test at 1 byte, 2 bytes and 4 bytes boundaries.
+    for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i - 1)).len()
+        );
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i)).len()
+        );
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(i + 1)).len()
+        );
+    }
+
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(
+            b"012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    );
+
+    // Trim the Tx ID if it's too long.
+    assert_eq!(
+        golden_size,
+        key_for_transaction(TransactionId::from(
+            b"0123456789012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    );
+    assert_eq!(
+        key_for_transaction(TransactionId::from(
+            b"01234567890123456789012345678901".to_vec()
+        ))
+        .len(),
+        key_for_transaction(TransactionId::from(
+            b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
+        ))
+        .len()
+    )
 }
