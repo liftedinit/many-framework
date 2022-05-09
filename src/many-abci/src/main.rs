@@ -160,6 +160,8 @@ async fn main() {
         .expect("Could not register signal handler");
     signal_hook::flag::register(signal_hook::consts::SIGHUP, many_server.term_signal())
         .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
+        .expect("Could not register signal handler");
 
     info!("Starting MANY server on addr {}", many.clone());
     let j_many = std::thread::spawn(move || match many_server.bind(many) {

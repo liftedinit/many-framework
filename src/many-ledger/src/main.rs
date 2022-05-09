@@ -124,6 +124,8 @@ fn main() {
         .expect("Could not register signal handler");
     signal_hook::flag::register(signal_hook::consts::SIGHUP, many_server.term_signal())
         .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
+        .expect("Could not register signal handler");
 
     many_server.bind(addr).unwrap();
 }
