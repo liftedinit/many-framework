@@ -875,9 +875,9 @@ dependencies = [
 
 [[package]]
 name = "ed25519"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d5c4b5e5959dc2c2b89918d8e2cc40fcdd623cef026ed09d2f0ee05199dc8e4"
+checksum = "d916019f70ae3a1faa1195685e290287f39207d38e6dfee727197cffcc002214"
 dependencies = [
  "signature",
 ]
@@ -1372,8 +1372,8 @@ version = "0.1.0"
 dependencies = [
  "clap 3.1.17",
  "hex",
- "many 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
- "many-client 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
+ "many",
+ "many-client",
  "many-kvstore",
  "minicbor",
  "new_mime_guess",
@@ -1595,8 +1595,8 @@ version = "0.1.0"
 dependencies = [
  "clap 3.1.17",
  "hex",
- "many 0.1.0 (git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88)",
- "many-client 0.1.0 (git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88)",
+ "many",
+ "many-client",
  "many-kvstore",
  "minicbor",
  "tokio",
@@ -1626,8 +1626,8 @@ dependencies = [
  "fmerk",
  "hex",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
- "many-client 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
+ "many",
+ "many-client",
  "minicbor",
  "num-bigint",
  "regex",
@@ -1688,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d#b7017cec987491de83f581d7c0b188e6fb4be92d"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=a2df840b63e8f5ac4c8e52b789b1ef0cac075f31#a2df840b63e8f5ac4c8e52b789b1ef0cac075f31"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1705,54 +1705,7 @@ dependencies = [
  "fixed",
  "hex",
  "lazy_static",
- "many-macros 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
- "minicbor",
- "num-bigint",
- "num-derive",
- "num-traits",
- "once_cell",
- "openssh-keys",
- "p256",
- "pem",
- "pkcs8 0.8.0",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "ring 0.16.20",
- "ring-compat",
- "serde",
- "sha2 0.10.2",
- "sha3",
- "signature",
- "simple_asn1",
- "static_assertions",
- "thiserror",
- "tiny_http",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "many"
-version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88#b8c6e89e23030e592d9820f7498a58d522cbaf88"
-dependencies = [
- "anyhow",
- "asn1",
- "async-trait",
- "base32",
- "base64",
- "coset",
- "crc-any",
- "cryptoki",
- "derive_builder",
- "ecdsa",
- "ed25519",
- "ed25519-dalek",
- "fixed",
- "hex",
- "lazy_static",
- "many-macros 0.1.0 (git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88)",
+ "many-macros",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -1789,8 +1742,8 @@ dependencies = [
  "coset",
  "hex",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
- "many-client 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
+ "many",
+ "many-client",
  "minicbor",
  "reqwest",
  "sha2 0.10.2",
@@ -1808,7 +1761,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d#b7017cec987491de83f581d7c0b188e6fb4be92d"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=a2df840b63e8f5ac4c8e52b789b1ef0cac075f31#a2df840b63e8f5ac4c8e52b789b1ef0cac075f31"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1824,50 +1777,7 @@ dependencies = [
  "fixed",
  "hex",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
- "minicbor",
- "num-bigint",
- "num-derive",
- "num-traits",
- "openssh-keys",
- "p256",
- "pkcs8 0.8.0",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "ring 0.16.20",
- "ring-compat",
- "serde",
- "sha3",
- "signature",
- "simple_asn1",
- "static_assertions",
- "thiserror",
- "tiny_http",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "many-client"
-version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88#b8c6e89e23030e592d9820f7498a58d522cbaf88"
-dependencies = [
- "anyhow",
- "async-trait",
- "backtrace",
- "base32",
- "base64",
- "coset",
- "crc-any",
- "derive_builder",
- "ecdsa",
- "ed25519",
- "ed25519-dalek",
- "fixed",
- "hex",
- "lazy_static",
- "many 0.1.0 (git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88)",
+ "many",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -1901,7 +1811,7 @@ dependencies = [
  "hex",
  "itertools",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88)",
+ "many",
  "many-abci",
  "minicbor",
  "num-bigint",
@@ -1924,9 +1834,9 @@ dependencies = [
  "hex",
  "itertools",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
+ "many",
  "many-abci",
- "many-client 0.1.0 (git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d)",
+ "many-client",
  "many-kvstore",
  "minicbor",
  "num-bigint",
@@ -1945,20 +1855,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?rev=b7017cec987491de83f581d7c0b188e6fb4be92d#b7017cec987491de83f581d7c0b188e6fb4be92d"
-dependencies = [
- "inflections",
- "proc-macro2",
- "quote",
- "serde",
- "serde_tokenstream",
- "syn",
-]
-
-[[package]]
-name = "many-macros"
-version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88#b8c6e89e23030e592d9820f7498a58d522cbaf88"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=a2df840b63e8f5ac4c8e52b789b1ef0cac075f31#a2df840b63e8f5ac4c8e52b789b1ef0cac075f31"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2044,25 +1941,14 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52da4364ffb0e4fe33a9841a98a3f3014fb964045ce4f7a45a398243c8d6b0c9"
+checksum = "713d550d9b44d89174e066b7a6217ae06234c10cb47819a88290d2b353c31799"
 dependencies = [
  "libc",
  "log",
- "miow",
- "ntapi",
  "wasi 0.11.0+wasi-snapshot-preview1",
- "winapi",
-]
-
-[[package]]
-name = "miow"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9f1c5b025cda876f66ef43a113f91ebc9f4ccef34843000e0adf6ebbab84e21"
-dependencies = [
- "winapi",
+ "windows-sys",
 ]
 
 [[package]]
@@ -2107,15 +1993,6 @@ checksum = "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36"
 dependencies = [
  "memchr",
  "minimal-lexical",
-]
-
-[[package]]
-name = "ntapi"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c28774a7fd2fbb4f0babd8237ce554b73af68021b5f695a3cebd6c59bac0980f"
-dependencies = [
- "winapi",
 ]
 
 [[package]]
@@ -2180,9 +2057,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.28.3"
+version = "0.28.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40bec70ba014595f99f7aa110b84331ffe1ee9aece7fe6f387cc7e3ecda4d456"
+checksum = "e42c982f2d955fac81dd7e1d0e1426a7d702acd9c98d19ab01083a6a0328c424"
 dependencies = [
  "memchr",
 ]
@@ -3144,12 +3021,12 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66d72b759436ae32898a2af0a14218dbf55efde3feeb170eb623637db85ee1e0"
+checksum = "ca642ba17f8b2995138b1d7711829c92e98c0a25ea019de790f4f09279c4e296"
 dependencies = [
  "libc",
- "winapi",
+ "windows-sys",
 ]
 
 [[package]]
@@ -3473,9 +3350,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.18.1"
+version = "1.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dce653fb475565de9f6fb0614b28bca8df2c430c0cf84bcd9c843f15de5414cc"
+checksum = "4903bf0427cf68dddd5aa6a93220756f8be0c34fcfa9f5e6191e103e15a31395"
 dependencies = [
  "bytes",
  "libc",
