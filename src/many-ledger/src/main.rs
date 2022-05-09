@@ -118,5 +118,12 @@ fn main() {
         }
     }
 
-    HttpServer::new(many).bind(addr).unwrap();
+    let mut many_server = HttpServer::new(many);
+
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGHUP, many_server.term_signal())
+        .expect("Could not register signal handler");
+
+    many_server.bind(addr).unwrap();
 }
