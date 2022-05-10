@@ -1,6 +1,6 @@
 use clap::Parser;
 use many::server::module::{abci_backend, ledger};
-use many::server::ManyServer;
+use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
 use std::net::SocketAddr;
@@ -47,8 +47,14 @@ struct Opts {
 
     /// Delete the persistent storage to start from a clean state.
     /// If this is not specified the initial state will not be used.
+    /// Multiple occurences of this argument can be given.
     #[clap(long, short)]
     clean: bool,
+
+    /// Application absolute URLs allowed to communicate with this server. Any
+    /// application will be able to communicate with this server if left empty.
+    #[clap(long)]
+    allow: Option<Vec<ManyUrl>>,
 }
 
 fn main() {
@@ -61,6 +67,7 @@ fn main() {
         mut state,
         persistent,
         clean,
+        allow,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -106,6 +113,7 @@ fn main() {
         "many-ledger",
         key,
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
+        allow,
     );
 
     {
