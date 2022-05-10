@@ -4,7 +4,7 @@ use many::server::module::abci_backend::{
     AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
 use many::server::module::kvstore::{
-    DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArgs, InfoReturns,
+    DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArg, InfoReturns,
     KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturns,
 };
 use many::{Identity, ManyError};
@@ -93,7 +93,7 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
 }
 
 impl KvStoreModuleBackend for KvStoreModuleImpl {
-    fn info(&self, _sender: &Identity, _args: InfoArgs) -> Result<InfoReturns, ManyError> {
+    fn info(&self, _sender: &Identity, _args: InfoArg) -> Result<InfoReturns, ManyError> {
         // Hash the storage.
         let hash = self.storage.hash();
 
