@@ -33,8 +33,7 @@ impl AbciApp {
         // };
 
         let many_client =
-            ManyClient::new(many_url.clone(), server_id, CoseKeyIdentity::anonymous())
-                .map_err(|e| e)?;
+            ManyClient::new(many_url.clone(), server_id, CoseKeyIdentity::anonymous())?;
         let status = many_client.status().map_err(|x| x.to_string())?;
         let app_name = status.name;
 
