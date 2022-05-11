@@ -3,6 +3,7 @@ use many::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
 use many::message::ResponseMessage;
 use many::server::module::ledger::{BalanceArgs, BalanceReturns, InfoReturns, SendArgs};
 use many::server::module::r#async::attributes::AsyncAttribute;
+use many::server::module::r#async::{StatusArgs, StatusReturn};
 use many::types::identity::cose::CoseKeyIdentity;
 use many::types::ledger::{Symbol, TokenAmount};
 use many::{Identity, ManyError};
@@ -11,13 +12,14 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::Duration;
 
 mod multisig;
 
@@ -201,6 +203,62 @@ fn balance(
     }
 }
 
+pub fn wait_response(client: ManyClient, response: ResponseMessage) -> Result<Vec<u8>, ManyError> {
+    if let Ok(ref data) = response.data {
+        debug!("response: {}", hex::encode(data));
+    }
+    let ResponseMessage {
+        data, attributes, ..
+    } = response;
+
+    let payload = data?;
+    if payload.is_empty() {
+        let attr = match attributes.get::<AsyncAttribute>() {
+            Ok(attr) => attr,
+            _ => {
+                info!("Empty payload.");
+                return Ok(Vec::new());
+            }
+        };
+        info!("Async token: {}", hex::encode(&attr.token));
+
+        eprint!("Waiting for response...");
+
+        // TODO: improve on this by using duration and thread and watchdog.
+        // Wait for the server for ~60 seconds by pinging it every second.
+        for _ in 0..30 {
+            let response = client.call(
+                "async.status",
+                StatusArgs {
+                    token: attr.token.clone().into(),
+                },
+            )?;
+            let status: StatusReturn = minicbor::decode(&response.data?)
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            match status {
+                StatusReturn::Done { response } => {
+                    eprintln!(".");
+                    return wait_response(client, *response);
+                }
+                StatusReturn::Expired => {
+                    eprintln!(".");
+                    info!("Async token expired before we could check it.");
+                    return Ok(Vec::new());
+                }
+                _ => {
+                    eprint!(".");
+                    std::thread::sleep(Duration::from_secs(1));
+                }
+            }
+        }
+        Err(ManyError::unknown(
+            "Transport timed out waiting for async result.",
+        ))
+    } else {
+        Ok(payload)
+    }
+}
+
 fn send(
     client: ManyClient,
     to: Identity,
@@ -218,19 +276,10 @@ fn send(
             symbol,
             amount: TokenAmount::from(amount),
         };
-        let ResponseMessage {
-            data, attributes, ..
-        } = client.call("ledger.send", arguments)?;
-
-        let payload = data?;
-        if payload.is_empty() {
-            let attr = attributes.get::<AsyncAttribute>()?;
-            info!("Async token: {}", hex::encode(&attr.token));
-            Ok(())
-        } else {
-            minicbor::display(&payload);
-            Ok(())
-        }
+        let response = client.call("ledger.send", arguments)?;
+        let payload = wait_response(client, response)?;
+        println!("{}", minicbor::display(&payload));
+        Ok(())
     }
 }
 

@@ -1693,6 +1693,7 @@ dependencies = [
  "anyhow",
  "asn1",
  "async-trait",
+ "backtrace",
  "base32",
  "base64",
  "coset",

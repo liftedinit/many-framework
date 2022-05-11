@@ -1,4 +1,5 @@
 use crate::{error, storage::LedgerStorage};
+use many::message::error::ManyErrorCode;
 use many::message::ResponseMessage;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
@@ -31,7 +32,7 @@ fn get_roles_for_account(account: &Account) -> BTreeSet<String> {
 
     let mut roles = BTreeSet::new();
 
-    // TODO: somehow keep this list updated
+    // TODO: somehow keep this list updated with the below.
     if features.has_id(account::features::multisig::MultisigAccountFeature::ID) {
         roles.append(&mut account::features::multisig::MultisigAccountFeature::roles());
     }
@@ -40,6 +41,24 @@ fn get_roles_for_account(account: &Account) -> BTreeSet<String> {
     }
 
     roles
+}
+
+fn validate_features_for_account(account: &Account) -> Result<(), ManyError> {
+    let features = account.features();
+
+    // TODO: somehow keep this list updated with the above.
+    if let Err(e) = features.get::<account::features::multisig::MultisigAccountFeature>() {
+        if e.code != ManyErrorCode::AttributeNotFound {
+            return Err(e);
+        }
+    }
+    if let Err(e) = features.get::<account::features::ledger::AccountLedger>() {
+        if e.code != ManyErrorCode::AttributeNotFound {
+            return Err(e);
+        }
+    }
+
+    Ok(())
 }
 
 type TxResult = Result<Transaction, ManyError>;
@@ -281,6 +300,26 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.list".to_string(), EndpointInfo { is_command: false }),
+
+                // Accounts
+                ("account.create".to_string(), EndpointInfo { is_command: true }),
+                ("account.setDescription".to_string(), EndpointInfo { is_command: true }),
+                ("account.listRoles".to_string(), EndpointInfo { is_command: false }),
+                ("account.getRoles".to_string(), EndpointInfo { is_command: false }),
+                ("account.addRoles".to_string(), EndpointInfo { is_command: true }),
+                ("account.removeRoles".to_string(), EndpointInfo { is_command: true }),
+                ("account.info".to_string(), EndpointInfo { is_command: false }),
+                ("account.delete".to_string(), EndpointInfo { is_command: true }),
+                ("account.addFeatures".to_string(), EndpointInfo { is_command: true }),
+
+                // Account Features - Multisig
+                ("account.multisigSetDefaults".to_string(), EndpointInfo { is_command: true }),
+                ("account.multisigSubmitTransaction".to_string(), EndpointInfo { is_command: true }),
+                ("account.multisigInfo".to_string(), EndpointInfo { is_command: false }),
+                ("account.multisigApprove".to_string(), EndpointInfo { is_command: true }),
+                ("account.multisigRevoke".to_string(), EndpointInfo { is_command: true }),
+                ("account.multisigExecute".to_string(), EndpointInfo { is_command: true }),
+                ("account.multisigWithdraw".to_string(), EndpointInfo { is_command: true }),
             ]),
         })
     }
@@ -330,7 +369,12 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 
 impl account::AccountModuleBackend for LedgerModuleImpl {
     fn create(&mut self, sender: &Identity, args: CreateArgs) -> Result<CreateReturn, ManyError> {
-        let id = self.storage.add_account(Account::create(sender, args))?;
+        let account = Account::create(sender, args);
+
+        // Verify that we support all features.
+        validate_features_for_account(&account)?;
+
+        let id = self.storage.add_account(account)?;
         Ok(CreateReturn { id })
     }
 
