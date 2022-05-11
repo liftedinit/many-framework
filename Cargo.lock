@@ -508,9 +508,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.1.14"
+version = "3.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "535434c063ced786eb04aaf529308092c5ab60889e8fe24275d15de07b01fa97"
+checksum = "47582c09be7c8b32c0ab3a6181825ababb713fde6fff20fc573a3870dd45c6a0"
 dependencies = [
  "atty",
  "bitflags",
@@ -875,18 +875,18 @@ dependencies = [
 
 [[package]]
 name = "ed25519"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d5c4b5e5959dc2c2b89918d8e2cc40fcdd623cef026ed09d2f0ee05199dc8e4"
+checksum = "d916019f70ae3a1faa1195685e290287f39207d38e6dfee727197cffcc002214"
 dependencies = [
  "signature",
 ]
 
 [[package]]
 name = "ed25519-consensus"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "542217a53411d471743362251a5a1770a667cb0cc0384c9be2c0952bd70a7275"
+checksum = "758e2a0cd8a6cdf483e1d369e7d081647e00b88d8953e34d8f2cbba05ae28368"
 dependencies = [
  "curve25519-dalek-ng",
  "hex",
@@ -1370,7 +1370,7 @@ dependencies = [
 name = "http_proxy"
 version = "0.1.0"
 dependencies = [
- "clap 3.1.14",
+ "clap 3.1.17",
  "hex",
  "many",
  "many-client",
@@ -1593,7 +1593,7 @@ checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
 name = "kvstore"
 version = "0.1.0"
 dependencies = [
- "clap 3.1.14",
+ "clap 3.1.17",
  "hex",
  "many",
  "many-client",
@@ -1620,7 +1620,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 name = "ledger"
 version = "0.1.0"
 dependencies = [
- "clap 3.1.14",
+ "clap 3.1.17",
  "crc-any",
  "derive_builder",
  "fmerk",
@@ -1678,9 +1678,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.16"
+version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6389c490849ff5bc16be905ae24bc913a9c8892e19b2341dbc175e14c341c2b8"
+checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
 ]
@@ -1688,12 +1688,11 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88#b8c6e89e23030e592d9820f7498a58d522cbaf88"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=73fe28a939f0275f98aab17c145c1e24e59c04f1#73fe28a939f0275f98aab17c145c1e24e59c04f1"
 dependencies = [
  "anyhow",
  "asn1",
  "async-trait",
- "backtrace",
  "base32",
  "base64",
  "coset",
@@ -1739,7 +1738,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "ciborium 0.2.0 (git+https://github.com/enarx/ciborium)",
- "clap 3.1.14",
+ "clap 3.1.17",
  "coset",
  "hex",
  "lazy_static",
@@ -1748,6 +1747,7 @@ dependencies = [
  "minicbor",
  "reqwest",
  "sha2 0.10.2",
+ "signal-hook",
  "smol",
  "tendermint",
  "tendermint-abci",
@@ -1761,7 +1761,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88#b8c6e89e23030e592d9820f7498a58d522cbaf88"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=73fe28a939f0275f98aab17c145c1e24e59c04f1#73fe28a939f0275f98aab17c145c1e24e59c04f1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1806,7 +1806,7 @@ name = "many-kvstore"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "clap 3.1.14",
+ "clap 3.1.17",
  "fmerk",
  "hex",
  "itertools",
@@ -1828,7 +1828,7 @@ name = "many-ledger"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "clap 3.1.14",
+ "clap 3.1.17",
  "fixed",
  "fmerk",
  "hex",
@@ -1844,6 +1844,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3",
+ "signal-hook",
  "simple_asn1",
  "tempfile",
  "tracing",
@@ -1854,7 +1855,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/l-1-labs/many-rs.git?rev=b8c6e89e23030e592d9820f7498a58d522cbaf88#b8c6e89e23030e592d9820f7498a58d522cbaf88"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=73fe28a939f0275f98aab17c145c1e24e59c04f1#73fe28a939f0275f98aab17c145c1e24e59c04f1"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -1940,25 +1941,14 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52da4364ffb0e4fe33a9841a98a3f3014fb964045ce4f7a45a398243c8d6b0c9"
+checksum = "713d550d9b44d89174e066b7a6217ae06234c10cb47819a88290d2b353c31799"
 dependencies = [
  "libc",
  "log",
- "miow",
- "ntapi",
  "wasi 0.11.0+wasi-snapshot-preview1",
- "winapi",
-]
-
-[[package]]
-name = "miow"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9f1c5b025cda876f66ef43a113f91ebc9f4ccef34843000e0adf6ebbab84e21"
-dependencies = [
- "winapi",
+ "windows-sys",
 ]
 
 [[package]]
@@ -2006,15 +1996,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ntapi"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c28774a7fd2fbb4f0babd8237ce554b73af68021b5f695a3cebd6c59bac0980f"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2048,9 +2029,9 @@ dependencies = [
 
 [[package]]
 name = "num-traits"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
+checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
 dependencies = [
  "autocfg",
 ]
@@ -2067,18 +2048,18 @@ dependencies = [
 
 [[package]]
 name = "num_threads"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aba1801fb138d8e85e11d0fc70baf4fe1cdfffda7c6cd34a854905df588e5ed0"
+checksum = "2819ce041d2ee131036f4fc9d6ae7ae125a3a40e97ba64d04fe799ad9dabbb44"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "object"
-version = "0.28.3"
+version = "0.28.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40bec70ba014595f99f7aa110b84331ffe1ee9aece7fe6f387cc7e3ecda4d456"
+checksum = "e42c982f2d955fac81dd7e1d0e1426a7d702acd9c98d19ab01083a6a0328c424"
 dependencies = [
  "memchr",
 ]
@@ -2110,16 +2091,28 @@ dependencies = [
 
 [[package]]
 name = "openssl"
-version = "0.10.38"
+version = "0.10.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c7ae222234c30df141154f159066c5093ff73b63204dcda7121eb082fc56a95"
+checksum = "fb81a6430ac911acb25fe5ac8f1d2af1b4ea8a4fdfda0f1ee4292af2e2d8eb0e"
 dependencies = [
  "bitflags",
  "cfg-if",
  "foreign-types",
  "libc",
  "once_cell",
+ "openssl-macros",
  "openssl-sys",
+]
+
+[[package]]
+name = "openssl-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b501e44f11665960c7e7fcf062c7d96a14ade4aa98116c004b2e37b5be7d736c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2130,9 +2123,9 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.72"
+version = "0.9.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e46109c383602735fa0a2e48dd2b7c892b048e1bf69e5c3b1d804b7d9c203cb"
+checksum = "9d5fd19fb3e0a8191c1e34935718976a3e70c112ab9a24af6d7cadccd9d90bc0"
 dependencies = [
  "autocfg",
  "cc",
@@ -2411,18 +2404,18 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.37"
+version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec757218438d5fda206afc041538b2f6d889286160d649a86a24d37e1235afd1"
+checksum = "9027b48e9d4c9175fa2218adf3557f91c1137021739951d4932f5f8268ac48aa"
 dependencies = [
  "unicode-xid",
 ]
 
 [[package]]
 name = "prost"
-version = "0.10.1"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a07b0857a71a8cb765763950499cae2413c3f9cede1133478c43600d9e146890"
+checksum = "bc03e116981ff7d8da8e5c220e374587b98d294af7ba7dd7fda761158f00086f"
 dependencies = [
  "bytes",
  "prost-derive",
@@ -2850,9 +2843,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.80"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f972498cf015f7c0746cac89ebe1d6ef10c293b94175a243a2d9442c163d9944"
+checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
 dependencies = [
  "itoa",
  "ryu",
@@ -3028,12 +3021,12 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66d72b759436ae32898a2af0a14218dbf55efde3feeb170eb623637db85ee1e0"
+checksum = "ca642ba17f8b2995138b1d7711829c92e98c0a25ea019de790f4f09279c4e296"
 dependencies = [
  "libc",
- "winapi",
+ "windows-sys",
 ]
 
 [[package]]
@@ -3145,8 +3138,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#7a8d681027b92a27174a3fd5c6e893dc35f42c31"
+version = "0.24.0-pre.2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#c917544e9c03028ddf39c2009faf239f7ac67c47"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3173,8 +3166,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-abci"
-version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#7a8d681027b92a27174a3fd5c6e893dc35f42c31"
+version = "0.24.0-pre.2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#c917544e9c03028ddf39c2009faf239f7ac67c47"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3185,8 +3178,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#7a8d681027b92a27174a3fd5c6e893dc35f42c31"
+version = "0.24.0-pre.2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#c917544e9c03028ddf39c2009faf239f7ac67c47"
 dependencies = [
  "flex-error",
  "serde",
@@ -3198,8 +3191,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#7a8d681027b92a27174a3fd5c6e893dc35f42c31"
+version = "0.24.0-pre.2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#c917544e9c03028ddf39c2009faf239f7ac67c47"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3215,8 +3208,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.24.0-pre.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#7a8d681027b92a27174a3fd5c6e893dc35f42c31"
+version = "0.24.0-pre.2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#c917544e9c03028ddf39c2009faf239f7ac67c47"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3357,9 +3350,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.18.0"
+version = "1.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f48b6d60512a392e34dbf7fd456249fd2de3c83669ab642e021903f4015185b"
+checksum = "4903bf0427cf68dddd5aa6a93220756f8be0c34fcfa9f5e6191e103e15a31395"
 dependencies = [
  "bytes",
  "libc",

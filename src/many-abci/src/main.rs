@@ -122,7 +122,7 @@ async fn main() {
     let abci_server = ServerBuilder::new(abci_read_buf_size)
         .bind(abci, abci_app)
         .unwrap();
-    let j_abci = std::thread::spawn(move || abci_server.listen().unwrap());
+    let _j_abci = std::thread::spawn(move || abci_server.listen().unwrap());
 
     let abci_client = tendermint_rpc::HttpClient::new(tendermint.as_str()).unwrap();
 
@@ -154,10 +154,17 @@ async fn main() {
         s.set_fallback_module(backend);
     }
 
-    let many_server = many::transport::http::HttpServer::new(server);
+    let mut many_server = many::transport::http::HttpServer::new(server);
+
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGHUP, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
+        .expect("Could not register signal handler");
 
     info!("Starting MANY server on addr {}", many.clone());
-    let _j_many = std::thread::spawn(move || match many_server.bind(many) {
+    let j_many = std::thread::spawn(move || match many_server.bind(many) {
         Ok(_) => {}
         Err(error) => {
             error!("{}", error);
@@ -165,9 +172,10 @@ async fn main() {
         }
     });
 
-    j_abci.join().unwrap();
-    // When ABCI is done, just kill the whole process.
-    // TODO: shutdown the many server gracefully.
+    j_many.join().unwrap();
+    // It seems that ABCI does not have a graceful way to shutdown. If we make it here
+    // though we already gracefully shutdown the MANY part of the server, so lets just
+    // get on with it, shall we?
     std::process::exit(0);
-    // j_many.join().unwrap();
+    // j_abci.join().unwrap();
 }

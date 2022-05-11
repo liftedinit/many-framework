@@ -3,7 +3,9 @@ FROM many_local/repo_build:latest as builder
 # ==== STAGE 2 ====
 FROM debian:stable as runtime
 
-RUN useradd -ms /bin/bash many
+ARG USER_ID
+
+RUN useradd -u ${USER_ID} -ms /bin/bash many
 
 STOPSIGNAL SIGTERM
 
