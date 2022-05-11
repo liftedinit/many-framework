@@ -47,12 +47,12 @@ struct Opts {
 
     /// Delete the persistent storage to start from a clean state.
     /// If this is not specified the initial state will not be used.
-    /// Multiple occurences of this argument can be given.
     #[clap(long, short)]
     clean: bool,
 
     /// Application absolute URLs allowed to communicate with this server. Any
     /// application will be able to communicate with this server if left empty.
+    /// Multiple occurences of this argument can be given.
     #[clap(long)]
     allow: Option<Vec<ManyUrl>>,
 }
