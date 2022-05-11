@@ -3,7 +3,9 @@ FROM many_local/repo_build:latest as builder
 # ==== STAGE 2 ====
 FROM debian:bullseye as runtime
 
-RUN useradd -ms /bin/bash many
+ARG USER_ID
+
+RUN useradd -u ${USER_ID} -ms /bin/bash many
 
 # Contains the ledger.db store.
 VOLUME /persistent
