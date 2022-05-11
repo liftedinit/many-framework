@@ -2,7 +2,7 @@
 .PHONY: clean
 clean:
 	if [ -f "${PWD}/genfiles/docker-compose.json" ]; then \
-		docker-compose -f genfiles/docker-compose.json -p e2e down; \
+		docker-compose -p e2e down; \
 	fi
 	rm -rf genfiles/
 
@@ -19,11 +19,11 @@ genfiles/build-repo: ../../src/**/*
 	@mkdir -p $(dir $@) && touch $@
 
 genfiles/build-ledger: genfiles/build-repo
-	docker build --ssh default --tag many/ledger ../.. --target runtime -f ../ledger/Dockerfile
+	docker build --build-arg USER_ID=$$(id -u) --ssh default --tag many/ledger ../.. --target runtime -f ../ledger/Dockerfile
 	@mkdir -p $(dir $@) && touch $@
 
 genfiles/build-abci: genfiles/build-repo
-	docker build --ssh default --tag many/abci ../.. --target runtime -f ../abci/Dockerfile
+	docker build --build-arg USER_ID=$$(id -u) --ssh default --tag many/abci ../.. --target runtime -f ../abci/Dockerfile
 	@mkdir -p $(dir $@) && touch $@
 
 genfiles/tendermint-docker:
@@ -42,19 +42,20 @@ NB_NODES ?= 4
 
 genfiles/docker-compose.json: genfiles/jsonnet-docker
 	docker run -it --rm -v "${PWD}:/volume:ro" bitnami/jsonnet \
- 		/volume/docker-compose.jsonnet --tla-code nb_nodes=$(NB_NODES) > $@
+		/volume/docker-compose.jsonnet --tla-code nb_nodes=$(NB_NODES) --tla-code user=$$(id -u) > $@
 
 genfiles/node%: genfiles/openssl-docker
 	mkdir -p "$@/tendermint"
-	docker run -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v0.35.1 init validator
-	docker run -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
-	docker run -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
+	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v0.35.1 init validator
+	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
+	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
+	mkdir -p "$@/persistent-ledger"
 	cp ledger_state.json $@/ledger_state.json
 
 
 genfiles/generate-tendermint-e2e-config:
 	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
-  		echo $$I genfiles/node$$I; \
+		echo $$I genfiles/node$$I; \
 		make genfiles/node$$I; \
 		(( I = I + 1 )); \
 	done
