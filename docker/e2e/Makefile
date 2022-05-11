@@ -42,7 +42,7 @@ NB_NODES ?= 4
 
 genfiles/docker-compose.json: jsonnet-docker
 	docker run -it --rm -v "${PWD}:/volume:ro" bitnami/jsonnet \
-		/volume/docker-compose.jsonnet --tla-code nb_nodes=$(NB_NODES) > $@
+		/volume/docker-compose.jsonnet --tla-code nb_nodes=$(NB_NODES) --tla-code user=$$(id -u) > $@
 
 genfiles/node%: tendermint-docker openssl-docker
 	mkdir -p "$@/tendermint"
@@ -68,7 +68,7 @@ start-all-nodes:
 stop-node:
 	docker-compose -f genfiles/docker-compose.json -p e2e down 
 
-start-docker-compose: build-abci build-ledger generate-tendermint-e2e-config genfiles/docker-compose.json start-all-nodes 
+start-docker-compose: build-abci build-ledger generate-e2e-config genfiles/docker-compose.json start-all-nodes
 
 chaos: 
 	sh chaos.sh 
