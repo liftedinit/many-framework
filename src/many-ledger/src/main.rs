@@ -54,7 +54,7 @@ struct Opts {
     /// application will be able to communicate with this server if left empty.
     /// Multiple occurences of this argument can be given.
     #[clap(long)]
-    allow: Option<Vec<ManyUrl>>,
+    allow_origin: Option<Vec<ManyUrl>>,
 }
 
 fn main() {
