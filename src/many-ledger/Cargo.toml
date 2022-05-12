@@ -18,7 +18,7 @@ lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 num-traits = "0.2.14"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "73fe28a939f0275f98aab17c145c1e24e59c04f1", features = ["pem", "raw"] }
+many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "622bf223cb9581793c70a9e7886729b4bb75f9f9", features = ["pem", "raw"] }
 many-abci = { path = "../many-abci" }
 many-kvstore = { path = "../many-kvstore" }
 serde = "1.0.130"
@@ -31,7 +31,7 @@ tracing-subscriber = "0.2.24"
 typenum = "1.15.0"
 
 [dev-dependencies]
-many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "73fe28a939f0275f98aab17c145c1e24e59c04f1" }
-many-client = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "73fe28a939f0275f98aab17c145c1e24e59c04f1" }
+many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "622bf223cb9581793c70a9e7886729b4bb75f9f9" }
+many-client = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "622bf223cb9581793c70a9e7886729b4bb75f9f9" }
 tempfile = "3.3.0"
 
