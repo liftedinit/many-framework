@@ -1584,6 +1584,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "json"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
+
+[[package]]
 name = "keccak"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1688,7 +1694,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=622bf223cb9581793c70a9e7886729b4bb75f9f9#622bf223cb9581793c70a9e7886729b4bb75f9f9"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=adbb9cdd242e19f828c888337423b2dcb1824f3c#adbb9cdd242e19f828c888337423b2dcb1824f3c"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1704,6 +1710,7 @@ dependencies = [
  "ed25519-dalek",
  "fixed",
  "hex",
+ "json",
  "lazy_static",
  "many-macros",
  "minicbor",
@@ -1721,6 +1728,7 @@ dependencies = [
  "ring 0.16.20",
  "ring-compat",
  "serde",
+ "serde_json",
  "sha2 0.10.2",
  "sha3",
  "signature",
@@ -1761,7 +1769,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=622bf223cb9581793c70a9e7886729b4bb75f9f9#622bf223cb9581793c70a9e7886729b4bb75f9f9"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=adbb9cdd242e19f828c888337423b2dcb1824f3c#adbb9cdd242e19f828c888337423b2dcb1824f3c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1855,7 +1863,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=622bf223cb9581793c70a9e7886729b4bb75f9f9#622bf223cb9581793c70a9e7886729b4bb75f9f9"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=adbb9cdd242e19f828c888337423b2dcb1824f3c#adbb9cdd242e19f828c888337423b2dcb1824f3c"
 dependencies = [
  "inflections",
  "proc-macro2",

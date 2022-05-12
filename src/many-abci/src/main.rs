@@ -142,7 +142,7 @@ async fn main() {
     }
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
-    let server = ManyServer::new(format!("AbciModule({})", &status.name), key.clone());
+    let server = ManyServer::new(format!("AbciModule({})", &status.name), key.clone(), None);
     let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
 
