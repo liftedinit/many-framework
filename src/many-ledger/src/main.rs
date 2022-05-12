@@ -67,7 +67,7 @@ fn main() {
         mut state,
         persistent,
         clean,
-        allow,
+        allow_origin,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
