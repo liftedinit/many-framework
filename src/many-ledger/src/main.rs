@@ -113,7 +113,7 @@ fn main() {
         "many-ledger",
         key,
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
-        allow,
+        allow_origin,
     );
 
     {
