@@ -171,6 +171,17 @@ impl LedgerModuleImpl {
 
         Ok(Self { storage })
     }
+
+    #[cfg(feature = "balance_testing")]
+    pub(crate) fn set_balance_only_for_testing(
+        &mut self,
+        account: Identity,
+        balance: u64,
+        symbol: Identity,
+    ) {
+        self.storage
+            .set_balance_only_for_testing(account, balance, symbol);
+    }
 }
 
 impl ledger::LedgerModuleBackend for LedgerModuleImpl {
@@ -484,7 +495,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             .storage
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?
-            .clone();
+            ;
 
         Ok(InfoReturn {
             description,

@@ -230,7 +230,7 @@ pub fn wait_response(client: ManyClient, response: ResponseMessage) -> Result<Ve
             let response = client.call(
                 "async.status",
                 StatusArgs {
-                    token: attr.token.clone().into(),
+                    token: attr.token.clone(),
                 },
             )?;
             let status: StatusReturn = minicbor::decode(&response.data?)

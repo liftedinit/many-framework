@@ -35,3 +35,5 @@ many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "73
 many-client = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "73fe28a939f0275f98aab17c145c1e24e59c04f1" }
 tempfile = "3.3.0"
 
+[features]
+balance_testing=[]

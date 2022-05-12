@@ -86,17 +86,16 @@ pub(super) fn key_for_account(id: &Identity) -> Vec<u8> {
 
 /// Returns the storage key for a multisig pending transaction.
 pub(super) fn key_for_multisig_transaction(token: &[u8]) -> Vec<u8> {
-    let id = id.0.as_slice();
-    let id = if id.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
-        &id[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
+    let token = if token.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
+        &token[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
     } else {
-        id
+        token
     };
 
     let mut exp_token = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
-    exp_token[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
+    exp_token[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - token.len())..].copy_from_slice(token);
 
-    vec![MULTISIG_TRANSACTIONS_ROOT, exp_token]
+    vec![MULTISIG_TRANSACTIONS_ROOT, &exp_token[..]]
         .concat()
         .to_vec()
 }
@@ -117,6 +116,29 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Identity,
+}
+
+impl LedgerStorage {
+    #[cfg(feature = "balance_testing")]
+    pub(crate) fn set_balance_only_for_testing(
+        &mut self,
+        account: Identity,
+        amount: u64,
+        symbol: Identity,
+    ) {
+        assert!(self.symbols.contains_key(&symbol));
+
+        let key = key_for_account_balance(&account, &symbol);
+        let amount = TokenAmount::from(amount);
+
+        self.persistent_store
+            .apply(&[(key, fmerk::Op::Put(amount.to_vec()))])
+            .unwrap();
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+    }
 }
 
 impl std::fmt::Debug for LedgerStorage {
@@ -488,7 +510,7 @@ impl LedgerStorage {
 
     pub fn delete_account(&mut self, id: &Identity) -> Result<(), ManyError> {
         self.persistent_store
-            .apply(&[(key_for_account(&id), fmerk::Op::Delete)])
+            .apply(&[(key_for_account(id), fmerk::Op::Delete)])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 
         if !self.blockchain {
@@ -567,7 +589,7 @@ impl LedgerStorage {
 
         let account_id = arg
             .account
-            .or_else(|| match &arg.transaction {
+            .or(match &arg.transaction {
                 TransactionInfo::Send { from, .. } => Some(*from),
                 _ => None,
             })
@@ -661,7 +683,7 @@ impl LedgerStorage {
             .persistent_store
             .get(&key_for_multisig_transaction(tx_id))
             .unwrap_or(None)
-            .ok_or_else(|| account::features::multisig::errors::transaction_cannot_be_found())?;
+            .ok_or_else(account::features::multisig::errors::transaction_cannot_be_found)?;
         minicbor::decode::<TransactionStorage>(&storage_bytes)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))
     }

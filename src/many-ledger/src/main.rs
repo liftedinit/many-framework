@@ -49,6 +49,16 @@ struct Opts {
     /// If this is not specified the initial state will not be used.
     #[clap(long, short)]
     clean: bool,
+
+    /// A list of initial balances. This will be in addition to the genesis
+    /// state file in --state and should only be used for testing.
+    /// Each transaction MUST be of the format:
+    ///     --balance-only-for-testing=<account_address>:<balance>:<symbol_address>
+    /// The hashing of the state will not include these.
+    /// This requires the feature "balance_testing" to be enabled.
+    #[cfg(feature = "balance_testing")]
+    #[clap(long)]
+    balance_only_for_testing: Option<Vec<String>>,
 }
 
 fn main() {
@@ -61,6 +71,7 @@ fn main() {
         mut state,
         persistent,
         clean,
+        ..
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -102,6 +113,34 @@ fn main() {
 
     let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
+
+    #[cfg(feature = "balance_testing")]
+    {
+        use many::Identity;
+        use std::str::FromStr;
+
+        let mut module_impl = module_impl.lock().unwrap();
+
+        let Opts {
+            balance_only_for_testing,
+            ..
+        } = Opts::parse();
+        for balance in balance_only_for_testing.unwrap_or_default() {
+            let args: Vec<&str> = balance.splitn(3, ":").collect();
+            let (identity, amount, symbol) = (
+                args.get(0).unwrap(),
+                args.get(1).expect("No amount."),
+                args.get(2).expect("No symbol."),
+            );
+
+            module_impl.set_balance_only_for_testing(
+                Identity::from_str(&identity).expect("Invalid identity."),
+                u64::from_str_radix(&amount, 10).expect("Invalid amount."),
+                Identity::from_str(&symbol).expect("Invalid symbol."),
+            )
+        }
+    }
+
     let many = ManyServer::simple(
         "many-ledger",
         key,

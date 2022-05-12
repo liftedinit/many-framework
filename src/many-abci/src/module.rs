@@ -29,7 +29,6 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
         })
         .collect();
     Block {
-        app_hash: Some(block.header.app_hash.value()),
         id: BlockIdentifier {
             hash: block.header.hash().into(),
             height,
@@ -86,7 +85,7 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                         Ok(StatusReturn::Done {
                             response: Box::new(
                                 ResponseMessage::from_bytes(tx.tx_result.data.value()).map_err(
-                                    |e| abci_frontend::abci_transport_error(e.to_string()),
+                                    abci_frontend::abci_transport_error,
                                 )?,
                             ),
                         })
