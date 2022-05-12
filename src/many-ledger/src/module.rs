@@ -173,7 +173,7 @@ impl LedgerModuleImpl {
     }
 
     #[cfg(feature = "balance_testing")]
-    pub(crate) fn set_balance_only_for_testing(
+    pub fn set_balance_only_for_testing(
         &mut self,
         account: Identity,
         balance: u64,
@@ -494,8 +494,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         } = self
             .storage
             .get_account(&args.account)
-            .ok_or_else(|| account::errors::unknown_account(args.account))?
-            ;
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         Ok(InfoReturn {
             description,

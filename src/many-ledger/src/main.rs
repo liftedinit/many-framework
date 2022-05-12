@@ -126,7 +126,7 @@ fn main() {
             ..
         } = Opts::parse();
         for balance in balance_only_for_testing.unwrap_or_default() {
-            let args: Vec<&str> = balance.splitn(3, ":").collect();
+            let args: Vec<&str> = balance.splitn(3, ':').collect();
             let (identity, amount, symbol) = (
                 args.get(0).unwrap(),
                 args.get(1).expect("No amount."),
@@ -134,9 +134,9 @@ fn main() {
             );
 
             module_impl.set_balance_only_for_testing(
-                Identity::from_str(&identity).expect("Invalid identity."),
-                u64::from_str_radix(&amount, 10).expect("Invalid amount."),
-                Identity::from_str(&symbol).expect("Invalid symbol."),
+                Identity::from_str(identity).expect("Invalid identity."),
+                amount.parse::<u64>().expect("Invalid amount."),
+                Identity::from_str(symbol).expect("Invalid symbol."),
             )
         }
     }
