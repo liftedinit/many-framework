@@ -1688,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=622bf223cb9581793c70a9e7886729b4bb75f9f9#622bf223cb9581793c70a9e7886729b4bb75f9f9"
+source = "git+https://github.com/fmorency/many-rs.git?rev=1e4cccd60ba45b47574a631948b8fc4cd05f78a6#1e4cccd60ba45b47574a631948b8fc4cd05f78a6"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1761,7 +1761,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=622bf223cb9581793c70a9e7886729b4bb75f9f9#622bf223cb9581793c70a9e7886729b4bb75f9f9"
+source = "git+https://github.com/fmorency/many-rs.git?rev=1e4cccd60ba45b47574a631948b8fc4cd05f78a6#1e4cccd60ba45b47574a631948b8fc4cd05f78a6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1855,7 +1855,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=622bf223cb9581793c70a9e7886729b4bb75f9f9#622bf223cb9581793c70a9e7886729b4bb75f9f9"
+source = "git+https://github.com/fmorency/many-rs.git?rev=1e4cccd60ba45b47574a631948b8fc4cd05f78a6#1e4cccd60ba45b47574a631948b8fc4cd05f78a6"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -3139,7 +3139,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a453e6ed21490baba710416c7e0496713502eec0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3155,7 +3155,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_repr",
- "sha2 0.9.9",
+ "sha2 0.10.2",
  "signature",
  "subtle",
  "subtle-encoding",
@@ -3167,7 +3167,7 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a453e6ed21490baba710416c7e0496713502eec0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3179,7 +3179,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a453e6ed21490baba710416c7e0496713502eec0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
 dependencies = [
  "flex-error",
  "serde",
@@ -3192,7 +3192,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a453e6ed21490baba710416c7e0496713502eec0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3209,7 +3209,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#a453e6ed21490baba710416c7e0496713502eec0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
 dependencies = [
  "async-trait",
  "bytes",

@@ -1,8 +1,12 @@
-use crate::{error, storage::LedgerStorage};
+use crate::{error, /*id_storage::IdStorage,*/ storage::LedgerStorage};
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::ledger;
+use many::server::module::idstore::{
+    GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
+    StoreReturn,
+};
+use many::server::module::{idstore, ledger};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
@@ -91,6 +95,7 @@ impl LedgerModuleImpl {
     pub fn new<P: AsRef<Path>>(
         initial_state: Option<InitialStateJson>,
         persistence_store_path: P,
+        // idstore_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
@@ -114,6 +119,8 @@ impl LedgerModuleImpl {
         } else {
             LedgerStorage::load(persistence_store_path, blockchain).unwrap()
         };
+
+        // let idstorage = IdStorage::new(idstore_path, blockchain).unwrap();
 
         info!(
             height = storage.get_height(),
@@ -251,6 +258,9 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.list".to_string(), EndpointInfo { is_command: false }),
+                ("idstore.store".to_string(), EndpointInfo { is_command: true}),
+                ("idstore.getFromRecallPhrase".to_string(), EndpointInfo { is_command: true}),
+                ("idstore.getFromRecallAddress".to_string(), EndpointInfo { is_command: true}),
             ]),
         })
     }
@@ -295,5 +305,44 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
             hex::encode(result.hash.as_slice()).as_str()
         );
         Ok(result)
+    }
+}
+
+impl IdStoreModuleBackend for LedgerModuleImpl {
+    fn store(
+        &mut self,
+        StoreArgs {
+            recall_phrase,
+            address,
+            cred_id,
+        }: StoreArgs,
+    ) -> Result<StoreReturn, ManyError> {
+        // Check that recall phrase length matches the spec
+        if !(2..=5).contains(&recall_phrase.len()) {
+            return Err(idstore::invalid_recall_phrase());
+        }
+
+        // Store only public addresses
+        if !address.is_public_key() {
+            return Err(idstore::invalid_address(address.to_string()));
+        }
+
+        self.storage.store(recall_phrase, address, cred_id)?;
+        Ok(StoreReturn {})
+    }
+
+    fn get_from_recall_phrase(
+        &self,
+        args: GetFromRecallPhraseArgs,
+    ) -> Result<GetReturns, ManyError> {
+        Ok(GetReturns {
+            cred_id: self.storage.get_from_recall_phrase(args.recall_phrase)?,
+        })
+    }
+
+    fn get_from_address(&self, args: GetFromAddressArgs) -> Result<GetReturns, ManyError> {
+        Ok(GetReturns {
+            cred_id: self.storage.get_from_address(args.address)?,
+        })
     }
 }

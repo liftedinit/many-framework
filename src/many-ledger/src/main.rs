@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, ledger};
+use many::server::module::{abci_backend, idstore, ledger};
 use many::server::ManyServer;
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -80,13 +80,13 @@ fn main() {
     if clean {
         // Delete the persistent storage.
         // Ignore NotFound errors.
-        match std::fs::remove_dir_all(persistent.as_path()) {
+        [persistent.as_path() /*idstorage.as_path()*/].map(|e| match std::fs::remove_dir_all(e) {
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => {
                 panic!("Error: {}", e)
             }
-        }
+        });
     } else if persistent.exists() {
         // Initial state is ignored.
         state = None;
@@ -113,6 +113,7 @@ fn main() {
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
+        s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
         if abci {
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }

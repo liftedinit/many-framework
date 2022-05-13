@@ -1,5 +1,7 @@
 use crate::error;
 use many::server::module::abci_backend::AbciCommitInfo;
+use many::server::module::idstore;
+use many::server::module::idstore::{CredentialId, RecallPhrase};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
@@ -11,6 +13,7 @@ use std::time::SystemTime;
 use tracing::info;
 
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
+pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
 
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
@@ -330,6 +333,84 @@ impl LedgerStorage {
 
     pub fn iter(&self, range: CborRange<TransactionId>, order: SortOrder) -> LedgerIterator {
         LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
+    }
+
+    // IdStore
+    pub fn store(
+        &mut self,
+        recall_phrase: RecallPhrase,
+        address: Identity,
+        cred_id: CredentialId,
+    ) -> Result<(), ManyError> {
+        let recall_phrase_cbor = minicbor::to_vec(recall_phrase).unwrap(); // TODO: Change this?
+        if self
+            .persistent_store
+            .get(&recall_phrase_cbor)
+            .map_err(|e| ManyError::unknown(e.to_string()))?
+            .is_some()
+        {
+            return Err(idstore::existing_entry());
+        }
+        let address_vec = address.to_vec();
+        let cred_id: Vec<u8> = cred_id.into();
+
+        // Keys in batch must be sorted.
+        let batch = match recall_phrase_cbor.cmp(&address_vec) {
+            Ordering::Less | Ordering::Equal => vec![
+                (
+                    vec![IDSTORE_ROOT, &recall_phrase_cbor].concat(),
+                    fmerk::Op::Put(cred_id.clone()),
+                ),
+                (
+                    vec![IDSTORE_ROOT, &address.to_vec()].concat(),
+                    fmerk::Op::Put(cred_id),
+                ),
+            ],
+            _ => vec![
+                (
+                    vec![IDSTORE_ROOT, &address.to_vec()].concat(),
+                    fmerk::Op::Put(cred_id.clone()),
+                ),
+                (
+                    vec![IDSTORE_ROOT, &recall_phrase_cbor].concat(),
+                    fmerk::Op::Put(cred_id),
+                ),
+            ],
+        };
+
+        self.persistent_store.apply(&batch).unwrap();
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+
+        Ok(())
+    }
+
+    fn get_from_storage(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>, ManyError> {
+        self.persistent_store
+            .get(&key)
+            .map_err(|e| ManyError::unknown(e.to_string()))
+    }
+
+    pub fn get_from_recall_phrase(
+        &self,
+        recall_phrase: RecallPhrase,
+    ) -> Result<CredentialId, ManyError> {
+        let recall_phrase_cbor = minicbor::to_vec(&recall_phrase).unwrap();
+        if let Some(cred_id) = self.get_from_storage(recall_phrase_cbor)? {
+            Ok(cred_id.into())
+        } else {
+            Err(idstore::entry_not_found(recall_phrase.join(" ")))
+        }
+    }
+
+    pub fn get_from_address(&self, address: Identity) -> Result<CredentialId, ManyError> {
+        if let Some(cred_id) = self.get_from_storage(address.to_vec())? {
+            Ok(cred_id.into())
+        } else {
+            Err(idstore::entry_not_found(address.to_string()))
+        }
     }
 }
 
