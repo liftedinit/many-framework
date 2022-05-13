@@ -44,29 +44,29 @@ function check_consistency() {
 
     for port in "$@"; do
         ledger "$pem" "$port" balance
-        assert_output --partial " $expected_balance FBT "
+        assert_output --partial " $expected_balance MFX "
     done
 }
 
 @test "Network is consistent" {
     # Check consistency with all nodes up.
     check_consistency id1.pem 1000000 0 1 2 3
-    ledger id1.pem 0 send "$(many id ../id2.pem)" 1000 FBT
+    ledger id1.pem 0 send "$(many id ../id2.pem)" 1000 MFX
     sleep 4  # One consensus round.
     check_consistency id1.pem 999000 0 1 2 3
     check_consistency id2.pem 1000 0 1 2 3
 
-    ledger id1.pem 1 send "$(many id ../id2.pem)" 2000 FBT
+    ledger id1.pem 1 send "$(many id ../id2.pem)" 2000 MFX
     sleep 4  # One consensus round.
     check_consistency id1.pem 997000 0 1 2 3
     check_consistency id2.pem 3000 0 1 2 3
 
-    ledger id1.pem 2 send "$(many id ../id2.pem)" 3000 FBT
+    ledger id1.pem 2 send "$(many id ../id2.pem)" 3000 MFX
     sleep 4  # One consensus round.
     check_consistency id1.pem 994000 0 1 2 3
     check_consistency id2.pem 6000 0 1 2 3
 
-    ledger id1.pem 3 send "$(many id ../id2.pem)" 4000 FBT
+    ledger id1.pem 3 send "$(many id ../id2.pem)" 4000 MFX
     sleep 4  # One consensus round.
     check_consistency id1.pem 990000 0 1 2 3
     check_consistency id2.pem 10000 0 1 2 3
@@ -78,17 +78,17 @@ function check_consistency() {
 
     # Check consistency with all nodes up.
     check_consistency id1.pem 1000000 0 1 2
-    ledger id1.pem 0 send "$(many id ../id2.pem)" 1000 FBT
+    ledger id1.pem 0 send "$(many id ../id2.pem)" 1000 MFX
     sleep 10  # One consensus round.
     check_consistency id1.pem 999000 0 1 2
     check_consistency id2.pem 1000 0 1 2
 
-    ledger id1.pem 1 send "$(many id ../id2.pem)" 2000 FBT
+    ledger id1.pem 1 send "$(many id ../id2.pem)" 2000 MFX
     sleep 10  # One consensus round.
     check_consistency id1.pem 997000 0 1 2
     check_consistency id2.pem 3000 0 1 2
 
-    ledger id1.pem 2 send "$(many id ../id2.pem)" 3000 FBT
+    ledger id1.pem 2 send "$(many id ../id2.pem)" 3000 MFX
     sleep 10  # One consensus round.
     check_consistency id1.pem 994000 0 1 2
     check_consistency id2.pem 6000 0 1 2
