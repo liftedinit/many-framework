@@ -86,7 +86,6 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                             response: Box::new(
                                 ResponseMessage::from_bytes(tx.tx_result.data.value())
                                     .map_err(abci_frontend::abci_transport_error)?,
-                                )?,
                             ),
                         })
                     }

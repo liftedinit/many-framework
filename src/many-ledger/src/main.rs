@@ -1,11 +1,6 @@
 use clap::Parser;
-<<<<<<< HEAD
 use many::server::module::{abci_backend, account, ledger};
-use many::server::ManyServer;
-=======
-use many::server::module::{abci_backend, ledger};
 use many::server::{ManyServer, ManyUrl};
->>>>>>> upstream/main
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
 use std::net::SocketAddr;
@@ -55,7 +50,12 @@ struct Opts {
     #[clap(long, short)]
     clean: bool,
 
-<<<<<<< HEAD
+    /// Application absolute URLs allowed to communicate with this server. Any
+    /// application will be able to communicate with this server if left empty.
+    /// Multiple occurences of this argument can be given.
+    #[clap(long)]
+    allow_origin: Option<Vec<ManyUrl>>,
+
     /// A list of initial balances. This will be in addition to the genesis
     /// state file in --state and should only be used for testing.
     /// Each transaction MUST be of the format:
@@ -65,13 +65,6 @@ struct Opts {
     #[cfg(feature = "balance_testing")]
     #[clap(long)]
     balance_only_for_testing: Option<Vec<String>>,
-=======
-    /// Application absolute URLs allowed to communicate with this server. Any
-    /// application will be able to communicate with this server if left empty.
-    /// Multiple occurences of this argument can be given.
-    #[clap(long)]
-    allow_origin: Option<Vec<ManyUrl>>,
->>>>>>> upstream/main
 }
 
 fn main() {
@@ -84,11 +77,8 @@ fn main() {
         mut state,
         persistent,
         clean,
-<<<<<<< HEAD
-        ..
-=======
         allow_origin,
->>>>>>> upstream/main
+        ..
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
