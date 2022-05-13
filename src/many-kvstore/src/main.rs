@@ -100,6 +100,7 @@ fn main() {
         "many-kvstore",
         key,
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
+        None,
     );
 
     {
