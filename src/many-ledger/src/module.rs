@@ -102,7 +102,7 @@ fn filter_symbol<'a>(
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(t) => s.contains(t.symbol()),
+            Ok(t) => t.symbol().map_or(false, |x| s.contains(x)),
         }))
     } else {
         it

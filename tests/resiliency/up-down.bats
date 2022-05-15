@@ -24,7 +24,7 @@ EOT
 
 function teardown() {
     (
-      cd ../../docker/e2e/
+      cd "$GIT_ROOT/docker/e2e/"
       make stop-nodes
     ) 2> /dev/null
 }
@@ -33,8 +33,7 @@ function ledger() {
     local pem="$1"
     local port="$2"
     shift 2
-    echo ../../target/debug/ledger --pem "../${pem}" "http://localhost:$((port + 8000))/" "$@" >&2
-    run ../../target/debug/ledger --pem "../${pem}" "http://localhost:$((port + 8000))/" "$@"
+    run "$GIT_ROOT/target/debug/ledger" --pem "../${pem}" "http://localhost:$((port + 8000))/" "$@"
 }
 
 function check_consistency() {

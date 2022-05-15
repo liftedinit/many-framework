@@ -3,6 +3,7 @@ use many::message::ResponseMessage;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::server::module::account;
 use many::server::module::account::features::multisig::ApproverInfo;
+use many::server::module::account::features::FeatureInfo;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo};
 use many::types::{CborRange, SortOrder, Timestamp};
 use many::{Identity, ManyError};
@@ -364,8 +365,13 @@ impl LedgerStorage {
             })
     }
 
-    fn add_transaction(&mut self, transaction: Transaction) {
+    fn add_transaction(&mut self, content: TransactionInfo) {
         let current_nb_transactions = self.nb_transactions();
+        let transaction = Transaction {
+            id: self.new_transaction_id(),
+            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
+            content,
+        };
 
         self.persistent_store
             .apply(&[
@@ -474,16 +480,12 @@ impl LedgerStorage {
 
         self.persistent_store.apply(&batch).unwrap();
 
-        let id = self.new_transaction_id();
-
-        self.add_transaction(Transaction::send(
-            id,
-            self.current_time.unwrap_or_else(SystemTime::now),
-            *from,
-            *to,
-            *symbol,
+        self.add_transaction(TransactionInfo::Send {
+            from: *from,
+            to: *to,
+            symbol: *symbol,
             amount,
-        ));
+        });
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
@@ -502,8 +504,45 @@ impl LedgerStorage {
         LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
     }
 
-    pub fn add_account(&mut self, account: account::Account) -> Result<Identity, ManyError> {
+    pub fn add_account(&mut self, mut account: account::Account) -> Result<Identity, ManyError> {
         let id = self.new_account_id();
+
+        // Set the multisig threshold properly.
+        if let Ok(mut multisig) = account
+            .features
+            .get::<account::features::multisig::MultisigAccountFeature>()
+        {
+            multisig.arg.threshold = Some(
+                multisig.arg.threshold.unwrap_or(
+                    account
+                        .roles
+                        .iter()
+                        .filter(|(_, roles)| {
+                            roles.contains("owner")
+                                || roles.contains("canMultisigApprove")
+                                || roles.contains("canMultisigSubmit")
+                        })
+                        .count() as u64,
+                ),
+            );
+            multisig.arg.timeout_in_secs = Some(
+                multisig
+                    .arg
+                    .timeout_in_secs
+                    .map_or(MULTISIG_DEFAULT_TIMEOUT_IN_SECS, |v| {
+                        MULTISIG_MAXIMUM_TIMEOUT_IN_SECS.min(v)
+                    }),
+            );
+            multisig.arg.execute_automatically = Some(
+                multisig
+                    .arg
+                    .execute_automatically
+                    .unwrap_or(MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY),
+            );
+
+            account.features.insert(multisig.as_feature());
+        }
+
         self.commit_account(&id, account)?;
         Ok(id)
     }
@@ -660,20 +699,31 @@ impl LedgerStorage {
             }
         }
 
+        let timeout = Timestamp(time + Duration::from_secs(timeout_in_secs));
         let storage = TransactionStorage {
             account: account_id,
             info: account::features::multisig::InfoReturn {
-                memo: arg.memo,
-                transaction: arg.transaction,
+                memo: arg.memo.clone(),
+                transaction: arg.transaction.clone(),
                 submitter: *sender,
                 approvers,
                 threshold,
                 execute_automatically,
-                timeout: Timestamp(time + Duration::from_secs(timeout_in_secs)),
+                timeout,
             },
         };
 
         self.commit_multisig_transaction(tx_id.0.as_slice(), &storage)?;
+        self.add_transaction(TransactionInfo::MultisigSubmit {
+            submitter: *sender,
+            account: account_id,
+            memo: arg.memo,
+            transaction: Box::new(arg.transaction),
+            token: tx_id.0.to_vec().into(),
+            threshold,
+            timeout,
+            execute_automatically,
+        });
 
         Ok(tx_id.0.to_vec())
     }
@@ -699,10 +749,20 @@ impl LedgerStorage {
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
+        self.add_transaction(TransactionInfo::MultisigApprove {
+            account: storage.account,
+            token: tx_id.to_vec().into(),
+            approver: *sender,
+        });
 
         // If the transaction executes automatically, calculate number of approvers.
         if storage.info.execute_automatically && storage.should_execute() {
             self.execute_multisig_transaction_internal(tx_id, &storage)?;
+            self.add_transaction(TransactionInfo::MultisigExecute {
+                account: storage.account,
+                token: tx_id.clone().to_vec().into(),
+                executer: None,
+            });
             return Ok(true);
         }
 
@@ -720,6 +780,11 @@ impl LedgerStorage {
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
+        self.add_transaction(TransactionInfo::MultisigRevoke {
+            account: storage.account,
+            token: tx_id.to_vec().into(),
+            revoker: *sender,
+        });
         Ok(false)
     }
 
@@ -740,7 +805,13 @@ impl LedgerStorage {
         }
 
         if storage.should_execute() {
-            self.execute_multisig_transaction_internal(tx_id, &storage)
+            let response = self.execute_multisig_transaction_internal(tx_id, &storage)?;
+            self.add_transaction(TransactionInfo::MultisigExecute {
+                account: storage.account,
+                token: tx_id.to_vec().into(),
+                executer: Some(*sender),
+            });
+            Ok(response)
         } else {
             Err(account::features::multisig::errors::cannot_execute_transaction())
         }
@@ -758,7 +829,13 @@ impl LedgerStorage {
             return Err(account::features::multisig::errors::cannot_execute_transaction());
         }
 
-        self.delete_multisig_transaction(tx_id)
+        self.delete_multisig_transaction(tx_id)?;
+        self.add_transaction(TransactionInfo::MultisigWithdraw {
+            account: storage.account,
+            token: tx_id.to_vec().into(),
+            withdrawer: *sender,
+        });
+        Ok(())
     }
 
     fn delete_multisig_transaction(&mut self, tx_id: &[u8]) -> Result<(), ManyError> {

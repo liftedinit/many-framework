@@ -9,13 +9,14 @@ fn setup() -> LedgerStorage {
     let symbol0 = Identity::anonymous();
     let id0 = Identity::public_key_raw([0; 28]);
     let id1 = Identity::public_key_raw([1; 28]);
+    let id2 = Identity::public_key_raw([2; 28]);
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "FBT".to_string())].into_iter());
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
     let mut storage =
-        many_ledger::storage::LedgerStorage::new(symbols, balances, persistent_path, false)
+        many_ledger::storage::LedgerStorage::new(symbols, balances, persistent_path, id2, false)
             .unwrap();
 
     for _ in 0..5 {
