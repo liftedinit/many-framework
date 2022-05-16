@@ -385,6 +385,10 @@ impl LedgerStorage {
                 ),
             ])
             .unwrap();
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
     }
 
     pub fn get_balance(&self, identity: &Identity, symbol: &Symbol) -> TokenAmount {
