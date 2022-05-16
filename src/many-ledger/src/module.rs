@@ -5,8 +5,8 @@ use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
 use many::server::module::account::features::multisig::{
-    ApproveArg, ExecuteArg, InfoArg, RevokeArg, SubmitTransactionArg, SubmitTransactionReturn,
-    WithdrawArg,
+    ApproveArg, ExecuteArg, InfoArg, RevokeArg, SetDefaultsArg, SetDefaultsReturn,
+    SubmitTransactionArg, SubmitTransactionReturn, WithdrawArg,
 };
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::account::{
@@ -545,6 +545,16 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     ) -> Result<account::features::multisig::InfoReturn, ManyError> {
         let info = self.storage.get_multisig_info(&args.token)?;
         Ok(info.info)
+    }
+
+    fn multisig_set_defaults(
+        &mut self,
+        sender: &Identity,
+        args: SetDefaultsArg,
+    ) -> Result<SetDefaultsReturn, ManyError> {
+        self.storage
+            .set_multisig_defaults(sender, args)
+            .map(|_| EmptyReturn)
     }
 
     fn multisig_approve(

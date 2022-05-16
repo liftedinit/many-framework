@@ -5,8 +5,10 @@ GIT_ROOT="$BATS_TEST_DIRNAME/../../"
 START_BALANCE=100000000000
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
 
+load '../test_helper/load'
+
 function setup() {
-    load '../test_helper/load'
+    mkdir "$BATS_TEST_ROOTDIR"
 
     skip_if_missing_background_utilities
 
@@ -82,7 +84,7 @@ function account_create() {
     command many id "$account_id"
 }
 
-@test "Ledger shows a balance and can send tokens" {
+@test "$SUITE: Ledger shows a balance and can send tokens" {
     ledger --id=1 balance
     assert_output --partial "$START_BALANCE MFX"
 
@@ -98,7 +100,7 @@ function account_create() {
     assert_output --partial "$START_BALANCE MFX"
 }
 
-@test "Ledger can do account creation and multisig transactions" {
+@test "$SUITE: Ledger can do account creation and multisig transactions" {
     local account_id
     local tx_id
 
@@ -130,7 +132,7 @@ function account_create() {
     assert_output --partial "100 MFX"
 }
 
-@test "can revoke" {
+@test "$SUITE: can revoke" {
     local account_id
     local tx_id
 

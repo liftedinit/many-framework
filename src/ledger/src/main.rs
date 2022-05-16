@@ -203,15 +203,16 @@ fn balance(
     }
 }
 
-pub fn wait_response(client: ManyClient, response: ResponseMessage) -> Result<Vec<u8>, ManyError> {
-    if let Ok(ref data) = response.data {
-        debug!("response: {}", hex::encode(data));
-    }
+pub(crate) fn wait_response(
+    client: ManyClient,
+    response: ResponseMessage,
+) -> Result<Vec<u8>, ManyError> {
     let ResponseMessage {
         data, attributes, ..
     } = response;
 
     let payload = data?;
+    debug!("response: {}", hex::encode(&payload));
     if payload.is_empty() {
         let attr = match attributes.get::<AsyncAttribute>() {
             Ok(attr) => attr,
@@ -222,11 +223,13 @@ pub fn wait_response(client: ManyClient, response: ResponseMessage) -> Result<Ve
         };
         info!("Async token: {}", hex::encode(&attr.token));
 
-        eprint!("Waiting for response...");
+        let progress =
+            indicatif::ProgressBar::new_spinner().with_message("Waiting for async response");
+        progress.enable_steady_tick(100);
 
         // TODO: improve on this by using duration and thread and watchdog.
         // Wait for the server for ~60 seconds by pinging it every second.
-        for _ in 0..30 {
+        for _ in 0..60 {
             let response = client.call(
                 "async.status",
                 StatusArgs {
@@ -237,16 +240,15 @@ pub fn wait_response(client: ManyClient, response: ResponseMessage) -> Result<Ve
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             match status {
                 StatusReturn::Done { response } => {
-                    eprintln!(".");
+                    progress.finish();
                     return wait_response(client, *response);
                 }
                 StatusReturn::Expired => {
-                    eprintln!(".");
+                    progress.finish();
                     info!("Async token expired before we could check it.");
                     return Ok(Vec::new());
                 }
                 _ => {
-                    eprint!(".");
                     std::thread::sleep(Duration::from_secs(1));
                 }
             }

@@ -1,4 +1,6 @@
-use many::server::module::account::features::multisig::SubmitTransactionArg;
+use many::server::module::account::features::multisig::{
+    MultisigAccountFeature, MultisigAccountFeatureArg, SetDefaultsArg, SubmitTransactionArg,
+};
 use many::server::module::account::features::{multisig, FeatureInfo, FeatureSet};
 use many::server::module::account::{Account, CreateArgs};
 use many::types::ledger::{Symbol, TokenAmount};
@@ -65,6 +67,19 @@ fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Iden
             },
         ))
         .expect("Could not create an account")
+}
+
+fn get_multisig_features_args(
+    storage: &LedgerStorage,
+    account_id: &Identity,
+) -> MultisigAccountFeatureArg {
+    storage
+        .get_account(&account_id)
+        .unwrap()
+        .features
+        .get::<MultisigAccountFeature>()
+        .unwrap()
+        .arg
 }
 
 #[test]
@@ -207,4 +222,85 @@ fn withdraw() {
     // No balance should be changed.
     assert_eq!(storage.get_balance(&account_id, &symbol(0)), 1000000u32);
     assert_eq!(storage.get_balance(&identity(4), &symbol(0)), 0u32);
+}
+
+#[test]
+fn set_defaults() {
+    let mut storage = setup([(identity(1), 10000000)]);
+
+    let account_owner = identity(1);
+    let account_id = create_account(&mut storage, &account_owner);
+    // Check the initial threshold is 3.
+    assert_eq!(
+        get_multisig_features_args(&storage, &account_id).threshold,
+        Some(3)
+    );
+
+    storage
+        .send(&identity(1), &account_id, &symbol(0), 1000000u32.into())
+        .expect("Could not send");
+
+    let tx_arg = SubmitTransactionArg::send(account_id, identity(4), symbol(0), 1000u32.into());
+    let token1 = storage
+        .create_multisig_transaction(&account_owner, tx_arg.clone())
+        .expect("Could not create multisig transaction");
+
+    // Ensure token1 needs 3 signatures (id 1, id 2 and id 3).
+    assert_eq!(
+        storage.get_multisig_info(&token1).unwrap().info.threshold,
+        3
+    );
+
+    // Check with a submitter non-owner, should error.
+    assert!(storage
+        .set_multisig_defaults(
+            &identity(3),
+            SetDefaultsArg {
+                account: account_id,
+                threshold: Some(1),
+                timeout_in_secs: None,
+                execute_automatically: None
+            }
+        )
+        .is_err());
+    assert_eq!(
+        get_multisig_features_args(&storage, &account_id).threshold,
+        Some(3)
+    );
+
+    // Update the threshold to 2.
+    assert!(storage
+        .set_multisig_defaults(
+            &account_owner,
+            SetDefaultsArg {
+                account: account_id,
+                threshold: Some(2),
+                timeout_in_secs: None,
+                execute_automatically: None
+            }
+        )
+        .is_ok());
+    assert_eq!(
+        get_multisig_features_args(&storage, &account_id).threshold,
+        Some(2)
+    );
+
+    // Check that existing transactions kept their threshold.
+    assert_eq!(
+        storage.get_multisig_info(&token1).unwrap().info.threshold,
+        3
+    );
+
+    // Create a new transaction and check its new threshold.
+    let token2 = storage
+        .create_multisig_transaction(&account_owner, tx_arg)
+        .expect("Could not create multisig transaction");
+    assert_eq!(
+        storage.get_multisig_info(&token1).unwrap().info.threshold,
+        3
+    );
+    assert_eq!(
+        storage.get_multisig_info(&token2).unwrap().info.threshold,
+        2
+    );
 }

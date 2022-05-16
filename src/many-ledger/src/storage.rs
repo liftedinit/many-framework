@@ -551,6 +551,42 @@ impl LedgerStorage {
         Ok(id)
     }
 
+    pub fn set_multisig_defaults(
+        &mut self,
+        sender: &Identity,
+        args: account::features::multisig::SetDefaultsArg,
+    ) -> Result<(), ManyError> {
+        // Verify the sender has the rights to the account.
+        let mut account = self
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account.to_string()))?;
+
+        if !(account.has_role(sender, "owner")) {
+            return Err(account::errors::user_needs_role("owner"));
+        }
+
+        // Set the multisig threshold properly.
+        if let Ok(mut multisig) = account
+            .features
+            .get::<account::features::multisig::MultisigAccountFeature>()
+        {
+            if let Some(threshold) = args.threshold {
+                multisig.arg.threshold = Some(threshold);
+            }
+            if let Some(timeout_in_secs) = args.timeout_in_secs {
+                multisig.arg.timeout_in_secs =
+                    Some(timeout_in_secs.min(MULTISIG_MAXIMUM_TIMEOUT_IN_SECS));
+            }
+            if let Some(execute_automatically) = args.execute_automatically {
+                multisig.arg.execute_automatically = Some(execute_automatically);
+            }
+
+            account.features.insert(multisig.as_feature());
+            self.commit_account(&args.account, account)?;
+        }
+        Ok(())
+    }
+
     pub fn delete_account(&mut self, id: &Identity) -> Result<(), ManyError> {
         self.persistent_store
             .apply(&[(key_for_account(id), fmerk::Op::Delete)])
@@ -615,6 +651,7 @@ impl LedgerStorage {
                 ),
             )])
             .unwrap();
+
         if !self.blockchain {
             self.persistent_store
                 .commit(&[])
