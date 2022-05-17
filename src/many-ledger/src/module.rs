@@ -263,6 +263,8 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.list".to_string(), EndpointInfo { is_command: false }),
+
+                // IdStore
                 ("idstore.store".to_string(), EndpointInfo { is_command: true}),
                 ("idstore.getFromRecallPhrase".to_string(), EndpointInfo { is_command: true}),
                 ("idstore.getFromAddress".to_string(), EndpointInfo { is_command: true}),
@@ -438,10 +440,7 @@ mod tests {
         let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
 
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
-        let result = module_impl.store(StoreArgs {
-            address,
-            cred_id,
-        });
+        let result = module_impl.store(StoreArgs { address, cred_id });
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code,
