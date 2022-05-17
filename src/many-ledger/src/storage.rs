@@ -338,7 +338,7 @@ impl LedgerStorage {
     // IdStore
     pub fn store(
         &mut self,
-        recall_phrase: RecallPhrase,
+        recall_phrase: &RecallPhrase,
         address: Identity,
         cred_id: CredentialId,
     ) -> Result<(), ManyError> {
@@ -352,28 +352,27 @@ impl LedgerStorage {
             return Err(idstore::existing_entry());
         }
         let address_vec = address.to_vec();
-        let cred_id: Vec<u8> = cred_id.into();
 
         // Keys in batch must be sorted.
         let batch = match recall_phrase_cbor.cmp(&address_vec) {
             Ordering::Less | Ordering::Equal => vec![
                 (
                     vec![IDSTORE_ROOT, &recall_phrase_cbor].concat(),
-                    fmerk::Op::Put(cred_id.clone()),
+                    fmerk::Op::Put(cred_id.0.clone().into()),
                 ),
                 (
                     vec![IDSTORE_ROOT, &address.to_vec()].concat(),
-                    fmerk::Op::Put(cred_id),
+                    fmerk::Op::Put(cred_id.0.into()),
                 ),
             ],
             _ => vec![
                 (
                     vec![IDSTORE_ROOT, &address.to_vec()].concat(),
-                    fmerk::Op::Put(cred_id.clone()),
+                    fmerk::Op::Put(cred_id.0.clone().into()),
                 ),
                 (
                     vec![IDSTORE_ROOT, &recall_phrase_cbor].concat(),
-                    fmerk::Op::Put(cred_id),
+                    fmerk::Op::Put(cred_id.0.into()),
                 ),
             ],
         };
@@ -389,17 +388,17 @@ impl LedgerStorage {
 
     fn get_from_storage(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>, ManyError> {
         self.persistent_store
-            .get(&key)
+            .get(&vec![IDSTORE_ROOT, &key].concat())
             .map_err(|e| ManyError::unknown(e.to_string()))
     }
 
     pub fn get_from_recall_phrase(
         &self,
-        recall_phrase: RecallPhrase,
+        recall_phrase: &RecallPhrase,
     ) -> Result<CredentialId, ManyError> {
         let recall_phrase_cbor = minicbor::to_vec(&recall_phrase).unwrap();
         if let Some(cred_id) = self.get_from_storage(recall_phrase_cbor)? {
-            Ok(cred_id.into())
+            Ok(CredentialId(cred_id.into()))
         } else {
             Err(idstore::entry_not_found(recall_phrase.join(" ")))
         }
@@ -407,7 +406,7 @@ impl LedgerStorage {
 
     pub fn get_from_address(&self, address: Identity) -> Result<CredentialId, ManyError> {
         if let Some(cred_id) = self.get_from_storage(address.to_vec())? {
-            Ok(cred_id.into())
+            Ok(CredentialId(cred_id.into()))
         } else {
             Err(idstore::entry_not_found(address.to_string()))
         }

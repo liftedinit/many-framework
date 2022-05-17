@@ -1,24 +1,31 @@
-use crate::{error, /*id_storage::IdStorage,*/ storage::LedgerStorage};
+use crate::{error, storage::LedgerStorage};
+use bip39_dict::Entropy;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
 use many::server::module::idstore::{
     GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
-    StoreReturn,
+    StoreReturns,
 };
 use many::server::module::{idstore, ledger};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
 use minicbor::decode;
+use retry::delay::Fixed;
+use retry::{retry_with_index, OperationResult};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
 
+#[cfg(not(test))]
+use rand::{thread_rng, Rng};
+
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 
 type TxResult = Result<Transaction, ManyError>;
+
 fn filter_account<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
     account: Option<VecOrSingle<Identity>>,
@@ -119,8 +126,6 @@ impl LedgerModuleImpl {
         } else {
             LedgerStorage::load(persistence_store_path, blockchain).unwrap()
         };
-
-        // let idstorage = IdStorage::new(idstore_path, blockchain).unwrap();
 
         info!(
             height = storage.get_height(),
@@ -308,41 +313,184 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
     }
 }
 
+#[cfg(not(test))]
+fn generate_entropy<const FB: usize>() -> Entropy<FB> {
+    let mut random = [0u8; FB];
+    thread_rng().fill(&mut random[..]);
+    bip39_dict::Entropy::<FB>(random)
+}
+
+#[cfg(test)]
+pub fn generate_entropy<const FB: usize>() -> Entropy<FB> {
+    bip39_dict::Entropy::<FB>::generate(|| 1)
+}
+
+pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>() -> Vec<String> {
+    let mnemonic = generate_entropy::<FB>().to_mnemonics::<W, CS>().unwrap();
+    let recall_phrase = mnemonic
+        .to_string(&bip39_dict::ENGLISH)
+        .split_whitespace()
+        .map(|e| e.to_string()) // TODO: This is ugly
+        .collect::<Vec<String>>();
+    recall_phrase
+}
+
 impl IdStoreModuleBackend for LedgerModuleImpl {
     fn store(
         &mut self,
-        StoreArgs {
-            recall_phrase,
-            address,
-            cred_id,
-        }: StoreArgs,
-    ) -> Result<StoreReturn, ManyError> {
-        // Check that recall phrase length matches the spec
-        if !(2..=5).contains(&recall_phrase.len()) {
-            return Err(idstore::invalid_recall_phrase());
-        }
-
-        // Store only public addresses
+        StoreArgs { address, cred_id }: StoreArgs,
+    ) -> Result<StoreReturns, ManyError> {
         if !address.is_public_key() {
             return Err(idstore::invalid_address(address.to_string()));
         }
 
-        self.storage.store(recall_phrase, address, cred_id)?;
-        Ok(StoreReturn {})
+        if !(16..=1023).contains(&cred_id.0.len()) {
+            return Err(idstore::invalid_credential_id(hex::encode(&*cred_id.0)));
+        }
+
+        let recall_phrase = retry_with_index(Fixed::from_millis(10), |current_try| {
+            if current_try > 8 {
+                return OperationResult::Err(
+                    "Unable to create recall phrase after 8 try. Aborting.",
+                );
+            }
+
+            let recall_phrase = match current_try {
+                1 | 2 => generate_recall_phrase::<2, 2, 6>(),
+                3 | 4 => generate_recall_phrase::<3, 4, 1>(),
+                5 | 6 => generate_recall_phrase::<4, 5, 4>(),
+                7 | 8 => generate_recall_phrase::<5, 6, 7>(),
+                _ => {
+                    unimplemented!()
+                }
+            };
+
+            if self.storage.get_from_recall_phrase(&recall_phrase).is_ok() {
+                OperationResult::Retry("Recall phrase generation failed, retrying...")
+            } else {
+                OperationResult::Ok(recall_phrase)
+            }
+        })
+        .map_err(|_| idstore::recall_phrase_generation_failed())?;
+
+        self.storage.store(&recall_phrase, address, cred_id)?;
+        Ok(StoreReturns(recall_phrase))
     }
 
     fn get_from_recall_phrase(
         &self,
         args: GetFromRecallPhraseArgs,
     ) -> Result<GetReturns, ManyError> {
-        Ok(GetReturns {
-            cred_id: self.storage.get_from_recall_phrase(args.recall_phrase)?,
-        })
+        Ok(GetReturns(self.storage.get_from_recall_phrase(&args.0)?))
     }
 
     fn get_from_address(&self, args: GetFromAddressArgs) -> Result<GetReturns, ManyError> {
-        Ok(GetReturns {
-            cred_id: self.storage.get_from_address(args.address)?,
-        })
+        Ok(GetReturns(self.storage.get_from_address(args.0)?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use many::server::module::idstore::CredentialId;
+    use minicbor::bytes::ByteVec;
+
+    use super::*;
+
+    fn setup() -> (Identity, CredentialId, tempfile::TempDir) {
+        let address =
+            Identity::from_str("maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp").unwrap();
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 16])));
+        let persistent = tempfile::tempdir().unwrap();
+
+        (address, cred_id, persistent)
+    }
+
+    #[test]
+    fn idstore_store() {
+        let (address, cred_id, persistent) = setup();
+        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+
+        // Try storing the same credential until we reach 5 words
+        for i in 2..=5 {
+            let result = module_impl.store(StoreArgs {
+                address,
+                cred_id: cred_id.clone(),
+            });
+            assert!(result.is_ok());
+            let recall_phrase = result.unwrap().0;
+            assert_eq!(recall_phrase.len(), i);
+        }
+
+        // Make sure we abort after reaching 5 words
+        let result = module_impl.store(StoreArgs { address, cred_id });
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            idstore::recall_phrase_generation_failed().code
+        );
+    }
+
+    #[test]
+    fn idstore_invalid_cred_id() {
+        let (address, _, persistent) = setup();
+        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
+        let result = module_impl.store(StoreArgs {
+            address,
+            cred_id,
+        });
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            idstore::invalid_credential_id("".to_string()).code
+        );
+
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 1024])));
+        let result = module_impl.store(StoreArgs { address, cred_id });
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            idstore::invalid_credential_id("".to_string()).code
+        );
+    }
+
+    #[test]
+    fn idstore_get_from_recall_phrase() {
+        let (address, cred_id, persistent) = setup();
+        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let result = module_impl.store(StoreArgs {
+            address,
+            cred_id: cred_id.clone(),
+        });
+
+        assert!(result.is_ok());
+        let store_return = result.unwrap();
+
+        let result = module_impl.get_from_recall_phrase(GetFromRecallPhraseArgs(store_return.0));
+        assert!(result.is_ok());
+        let get_returns = result.unwrap();
+
+        assert_eq!(get_returns.0, cred_id);
+    }
+
+    #[test]
+    fn idstore_get_from_address() {
+        let (address, cred_id, persistent) = setup();
+        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let result = module_impl.store(StoreArgs {
+            address,
+            cred_id: cred_id.clone(),
+        });
+
+        assert!(result.is_ok());
+
+        let result = module_impl.get_from_address(GetFromAddressArgs(address));
+        assert!(result.is_ok());
+        let get_returns = result.unwrap();
+
+        assert_eq!(get_returns.0, cred_id);
     }
 }
