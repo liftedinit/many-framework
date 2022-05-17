@@ -33,22 +33,13 @@ fn setup<B: IntoIterator<Item = (Identity, u64)>>(b: B) -> LedgerStorage {
 
     let persistent_path = tempfile::tempdir().unwrap();
 
-    let storage = many_ledger::storage::LedgerStorage::new(
-        symbols,
-        balances,
-        persistent_path,
-        identity(0),
-        false,
-    )
-    .unwrap();
-
-    storage
+    LedgerStorage::new(symbols, balances, persistent_path, identity(0), false).unwrap()
 }
 
 fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Identity {
     storage
         .add_account(Account::create(
-            &account_owner,
+            account_owner,
             CreateArgs {
                 description: None,
                 roles: Some(BTreeMap::from_iter([
@@ -61,9 +52,7 @@ fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Iden
                         BTreeSet::from_iter(["canMultisigSubmit".to_string()]),
                     ),
                 ])),
-                features: FeatureSet::from_iter([
-                    multisig::MultisigAccountFeature::default().as_feature()
-                ]),
+                features: FeatureSet::from_iter([MultisigAccountFeature::default().as_feature()]),
             },
         ))
         .expect("Could not create an account")
@@ -74,7 +63,7 @@ fn get_multisig_features_args(
     account_id: &Identity,
 ) -> MultisigAccountFeatureArg {
     storage
-        .get_account(&account_id)
+        .get_account(account_id)
         .unwrap()
         .features
         .get::<MultisigAccountFeature>()

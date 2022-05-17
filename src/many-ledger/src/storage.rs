@@ -751,6 +751,7 @@ impl LedgerStorage {
                 threshold,
                 execute_automatically,
                 timeout,
+                data: arg.data.clone(),
             },
         };
 
@@ -764,6 +765,7 @@ impl LedgerStorage {
             threshold,
             timeout,
             execute_automatically,
+            data: arg.data,
         });
 
         Ok(tx_id.0.to_vec())
@@ -801,7 +803,7 @@ impl LedgerStorage {
             self.execute_multisig_transaction_internal(tx_id, &storage)?;
             self.add_transaction(TransactionInfo::MultisigExecute {
                 account: storage.account,
-                token: tx_id.clone().to_vec().into(),
+                token: tx_id.to_vec().into(),
                 executer: None,
             });
             return Ok(true);

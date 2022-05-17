@@ -80,6 +80,7 @@ fn submit_send(
             threshold: None,
             timeout_in_secs: None,
             execute_automatically: None,
+            data: None,
         };
         let response = client.call("account.multisigSubmitTransaction", arguments)?;
 
