@@ -1,6 +1,3 @@
-function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
-
-PEM_ROOT="$(mktemp -d)"
 GIT_ROOT="$BATS_TEST_DIRNAME/../../"
 START_BALANCE=100000000000
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
@@ -31,57 +28,6 @@ function setup() {
 
 function teardown() {
     stop_background_run
-}
-
-function pem() {
-    [ -f "$PEM_ROOT/id-$1.pem" ] || openssl genpkey -algorithm Ed25519 -out "$PEM_ROOT/id-$1.pem" >/dev/null
-    echo "$PEM_ROOT/id-$1.pem"
-}
-
-function ledger() {
-    local pem_arg
-    if [[ "$1" == "--id="* ]]; then
-        pem_arg="--pem=$(pem ${1#--id=})"
-        shift
-    fi
-    run ../../target/debug/ledger "$pem_arg" "http://localhost:8000/" "$@"
-    [ "$status" -eq 0 ]
-}
-
-function ledger_error() {
-    local pem_arg
-    if [[ "$1" == "--id="* ]]; then
-        pem_arg="--pem=$(pem ${1#--id=})"
-        shift
-    fi
-    run ../../target/debug/ledger "$pem_arg" "http://localhost:8000/" "$@"
-    [ "$status" -ne 0 ]
-}
-
-function many_message() {
-    local pem_arg
-    if [[ "$1" == "--id="* ]]; then
-        pem_arg="--pem=$(pem ${1#--id=})"
-        shift
-    fi
-    run command many message --server http://localhost:8000 "$pem_arg" "$@"
-    [ "$status" -eq 0 ]
-}
-
-function identity() {
-    command many id "$(pem $1)"
-}
-
-function account_create() {
-    local id_arg
-
-    if [[ "$1" == "--id="* ]]; then
-        id_arg="$1"
-        shift
-    fi
-    many_message "$id_arg" account.create "$@"
-    account_id="$(echo "$output" | grep -o "h'[0-9a-z]*'" | grep -oE "[0-9a-z][0-9a-z]+")"
-    command many id "$account_id"
 }
 
 @test "$SUITE: Ledger shows a balance and can send tokens" {

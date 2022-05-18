@@ -2,6 +2,7 @@ use crate::TargetCommandOpt;
 use clap::Parser;
 use many::message::ResponseMessage;
 use many::server::module::account;
+use many::server::module::account::features::multisig;
 use many::types::ledger;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
@@ -73,7 +74,7 @@ fn submit_send(
             symbol,
             amount: ledger::TokenAmount::from(amount),
         };
-        let arguments = account::features::multisig::SubmitTransactionArg {
+        let arguments = multisig::SubmitTransactionArgs {
             account: Some(account),
             memo: None,
             transaction,
@@ -107,7 +108,7 @@ fn approve(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let arguments = account::features::multisig::ApproveArg { token: opts.token };
+        let arguments = multisig::ApproveArgs { token: opts.token };
         let response = client.call("account.multisigApprove", arguments)?;
 
         let payload = crate::wait_response(client, response)?;
@@ -124,7 +125,7 @@ fn revoke(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let arguments = account::features::multisig::RevokeArg { token: opts.token };
+        let arguments = multisig::RevokeArgs { token: opts.token };
         let response = client.call("account.multisigRevoke", arguments)?;
 
         let payload = crate::wait_response(client, response)?;
@@ -141,7 +142,7 @@ fn execute(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let arguments = account::features::multisig::ExecuteArg { token: opts.token };
+        let arguments = multisig::ExecuteArgs { token: opts.token };
         let response = client.call("account.multisigExecute", arguments)?;
 
         let payload = crate::wait_response(client, response)?;

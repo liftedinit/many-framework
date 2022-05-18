@@ -4,16 +4,8 @@ use many::message::ResponseMessage;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::account::features::multisig::{
-    ApproveArg, ExecuteArg, InfoArg, RevokeArg, SetDefaultsArg, SetDefaultsReturn,
-    SubmitTransactionArg, SubmitTransactionReturn, WithdrawArg,
-};
+use many::server::module::account::features::multisig;
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
-use many::server::module::account::{
-    Account, AddFeaturesArgs, AddRolesArgs, CreateArgs, CreateReturn, DeleteArgs, GetRolesArgs,
-    GetRolesReturn, InfoArgs, InfoReturn, ListRolesArgs, ListRolesReturn, RemoveRolesArgs,
-    SetDescriptionArgs,
-};
 use many::server::module::{account, ledger, EmptyReturn};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
@@ -27,7 +19,7 @@ use tracing::info;
 
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 
-fn get_roles_for_account(account: &Account) -> BTreeSet<String> {
+fn get_roles_for_account(account: &account::Account) -> BTreeSet<String> {
     let features = account.features();
 
     let mut roles = BTreeSet::new();
@@ -43,7 +35,7 @@ fn get_roles_for_account(account: &Account) -> BTreeSet<String> {
     roles
 }
 
-fn validate_features_for_account(account: &Account) -> Result<(), ManyError> {
+fn validate_features_for_account(account: &account::Account) -> Result<(), ManyError> {
     let features = account.features();
 
     // TODO: somehow keep this list updated with the above.
@@ -379,20 +371,24 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 }
 
 impl account::AccountModuleBackend for LedgerModuleImpl {
-    fn create(&mut self, sender: &Identity, args: CreateArgs) -> Result<CreateReturn, ManyError> {
-        let account = Account::create(sender, args);
+    fn create(
+        &mut self,
+        sender: &Identity,
+        args: account::CreateArgs,
+    ) -> Result<account::CreateReturn, ManyError> {
+        let account = account::Account::create(sender, args);
 
         // Verify that we support all features.
         validate_features_for_account(&account)?;
 
         let id = self.storage.add_account(account)?;
-        Ok(CreateReturn { id })
+        Ok(account::CreateReturn { id })
     }
 
     fn set_description(
         &mut self,
         sender: &Identity,
-        args: SetDescriptionArgs,
+        args: account::SetDescriptionArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let mut account = self
             .storage
@@ -411,13 +407,13 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     fn list_roles(
         &self,
         _sender: &Identity,
-        args: ListRolesArgs,
-    ) -> Result<ListRolesReturn, ManyError> {
+        args: account::ListRolesArgs,
+    ) -> Result<account::ListRolesReturn, ManyError> {
         let account = self
             .storage
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
-        Ok(ListRolesReturn {
+        Ok(account::ListRolesReturn {
             roles: get_roles_for_account(&account),
         })
     }
@@ -425,8 +421,8 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     fn get_roles(
         &self,
         _sender: &Identity,
-        args: GetRolesArgs,
-    ) -> Result<GetRolesReturn, ManyError> {
+        args: account::GetRolesArgs,
+    ) -> Result<account::GetRolesReturn, ManyError> {
         let account = self
             .storage
             .get_account(&args.account)
@@ -437,13 +433,13 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             roles.insert(id, account.get_roles(&id));
         }
 
-        Ok(GetRolesReturn { roles })
+        Ok(account::GetRolesReturn { roles })
     }
 
     fn add_roles(
         &mut self,
         sender: &Identity,
-        args: AddRolesArgs,
+        args: account::AddRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let mut account = self
             .storage
@@ -466,7 +462,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     fn remove_roles(
         &mut self,
         sender: &Identity,
-        args: RemoveRolesArgs,
+        args: account::RemoveRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let mut account = self
             .storage
@@ -486,8 +482,12 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         Ok(EmptyReturn)
     }
 
-    fn info(&self, _sender: &Identity, args: InfoArgs) -> Result<InfoReturn, ManyError> {
-        let Account {
+    fn info(
+        &self,
+        _sender: &Identity,
+        args: account::InfoArgs,
+    ) -> Result<account::InfoReturn, ManyError> {
+        let account::Account {
             description,
             roles,
             features,
@@ -496,14 +496,18 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
-        Ok(InfoReturn {
+        Ok(account::InfoReturn {
             description,
             roles,
             features,
         })
     }
 
-    fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<EmptyReturn, ManyError> {
+    fn delete(
+        &mut self,
+        sender: &Identity,
+        args: account::DeleteArgs,
+    ) -> Result<EmptyReturn, ManyError> {
         let account = self
             .storage
             .get_account(&args.account)
@@ -520,20 +524,20 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     fn add_features(
         &mut self,
         _sender: &Identity,
-        _args: AddFeaturesArgs,
+        _args: account::AddFeaturesArgs,
     ) -> Result<EmptyReturn, ManyError> {
         Err(ManyError::unknown("Unsupported.".to_string()))
     }
 }
 
-impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
+impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
     fn multisig_submit_transaction(
         &mut self,
         sender: &Identity,
-        arg: SubmitTransactionArg,
-    ) -> Result<SubmitTransactionReturn, ManyError> {
+        arg: multisig::SubmitTransactionArgs,
+    ) -> Result<multisig::SubmitTransactionReturn, ManyError> {
         let token = self.storage.create_multisig_transaction(sender, arg)?;
-        Ok(SubmitTransactionReturn {
+        Ok(multisig::SubmitTransactionReturn {
             token: ByteVec::from(token),
         })
     }
@@ -541,8 +545,8 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_info(
         &self,
         _sender: &Identity,
-        args: InfoArg,
-    ) -> Result<account::features::multisig::InfoReturn, ManyError> {
+        args: multisig::InfoArgs,
+    ) -> Result<multisig::InfoReturn, ManyError> {
         let info = self.storage.get_multisig_info(&args.token)?;
         Ok(info.info)
     }
@@ -550,8 +554,8 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_set_defaults(
         &mut self,
         sender: &Identity,
-        args: SetDefaultsArg,
-    ) -> Result<SetDefaultsReturn, ManyError> {
+        args: multisig::SetDefaultsArgs,
+    ) -> Result<multisig::SetDefaultsReturn, ManyError> {
         self.storage
             .set_multisig_defaults(sender, args)
             .map(|_| EmptyReturn)
@@ -560,7 +564,7 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_approve(
         &mut self,
         sender: &Identity,
-        args: ApproveArg,
+        args: multisig::ApproveArgs,
     ) -> Result<EmptyReturn, ManyError> {
         self.storage
             .approve_multisig(sender, args.token.as_slice())
@@ -570,7 +574,7 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_revoke(
         &mut self,
         sender: &Identity,
-        args: RevokeArg,
+        args: multisig::RevokeArgs,
     ) -> Result<EmptyReturn, ManyError> {
         self.storage
             .revoke_multisig(sender, args.token.as_slice())
@@ -580,7 +584,7 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_execute(
         &mut self,
         sender: &Identity,
-        args: ExecuteArg,
+        args: multisig::ExecuteArgs,
     ) -> Result<ResponseMessage, ManyError> {
         self.storage.execute_multisig(sender, args.token.as_slice())
     }
@@ -588,7 +592,7 @@ impl account::features::multisig::AccountMultisigModuleBackend for LedgerModuleI
     fn multisig_withdraw(
         &mut self,
         sender: &Identity,
-        args: WithdrawArg,
+        args: multisig::WithdrawArgs,
     ) -> Result<EmptyReturn, ManyError> {
         self.storage
             .withdraw_multisig(sender, args.token.as_slice())

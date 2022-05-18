@@ -1,7 +1,5 @@
-use many::server::module::account::features::multisig::{
-    MultisigAccountFeature, MultisigAccountFeatureArg, SetDefaultsArg, SubmitTransactionArg,
-};
-use many::server::module::account::features::{multisig, FeatureInfo, FeatureSet};
+use many::server::module::account::features::multisig;
+use many::server::module::account::features::{FeatureInfo, FeatureSet};
 use many::server::module::account::{Account, CreateArgs};
 use many::types::ledger::{Symbol, TokenAmount};
 use many::Identity;
@@ -52,7 +50,9 @@ fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Iden
                         BTreeSet::from_iter(["canMultisigSubmit".to_string()]),
                     ),
                 ])),
-                features: FeatureSet::from_iter([MultisigAccountFeature::default().as_feature()]),
+                features: FeatureSet::from_iter([
+                    multisig::MultisigAccountFeature::default().as_feature()
+                ]),
             },
         ))
         .expect("Could not create an account")
@@ -61,12 +61,12 @@ fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Iden
 fn get_multisig_features_args(
     storage: &LedgerStorage,
     account_id: &Identity,
-) -> MultisigAccountFeatureArg {
+) -> multisig::MultisigAccountFeatureArg {
     storage
         .get_account(account_id)
         .unwrap()
         .features
-        .get::<MultisigAccountFeature>()
+        .get::<multisig::MultisigAccountFeature>()
         .unwrap()
         .arg
 }
@@ -85,7 +85,12 @@ fn basic() {
     let token = storage
         .create_multisig_transaction(
             &account_owner,
-            SubmitTransactionArg::send(account_id, identity(4), symbol(0), 1000u32.into()),
+            multisig::SubmitTransactionArgs::send(
+                account_id,
+                identity(4),
+                symbol(0),
+                1000u32.into(),
+            ),
         )
         .expect("Could not create multisig transaction");
 
@@ -144,7 +149,8 @@ fn automatic() {
         .send(&identity(1), &account_id, &symbol(0), 1000000u32.into())
         .expect("Could not send");
 
-    let mut tx_arg = SubmitTransactionArg::send(account_id, identity(4), symbol(0), 1000u32.into());
+    let mut tx_arg =
+        multisig::SubmitTransactionArgs::send(account_id, identity(4), symbol(0), 1000u32.into());
     tx_arg.execute_automatically = Some(true);
 
     let token = storage
@@ -182,7 +188,8 @@ fn withdraw() {
         .send(&identity(1), &account_id, &symbol(0), 1000000u32.into())
         .expect("Could not send");
 
-    let mut tx_arg = SubmitTransactionArg::send(account_id, identity(4), symbol(0), 1000u32.into());
+    let mut tx_arg =
+        multisig::SubmitTransactionArgs::send(account_id, identity(4), symbol(0), 1000u32.into());
     tx_arg.execute_automatically = Some(true);
 
     let token = storage
@@ -229,7 +236,8 @@ fn set_defaults() {
         .send(&identity(1), &account_id, &symbol(0), 1000000u32.into())
         .expect("Could not send");
 
-    let tx_arg = SubmitTransactionArg::send(account_id, identity(4), symbol(0), 1000u32.into());
+    let tx_arg =
+        multisig::SubmitTransactionArgs::send(account_id, identity(4), symbol(0), 1000u32.into());
     let token1 = storage
         .create_multisig_transaction(&account_owner, tx_arg.clone())
         .expect("Could not create multisig transaction");
@@ -244,7 +252,7 @@ fn set_defaults() {
     assert!(storage
         .set_multisig_defaults(
             &identity(3),
-            SetDefaultsArg {
+            multisig::SetDefaultsArgs {
                 account: account_id,
                 threshold: Some(1),
                 timeout_in_secs: None,
@@ -261,7 +269,7 @@ fn set_defaults() {
     assert!(storage
         .set_multisig_defaults(
             &account_owner,
-            SetDefaultsArg {
+            multisig::SetDefaultsArgs {
                 account: account_id,
                 threshold: Some(2),
                 timeout_in_secs: None,

@@ -2,7 +2,7 @@ use crate::error;
 use many::message::ResponseMessage;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::server::module::account;
-use many::server::module::account::features::multisig::ApproverInfo;
+use many::server::module::account::features::multisig;
 use many::server::module::account::features::FeatureInfo;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo};
 use many::types::{CborRange, SortOrder, Timestamp};
@@ -554,7 +554,7 @@ impl LedgerStorage {
     pub fn set_multisig_defaults(
         &mut self,
         sender: &Identity,
-        args: account::features::multisig::SetDefaultsArg,
+        args: multisig::SetDefaultsArgs,
     ) -> Result<(), ManyError> {
         // Verify the sender has the rights to the account.
         let mut account = self
@@ -663,7 +663,7 @@ impl LedgerStorage {
     pub fn create_multisig_transaction(
         &mut self,
         sender: &Identity,
-        arg: account::features::multisig::SubmitTransactionArg,
+        arg: multisig::SubmitTransactionArgs,
     ) -> Result<Vec<u8>, ManyError> {
         let tx_id = self.new_transaction_id();
 
@@ -732,7 +732,7 @@ impl LedgerStorage {
         // Calculate the approver list, set their approvals to false, except for
         // the sender.
         let mut approvers = BTreeMap::new();
-        approvers.insert(*sender, ApproverInfo { approved: true });
+        approvers.insert(*sender, multisig::ApproverInfo { approved: true });
         for (id, roles) in account.roles() {
             if roles.contains(MULTISIG_ROLE_CAN_APPROVE) || roles.contains(MULTISIG_ROLE_CAN_SUBMIT)
             {
