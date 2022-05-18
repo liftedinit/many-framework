@@ -412,20 +412,20 @@ impl LedgerStorage {
                 CredentialId(
                     value
                         .first()
-                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
                         .clone()
                         .into(),
                 ),
                 PublicKey(
                     value
                         .last()
-                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
                         .clone()
                         .into(),
                 ),
             ))
         } else {
-                Err(idstore::entry_not_found(recall_phrase.join(" ")))
+            Err(idstore::entry_not_found(recall_phrase.join(" ")))
         }
     }
 
@@ -440,14 +440,14 @@ impl LedgerStorage {
                 CredentialId(
                     value
                         .first()
-                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
                         .clone()
                         .into(),
                 ),
                 PublicKey(
                     value
                         .last()
-                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
                         .clone()
                         .into(),
                 ),
