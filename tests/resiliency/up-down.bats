@@ -8,26 +8,28 @@ function setup() {
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make clean
-      make start-nodes-background || {
+      make start-nodes-background ID_WITH_BALANCES="$(identity 1):1000000" || {
         echo Could not start nodes... >&3
+        exit 1
       }
-    ) 2> /dev/null
+    ) > /dev/null
     (
-      cd $GIT_ROOT
+      cd "$GIT_ROOT" || exit 1
       cargo build
     )
 
     # Give time to the servers to start.
+    sleep 1
     timeout 30s bash <<EOT
-    while ! many --pem ../id1.pem http://localhost:8000 status; do
+    while ! many message --server http://localhost:8000 status; do
       sleep 1
-    done
+    done >/dev/null
 EOT
 }
 
 function teardown() {
     (
-      cd "$GIT_ROOT/docker/e2e/"
+      cd "$GIT_ROOT/docker/e2e/" || exit 1
       make stop-nodes
     ) 2> /dev/null
 }
@@ -76,7 +78,7 @@ function check_consistency() {
 
 @test "$SUITE: Network is consistent with 1 node down" {
     # Bring down node 3.
-    docker stop e2e-tendermint-3-1
+    docker stop e2e_tendermint-3_1
 
     # Check consistency with all nodes up.
     check_consistency "$(pem 1)" 1000000 0 1 2
@@ -96,7 +98,7 @@ function check_consistency() {
     check_consistency "$(pem 2)" 6000 0 1 2
 
     # Bring it back.
-    docker start e2e-tendermint-3-1
+    docker start e2e_tendermint-3_1
     sleep 10
     check_consistency "$(pem 1)" 994000 0 1 2 3
     check_consistency "$(pem 2)" 6000 0 1 2 3

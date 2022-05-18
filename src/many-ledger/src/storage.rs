@@ -128,6 +128,8 @@ impl LedgerStorage {
         symbol: Identity,
     ) {
         assert!(self.symbols.contains_key(&symbol));
+        // Make sure we don't run this function when the store has started.
+        assert_eq!(self.current_hash, None);
 
         let key = key_for_account_balance(&account, &symbol);
         let amount = TokenAmount::from(amount);
@@ -136,9 +138,8 @@ impl LedgerStorage {
             .apply(&[(key, fmerk::Op::Put(amount.to_vec()))])
             .unwrap();
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        // Always commit to the store. In blockchain mode this will fail.
+        self.persistent_store.commit(&[]).unwrap();
     }
 }
 

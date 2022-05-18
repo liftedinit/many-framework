@@ -16,6 +16,7 @@ mod storage;
 use module::*;
 
 #[derive(Parser, Debug)]
+#[clap(args_override_self(true))]
 struct Opts {
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
