@@ -339,9 +339,9 @@ impl LedgerStorage {
     pub fn store(
         &mut self,
         recall_phrase: &RecallPhrase,
-        address: Identity,
+        address: &Identity,
         cred_id: CredentialId,
-        public_key: Vec<u8>,
+        public_key: PublicKey,
     ) -> Result<(), ManyError> {
         let recall_phrase_cbor = minicbor::to_vec(recall_phrase)
             .map_err(|e| ManyError::serialization_error(e.to_string()))?;
@@ -354,8 +354,11 @@ impl LedgerStorage {
             return Err(idstore::existing_entry());
         }
         let address_vec = address.to_vec();
-        let value = minicbor::to_vec(vec![cred_id.0.into(), public_key])
-            .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+        let value = minicbor::to_vec(vec![
+            Vec::<u8>::from(cred_id.0),
+            Vec::<u8>::from(public_key.0),
+        ])
+        .map_err(|e| ManyError::serialization_error(e.to_string()))?;
 
         // Keys in batch must be sorted.
         let batch = match recall_phrase_cbor.cmp(&address_vec) {
@@ -390,9 +393,9 @@ impl LedgerStorage {
         Ok(())
     }
 
-    fn get_from_storage(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>, ManyError> {
+    fn get_from_storage(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, ManyError> {
         self.persistent_store
-            .get(&vec![IDSTORE_ROOT, &key].concat())
+            .get(&vec![IDSTORE_ROOT, key].concat())
             .map_err(|e| ManyError::unknown(e.to_string()))
     }
 
@@ -402,36 +405,52 @@ impl LedgerStorage {
     ) -> Result<(CredentialId, PublicKey), ManyError> {
         let recall_phrase_cbor = minicbor::to_vec(&recall_phrase)
             .map_err(|e| ManyError::serialization_error(e.to_string()))?;
-        if let Some(value) = self.get_from_storage(recall_phrase_cbor)? {
+        if let Some(value) = self.get_from_storage(&recall_phrase_cbor)? {
             let value: Vec<Vec<u8>> = minicbor::decode(&value)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-            if value.len() != 2 {
-                return Err(ManyError::unknown("Missing data from storage".to_string()));
-            }
-
             Ok((
-                CredentialId(value[0].clone().into()),
-                PublicKey(value[1].clone().into()),
+                CredentialId(
+                    value
+                        .first()
+                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .clone()
+                        .into(),
+                ),
+                PublicKey(
+                    value
+                        .last()
+                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .clone()
+                        .into(),
+                ),
             ))
         } else {
-            Err(idstore::entry_not_found(recall_phrase.join(" ")))
+                Err(idstore::entry_not_found(recall_phrase.join(" ")))
         }
     }
 
     pub fn get_from_address(
         &self,
-        address: Identity,
+        address: &Identity,
     ) -> Result<(CredentialId, PublicKey), ManyError> {
-        if let Some(value) = self.get_from_storage(address.to_vec())? {
+        if let Some(value) = self.get_from_storage(&address.to_vec())? {
             let value: Vec<Vec<u8>> = minicbor::decode(&value)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-            if value.len() != 2 {
-                return Err(ManyError::unknown("Missing data from storage".to_string()));
-            }
-
             Ok((
-                CredentialId(value[0].clone().into()),
-                PublicKey(value[1].clone().into()),
+                CredentialId(
+                    value
+                        .first()
+                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .clone()
+                        .into(),
+                ),
+                PublicKey(
+                    value
+                        .last()
+                        .ok_or(ManyError::unknown("Missing data from storage".to_string()))?
+                        .clone()
+                        .into(),
+                ),
             ))
         } else {
             Err(idstore::entry_not_found(address.to_string()))

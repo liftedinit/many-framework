@@ -384,7 +384,7 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
         .map_err(|_| idstore::recall_phrase_generation_failed())?;
 
         self.storage
-            .store(&recall_phrase, address, cred_id, public_key.0.into())?;
+            .store(&recall_phrase, &address, cred_id, public_key)?;
         Ok(StoreReturns(recall_phrase))
     }
 
@@ -400,7 +400,7 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
     }
 
     fn get_from_address(&self, args: GetFromAddressArgs) -> Result<GetReturns, ManyError> {
-        let (cred_id, public_key) = self.storage.get_from_address(args.0)?;
+        let (cred_id, public_key) = self.storage.get_from_address(&args.0)?;
         Ok(GetReturns {
             cred_id,
             public_key,
