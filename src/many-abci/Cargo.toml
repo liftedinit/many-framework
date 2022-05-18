@@ -15,8 +15,8 @@ coset = "0.3"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "https://github.com/fmorency/many-rs.git", rev = "352003347825c06328cf92a12518f9b01aa3db69" }
-many-client = { git = "https://github.com/fmorency/many-rs.git", rev = "352003347825c06328cf92a12518f9b01aa3db69" }
+many = { git = "https://github.com/fmorency/many-rs.git", rev = "1a7d0466cd21985a703947e33318a778a265c695" }
+many-client = { git = "https://github.com/fmorency/many-rs.git", rev = "1a7d0466cd21985a703947e33318a778a265c695" }
 reqwest = "0.11.6"
 sha2 = "0.10.1"
 signal-hook = "0.3.13"
