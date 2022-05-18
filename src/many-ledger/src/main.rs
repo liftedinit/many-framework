@@ -1,6 +1,6 @@
 use clap::Parser;
 use many::server::module::{abci_backend, idstore, ledger};
-use many::server::ManyServer;
+use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
 use std::net::SocketAddr;
@@ -49,6 +49,12 @@ struct Opts {
     /// If this is not specified the initial state will not be used.
     #[clap(long, short)]
     clean: bool,
+
+    /// Application absolute URLs allowed to communicate with this server. Any
+    /// application will be able to communicate with this server if left empty.
+    /// Multiple occurences of this argument can be given.
+    #[clap(long)]
+    allow_origin: Option<Vec<ManyUrl>>,
 }
 
 fn main() {
@@ -61,6 +67,7 @@ fn main() {
         mut state,
         persistent,
         clean,
+        allow_origin,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -80,7 +87,7 @@ fn main() {
     if clean {
         // Delete the persistent storage.
         // Ignore NotFound errors.
-        [persistent.as_path() /*idstorage.as_path()*/].map(|e| match std::fs::remove_dir_all(e) {
+        match std::fs::remove_dir_all(persistent.as_path()) {
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => {
@@ -106,6 +113,7 @@ fn main() {
         "many-ledger",
         key,
         Some(std::env!("CARGO_PKG_VERSION").to_string()),
+        allow_origin,
     );
 
     {
