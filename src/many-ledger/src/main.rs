@@ -93,7 +93,7 @@ fn main() {
             Err(e) => {
                 panic!("Error: {}", e)
             }
-        });
+        }
     } else if persistent.exists() {
         // Initial state is ignored.
         state = None;
