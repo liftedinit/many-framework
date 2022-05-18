@@ -1703,7 +1703,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=9b7ca95163e38638703a4db46c1d4aa82b99a38d#9b7ca95163e38638703a4db46c1d4aa82b99a38d"
+source = "git+https://github.com/fmorency/many-rs.git?rev=352003347825c06328cf92a12518f9b01aa3db69#352003347825c06328cf92a12518f9b01aa3db69"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1730,6 +1730,7 @@ dependencies = [
  "p256",
  "pem",
  "pkcs8 0.8.0",
+ "rand 0.7.3",
  "rand 0.8.5",
  "regex",
  "reqwest",
@@ -1776,7 +1777,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=9b7ca95163e38638703a4db46c1d4aa82b99a38d#9b7ca95163e38638703a4db46c1d4aa82b99a38d"
+source = "git+https://github.com/fmorency/many-rs.git?rev=352003347825c06328cf92a12518f9b01aa3db69#352003347825c06328cf92a12518f9b01aa3db69"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1845,6 +1846,7 @@ dependencies = [
  "async-trait",
  "bip39-dict",
  "clap 3.1.18",
+ "coset",
  "fixed",
  "fmerk",
  "hex",
@@ -1873,7 +1875,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=9b7ca95163e38638703a4db46c1d4aa82b99a38d#9b7ca95163e38638703a4db46c1d4aa82b99a38d"
+source = "git+https://github.com/fmorency/many-rs.git?rev=352003347825c06328cf92a12518f9b01aa3db69#352003347825c06328cf92a12518f9b01aa3db69"
 dependencies = [
  "inflections",
  "proc-macro2",

@@ -1,5 +1,6 @@
 use crate::{error, storage::LedgerStorage};
 use bip39_dict::Entropy;
+use coset::{CborSerializable, CoseKey};
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
@@ -340,7 +341,11 @@ pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
 impl IdStoreModuleBackend for LedgerModuleImpl {
     fn store(
         &mut self,
-        StoreArgs { address, cred_id }: StoreArgs,
+        StoreArgs {
+            address,
+            cred_id,
+            public_key,
+        }: StoreArgs,
     ) -> Result<StoreReturns, ManyError> {
         if !address.is_public_key() {
             return Err(idstore::invalid_address(address.to_string()));
@@ -349,6 +354,9 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
         if !(16..=1023).contains(&cred_id.0.len()) {
             return Err(idstore::invalid_credential_id(hex::encode(&*cred_id.0)));
         }
+
+        let _: CoseKey = CoseKey::from_slice(&public_key.0)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
         let recall_phrase = retry_with_index(Fixed::from_millis(10), |current_try| {
             if current_try > 8 {
@@ -375,7 +383,8 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
         })
         .map_err(|_| idstore::recall_phrase_generation_failed())?;
 
-        self.storage.store(&recall_phrase, address, cred_id)?;
+        self.storage
+            .store(&recall_phrase, address, cred_id, public_key.0.into())?;
         Ok(StoreReturns(recall_phrase))
     }
 
@@ -383,42 +392,51 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
         &self,
         args: GetFromRecallPhraseArgs,
     ) -> Result<GetReturns, ManyError> {
-        Ok(GetReturns(self.storage.get_from_recall_phrase(&args.0)?))
+        let (cred_id, public_key) = self.storage.get_from_recall_phrase(&args.0)?;
+        Ok(GetReturns {
+            cred_id,
+            public_key,
+        })
     }
 
     fn get_from_address(&self, args: GetFromAddressArgs) -> Result<GetReturns, ManyError> {
-        Ok(GetReturns(self.storage.get_from_address(args.0)?))
+        let (cred_id, public_key) = self.storage.get_from_address(args.0)?;
+        Ok(GetReturns {
+            cred_id,
+            public_key,
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use many::server::module::idstore::CredentialId;
+    use super::*;
+    use many::{
+        server::module::idstore::{CredentialId, PublicKey},
+        types::identity::{cose::testsutils::generate_random_eddsa_identity, CoseKeyIdentity},
+    };
     use minicbor::bytes::ByteVec;
 
-    use super::*;
-
-    fn setup() -> (Identity, CredentialId, tempfile::TempDir) {
-        let address =
-            Identity::from_str("maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp").unwrap();
+    fn setup() -> (CoseKeyIdentity, CredentialId, tempfile::TempDir) {
+        let id = generate_random_eddsa_identity();
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 16])));
         let persistent = tempfile::tempdir().unwrap();
 
-        (address, cred_id, persistent)
+        (id, cred_id, persistent)
     }
 
     #[test]
     fn idstore_store() {
-        let (address, cred_id, persistent) = setup();
+        let (id, cred_id, persistent) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
         let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
 
         // Try storing the same credential until we reach 5 words
         for i in 2..=5 {
             let result = module_impl.store(StoreArgs {
-                address,
+                address: id.identity,
                 cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
             });
             assert!(result.is_ok());
             let recall_phrase = result.unwrap().0;
@@ -426,7 +444,11 @@ mod tests {
         }
 
         // Make sure we abort after reaching 5 words
-        let result = module_impl.store(StoreArgs { address, cred_id });
+        let result = module_impl.store(StoreArgs {
+            address: id.identity,
+            cred_id,
+            public_key: PublicKey(public_key.into()),
+        });
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code,
@@ -436,11 +458,16 @@ mod tests {
 
     #[test]
     fn idstore_invalid_cred_id() {
-        let (address, _, persistent) = setup();
+        let (id, _, persistent) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
         let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
 
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
-        let result = module_impl.store(StoreArgs { address, cred_id });
+        let result = module_impl.store(StoreArgs {
+            address: id.identity,
+            cred_id,
+            public_key: PublicKey(public_key.clone().into()),
+        });
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code,
@@ -448,7 +475,11 @@ mod tests {
         );
 
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 1024])));
-        let result = module_impl.store(StoreArgs { address, cred_id });
+        let result = module_impl.store(StoreArgs {
+            address: id.identity,
+            cred_id,
+            public_key: PublicKey(public_key.into()),
+        });
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code,
@@ -458,11 +489,13 @@ mod tests {
 
     #[test]
     fn idstore_get_from_recall_phrase() {
-        let (address, cred_id, persistent) = setup();
+        let (id, cred_id, persistent) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
         let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
         let result = module_impl.store(StoreArgs {
-            address,
+            address: id.identity,
             cred_id: cred_id.clone(),
+            public_key: PublicKey(public_key.clone().into()),
         });
 
         assert!(result.is_ok());
@@ -472,24 +505,28 @@ mod tests {
         assert!(result.is_ok());
         let get_returns = result.unwrap();
 
-        assert_eq!(get_returns.0, cred_id);
+        assert_eq!(get_returns.cred_id, cred_id);
+        assert_eq!(get_returns.public_key.0.to_vec(), public_key);
     }
 
     #[test]
     fn idstore_get_from_address() {
-        let (address, cred_id, persistent) = setup();
+        let (id, cred_id, persistent) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
         let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
         let result = module_impl.store(StoreArgs {
-            address,
+            address: id.identity,
             cred_id: cred_id.clone(),
+            public_key: PublicKey(public_key.clone().into()),
         });
 
         assert!(result.is_ok());
 
-        let result = module_impl.get_from_address(GetFromAddressArgs(address));
+        let result = module_impl.get_from_address(GetFromAddressArgs(id.identity));
         assert!(result.is_ok());
         let get_returns = result.unwrap();
 
-        assert_eq!(get_returns.0, cred_id);
+        assert_eq!(get_returns.cred_id, cred_id);
+        assert_eq!(get_returns.public_key.0.to_vec(), public_key);
     }
 }
