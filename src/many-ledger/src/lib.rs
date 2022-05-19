@@ -1,3 +1,5 @@
+extern crate core;
+
 use crate::storage::key_for_account_balance;
 use many::types::ledger::{Symbol, TokenAmount};
 use many::Identity;

@@ -1,8 +1,10 @@
 use crate::error;
+use core::slice::SlicePattern;
 use many::message::ResponseMessage;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::server::module::account;
 use many::server::module::account::features::multisig;
+use many::server::module::account::features::multisig::SubmitTransactionArgs;
 use many::server::module::account::features::FeatureInfo;
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo};
 use many::types::{CborRange, SortOrder, Timestamp};
@@ -906,42 +908,44 @@ impl LedgerStorage {
                 to,
                 symbol,
                 amount,
-            } => {
-                self.send(from, to, symbol, amount.clone())?;
-
-                Ok(ResponseMessage {
-                    from: *from,
-                    to: None,
-                    ..Default::default()
-                })
-            }
-            // TransactionInfo::MultisigSubmit {
-            //     submitter,
-            //     account,
-            //     memo,
-            //     transaction,
-            //     token,
-            //     threshold,
-            //     timeout,
-            //     execute_automatically,
-            //     data,
-            // } => {
-            //     if let Some(m) = self.multisig_module {
-            //         m.multisig_submit_transaction()
-            //     }
-            // }
-            // TransactionInfo::MultisigApprove { .. } => {}
-            // TransactionInfo::MultisigRevoke { .. } => {}
-            // TransactionInfo::MultisigExecute { .. } => {}
-            // TransactionInfo::MultisigWithdraw { .. } => {}
+            } => self.send(from, to, symbol, amount.clone()).map(|_| vec![]),
+            TransactionInfo::MultisigSubmit {
+                // submitter,
+                account,
+                memo,
+                transaction,
+                // token,
+                threshold,
+                // timeout,
+                // execute_automatically,
+                data,
+                ..
+            } => self.create_multisig_transaction(
+                &storage.account,
+                SubmitTransactionArgs {
+                    account: Some(*account),
+                    memo: memo.clone(),
+                    transaction: transaction.as_ref().clone(),
+                    threshold: Some(*threshold),
+                    timeout_in_secs: None,
+                    execute_automatically: None,
+                    data: data.clone(),
+                },
+            ),
+            TransactionInfo::MultisigApprove { token, .. } => self
+                .approve_multisig(&storage.account, token.as_slice())
+                .map(|_| vec![]),
+            TransactionInfo::MultisigRevoke { .. } => {}
+            TransactionInfo::MultisigExecute { .. } => {}
+            TransactionInfo::MultisigWithdraw { .. } => {}
             TransactionInfo::MultisigSetDefaults {
                 account,
                 threshold,
                 timeout_in_secs,
                 execute_automatically,
                 ..
-            } => {
-                self.set_multisig_defaults(
+            } => self
+                .set_multisig_defaults(
                     &storage.account,
                     multisig::SetDefaultsArgs {
                         account: *account,
@@ -949,18 +953,18 @@ impl LedgerStorage {
                         timeout_in_secs: *timeout_in_secs,
                         execute_automatically: *execute_automatically,
                     },
-                )?;
-                Ok(ResponseMessage {
-                    from: storage.account,
-                    to: None,
-                    ..Default::default()
-                })
-            }
+                )
+                .map(|_| vec![]),
             _ => Err(multisig::errors::transaction_type_unsupported()),
-        }?;
+        };
         self.delete_multisig_transaction(tx_id)?;
 
-        Ok(result)
+        Ok(ResponseMessage {
+            from: storage.account,
+            to: None,
+            data: result.map(|_| vec![]),
+            ..Default::default()
+        })
     }
 }
 
