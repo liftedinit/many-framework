@@ -468,6 +468,25 @@ mod tests {
     }
 
     #[test]
+    fn idstore_store_anon() {
+        let (id, _, persistent) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
+        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
+        let result = module_impl.store(
+            &Identity::anonymous(),
+            StoreArgs {
+                address: id.identity,
+                cred_id,
+                public_key: PublicKey(public_key.into()),
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().code, ManyError::invalid_identity().code);
+    }
+
+    #[test]
     fn idstore_invalid_cred_id() {
         let (id, _, persistent) = setup();
         let public_key = id.key.unwrap().to_vec().unwrap();
