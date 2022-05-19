@@ -24,7 +24,7 @@ pub struct TransactionStorage {
     pub account: Identity,
 
     #[n(1)]
-    pub info: account::features::multisig::InfoReturn,
+    pub info: multisig::InfoReturn,
 }
 
 impl TransactionStorage {
@@ -48,7 +48,7 @@ pub struct AccountStorage {
     account: account::Account,
 
     #[n(2)]
-    transactions_in_flight: Vec<account::features::multisig::InfoReturn>,
+    transactions_in_flight: Vec<multisig::InfoReturn>,
 }
 
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
@@ -513,10 +513,7 @@ impl LedgerStorage {
         let id = self.new_account_id();
 
         // Set the multisig threshold properly.
-        if let Ok(mut multisig) = account
-            .features
-            .get::<account::features::multisig::MultisigAccountFeature>()
-        {
+        if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
             multisig.arg.threshold = Some(
                 multisig.arg.threshold.unwrap_or(
                     account
@@ -567,22 +564,28 @@ impl LedgerStorage {
         }
 
         // Set the multisig threshold properly.
-        if let Ok(mut multisig) = account
-            .features
-            .get::<account::features::multisig::MultisigAccountFeature>()
-        {
+        if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
             if let Some(threshold) = args.threshold {
                 multisig.arg.threshold = Some(threshold);
             }
-            if let Some(timeout_in_secs) = args.timeout_in_secs {
-                multisig.arg.timeout_in_secs =
-                    Some(timeout_in_secs.min(MULTISIG_MAXIMUM_TIMEOUT_IN_SECS));
+            let timeout_in_secs = args
+                .timeout_in_secs
+                .map(|t| t.min(MULTISIG_MAXIMUM_TIMEOUT_IN_SECS));
+            if let Some(timeout_in_secs) = timeout_in_secs {
+                multisig.arg.timeout_in_secs = Some(timeout_in_secs);
             }
             if let Some(execute_automatically) = args.execute_automatically {
                 multisig.arg.execute_automatically = Some(execute_automatically);
             }
 
             account.features.insert(multisig.as_feature());
+            self.add_transaction(TransactionInfo::MultisigSetDefaults {
+                submitter: Some(*sender),
+                account: args.account,
+                threshold: args.threshold,
+                timeout_in_secs,
+                execute_automatically: args.execute_automatically,
+            });
             self.commit_account(&args.account, account)?;
         }
         Ok(())
@@ -699,9 +702,7 @@ impl LedgerStorage {
         if !(is_owner || account.has_role(sender, MULTISIG_ROLE_CAN_SUBMIT)) {
             return Err(account::errors::user_needs_role(MULTISIG_ROLE_CAN_SUBMIT));
         }
-        let multisig_f = account
-            .features
-            .get::<account::features::multisig::MultisigAccountFeature>()?;
+        let multisig_f = account.features.get::<multisig::MultisigAccountFeature>()?;
 
         let threshold = match arg.threshold {
             Some(t) if is_owner => t,
@@ -741,10 +742,10 @@ impl LedgerStorage {
             }
         }
 
-        let timeout = Timestamp(time + Duration::from_secs(timeout_in_secs));
+        let timeout = Timestamp::from(time + Duration::from_secs(timeout_in_secs));
         let storage = TransactionStorage {
             account: account_id,
-            info: account::features::multisig::InfoReturn {
+            info: multisig::InfoReturn {
                 memo: arg.memo.clone(),
                 transaction: arg.transaction.clone(),
                 submitter: *sender,
@@ -762,7 +763,7 @@ impl LedgerStorage {
             account: account_id,
             memo: arg.memo,
             transaction: Box::new(arg.transaction),
-            token: tx_id.0.to_vec().into(),
+            token: Some(tx_id.0.clone()),
             threshold,
             timeout,
             execute_automatically,
@@ -777,7 +778,7 @@ impl LedgerStorage {
             .persistent_store
             .get(&key_for_multisig_transaction(tx_id))
             .unwrap_or(None)
-            .ok_or_else(account::features::multisig::errors::transaction_cannot_be_found)?;
+            .ok_or_else(multisig::errors::transaction_cannot_be_found)?;
         minicbor::decode::<TransactionStorage>(&storage_bytes)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))
     }
@@ -789,7 +790,7 @@ impl LedgerStorage {
         if let Some(info) = storage.info.approvers.get_mut(sender) {
             info.approved = true;
         } else {
-            return Err(account::features::multisig::errors::user_cannot_approve_transaction());
+            return Err(multisig::errors::user_cannot_approve_transaction());
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
@@ -820,7 +821,7 @@ impl LedgerStorage {
         if let Some(info) = storage.info.approvers.get_mut(sender) {
             info.approved = false;
         } else {
-            return Err(account::features::multisig::errors::user_cannot_approve_transaction());
+            return Err(multisig::errors::user_cannot_approve_transaction());
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
@@ -857,7 +858,7 @@ impl LedgerStorage {
             });
             Ok(response)
         } else {
-            Err(account::features::multisig::errors::cannot_execute_transaction())
+            Err(multisig::errors::cannot_execute_transaction())
         }
     }
 
@@ -870,7 +871,7 @@ impl LedgerStorage {
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         if !(account.has_role(sender, "owner") || storage.info.submitter == *sender) {
-            return Err(account::features::multisig::errors::cannot_execute_transaction());
+            return Err(multisig::errors::cannot_execute_transaction());
         }
 
         self.delete_multisig_transaction(tx_id)?;
@@ -899,14 +900,13 @@ impl LedgerStorage {
         tx_id: &[u8],
         storage: &TransactionStorage,
     ) -> Result<ResponseMessage, ManyError> {
-        match &storage.info.transaction {
+        let result = match &storage.info.transaction {
             TransactionInfo::Send {
                 from,
                 to,
                 symbol,
                 amount,
             } => {
-                self.delete_multisig_transaction(tx_id)?;
                 self.send(from, to, symbol, amount.clone())?;
 
                 Ok(ResponseMessage {
@@ -915,8 +915,52 @@ impl LedgerStorage {
                     ..Default::default()
                 })
             }
-            _ => Err(account::features::multisig::errors::transaction_type_unsupported()),
-        }
+            // TransactionInfo::MultisigSubmit {
+            //     submitter,
+            //     account,
+            //     memo,
+            //     transaction,
+            //     token,
+            //     threshold,
+            //     timeout,
+            //     execute_automatically,
+            //     data,
+            // } => {
+            //     if let Some(m) = self.multisig_module {
+            //         m.multisig_submit_transaction()
+            //     }
+            // }
+            // TransactionInfo::MultisigApprove { .. } => {}
+            // TransactionInfo::MultisigRevoke { .. } => {}
+            // TransactionInfo::MultisigExecute { .. } => {}
+            // TransactionInfo::MultisigWithdraw { .. } => {}
+            TransactionInfo::MultisigSetDefaults {
+                account,
+                threshold,
+                timeout_in_secs,
+                execute_automatically,
+                ..
+            } => {
+                self.set_multisig_defaults(
+                    &storage.account,
+                    multisig::SetDefaultsArgs {
+                        account: *account,
+                        threshold: *threshold,
+                        timeout_in_secs: *timeout_in_secs,
+                        execute_automatically: *execute_automatically,
+                    },
+                )?;
+                Ok(ResponseMessage {
+                    from: storage.account,
+                    to: None,
+                    ..Default::default()
+                })
+            }
+            _ => Err(multisig::errors::transaction_type_unsupported()),
+        }?;
+        self.delete_multisig_transaction(tx_id)?;
+
+        Ok(result)
     }
 }
 

@@ -223,7 +223,11 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
 }
 
 impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
-    fn send(&mut self, sender: &Identity, args: ledger::SendArgs) -> Result<(), ManyError> {
+    fn send(
+        &mut self,
+        sender: &Identity,
+        args: ledger::SendArgs,
+    ) -> Result<EmptyReturn, ManyError> {
         let ledger::SendArgs {
             from,
             to,
@@ -239,7 +243,7 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
         }
 
         self.storage.send(from, &to, &symbol, amount)?;
-        Ok(())
+        Ok(EmptyReturn)
     }
 }
 
