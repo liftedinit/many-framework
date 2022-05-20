@@ -519,8 +519,7 @@ impl LedgerStorage {
             from: *from,
             to: *to,
             symbol: *symbol,
-                amount,
-            },
+            amount,
         });
 
         if !self.blockchain {
