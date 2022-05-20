@@ -1694,7 +1694,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=adbb9cdd242e19f828c888337423b2dcb1824f3c#adbb9cdd242e19f828c888337423b2dcb1824f3c"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=dbd5f45489ff2e2ce81af282c2466b3a608793b8#dbd5f45489ff2e2ce81af282c2466b3a608793b8"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1722,6 +1722,7 @@ dependencies = [
  "p256",
  "pem",
  "pkcs8 0.8.0",
+ "rand 0.7.3",
  "rand 0.8.5",
  "regex",
  "reqwest",
@@ -1769,7 +1770,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=adbb9cdd242e19f828c888337423b2dcb1824f3c#adbb9cdd242e19f828c888337423b2dcb1824f3c"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=dbd5f45489ff2e2ce81af282c2466b3a608793b8#dbd5f45489ff2e2ce81af282c2466b3a608793b8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1863,7 +1864,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=adbb9cdd242e19f828c888337423b2dcb1824f3c#adbb9cdd242e19f828c888337423b2dcb1824f3c"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=dbd5f45489ff2e2ce81af282c2466b3a608793b8#dbd5f45489ff2e2ce81af282c2466b3a608793b8"
 dependencies = [
  "inflections",
  "proc-macro2",

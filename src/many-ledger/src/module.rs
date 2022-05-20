@@ -48,14 +48,17 @@ fn filter_transaction_kind<'a>(
 
 fn filter_symbol<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    symbol: Option<VecOrSingle<String>>,
+    symbol: Option<VecOrSingle<Identity>>,
 ) -> Box<dyn Iterator<Item = TxResult> + 'a> {
     if let Some(s) = symbol {
-        let s: Vec<String> = s.into();
+        let s: Vec<Identity> = s.into();
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(t) => s.contains(t.symbol()),
+            Ok(t) => match t.symbol() {
+                None => false,
+                Some(t) => s.contains(t),
+            },
         }))
     } else {
         it
