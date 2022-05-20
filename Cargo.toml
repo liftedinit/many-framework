@@ -9,6 +9,11 @@ members = [
     "src/many-ledger",
 ]
 
+[profile.release]
+strip = true  # Strip debug info from release build
+lto = true  # Perform "fat" LTO
+codegen-units = 1 # Improve the performance of the generated code at the cost of compile time
+
 # [patch."https://github.com/the-lifted-initiative/many-rs.git"]
 # many = { path = "../many-rs/src/many" }
 # many-cli = { path = "../many-rs/src/many-cli" }
