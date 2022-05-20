@@ -11,8 +11,8 @@ doc = false
 clap = { version = "3.0.0", features = ["derive"] }
 hex = "0.4.3"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "adbb9cdd242e19f828c888337423b2dcb1824f3c" }
-many-client = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "adbb9cdd242e19f828c888337423b2dcb1824f3c" }
+many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "dbd5f45489ff2e2ce81af282c2466b3a608793b8" }
+many-client = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "dbd5f45489ff2e2ce81af282c2466b3a608793b8" }
 many-kvstore = { path = "../many-kvstore" }
 tracing = "0.1.29"
 tracing-subscriber = "0.3.3"
