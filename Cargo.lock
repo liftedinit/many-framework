@@ -1709,7 +1709,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=50fe33f5d11a1d1bb50b4919c43f89f774896946#50fe33f5d11a1d1bb50b4919c43f89f774896946"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=f3864ed6b066458e027506d7b62b327c2d708337#f3864ed6b066458e027506d7b62b327c2d708337"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1785,7 +1785,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=50fe33f5d11a1d1bb50b4919c43f89f774896946#50fe33f5d11a1d1bb50b4919c43f89f774896946"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=f3864ed6b066458e027506d7b62b327c2d708337#f3864ed6b066458e027506d7b62b327c2d708337"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1883,7 +1883,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=50fe33f5d11a1d1bb50b4919c43f89f774896946#50fe33f5d11a1d1bb50b4919c43f89f774896946"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=f3864ed6b066458e027506d7b62b327c2d708337#f3864ed6b066458e027506d7b62b327c2d708337"
 dependencies = [
  "inflections",
  "proc-macro2",

@@ -2,7 +2,7 @@ use crate::error;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::server::module::idstore;
 use many::server::module::idstore::{CredentialId, PublicKey, RecallPhrase};
-use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId};
+use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo};
 use many::types::{CborRange, SortOrder};
 use many::{Identity, ManyError};
 use std::cmp::Ordering;
@@ -309,14 +309,16 @@ impl LedgerStorage {
 
         let id = self.new_transaction_id();
 
-        self.add_transaction(Transaction::send(
+        self.add_transaction(Transaction {
             id,
-            self.current_time.unwrap_or_else(SystemTime::now),
-            *from,
-            *to,
-            symbol.to_string(),
-            amount,
-        ));
+            time: self.current_time.unwrap_or_else(SystemTime::now).into(),
+            content: TransactionInfo::Send {
+                from: *from,
+                to: *to,
+                symbol: *symbol,
+                amount,
+            },
+        });
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
