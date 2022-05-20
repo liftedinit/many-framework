@@ -1,12 +1,13 @@
 use crate::error;
-use core::slice::SlicePattern;
 use many::message::ResponseMessage;
+use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::server::module::account;
 use many::server::module::account::features::multisig;
-use many::server::module::account::features::multisig::SubmitTransactionArgs;
 use many::server::module::account::features::FeatureInfo;
-use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo};
+use many::types::ledger::{
+    AccountMultisigTransaction, Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo,
+};
 use many::types::{CborRange, SortOrder, Timestamp};
 use many::{Identity, ManyError};
 use std::cmp::Ordering;
@@ -18,6 +19,33 @@ use tracing::info;
 
 const MULTISIG_ROLE_CAN_APPROVE: &str = "canMultisigApprove";
 const MULTISIG_ROLE_CAN_SUBMIT: &str = "canMultisigSubmit";
+
+fn _execute_multisig_tx(
+    ledger: &mut LedgerStorage,
+    _tx_id: &[u8],
+    storage: &TransactionStorage,
+) -> Result<Vec<u8>, ManyError> {
+    match &storage.info.transaction {
+        AccountMultisigTransaction::Send(module::ledger::SendArgs {
+            from: _from,
+            to,
+            symbol,
+            amount,
+        }) => ledger
+            .send(&storage.account, to, symbol, amount.clone())
+            .map(|_| vec![]),
+
+        AccountMultisigTransaction::AccountMultisigSubmit(arg) => ledger
+            .create_multisig_transaction(&storage.account, arg.clone())
+            .map(|_| vec![]),
+
+        AccountMultisigTransaction::AccountMultisigSetDefaults(arg) => ledger
+            .set_multisig_defaults(&storage.account, arg.clone())
+            .map(|_| vec![]),
+
+        _ => Err(multisig::errors::transaction_type_unsupported()),
+    }
+}
 
 #[derive(minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
@@ -581,8 +609,8 @@ impl LedgerStorage {
             }
 
             account.features.insert(multisig.as_feature());
-            self.add_transaction(TransactionInfo::MultisigSetDefaults {
-                submitter: Some(*sender),
+            self.add_transaction(TransactionInfo::AccountMultisigSetDefaults {
+                submitter: *sender,
                 account: args.account,
                 threshold: args.threshold,
                 timeout_in_secs,
@@ -673,23 +701,13 @@ impl LedgerStorage {
     ) -> Result<Vec<u8>, ManyError> {
         let tx_id = self.new_transaction_id();
 
-        let account_id = arg
-            .account
-            .or(match &arg.transaction {
-                TransactionInfo::Send { from, .. } => Some(*from),
-                _ => None,
-            })
-            .ok_or_else(|| {
-                ManyError::unknown(
-                    "Could not find an account to initiate the transaction.".to_string(),
-                )
-            })?;
+        let account_id = arg.account;
 
         // Validate the transaction's information.
         #[allow(clippy::single_match)]
-        match &arg.transaction {
-            TransactionInfo::Send { from, .. } => {
-                if from != &account_id {
+        match arg.transaction.as_ref() {
+            AccountMultisigTransaction::Send(module::ledger::SendArgs { from, .. }) => {
+                if from.as_ref() != Some(&account_id) {
                     return Err(ManyError::unknown("Invalid transaction.".to_string()));
                 }
             }
@@ -749,7 +767,7 @@ impl LedgerStorage {
             account: account_id,
             info: multisig::InfoReturn {
                 memo: arg.memo.clone(),
-                transaction: arg.transaction.clone(),
+                transaction: arg.transaction.as_ref().clone(),
                 submitter: *sender,
                 approvers,
                 threshold,
@@ -760,11 +778,11 @@ impl LedgerStorage {
         };
 
         self.commit_multisig_transaction(tx_id.0.as_slice(), &storage)?;
-        self.add_transaction(TransactionInfo::MultisigSubmit {
+        self.add_transaction(TransactionInfo::AccountMultisigSubmit {
             submitter: *sender,
             account: account_id,
             memo: arg.memo,
-            transaction: Box::new(arg.transaction),
+            transaction: Box::new(*arg.transaction),
             token: Some(tx_id.0.clone()),
             threshold,
             timeout,
@@ -796,7 +814,7 @@ impl LedgerStorage {
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
-        self.add_transaction(TransactionInfo::MultisigApprove {
+        self.add_transaction(TransactionInfo::AccountMultisigApprove {
             account: storage.account,
             token: tx_id.to_vec().into(),
             approver: *sender,
@@ -805,10 +823,10 @@ impl LedgerStorage {
         // If the transaction executes automatically, calculate number of approvers.
         if storage.info.execute_automatically && storage.should_execute() {
             self.execute_multisig_transaction_internal(tx_id, &storage)?;
-            self.add_transaction(TransactionInfo::MultisigExecute {
+            self.add_transaction(TransactionInfo::AccountMultisigExecute {
                 account: storage.account,
                 token: tx_id.to_vec().into(),
-                executer: None,
+                executer: Identity::anonymous(),
             });
             return Ok(true);
         }
@@ -827,7 +845,7 @@ impl LedgerStorage {
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
-        self.add_transaction(TransactionInfo::MultisigRevoke {
+        self.add_transaction(TransactionInfo::AccountMultisigRevoke {
             account: storage.account,
             token: tx_id.to_vec().into(),
             revoker: *sender,
@@ -853,10 +871,10 @@ impl LedgerStorage {
 
         if storage.should_execute() {
             let response = self.execute_multisig_transaction_internal(tx_id, &storage)?;
-            self.add_transaction(TransactionInfo::MultisigExecute {
+            self.add_transaction(TransactionInfo::AccountMultisigExecute {
                 account: storage.account,
                 token: tx_id.to_vec().into(),
-                executer: Some(*sender),
+                executer: *sender,
             });
             Ok(response)
         } else {
@@ -877,7 +895,7 @@ impl LedgerStorage {
         }
 
         self.delete_multisig_transaction(tx_id)?;
-        self.add_transaction(TransactionInfo::MultisigWithdraw {
+        self.add_transaction(TransactionInfo::AccountMultisigWithdraw {
             account: storage.account,
             token: tx_id.to_vec().into(),
             withdrawer: *sender,
@@ -902,67 +920,13 @@ impl LedgerStorage {
         tx_id: &[u8],
         storage: &TransactionStorage,
     ) -> Result<ResponseMessage, ManyError> {
-        let result = match &storage.info.transaction {
-            TransactionInfo::Send {
-                from,
-                to,
-                symbol,
-                amount,
-            } => self.send(from, to, symbol, amount.clone()).map(|_| vec![]),
-            TransactionInfo::MultisigSubmit {
-                // submitter,
-                account,
-                memo,
-                transaction,
-                // token,
-                threshold,
-                // timeout,
-                // execute_automatically,
-                data,
-                ..
-            } => self.create_multisig_transaction(
-                &storage.account,
-                SubmitTransactionArgs {
-                    account: Some(*account),
-                    memo: memo.clone(),
-                    transaction: transaction.as_ref().clone(),
-                    threshold: Some(*threshold),
-                    timeout_in_secs: None,
-                    execute_automatically: None,
-                    data: data.clone(),
-                },
-            ),
-            TransactionInfo::MultisigApprove { token, .. } => self
-                .approve_multisig(&storage.account, token.as_slice())
-                .map(|_| vec![]),
-            TransactionInfo::MultisigRevoke { .. } => {}
-            TransactionInfo::MultisigExecute { .. } => {}
-            TransactionInfo::MultisigWithdraw { .. } => {}
-            TransactionInfo::MultisigSetDefaults {
-                account,
-                threshold,
-                timeout_in_secs,
-                execute_automatically,
-                ..
-            } => self
-                .set_multisig_defaults(
-                    &storage.account,
-                    multisig::SetDefaultsArgs {
-                        account: *account,
-                        threshold: *threshold,
-                        timeout_in_secs: *timeout_in_secs,
-                        execute_automatically: *execute_automatically,
-                    },
-                )
-                .map(|_| vec![]),
-            _ => Err(multisig::errors::transaction_type_unsupported()),
-        };
+        let result = _execute_multisig_tx(self, tx_id, storage);
         self.delete_multisig_transaction(tx_id)?;
 
         Ok(ResponseMessage {
             from: storage.account,
             to: None,
-            data: result.map(|_| vec![]),
+            data: result,
             ..Default::default()
         })
     }

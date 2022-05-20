@@ -1,6 +1,7 @@
 use crate::TargetCommandOpt;
 use clap::Parser;
 use many::message::ResponseMessage;
+use many::server::module;
 use many::server::module::account;
 use many::server::module::account::features::multisig;
 use many::types::ledger;
@@ -115,16 +116,16 @@ fn submit_send(
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let transaction = ledger::TransactionInfo::Send {
-            from: account,
+        let transaction = ledger::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+            from: Some(account),
             to: identity,
             symbol,
             amount: ledger::TokenAmount::from(amount),
-        };
+        });
         let arguments = multisig::SubmitTransactionArgs {
-            account: Some(account),
+            account,
             memo: None,
-            transaction,
+            transaction: Box::new(transaction),
             threshold,
             timeout_in_secs: timeout.map(|d| d.as_secs()),
             execute_automatically,
@@ -160,17 +161,18 @@ fn submit_set_defaults(
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let transaction = ledger::TransactionInfo::MultisigSetDefaults {
-            submitter: None,
-            account: target,
-            threshold: opts.threshold,
-            timeout_in_secs: opts.timeout.map(|d| d.as_secs()),
-            execute_automatically: opts.execute_automatically,
-        };
+        let transaction = ledger::AccountMultisigTransaction::AccountMultisigSetDefaults(
+            multisig::SetDefaultsArgs {
+                account: target,
+                threshold: opts.threshold,
+                timeout_in_secs: opts.timeout.map(|d| d.as_secs()),
+                execute_automatically: opts.execute_automatically,
+            },
+        );
         let arguments = multisig::SubmitTransactionArgs {
-            account: Some(account),
+            account,
             memo: None,
-            transaction,
+            transaction: Box::new(transaction),
             threshold,
             timeout_in_secs: timeout.map(|d| d.as_secs()),
             execute_automatically,
