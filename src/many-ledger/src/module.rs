@@ -25,8 +25,8 @@ fn get_roles_for_account(account: &account::Account) -> BTreeSet<String> {
     let mut roles = BTreeSet::new();
 
     // TODO: somehow keep this list updated with the below.
-    if features.has_id(account::features::multisig::MultisigAccountFeature::ID) {
-        roles.append(&mut account::features::multisig::MultisigAccountFeature::roles());
+    if features.has_id(multisig::MultisigAccountFeature::ID) {
+        roles.append(&mut multisig::MultisigAccountFeature::roles());
     }
     if features.has_id(account::features::ledger::AccountLedger::ID) {
         roles.append(&mut account::features::ledger::AccountLedger::roles());
@@ -39,7 +39,7 @@ fn validate_features_for_account(account: &account::Account) -> Result<(), ManyE
     let features = account.features();
 
     // TODO: somehow keep this list updated with the above.
-    if let Err(e) = features.get::<account::features::multisig::MultisigAccountFeature>() {
+    if let Err(e) = features.get::<multisig::MultisigAccountFeature>() {
         if e.code != ManyErrorCode::AttributeNotFound {
             return Err(e);
         }
