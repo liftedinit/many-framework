@@ -3,6 +3,7 @@ use many::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
 use many::message::ResponseMessage;
 use many::server::module::ledger::{BalanceArgs, BalanceReturns, InfoReturns, SendArgs};
 use many::server::module::r#async::attributes::AsyncAttribute;
+use many::server::module::r#async::{StatusArgs, StatusReturn};
 use many::types::identity::cose::CoseKeyIdentity;
 use many::types::ledger::{Symbol, TokenAmount};
 use many::{Identity, ManyError};
@@ -11,13 +12,16 @@ use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::Duration;
+
+mod multisig;
 
 #[derive(Clone, Debug)]
 #[repr(transparent)]
@@ -97,6 +101,9 @@ enum SubCommand {
 
     /// Send tokens to an account.
     Send(TargetCommandOpt),
+
+    /// Perform a multisig operation.
+    Multisig(multisig::CommandOpt),
 }
 
 #[derive(Parser)]
@@ -113,7 +120,7 @@ struct BalanceOpt {
 }
 
 #[derive(Parser)]
-struct TargetCommandOpt {
+pub(crate) struct TargetCommandOpt {
     /// The account or target identity.
     identity: Identity,
 
@@ -126,7 +133,7 @@ struct TargetCommandOpt {
     symbol: String,
 }
 
-fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, ManyError> {
+pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, ManyError> {
     if let Ok(symbol) = Identity::from_str(&symbol) {
         Ok(symbol)
     } else {
@@ -196,6 +203,64 @@ fn balance(
     }
 }
 
+pub(crate) fn wait_response(
+    client: ManyClient,
+    response: ResponseMessage,
+) -> Result<Vec<u8>, ManyError> {
+    let ResponseMessage {
+        data, attributes, ..
+    } = response;
+
+    let payload = data?;
+    debug!("response: {}", hex::encode(&payload));
+    if payload.is_empty() {
+        let attr = match attributes.get::<AsyncAttribute>() {
+            Ok(attr) => attr,
+            _ => {
+                info!("Empty payload.");
+                return Ok(Vec::new());
+            }
+        };
+        info!("Async token: {}", hex::encode(&attr.token));
+
+        let progress =
+            indicatif::ProgressBar::new_spinner().with_message("Waiting for async response");
+        progress.enable_steady_tick(100);
+
+        // TODO: improve on this by using duration and thread and watchdog.
+        // Wait for the server for ~60 seconds by pinging it every second.
+        for _ in 0..60 {
+            let response = client.call(
+                "async.status",
+                StatusArgs {
+                    token: attr.token.clone(),
+                },
+            )?;
+            let status: StatusReturn = minicbor::decode(&response.data?)
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            match status {
+                StatusReturn::Done { response } => {
+                    progress.finish();
+                    return wait_response(client, *response);
+                }
+                StatusReturn::Expired => {
+                    progress.finish();
+                    info!("Async token expired before we could check it.");
+                    return Ok(Vec::new());
+                }
+                _ => {
+                    std::thread::sleep(Duration::from_secs(1));
+                }
+            }
+        }
+        Err(ManyError::unknown(
+            "Transport timed out waiting for async result.",
+        ))
+    } else {
+        Ok(payload)
+    }
+}
+
 fn send(
     client: ManyClient,
     to: Identity,
@@ -213,19 +278,10 @@ fn send(
             symbol,
             amount: TokenAmount::from(amount),
         };
-        let ResponseMessage {
-            data, attributes, ..
-        } = client.call("ledger.send", arguments)?;
-
-        let payload = data?;
-        if payload.is_empty() {
-            let attr = attributes.get::<AsyncAttribute>()?;
-            info!("Async token: {}", hex::encode(&attr.token));
-            Ok(())
-        } else {
-            minicbor::display(&payload);
-            Ok(())
-        }
+        let response = client.call("ledger.send", arguments)?;
+        let payload = wait_response(client, response)?;
+        println!("{}", minicbor::display(&payload));
+        Ok(())
     }
 }
 
@@ -302,6 +358,7 @@ fn main() {
             amount,
             symbol,
         }) => send(client, identity, amount, symbol),
+        SubCommand::Multisig(opts) => multisig::multisig(client, opts),
     };
 
     if let Err(err) = result {
