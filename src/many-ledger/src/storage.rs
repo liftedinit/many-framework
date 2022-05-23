@@ -23,7 +23,7 @@ const MULTISIG_ROLE_CAN_SUBMIT: &str = "canMultisigSubmit";
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
     _tx_id: &[u8],
-    storage: &TransactionStorage,
+    storage: &MultisigTransactionStorage,
 ) -> Result<Vec<u8>, ManyError> {
     match &storage.info.transaction {
         AccountMultisigTransaction::Send(module::ledger::SendArgs {
@@ -49,7 +49,7 @@ fn _execute_multisig_tx(
 
 #[derive(minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
-pub struct TransactionStorage {
+pub struct MultisigTransactionStorage {
     #[n(0)]
     pub account: Identity,
 
@@ -57,7 +57,7 @@ pub struct TransactionStorage {
     pub info: multisig::InfoReturn,
 }
 
-impl TransactionStorage {
+impl MultisigTransactionStorage {
     pub fn should_execute(&self) -> bool {
         self.info.approvers.values().filter(|i| i.approved).count() >= self.info.threshold as usize
     }
@@ -344,7 +344,7 @@ impl LedgerStorage {
         for (k, v) in it {
             let v = fmerk::tree::Tree::decode(k.to_vec(), v.as_ref());
 
-            let storage: TransactionStorage = minicbor::decode(v.value())
+            let storage: MultisigTransactionStorage = minicbor::decode(v.value())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
             if storage.info.timeout.0 > self.current_time.unwrap_or_else(SystemTime::now) {
@@ -674,7 +674,7 @@ impl LedgerStorage {
     pub fn commit_multisig_transaction(
         &mut self,
         tx_id: &[u8],
-        tx: &TransactionStorage,
+        tx: &MultisigTransactionStorage,
     ) -> Result<(), ManyError> {
         self.persistent_store
             .apply(&[(
@@ -751,19 +751,11 @@ impl LedgerStorage {
         };
         let time = self.current_time.unwrap_or_else(SystemTime::now);
 
-        // Calculate the approver list, set their approvals to false, except for
-        // the sender.
-        let mut approvers = BTreeMap::new();
-        approvers.insert(*sender, multisig::ApproverInfo { approved: true });
-        for (id, roles) in account.roles() {
-            if roles.contains(MULTISIG_ROLE_CAN_APPROVE) || roles.contains(MULTISIG_ROLE_CAN_SUBMIT)
-            {
-                approvers.entry(*id).or_default();
-            }
-        }
+        // Set the approvers list to include the sender as true.
+        let approvers = BTreeMap::from_iter([(*sender, multisig::ApproverInfo { approved: true })]);
 
         let timeout = Timestamp::from(time + Duration::from_secs(timeout_in_secs));
-        let storage = TransactionStorage {
+        let storage = MultisigTransactionStorage {
             account: account_id,
             info: multisig::InfoReturn {
                 memo: arg.memo.clone(),
@@ -793,25 +785,33 @@ impl LedgerStorage {
         Ok(tx_id.0.to_vec())
     }
 
-    pub fn get_multisig_info(&self, tx_id: &[u8]) -> Result<TransactionStorage, ManyError> {
+    pub fn get_multisig_info(&self, tx_id: &[u8]) -> Result<MultisigTransactionStorage, ManyError> {
         let storage_bytes = self
             .persistent_store
             .get(&key_for_multisig_transaction(tx_id))
             .unwrap_or(None)
             .ok_or_else(multisig::errors::transaction_cannot_be_found)?;
-        minicbor::decode::<TransactionStorage>(&storage_bytes)
+        minicbor::decode::<MultisigTransactionStorage>(&storage_bytes)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))
     }
 
     pub fn approve_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<bool, ManyError> {
         let mut storage = self.get_multisig_info(tx_id)?;
 
-        // We only care here about the list of approvers for this specific transaction.
-        if let Some(info) = storage.info.approvers.get_mut(sender) {
-            info.approved = true;
-        } else {
+        let account = self
+            .get_account(&storage.account)
+            .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
+
+        // Validate the right.
+        if !account.has_role(sender, MULTISIG_ROLE_CAN_APPROVE)
+            && !account.has_role(sender, MULTISIG_ROLE_CAN_SUBMIT)
+            && !account.has_role(sender, "owner")
+        {
             return Err(multisig::errors::user_cannot_approve_transaction());
         }
+
+        // Update the entry.
+        storage.info.approvers.entry(*sender).or_default().approved = true;
 
         self.commit_multisig_transaction(tx_id, &storage)?;
         self.add_transaction(TransactionInfo::AccountMultisigApprove {
@@ -837,9 +837,18 @@ impl LedgerStorage {
     pub fn revoke_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<bool, ManyError> {
         let mut storage = self.get_multisig_info(tx_id)?;
 
-        // We only care here about the list of approvers for this specific transaction.
+        let account = self
+            .get_account(&storage.account)
+            .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
+
+        // We make an exception here for people who already approved.
         if let Some(info) = storage.info.approvers.get_mut(sender) {
             info.approved = false;
+        } else if account.has_role(sender, MULTISIG_ROLE_CAN_APPROVE)
+            || account.has_role(sender, MULTISIG_ROLE_CAN_SUBMIT)
+            || account.has_role(sender, "owner")
+        {
+            storage.info.approvers.entry(*sender).or_default().approved = false;
         } else {
             return Err(multisig::errors::user_cannot_approve_transaction());
         }
@@ -918,7 +927,7 @@ impl LedgerStorage {
     fn execute_multisig_transaction_internal(
         &mut self,
         tx_id: &[u8],
-        storage: &TransactionStorage,
+        storage: &MultisigTransactionStorage,
     ) -> Result<ResponseMessage, ManyError> {
         let result = _execute_multisig_tx(self, tx_id, storage);
         self.delete_multisig_transaction(tx_id)?;

@@ -100,11 +100,7 @@ fn basic() {
         storage
             .get_multisig_info(&token)
             .map(|i| i.info.approvers.values().cloned().collect()),
-        Ok(vec![
-            multisig::ApproverInfo { approved: true },
-            multisig::ApproverInfo { approved: false },
-            multisig::ApproverInfo { approved: false }
-        ])
+        Ok(vec![multisig::ApproverInfo { approved: true },])
     );
 
     storage
@@ -117,7 +113,6 @@ fn basic() {
             .map(|i| i.info.approvers.values().cloned().collect()),
         Ok(vec![
             multisig::ApproverInfo { approved: true },
-            multisig::ApproverInfo { approved: false },
             multisig::ApproverInfo { approved: true }
         ])
     );

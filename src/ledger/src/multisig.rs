@@ -18,6 +18,15 @@ pub struct CommandOpt {
 }
 
 #[derive(Parser)]
+struct SetDefaultsOpt {
+    /// The account to set defaults of.
+    target_account: Identity,
+
+    #[clap(flatten)]
+    opts: MultisigArgOpt,
+}
+
+#[derive(Parser)]
 enum SubcommandOpt {
     /// Submit a new transaction to be approved.
     Submit {
@@ -44,13 +53,7 @@ enum SubcommandOpt {
     Info(TransactionOpt),
 
     /// Set new defaults for the multisig account.
-    SetDefaults {
-        /// The account to set defaults of.
-        target_account: Identity,
-
-        #[clap(flatten)]
-        opts: MultisigArgOpt,
-    },
+    SetDefaults(SetDefaultsOpt),
 }
 
 #[derive(Parser)]
@@ -59,13 +62,7 @@ enum SubmitOpt {
     Send(TargetCommandOpt),
 
     /// Set new defaults for the account.
-    SetDefaults {
-        /// The account to set defaults of.
-        target_account: Identity,
-
-        #[clap(flatten)]
-        opts: MultisigArgOpt,
-    },
+    SetDefaults(SetDefaultsOpt),
 }
 
 fn parse_token(s: &str) -> Result<ByteVec, String> {
@@ -201,10 +198,10 @@ fn submit(
 ) -> Result<(), ManyError> {
     match opts {
         SubmitOpt::Send(target) => submit_send(client, account, multisig_arg, target),
-        SubmitOpt::SetDefaults {
+        SubmitOpt::SetDefaults(SetDefaultsOpt {
             target_account,
             opts,
-        } => submit_set_defaults(client, account, multisig_arg, target_account, opts),
+        }) => submit_set_defaults(client, account, multisig_arg, target_account, opts),
     }
 }
 
@@ -311,9 +308,9 @@ pub fn multisig(client: ManyClient, opts: CommandOpt) -> Result<(), ManyError> {
         SubcommandOpt::Revoke(sub_opts) => revoke(client, sub_opts),
         SubcommandOpt::Execute(sub_opts) => execute(client, sub_opts),
         SubcommandOpt::Info(sub_opts) => info(client, sub_opts),
-        SubcommandOpt::SetDefaults {
+        SubcommandOpt::SetDefaults(SetDefaultsOpt {
             target_account,
             opts,
-        } => set_defaults(client, target_account, opts),
+        }) => set_defaults(client, target_account, opts),
     }
 }
