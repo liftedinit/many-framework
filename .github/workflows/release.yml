@@ -14,7 +14,7 @@ jobs:
     - name: Build
       run: cargo build --release
     - name: Create release archive
-      run: find target/release/ -maxdepth 1 -executable -type f | tar czvf many-framework.tar.gz --null -T -
+      run: find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework.tar.gz --null -T -
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
