@@ -35,7 +35,7 @@ tracing-subscriber = "0.2.24"
 typenum = "1.15.0"
 
 [dev-dependencies]
-many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "07f11f4d3b2d640998f7f5b6c980e7d02f395e63" }
+many = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "07f11f4d3b2d640998f7f5b6c980e7d02f395e63", features = ["testing"] }
 many-client = { git = "https://github.com/the-lifted-initiative/many-rs.git", rev = "07f11f4d3b2d640998f7f5b6c980e7d02f395e63" }
 tempfile = "3.3.0"
 
