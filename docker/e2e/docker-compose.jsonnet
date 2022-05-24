@@ -1,5 +1,19 @@
 //
 
+local generate_balance_flags(id_with_balances="", token="mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz") =
+    if std.length(id_with_balances) == 0 then
+        []
+    else std.map(
+        function(x) (
+             local g = std.split(x, ":");
+             local id = g[0];
+             local amount = if std.length(g) > 1 then g[1] else "10000000000";
+             "--balance-only-for-testing=" + std.join(":", [id, amount, token])
+        ),
+        std.split(id_with_balances, " ")
+    );
+
+
 local abci(i, user) = {
     image: "many/abci",
     ports: [ (8000 + i) + ":8000" ],
@@ -15,7 +29,7 @@ local abci(i, user) = {
     depends_on: [ "ledger-" + i ],
 };
 
-local ledger(i, user) = {
+local ledger(i, user, id_with_balances) = {
     image: "many/ledger",
     user: "" + user,
     volumes: [
@@ -24,11 +38,9 @@ local ledger(i, user) = {
     ],
     command: [
         "--abci",
-        "--addr", "0.0.0.0:8000",
-        "--state", "/genfiles/ledger_state.json",
-        "--persistent", "/persistent/ledger.db",
-        "--pem", "/genfiles/ledger.pem",
-    ],
+        "--state=/genfiles/ledger_state.json",
+        "--pem=/genfiles/ledger.pem",
+    ] + generate_balance_flags(id_with_balances),
 };
 
 local tendermint(i, user, tendermint_tag="v0.35.1") = {
@@ -46,12 +58,12 @@ local tendermint(i, user, tendermint_tag="v0.35.1") = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
-function(nb_nodes=4, user=1000) {
+function(nb_nodes=4, user=1000, id_with_balances="") {
     version: '3',
     services: {
         ["abci-" + i]: abci(i, user) for i in std.range(0, nb_nodes - 1)
     } + {
-        ["ledger-" + i]: ledger(i, user) for i in std.range(0, nb_nodes - 1)
+        ["ledger-" + i]: ledger(i, user, id_with_balances) for i in std.range(0, nb_nodes - 1)
     } + {
         ["tendermint-" + i]: tendermint(i, user) for i in std.range(0, nb_nodes - 1)
     }

@@ -49,7 +49,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
     }
 
     async fn execute_message(&self, envelope: CoseSign1) -> Result<CoseSign1, ManyError> {
-        let message = many::message::decode_request_from_cose_sign1(envelope.clone())?;
+        let message = many::message::decode_request_from_cose_sign1(envelope.clone(), None)?;
         if let Some(info) = self.backend_endpoints.get(&message.method) {
             let is_command = info.is_command;
             let data = envelope

@@ -41,4 +41,4 @@ RUN --mount=type=ssh cargo chef cook --release --recipe-path recipe.json
 
 # Build application
 COPY . .
-RUN --mount=type=ssh cargo build --release
+RUN --mount=type=ssh cargo build --release --all-features
