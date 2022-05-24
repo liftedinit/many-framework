@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, idstore, ledger};
+use many::server::module::{abci_backend, account, idstore, ledger};
 use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -16,6 +16,7 @@ mod storage;
 use module::*;
 
 #[derive(Parser, Debug)]
+#[clap(args_override_self(true))]
 struct Opts {
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
@@ -55,6 +56,16 @@ struct Opts {
     /// Multiple occurences of this argument can be given.
     #[clap(long)]
     allow_origin: Option<Vec<ManyUrl>>,
+
+    /// A list of initial balances. This will be in addition to the genesis
+    /// state file in --state and should only be used for testing.
+    /// Each transaction MUST be of the format:
+    ///     --balance-only-for-testing=<account_address>:<balance>:<symbol_address>
+    /// The hashing of the state will not include these.
+    /// This requires the feature "balance_testing" to be enabled.
+    #[cfg(feature = "balance_testing")]
+    #[clap(long)]
+    balance_only_for_testing: Option<Vec<String>>,
 }
 
 fn main() {
@@ -68,6 +79,7 @@ fn main() {
         persistent,
         clean,
         allow_origin,
+        ..
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -109,6 +121,34 @@ fn main() {
 
     let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
+
+    #[cfg(feature = "balance_testing")]
+    {
+        use many::Identity;
+        use std::str::FromStr;
+
+        let mut module_impl = module_impl.lock().unwrap();
+
+        let Opts {
+            balance_only_for_testing,
+            ..
+        } = Opts::parse();
+        for balance in balance_only_for_testing.unwrap_or_default() {
+            let args: Vec<&str> = balance.splitn(3, ':').collect();
+            let (identity, amount, symbol) = (
+                args.get(0).unwrap(),
+                args.get(1).expect("No amount."),
+                args.get(2).expect("No symbol."),
+            );
+
+            module_impl.set_balance_only_for_testing(
+                Identity::from_str(identity).expect("Invalid identity."),
+                amount.parse::<u64>().expect("Invalid amount."),
+                Identity::from_str(symbol).expect("Invalid symbol."),
+            )
+        }
+    }
+
     let many = ManyServer::simple(
         "many-ledger",
         key,
@@ -122,6 +162,10 @@ fn main() {
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
         s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
+        s.add_module(account::AccountModule::new(module_impl.clone()));
+        s.add_module(account::features::multisig::AccountMultisigModule::new(
+            module_impl.clone(),
+        ));
         if abci {
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }

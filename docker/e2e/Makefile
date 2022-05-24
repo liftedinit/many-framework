@@ -1,8 +1,10 @@
+NB_NODES ?= 4
+ID_WITH_BALANCES ?=
 
 .PHONY: clean
 clean:
 	if [ -f "${PWD}/genfiles/docker-compose.json" ]; then \
-		docker-compose -p e2e down; \
+		docker-compose -f genfiles/docker-compose.json -p e2e down || true; \
 	fi
 	rm -rf genfiles/
 
@@ -38,11 +40,13 @@ genfiles/jsonnet-docker:
 	docker pull bitnami/jsonnet
 	@mkdir -p $(dir $@) && touch $@
 
-NB_NODES ?= 4
-
 genfiles/docker-compose.json: genfiles/jsonnet-docker
-	docker run -it --rm -v "${PWD}:/volume:ro" bitnami/jsonnet \
-		/volume/docker-compose.jsonnet --tla-code nb_nodes=$(NB_NODES) --tla-code user=$$(id -u) > $@
+	docker run -it --rm -v "${PWD}:/volume:ro" -v "${PWD}/genfiles:/genfiles" bitnami/jsonnet \
+		/volume/docker-compose.jsonnet \
+		--tla-code nb_nodes=$(NB_NODES) \
+		--tla-code user=$$(id -u) \
+		--tla-code id_with_balances=\"$(ID_WITH_BALANCES)\" \
+		-o /$@
 
 genfiles/node%: genfiles/openssl-docker
 	mkdir -p "$@/tendermint"
