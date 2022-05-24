@@ -6,13 +6,13 @@ use many::message::ResponseMessage;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
+use many::server::module::account::features::multisig;
+use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::idstore::{
     GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
     StoreReturns,
 };
 use many::server::module::{account, idstore, ledger, EmptyReturn};
-use many::server::module::account::features::multisig;
-use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
@@ -143,7 +143,6 @@ impl LedgerModuleImpl {
     pub fn new<P: AsRef<Path>>(
         initial_state: Option<InitialStateJson>,
         persistence_store_path: P,
-        // idstore_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
@@ -728,19 +727,22 @@ mod tests {
     };
     use minicbor::bytes::ByteVec;
 
-    fn setup() -> (CoseKeyIdentity, CredentialId, tempfile::TempDir) {
+    fn setup() -> (CoseKeyIdentity, CredentialId, tempfile::TempDir, Option<InitialStateJson>) {
         let id = generate_random_eddsa_identity();
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 16])));
         let persistent = tempfile::tempdir().unwrap();
 
-        (id, cred_id, persistent)
+        let content = std::fs::read_to_string("../../staging/ledger_state.json").unwrap();
+        let initial_state: InitialStateJson = serde_json::from_str(&content).unwrap();
+
+        (id, cred_id, persistent, Some(initial_state))
     }
 
     #[test]
     fn idstore_store() {
-        let (id, cred_id, persistent) = setup();
+        let (id, cred_id, persistent, initial_state) = setup();
         let public_key = id.key.unwrap().to_vec().unwrap();
-        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
 
         // Try storing the same credential until we reach 5 words
         for i in 2..=5 {
@@ -775,9 +777,9 @@ mod tests {
 
     #[test]
     fn idstore_store_anon() {
-        let (id, _, persistent) = setup();
+        let (id, _, persistent, initial_state) = setup();
         let public_key = id.key.unwrap().to_vec().unwrap();
-        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
 
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
         let result = module_impl.store(
@@ -794,9 +796,9 @@ mod tests {
 
     #[test]
     fn idstore_invalid_cred_id() {
-        let (id, _, persistent) = setup();
+        let (id, _, persistent, initial_state) = setup();
         let public_key = id.key.unwrap().to_vec().unwrap();
-        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
 
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
         let result = module_impl.store(
@@ -831,9 +833,9 @@ mod tests {
 
     #[test]
     fn idstore_get_from_recall_phrase() {
-        let (id, cred_id, persistent) = setup();
+        let (id, cred_id, persistent, initial_state) = setup();
         let public_key = id.key.unwrap().to_vec().unwrap();
-        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
         let result = module_impl.store(
             &id.identity,
             StoreArgs {
@@ -856,9 +858,9 @@ mod tests {
 
     #[test]
     fn idstore_get_from_address() {
-        let (id, cred_id, persistent) = setup();
+        let (id, cred_id, persistent, initial_state) = setup();
         let public_key = id.key.unwrap().to_vec().unwrap();
-        let mut module_impl = LedgerModuleImpl::new(None, persistent, false).unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
         let result = module_impl.store(
             &id.identity,
             StoreArgs {
