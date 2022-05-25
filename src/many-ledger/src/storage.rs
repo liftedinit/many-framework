@@ -550,9 +550,9 @@ impl LedgerStorage {
                         .roles
                         .iter()
                         .filter(|(_, roles)| {
-                            roles.contains("owner")
-                                || roles.contains("canMultisigApprove")
-                                || roles.contains("canMultisigSubmit")
+                            roles.contains(&account::Role::Owner)
+                                || roles.contains(&account::Role::CanMultisigApprove)
+                                || roles.contains(&account::Role::CanMultisigSubmit)
                         })
                         .count() as u64,
                 ),
