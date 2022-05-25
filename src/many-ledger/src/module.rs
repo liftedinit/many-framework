@@ -631,6 +631,19 @@ pub fn generate_entropy<const FB: usize>() -> Entropy<FB> {
     bip39_dict::Entropy::<FB>::generate(|| 1)
 }
 
+/// Return a recall phrase
+/// 
+/// The following relation need to hold for having a valid decoding/encoding:
+/// 
+///     length_bytes(data) * 8 + checksum = number_of(words) * 11
+///
+/// See [bip39-dict](https://github.com/vincenthz/bip39-dict) for details
+///  
+/// # Generic Arguments
+/// 
+/// * `W` - Word cound
+/// * `FB` - Full Bytes
+/// * `CS` - Checksum Bytes
 pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>() -> Vec<String> {
     let mnemonic = generate_entropy::<FB>().to_mnemonics::<W, CS>().unwrap();
     let recall_phrase = mnemonic
