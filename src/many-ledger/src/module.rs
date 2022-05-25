@@ -18,8 +18,6 @@ use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
 use minicbor::bytes::ByteVec;
 use minicbor::decode;
-use retry::delay::Fixed;
-use retry::{retry_with_index, OperationResult};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
@@ -668,11 +666,10 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
         let _: CoseKey = CoseKey::from_slice(&public_key.0)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-        let recall_phrase = retry_with_index(Fixed::from_millis(10), |current_try| {
+        let mut current_try = 1u8;
+        let recall_phrase = loop {
             if current_try > 8 {
-                return OperationResult::Err(
-                    "Unable to create recall phrase after 8 try. Aborting.",
-                );
+                return Err(idstore::recall_phrase_generation_failed());
             }
 
             let recall_phrase = match current_try {
@@ -686,12 +683,12 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
             };
 
             if self.storage.get_from_recall_phrase(&recall_phrase).is_ok() {
-                OperationResult::Retry("Recall phrase generation failed, retrying...")
+                current_try += 1;
+                tracing::debug!("Recall phrase generation failed, retrying...")
             } else {
-                OperationResult::Ok(recall_phrase)
+                break recall_phrase;
             }
-        })
-        .map_err(|_| idstore::recall_phrase_generation_failed())?;
+        };
 
         self.storage
             .store(&recall_phrase, &address, cred_id, public_key)?;
@@ -727,7 +724,12 @@ mod tests {
     };
     use minicbor::bytes::ByteVec;
 
-    fn setup() -> (CoseKeyIdentity, CredentialId, tempfile::TempDir, Option<InitialStateJson>) {
+    fn setup() -> (
+        CoseKeyIdentity,
+        CredentialId,
+        tempfile::TempDir,
+        Option<InitialStateJson>,
+    ) {
         let id = generate_random_eddsa_identity();
         let cred_id = CredentialId(ByteVec::from(Vec::from([1; 16])));
         let persistent = tempfile::tempdir().unwrap();
