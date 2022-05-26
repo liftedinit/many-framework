@@ -98,6 +98,10 @@ fn _execute_multisig_tx(
             minicbor::to_vec(EmptyReturn)
         }
 
+        AccountMultisigTransaction::AccountAddFeatures(_args) => {
+            Err(ManyError::unknown("Unsupported method."))
+        }
+
         AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
             ledger.create_multisig_transaction(sender, arg.clone())?;
             minicbor::to_vec(EmptyReturn)
