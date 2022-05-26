@@ -1742,6 +1742,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=ff06bda2094fed545d2134079cc4bb792a2388b2#ff06bda2094fed545d2134079cc4bb792a2388b2"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1819,6 +1820,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=ff06bda2094fed545d2134079cc4bb792a2388b2#ff06bda2094fed545d2134079cc4bb792a2388b2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1901,7 +1903,6 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "rand 0.8.5",
- "retry",
  "serde",
  "serde_json",
  "sha3",
@@ -1916,6 +1917,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=ff06bda2094fed545d2134079cc4bb792a2388b2#ff06bda2094fed545d2134079cc4bb792a2388b2"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2678,15 +2680,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "winreg",
-]
-
-[[package]]
-name = "retry"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac95c60a949a63fd2822f4964939662d8f2c16c4fa0624fd954bc6e703b9a3f6"
-dependencies = [
- "rand 0.8.5",
 ]
 
 [[package]]
