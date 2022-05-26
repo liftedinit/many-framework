@@ -41,7 +41,7 @@ genfiles/jsonnet-docker:
 	@mkdir -p $(dir $@) && touch $@
 
 genfiles/docker-compose.json: genfiles/jsonnet-docker
-	docker run -it --rm -v "${PWD}:/volume:ro" -v "${PWD}/genfiles:/genfiles" bitnami/jsonnet \
+	docker run --user $$(id -u) -it --rm -v "${PWD}:/volume:ro" -v "${PWD}/genfiles:/genfiles" bitnami/jsonnet \
 		/volume/docker-compose.jsonnet \
 		--tla-code nb_nodes=$(NB_NODES) \
 		--tla-code user=$$(id -u) \

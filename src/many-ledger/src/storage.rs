@@ -1,10 +1,11 @@
 use crate::error;
+use crate::module::validate_features_for_account;
 use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
-use many::server::module::account;
 use many::server::module::account::features::multisig;
 use many::server::module::account::features::FeatureInfo;
+use many::server::module::{account, EmptyReturn};
 use many::server::module::idstore;
 use many::server::module::idstore::{CredentialId, PublicKey, RecallPhrase};
 use many::types::ledger::{
@@ -19,34 +20,123 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tracing::info;
 
-const MULTISIG_ROLE_CAN_APPROVE: &str = "canMultisigApprove";
-const MULTISIG_ROLE_CAN_SUBMIT: &str = "canMultisigSubmit";
-
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
     _tx_id: &[u8],
     storage: &MultisigTransactionStorage,
 ) -> Result<Vec<u8>, ManyError> {
+    let sender = &storage.account;
     match &storage.info.transaction {
         AccountMultisigTransaction::Send(module::ledger::SendArgs {
             from: _from,
             to,
             symbol,
             amount,
-        }) => ledger
-            .send(&storage.account, to, symbol, amount.clone())
-            .map(|_| vec![]),
+        }) => {
+            ledger.send(sender, to, symbol, amount.clone())?;
+            minicbor::to_vec(EmptyReturn)
+        }
 
-        AccountMultisigTransaction::AccountMultisigSubmit(arg) => ledger
-            .create_multisig_transaction(&storage.account, arg.clone())
-            .map(|_| vec![]),
+        AccountMultisigTransaction::AccountCreate(args) => {
+            let account = account::Account::create(sender, args.clone());
 
-        AccountMultisigTransaction::AccountMultisigSetDefaults(arg) => ledger
-            .set_multisig_defaults(&storage.account, arg.clone())
-            .map(|_| vec![]),
+            // Verify that we support all features.
+            validate_features_for_account(&account)?;
 
-        _ => Err(multisig::errors::transaction_type_unsupported()),
+            let id = ledger.add_account(account)?;
+            minicbor::to_vec(account::CreateReturn { id })
+        }
+
+        AccountMultisigTransaction::AccountDelete(args) => {
+            let account = ledger
+                .get_account(&args.account)
+                .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+            account.needs_role(sender, [account::Role::Owner])?;
+            ledger.delete_account(&args.account)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountSetDescription(args) => {
+            let mut account = ledger
+                .get_account(&args.account)
+                .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+            account.needs_role(sender, [account::Role::Owner])?;
+            account.set_description(Some(args.description.clone()));
+            ledger.commit_account(&args.account, account)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountAddRoles(args) => {
+            let mut account = ledger
+                .get_account(&args.account)
+                .ok_or_else(|| account::errors::unknown_account(args.account))?;
+            account.needs_role(sender, [account::Role::Owner])?;
+
+            for (id, roles) in args.roles.iter() {
+                for r in roles {
+                    account.add_role(id, *r);
+                }
+            }
+
+            ledger.commit_account(&args.account, account)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountRemoveRoles(args) => {
+            let mut account = ledger
+                .get_account(&args.account)
+                .ok_or_else(|| account::errors::unknown_account(args.account))?;
+            account.needs_role(sender, [account::Role::Owner])?;
+
+            for (id, roles) in args.roles.iter() {
+                for r in roles {
+                    account.remove_role(id, *r);
+                }
+            }
+
+            ledger.commit_account(&args.account, account)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountAddFeatures(_args) => {
+            return Err(ManyError::unknown("Unsupported method."));
+        }
+
+        AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
+            ledger.create_multisig_transaction(sender, arg.clone())?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountMultisigSetDefaults(arg) => {
+            ledger.set_multisig_defaults(sender, arg.clone())?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountMultisigApprove(arg) => {
+            ledger.approve_multisig(sender, &arg.token)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountMultisigRevoke(arg) => {
+            ledger.revoke_multisig(sender, &arg.token)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountMultisigExecute(arg) => {
+            ledger.execute_multisig(sender, &arg.token)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        AccountMultisigTransaction::AccountMultisigWithdraw(arg) => {
+            ledger.withdraw_multisig(sender, &arg.token)?;
+            minicbor::to_vec(EmptyReturn)
+        }
+
+        _ => return Err(multisig::errors::transaction_type_unsupported()),
     }
+    .map_err(|e| ManyError::serialization_error(e.to_string()))
 }
 
 #[derive(minicbor::Encode, minicbor::Decode)]
@@ -646,9 +736,7 @@ impl LedgerStorage {
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account.to_string()))?;
 
-        if !(account.has_role(sender, "owner")) {
-            return Err(account::errors::user_needs_role("owner"));
-        }
+        account.needs_role(sender, [account::Role::Owner])?;
 
         // Set the multisig threshold properly.
         if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
@@ -776,9 +864,11 @@ impl LedgerStorage {
             .ok_or_else(|| account::errors::unknown_account(account_id))?;
 
         let is_owner = account.has_role(sender, "owner");
-        if !(is_owner || account.has_role(sender, MULTISIG_ROLE_CAN_SUBMIT)) {
-            return Err(account::errors::user_needs_role(MULTISIG_ROLE_CAN_SUBMIT));
-        }
+        account.needs_role(
+            sender,
+            [account::Role::CanMultisigSubmit, account::Role::Owner],
+        )?;
+
         let multisig_f = account.features.get::<multisig::MultisigAccountFeature>()?;
 
         let threshold = match arg.threshold {
@@ -860,9 +950,9 @@ impl LedgerStorage {
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         // Validate the right.
-        if !account.has_role(sender, MULTISIG_ROLE_CAN_APPROVE)
-            && !account.has_role(sender, MULTISIG_ROLE_CAN_SUBMIT)
-            && !account.has_role(sender, "owner")
+        if !account.has_role(sender, account::Role::CanMultisigApprove)
+            && !account.has_role(sender, account::Role::CanMultisigSubmit)
+            && !account.has_role(sender, account::Role::Owner)
         {
             return Err(multisig::errors::user_cannot_approve_transaction());
         }
@@ -901,9 +991,9 @@ impl LedgerStorage {
         // We make an exception here for people who already approved.
         if let Some(info) = storage.info.approvers.get_mut(sender) {
             info.approved = false;
-        } else if account.has_role(sender, MULTISIG_ROLE_CAN_APPROVE)
-            || account.has_role(sender, MULTISIG_ROLE_CAN_SUBMIT)
-            || account.has_role(sender, "owner")
+        } else if account.has_role(sender, account::Role::CanMultisigSubmit)
+            || account.has_role(sender, account::Role::CanMultisigApprove)
+            || account.has_role(sender, account::Role::Owner)
         {
             storage.info.approvers.entry(*sender).or_default().approved = false;
         } else {
@@ -931,8 +1021,8 @@ impl LedgerStorage {
             .get_account(&storage.account)
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
-        if !(account.has_role(sender, "owner") || storage.info.submitter == *sender) {
-            return Err(account::errors::user_needs_role(MULTISIG_ROLE_CAN_SUBMIT));
+        if !(account.has_role(sender, account::Role::Owner) || storage.info.submitter == *sender) {
+            return Err(multisig::errors::cannot_execute_transaction());
         }
 
         if storage.should_execute() {
