@@ -35,7 +35,7 @@ fn get_roles_for_account(account: &account::Account) -> BTreeSet<account::Role> 
     roles
 }
 
-fn validate_features_for_account(account: &account::Account) -> Result<(), ManyError> {
+pub(crate) fn validate_features_for_account(account: &account::Account) -> Result<(), ManyError> {
     let features = account.features();
 
     // TODO: somehow keep this list updated with the above.
