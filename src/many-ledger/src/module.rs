@@ -241,7 +241,10 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
                     .features
                     .has_id(account::features::ledger::AccountLedger::ID)
                 {
-                    account.needs_role(sender, [account::Role::CanLedgerTransact])?;
+                    account.needs_role(
+                        sender,
+                        [account::Role::Owner, account::Role::CanLedgerTransact],
+                    )?;
                 } else {
                     return Err(error::unauthorized());
                 }
