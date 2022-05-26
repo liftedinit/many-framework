@@ -10,9 +10,11 @@ use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
 mod error;
+mod json;
 mod module;
 mod storage;
 
+use crate::json::InitialStateJson;
 use module::*;
 
 #[derive(Parser, Debug)]

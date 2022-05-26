@@ -1,3 +1,4 @@
+use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
 use many::message::error::ManyErrorCode;
 use many::message::ResponseMessage;
@@ -7,7 +8,7 @@ use many::server::module::abci_backend::{
 use many::server::module::account::features::multisig;
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::{account, ledger, EmptyReturn};
-use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
+use many::types::ledger::{Symbol, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
 use minicbor::bytes::ByteVec;
@@ -111,16 +112,6 @@ fn filter_date<'a>(
         Ok(Transaction { time, .. }) => range.contains(time),
     }))
 }
-
-/// The initial state schema, loaded from JSON.
-#[derive(serde::Deserialize, Debug, Default)]
-pub struct InitialStateJson {
-    identity: Identity,
-    initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
-    symbols: BTreeMap<Identity, String>,
-    hash: Option<String>,
-}
-
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
@@ -134,7 +125,7 @@ impl LedgerModuleImpl {
         blockchain: bool,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
-            let storage = LedgerStorage::new(
+            let mut storage = LedgerStorage::new(
                 state.symbols,
                 state.initial,
                 persistence_store_path,
@@ -142,6 +133,14 @@ impl LedgerModuleImpl {
                 blockchain,
             )
             .map_err(ManyError::unknown)?;
+
+            if let Some(accounts) = state.accounts {
+                for account in accounts {
+                    account
+                        .create_account(&mut storage)
+                        .expect("Could not create accounts");
+                }
+            }
 
             if let Some(h) = state.hash {
                 // Verify the hash.
@@ -236,10 +235,19 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
         } = args;
 
         let from = from.as_ref().unwrap_or(sender);
-
-        // TODO: allow some ACLs or delegation on the ledger.
         if from != sender {
-            return Err(error::unauthorized());
+            if let Some(account) = self.storage.get_account(from) {
+                if account
+                    .features
+                    .has_id(account::features::ledger::AccountLedger::ID)
+                {
+                    account.needs_role(sender, [account::Role::CanLedgerTransact])?;
+                } else {
+                    return Err(error::unauthorized());
+                }
+            } else {
+                return Err(error::unauthorized());
+            }
         }
 
         self.storage.send(from, &to, &symbol, amount)?;

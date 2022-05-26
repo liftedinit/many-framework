@@ -8,5 +8,7 @@ define_attribute_many_error!(
         4: pub fn anonymous_cannot_hold_funds() => "Anonymous is not a valid account identity.",
         5: pub fn invalid_initial_state(expected, actual)
             => "Invalid initial state hash. Expected '{expected}', was '{actual}'.",
+        6: pub fn unexpected_subresource_id(expected, actual)
+            => "Invalid initial state account subresource_id. Expected '{expected}', was '{actual}'.",
     }
 );
