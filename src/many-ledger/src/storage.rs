@@ -83,6 +83,30 @@ pub struct AccountStorage {
     transactions_in_flight: Vec<multisig::InfoReturn>,
 }
 
+#[derive(Clone, minicbor::Encode, minicbor::Decode)]
+#[cbor(map)]
+struct CredentialStorage {
+    #[n(0)]
+    cred_id: CredentialId,
+
+    #[n(1)]
+    public_key: PublicKey,
+}
+
+enum IdStoreRootSeparator {
+    RecallPhrase,
+    Address,
+}
+
+impl IdStoreRootSeparator {
+    fn value(&self) -> &[u8] {
+        match *self {
+            IdStoreRootSeparator::RecallPhrase => b"00",
+            IdStoreRootSeparator::Address => b"01",
+        }
+    }
+}
+
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 pub(crate) const MULTISIG_TRANSACTIONS_ROOT: &[u8] = b"/multisig/";
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
@@ -991,36 +1015,32 @@ impl LedgerStorage {
         {
             return Err(idstore::existing_entry());
         }
-        let address_vec = address.to_vec();
-        let value = minicbor::to_vec(vec![
-            Vec::<u8>::from(cred_id.0),
-            Vec::<u8>::from(public_key.0),
-        ])
+        let value = minicbor::to_vec(CredentialStorage {
+            cred_id,
+            public_key,
+        })
         .map_err(|e| ManyError::serialization_error(e.to_string()))?;
 
-        // Keys in batch must be sorted.
-        let batch = match recall_phrase_cbor.cmp(&address_vec) {
-            Ordering::Less | Ordering::Equal => vec![
-                (
-                    vec![IDSTORE_ROOT, &recall_phrase_cbor].concat(),
-                    fmerk::Op::Put(value.clone()),
-                ),
-                (
-                    vec![IDSTORE_ROOT, &address.to_vec()].concat(),
-                    fmerk::Op::Put(value),
-                ),
-            ],
-            _ => vec![
-                (
-                    vec![IDSTORE_ROOT, &address.to_vec()].concat(),
-                    fmerk::Op::Put(value.clone()),
-                ),
-                (
-                    vec![IDSTORE_ROOT, &recall_phrase_cbor].concat(),
-                    fmerk::Op::Put(value),
-                ),
-            ],
-        };
+        let batch = vec![
+            (
+                vec![
+                    IDSTORE_ROOT,
+                    IdStoreRootSeparator::RecallPhrase.value(),
+                    &recall_phrase_cbor,
+                ]
+                .concat(),
+                fmerk::Op::Put(value.clone()),
+            ),
+            (
+                vec![
+                    IDSTORE_ROOT,
+                    IdStoreRootSeparator::Address.value(),
+                    &address.to_vec(),
+                ]
+                .concat(),
+                fmerk::Op::Put(value),
+            ),
+        ];
 
         self.persistent_store.apply(&batch).unwrap();
 
@@ -1033,9 +1053,13 @@ impl LedgerStorage {
         Ok(())
     }
 
-    fn get_from_storage(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, ManyError> {
+    fn get_from_storage(
+        &self,
+        key: &Vec<u8>,
+        sep: IdStoreRootSeparator,
+    ) -> Result<Option<Vec<u8>>, ManyError> {
         self.persistent_store
-            .get(&vec![IDSTORE_ROOT, key].concat())
+            .get(&vec![IDSTORE_ROOT, sep.value(), key].concat())
             .map_err(|e| ManyError::unknown(e.to_string()))
     }
 
@@ -1045,25 +1069,12 @@ impl LedgerStorage {
     ) -> Result<(CredentialId, PublicKey), ManyError> {
         let recall_phrase_cbor = minicbor::to_vec(&recall_phrase)
             .map_err(|e| ManyError::serialization_error(e.to_string()))?;
-        if let Some(value) = self.get_from_storage(&recall_phrase_cbor)? {
-            let value: Vec<Vec<u8>> = minicbor::decode(&value)
+        if let Some(value) =
+            self.get_from_storage(&recall_phrase_cbor, IdStoreRootSeparator::RecallPhrase)?
+        {
+            let value: CredentialStorage = minicbor::decode(&value)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-            Ok((
-                CredentialId(
-                    value
-                        .first()
-                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
-                        .clone()
-                        .into(),
-                ),
-                PublicKey(
-                    value
-                        .last()
-                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
-                        .clone()
-                        .into(),
-                ),
-            ))
+            Ok((value.cred_id, value.public_key))
         } else {
             Err(idstore::entry_not_found(recall_phrase.join(" ")))
         }
@@ -1073,25 +1084,12 @@ impl LedgerStorage {
         &self,
         address: &Identity,
     ) -> Result<(CredentialId, PublicKey), ManyError> {
-        if let Some(value) = self.get_from_storage(&address.to_vec())? {
-            let value: Vec<Vec<u8>> = minicbor::decode(&value)
+        if let Some(value) =
+            self.get_from_storage(&address.to_vec(), IdStoreRootSeparator::Address)?
+        {
+            let value: CredentialStorage = minicbor::decode(&value)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-            Ok((
-                CredentialId(
-                    value
-                        .first()
-                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
-                        .clone()
-                        .into(),
-                ),
-                PublicKey(
-                    value
-                        .last()
-                        .ok_or_else(|| ManyError::unknown("Missing data from storage".to_string()))?
-                        .clone()
-                        .into(),
-                ),
-            ))
+            Ok((value.cred_id, value.public_key))
         } else {
             Err(idstore::entry_not_found(address.to_string()))
         }
