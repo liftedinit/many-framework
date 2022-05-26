@@ -1,5 +1,4 @@
 use crate::{error, storage::LedgerStorage};
-use bip39_dict::Entropy;
 use coset::{CborSerializable, CoseKey};
 use many::message::error::ManyErrorCode;
 use many::message::ResponseMessage;
@@ -22,9 +21,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
-
-#[cfg(not(test))]
-use rand::{thread_rng, Rng};
 
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 
@@ -619,39 +615,31 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
     }
 }
 
-#[cfg(not(test))]
-fn generate_entropy<const FB: usize>() -> Entropy<FB> {
-    let mut random = [0u8; FB];
-    thread_rng().fill(&mut random[..]);
-    bip39_dict::Entropy::<FB>(random)
-}
-
-#[cfg(test)]
-pub fn generate_entropy<const FB: usize>() -> Entropy<FB> {
-    bip39_dict::Entropy::<FB>::generate(|| 1)
-}
-
 /// Return a recall phrase
-/// 
+//
 /// The following relation need to hold for having a valid decoding/encoding:
-/// 
-///     length_bytes(data) * 8 + checksum = number_of(words) * 11
+///
+///     // length_bytes(data) * 8 + checksum = number_of(words) * 11
 ///
 /// See [bip39-dict](https://github.com/vincenthz/bip39-dict) for details
 ///  
 /// # Generic Arguments
-/// 
+///
 /// * `W` - Word cound
 /// * `FB` - Full Bytes
 /// * `CS` - Checksum Bytes
-pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>() -> Vec<String> {
-    let mnemonic = generate_entropy::<FB>().to_mnemonics::<W, CS>().unwrap();
+pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
+    seed: &[u8],
+) -> Result<Vec<String>, ManyError> {
+    let entropy = bip39_dict::Entropy::<FB>::from_slice(seed)
+        .ok_or_else(|| ManyError::unknown("Unable to generate entropy"))?;
+    let mnemonic = entropy.to_mnemonics::<W, CS>().unwrap();
     let recall_phrase = mnemonic
         .to_string(&bip39_dict::ENGLISH)
         .split_whitespace()
-        .map(|e| e.to_string()) // TODO: This is ugly
+        .map(|e| e.to_string())
         .collect::<Vec<String>>();
-    recall_phrase
+    Ok(recall_phrase)
 }
 
 impl IdStoreModuleBackend for LedgerModuleImpl {
@@ -685,15 +673,21 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
                 return Err(idstore::recall_phrase_generation_failed());
             }
 
-            let recall_phrase = match current_try {
-                1 | 2 => generate_recall_phrase::<2, 2, 6>(),
-                3 | 4 => generate_recall_phrase::<3, 4, 1>(),
-                5 | 6 => generate_recall_phrase::<4, 5, 4>(),
-                7 | 8 => generate_recall_phrase::<5, 6, 7>(),
-                _ => {
-                    unimplemented!()
+            let seed = self.storage.inc_idstore_seed();
+            // Entropy can only be generated if the seed array contains the
+            // EXACT amount of full bytes, i.e., the FB parameter of
+            // `generate_recall_phrase`
+            let recall_phrase = match seed {
+                0..=0xFFFF => generate_recall_phrase::<2, 2, 6>(&seed.to_be_bytes()[6..]),
+                0x10000..=0xFFFFFF => generate_recall_phrase::<3, 4, 1>(&seed.to_be_bytes()[4..]),
+                0x1000000..=0xFFFFFFFF => {
+                    generate_recall_phrase::<4, 5, 4>(&seed.to_be_bytes()[3..])
                 }
-            };
+                0x100000000..=0xFFFFFFFFFF => {
+                    generate_recall_phrase::<5, 6, 7>(&seed.to_be_bytes()[2..])
+                }
+                _ => unimplemented!(),
+            }?;
 
             if self.storage.get_from_recall_phrase(&recall_phrase).is_ok() {
                 current_try += 1;
@@ -759,9 +753,36 @@ mod tests {
         let public_key = id.key.unwrap().to_vec().unwrap();
         let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
 
-        // Try storing the same credential until we reach 5 words
-        for i in 2..=5 {
-            let result = module_impl.store(
+        // Basic call
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 2);
+
+        // Make sure another call provides a different result
+        let result2 = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result2.is_ok());
+        let rp2 = result2.unwrap().0;
+        assert_eq!(rp2.len(), 2);
+        assert_ne!(rp, rp2);
+
+        // Generate the first 8 recall phrase
+        for _ in 2..8 {
+            let result3 = module_impl.store(
                 &id.identity,
                 StoreArgs {
                     address: id.identity,
@@ -769,12 +790,57 @@ mod tests {
                     public_key: PublicKey(public_key.clone().into()),
                 },
             );
-            assert!(result.is_ok());
-            let recall_phrase = result.unwrap().0;
-            assert_eq!(recall_phrase.len(), i);
+            assert!(result3.is_ok());
         }
 
-        // Make sure we abort after reaching 5 words
+        // And reset the seed 0
+        module_impl.storage.set_idstore_seed(0);
+
+        // This should trigger the `recall_phrase_generation_failed()` exception
+        let result4 = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result4.is_err());
+        assert_eq!(
+            result4.unwrap_err().code,
+            idstore::recall_phrase_generation_failed().code
+        );
+
+        // Generate a 3-words phrase
+        module_impl.storage.set_idstore_seed(0x10000);
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 3);
+
+        // Generate a 4-words phrase
+        module_impl.storage.set_idstore_seed(0x1000000);
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 4);
+
+        // Generate a 5-words phrase
+        module_impl.storage.set_idstore_seed(0x100000000);
         let result = module_impl.store(
             &id.identity,
             StoreArgs {
@@ -783,11 +849,9 @@ mod tests {
                 public_key: PublicKey(public_key.into()),
             },
         );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            idstore::recall_phrase_generation_failed().code
-        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 5);
     }
 
     #[test]

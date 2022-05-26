@@ -150,6 +150,8 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Identity,
+
+    idstore_seed: u64,
 }
 
 impl LedgerStorage {
@@ -221,6 +223,15 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
+        let idstore_seed = persistent_store
+            .get(b"/config/idstore_seed")
+            .unwrap()
+            .map_or(0u64, |x| {
+                let mut bytes = [0u8; 8];
+                bytes.copy_from_slice(x.as_slice());
+                u64::from_be_bytes(bytes)
+            });
+
         let latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         Ok(Self {
@@ -232,6 +243,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
+            idstore_seed,
         })
     }
 
@@ -280,6 +292,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
+            idstore_seed: 0,
         })
     }
 
@@ -322,6 +335,23 @@ impl LedgerStorage {
         self.account_identity
             .with_subresource_id(current_id)
             .expect("Too many accounts")
+    }
+
+    pub(crate) fn inc_idstore_seed(&mut self) -> u64 {
+        let current_seed = self.idstore_seed;
+        self.idstore_seed += 1;
+        self.persistent_store
+            .apply(&[(
+                b"/config/idstore_seed".to_vec(),
+                fmerk::Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
+            )])
+            .unwrap();
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+
+        current_seed
     }
 
     fn new_transaction_id(&mut self) -> TransactionId {
@@ -995,7 +1025,9 @@ impl LedgerStorage {
         self.persistent_store.apply(&batch).unwrap();
 
         if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
+            self.persistent_store
+                .commit(&[])
+                .expect("Could not commit to store.");
         }
 
         Ok(())
@@ -1117,55 +1149,66 @@ impl<'a> Iterator for LedgerIterator<'a> {
     }
 }
 
-#[test]
-fn transaction_key_size() {
-    let golden_size = key_for_transaction(TransactionId::from(0)).len();
+#[cfg(test)]
+pub mod tests {
+    use super::*;
 
-    assert_eq!(
-        golden_size,
-        key_for_transaction(TransactionId::from(u64::MAX)).len()
-    );
-
-    // Test at 1 byte, 2 bytes and 4 bytes boundaries.
-    for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
-        assert_eq!(
-            golden_size,
-            key_for_transaction(TransactionId::from(i - 1)).len()
-        );
-        assert_eq!(
-            golden_size,
-            key_for_transaction(TransactionId::from(i)).len()
-        );
-        assert_eq!(
-            golden_size,
-            key_for_transaction(TransactionId::from(i + 1)).len()
-        );
+    impl LedgerStorage {
+        pub fn set_idstore_seed(&mut self, seed: u64) {
+            self.idstore_seed = seed;
+        }
     }
 
-    assert_eq!(
-        golden_size,
-        key_for_transaction(TransactionId::from(
-            b"012345678901234567890123456789".to_vec()
-        ))
-        .len()
-    );
+    #[test]
+    fn transaction_key_size() {
+        let golden_size = key_for_transaction(TransactionId::from(0)).len();
 
-    // Trim the Tx ID if it's too long.
-    assert_eq!(
-        golden_size,
-        key_for_transaction(TransactionId::from(
-            b"0123456789012345678901234567890123456789".to_vec()
-        ))
-        .len()
-    );
-    assert_eq!(
-        key_for_transaction(TransactionId::from(
-            b"01234567890123456789012345678901".to_vec()
-        ))
-        .len(),
-        key_for_transaction(TransactionId::from(
-            b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
-        ))
-        .len()
-    )
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(u64::MAX)).len()
+        );
+
+        // Test at 1 byte, 2 bytes and 4 bytes boundaries.
+        for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
+            assert_eq!(
+                golden_size,
+                key_for_transaction(TransactionId::from(i - 1)).len()
+            );
+            assert_eq!(
+                golden_size,
+                key_for_transaction(TransactionId::from(i)).len()
+            );
+            assert_eq!(
+                golden_size,
+                key_for_transaction(TransactionId::from(i + 1)).len()
+            );
+        }
+
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(
+                b"012345678901234567890123456789".to_vec()
+            ))
+            .len()
+        );
+
+        // Trim the Tx ID if it's too long.
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(
+                b"0123456789012345678901234567890123456789".to_vec()
+            ))
+            .len()
+        );
+        assert_eq!(
+            key_for_transaction(TransactionId::from(
+                b"01234567890123456789012345678901".to_vec()
+            ))
+            .len(),
+            key_for_transaction(TransactionId::from(
+                b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
+            ))
+            .len()
+        )
+    }
 }
