@@ -28,7 +28,7 @@ use rand::{thread_rng, Rng};
 
 const MAXIMUM_TRANSACTION_COUNT: usize = 100;
 
-fn get_roles_for_account(account: &account::Account) -> BTreeSet<String> {
+fn get_roles_for_account(account: &account::Account) -> BTreeSet<account::Role> {
     let features = account.features();
 
     let mut roles = BTreeSet::new();
@@ -414,7 +414,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
-        if account.has_role(sender, "owner") {
+        if account.has_role(sender, account::Role::Owner) {
             account.set_description(Some(args.description));
             self.storage.commit_account(&args.account, account)?;
             Ok(EmptyReturn)
@@ -465,7 +465,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
-        if !account.has_role(sender, "owner") {
+        if !account.has_role(sender, account::Role::Owner) {
             return Err(account::errors::user_needs_role("owner"));
         }
         for (id, roles) in args.roles {
@@ -488,8 +488,8 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
-        if !account.has_role(sender, "owner") {
-            return Err(account::errors::user_needs_role("owner"));
+        if !account.has_role(sender, account::Role::Owner) {
+            return Err(account::errors::user_needs_role(account::Role::Owner));
         }
         for (id, roles) in args.roles {
             for r in roles {
@@ -532,8 +532,8 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
-        if !account.has_role(sender, "owner") {
-            return Err(account::errors::user_needs_role("owner"));
+        if !account.has_role(sender, account::Role::Owner) {
+            return Err(account::errors::user_needs_role(account::Role::Owner));
         }
 
         self.storage.delete_account(&args.account)?;

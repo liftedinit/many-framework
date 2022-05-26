@@ -1,5 +1,6 @@
 use clap::Parser;
 use many::server::module::{base, blockchain, r#async};
+use many::server::ManyUrl;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyServer};
 use many_client::ManyClient;
@@ -51,6 +52,12 @@ struct Opts {
     /// Suppress all output logging. Can be used multiple times to suppress more.
     #[clap(short, long, parse(from_occurrences))]
     quiet: i8,
+
+    /// Application absolute URLs allowed to communicate with this server. Any
+    /// application will be able to communicate with this server if left empty.
+    /// Multiple occurences of this argument can be given.
+    #[clap(long)]
+    allow_origin: Option<Vec<ManyUrl>>,
 }
 
 #[tokio::main]
@@ -64,6 +71,7 @@ async fn main() {
         abci_read_buf_size,
         verbose,
         quiet,
+        allow_origin,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -142,7 +150,11 @@ async fn main() {
     }
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
-    let server = ManyServer::new(format!("AbciModule({})", &status.name), key.clone(), None);
+    let server = ManyServer::new(
+        format!("AbciModule({})", &status.name),
+        key.clone(),
+        allow_origin,
+    );
     let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
 
