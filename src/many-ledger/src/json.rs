@@ -1,7 +1,8 @@
 use crate::error;
 use crate::storage::LedgerStorage;
 use many::server::module::account;
-use many::server::module::account::features::{multisig, Feature, FeatureInfo, TryCreateFeature};
+use many::server::module::account::features;
+use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::types::ledger::{Symbol, TokenAmount};
 use many::{Identity, ManyError};
 use std::cmp::Ordering;
@@ -21,28 +22,28 @@ pub struct FeatureJson {
 }
 
 impl FeatureJson {
-    pub fn try_into_ledger(&self) -> Option<Feature> {
-        if self.id == 0 {
-            Some(Feature::with_id(0))
-        } else {
-            None
+    pub fn try_into_feature(&self) -> Option<features::Feature> {
+        match self.id {
+            features::ledger::AccountLedger::ID => Some(features::Feature::with_id(
+                features::ledger::AccountLedger::ID,
+            )),
+            features::multisig::MultisigAccountFeature::ID => self.arg_into_multisig(),
+            _ => None,
         }
     }
 
-    pub fn try_into_multisig(&self) -> Option<multisig::MultisigAccountFeature> {
-        if self.id != multisig::MultisigAccountFeature::ID {
-            return None;
-        }
-
+    fn arg_into_multisig(&self) -> Option<features::Feature> {
         self.arg.as_ref().map(|a| {
             let s = serde_json::to_string(a).expect("Invalid Feature argument.");
             let a: MultisigFeatureArgJson =
                 serde_json::from_str(&s).expect("Invalid Feature argument.");
-            multisig::MultisigAccountFeature::create(
+
+            features::multisig::MultisigAccountFeature::create(
                 a.threshold,
                 a.timeout_in_secs,
                 a.execute_automatically,
             )
+            .as_feature()
         })
     }
 }
@@ -95,11 +96,7 @@ impl AccountJson {
             features: self
                 .features
                 .iter()
-                .map(|f| {
-                    f.try_into_ledger()
-                        .or_else(|| f.try_into_multisig().map(|f| f.as_feature()))
-                        .expect("Unsupported feature.")
-                })
+                .map(|f| f.try_into_feature().expect("Unsupported feature."))
                 .collect(),
         })?;
 
