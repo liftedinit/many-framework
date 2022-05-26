@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, account, ledger};
+use many::server::module::{abci_backend, account, idstore, ledger};
 use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -161,6 +161,7 @@ fn main() {
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
+        s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
         s.add_module(account::AccountModule::new(module_impl.clone()));
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),
