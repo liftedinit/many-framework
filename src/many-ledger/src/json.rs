@@ -39,8 +39,8 @@ impl FeatureJson {
             let a: MultisigFeatureArgJson =
                 serde_json::from_str(&s).expect("Invalid Feature argument.");
             multisig::MultisigAccountFeature::create(
-                a.threshold.into(),
-                a.timeout_in_secs.into(),
+                a.threshold,
+                a.timeout_in_secs,
                 a.execute_automatically,
             )
         })
@@ -83,10 +83,10 @@ impl AccountJson {
                 .roles
                 .iter()
                 .map(|(id, roles)| {
-                    (id.clone(), {
+                    (*id, {
                         roles
                             .iter()
-                            .map(|s| std::str::FromStr::from_str(&s))
+                            .map(|s| std::str::FromStr::from_str(s))
                             .collect::<Result<BTreeSet<account::Role>, _>>()
                             .expect("Invalid role.")
                     })
