@@ -99,7 +99,7 @@ fn _execute_multisig_tx(
         }
 
         AccountMultisigTransaction::AccountAddFeatures(_args) => {
-            Err(ManyError::unknown("Unsupported method."))
+            return Err(ManyError::unknown("Unsupported method."));
         }
 
         AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
