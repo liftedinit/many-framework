@@ -21,7 +21,7 @@ pub fn verify_proof(
         .map(|s| key_for_account_balance(identity, s))
         .collect();
     let values =
-        fmerk::verify_proof(bytes, keys.as_slice(), *expected_hash).map_err(|e| e.to_string())?;
+        merk::verify_proof(bytes, keys.as_slice(), *expected_hash).map_err(|e| e.to_string())?;
 
     let mut result = BTreeMap::new();
     for (symbol, amount) in symbols.iter().zip(values.iter()) {
