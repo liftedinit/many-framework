@@ -4,13 +4,13 @@ use many::server::ManyUrl;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyServer};
 use many_client::ManyClient;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
 use tendermint_rpc::Client;
 use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
 
 mod abci_app;
 mod many_app;

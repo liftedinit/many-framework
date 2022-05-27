@@ -3,10 +3,10 @@ use many::server::module::{abci_backend, kvstore};
 use many::server::ManyServer;
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
 
 mod error;
 mod module;

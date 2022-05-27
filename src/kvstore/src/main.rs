@@ -4,11 +4,11 @@ use many::server::module::r#async;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use std::io::Read;
 use std::path::PathBuf;
 use tracing::{error, trace};
 use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
 
 #[derive(Parser)]
 struct Opts {

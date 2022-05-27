@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+use tracing_subscriber::layer::SubscriberExt;
 
 mod error;
 mod json;

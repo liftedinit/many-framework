@@ -14,7 +14,7 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+use tracing_subscriber::layer::SubscriberExt;
 
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};

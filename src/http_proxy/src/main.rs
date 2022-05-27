@@ -3,12 +3,12 @@ use many::server::module::kvstore::{GetArgs, GetReturns};
 use many::types::identity::cose::CoseKeyIdentity;
 use many::Identity;
 use many_client::ManyClient;
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tiny_http::{Header, Method, Response, StatusCode};
 use tracing::warn;
 use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::layer::SubscriberExt;
 
 #[derive(Parser)]
 struct Opts {
