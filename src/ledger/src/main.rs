@@ -14,6 +14,7 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
@@ -314,7 +315,17 @@ fn main() {
         x if x < 0 => LevelFilter::OFF,
         _ => unreachable!(),
     };
-    tracing_subscriber::fmt().with_max_level(log_level).init();
+    let identity = std::ffi::CStr::from_bytes_with_nul(b"ledger\0").unwrap();
+    let (options, facility) = Default::default();
+    let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+    tracing::subscriber::set_global_default(
+        tracing_subscriber::fmt::Subscriber::builder()
+            .with_max_level(log_level)
+            .with_writer(syslog)
+            .finish()
+            .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout)),
+    )
+    .expect("Unable to set global tracing subscriber");
 
     let server_id = server_id.unwrap_or_default();
     let key = if let (Some(module), Some(slot), Some(keyid)) = (module, slot, keyid) {

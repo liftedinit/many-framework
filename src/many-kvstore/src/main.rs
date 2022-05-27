@@ -3,6 +3,7 @@ use many::server::module::{abci_backend, kvstore};
 use many::server::ManyServer;
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
@@ -71,7 +72,17 @@ fn main() {
         x if x < 0 => LevelFilter::OFF,
         _ => unreachable!(),
     };
-    tracing_subscriber::fmt().with_max_level(log_level).init();
+    let identity = std::ffi::CStr::from_bytes_with_nul(b"many-kvstore\0").unwrap();
+    let (options, facility) = Default::default();
+    let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+    tracing::subscriber::set_global_default(
+        tracing_subscriber::fmt::Subscriber::builder()
+            .with_max_level(log_level)
+            .with_writer(syslog)
+            .finish()
+            .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout)),
+    )
+    .expect("Unable to set global tracing subscriber");
 
     if clean {
         // Delete the persistent storage.
