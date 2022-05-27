@@ -12,24 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      # run: cargo build --release
-      run: echo "FOOBAR" > MyRelease_${{ github.ref_name }}
-    # - name: Create release archive
-      # run: find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework.tar.gz --null -T -
+      run: cargo build --release
+    - name: Create release archive
+      run: find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework_${{ github.ref_name }}.tar.gz --null -T -
     - name: Upload binary to release
       uses: softprops/action-gh-release@v1
       with:
-        # files: many-framework.tar.gz
-        files: MyRelease_${{ github.ref_name }}
-    # - name: Upload binaries to release
-    #   uses: svenstaro/upload-release-action@v2
-    #   with:
-    #     repo_name: fmorency/many-framework
-    #     # A personal access token for the GitHub repository in which the release will be created and edited.
-    #     # It is recommended to create the access token with the following scopes: `repo, user, admin:repo_hook`.
-    #     repo_token: ${{ secrets.RELEASE_TOKEN }}
-    #     file: many-framework.tar.gz
-    #     asset_name: many-framework
-    #     tag: ${{ github.ref }}
-    #     overwrite: true
-    #     body: "many-framework pre-alpha"
+        files: many-framework_${{ github.ref_name }}.tar.gz
