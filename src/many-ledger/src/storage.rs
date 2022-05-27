@@ -409,6 +409,10 @@ impl LedgerStorage {
         })
     }
 
+    pub fn commit_persistent_store(&mut self) -> Result<(), String> {
+        self.persistent_store.commit(&[]).map_err(|e| e.to_string())
+    }
+
     pub fn get_symbols(&self) -> BTreeMap<Symbol, String> {
         self.symbols.clone()
     }
