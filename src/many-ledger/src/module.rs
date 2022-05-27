@@ -146,6 +146,7 @@ impl LedgerModuleImpl {
                         .create_account(&mut storage)
                         .expect("Could not create accounts");
                 }
+                storage.commit_persistent_store().expect("Could not commit");
             }
 
             if let Some(h) = state.hash {
@@ -633,7 +634,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 ///     // length_bytes(data) * 8 + checksum = number_of(words) * 11
 ///
 /// See [bip39-dict](https://github.com/vincenthz/bip39-dict) for details
-///  
+///
 /// # Generic Arguments
 ///
 /// * `W` - Word cound
