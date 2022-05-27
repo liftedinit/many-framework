@@ -8,7 +8,12 @@ use std::path::PathBuf;
 use tiny_http::{Header, Method, Response, StatusCode};
 use tracing::warn;
 use tracing_subscriber::filter::LevelFilter;
-use tracing_subscriber::layer::SubscriberExt;
+
+#[derive(clap::ArgEnum, Clone)]
+enum LogStrategy {
+    Terminal,
+    Syslog,
+}
 
 #[derive(Parser)]
 struct Opts {
@@ -34,6 +39,10 @@ struct Opts {
     /// Suppress all output logging. Can be used multiple times to suppress more.
     #[clap(short, long, parse(from_occurrences))]
     quiet: i8,
+
+    /// Use given logging strategy
+    #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
+    logmode: LogStrategy,
 }
 
 fn main() {
@@ -44,6 +53,7 @@ fn main() {
         server_id,
         verbose,
         quiet,
+        logmode,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -56,17 +66,23 @@ fn main() {
         x if x < 0 => LevelFilter::OFF,
         _ => unreachable!(),
     };
-    let identity = std::ffi::CStr::from_bytes_with_nul(b"http_proxy\0").unwrap();
-    let (options, facility) = Default::default();
-    let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
-    tracing::subscriber::set_global_default(
-        tracing_subscriber::fmt::Subscriber::builder()
-            .with_max_level(log_level)
-            .with_writer(syslog)
-            .finish()
-            .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout)),
-    )
-    .expect("Unable to set global tracing subscriber");
+
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder().with_max_level(log_level);
+
+    match logmode {
+        LogStrategy::Terminal => {
+            let subscriber = subscriber.with_writer(std::io::stdout);
+            subscriber.init();
+        }
+        LogStrategy::Syslog => {
+            let identity = std::ffi::CStr::from_bytes_with_nul(b"http_proxy\0").unwrap();
+            let (options, facility) = Default::default();
+            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+
+            let subscriber = subscriber.with_writer(syslog);
+            subscriber.init();
+        }
+    };
 
     let server_id = server_id.unwrap_or_default();
     let key = pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
