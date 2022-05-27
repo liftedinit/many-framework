@@ -13,12 +13,14 @@ use many::types::ledger::{
 };
 use many::types::{CborRange, SortOrder, Timestamp};
 use many::{Identity, ManyError};
+use merk::tree::Tree;
+use merk::{rocksdb, BatchEntry, Op};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use tracing::info;
+use tracing::{info, warn};
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
@@ -250,7 +252,7 @@ pub(super) fn key_for_multisig_transaction(token: &[u8]) -> Vec<u8> {
 
 pub struct LedgerStorage {
     symbols: BTreeMap<Symbol, String>,
-    persistent_store: fmerk::Merk,
+    persistent_store: merk::Merk,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
@@ -284,7 +286,7 @@ impl LedgerStorage {
         let amount = TokenAmount::from(amount);
 
         self.persistent_store
-            .apply(&[(key, fmerk::Op::Put(amount.to_vec()))])
+            .apply(&[(key, Op::Put(amount.to_vec()))])
             .unwrap();
 
         // Always commit to the store. In blockchain mode this will fail.
@@ -306,7 +308,7 @@ impl LedgerStorage {
     }
 
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
-        let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
             .get(b"/config/symbols")
@@ -368,9 +370,9 @@ impl LedgerStorage {
         identity: Identity,
         blockchain: bool,
     ) -> Result<Self, String> {
-        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let mut batch: Vec<fmerk::BatchEntry> = Vec::new();
+        let mut batch: Vec<BatchEntry> = Vec::new();
 
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
@@ -379,17 +381,14 @@ impl LedgerStorage {
                 }
 
                 let key = key_for_account_balance(&k, &symbol);
-                batch.push((key, fmerk::Op::Put(tokens.to_vec())));
+                batch.push((key, Op::Put(tokens.to_vec())));
             }
         }
 
-        batch.push((
-            b"/config/identity".to_vec(),
-            fmerk::Op::Put(identity.to_vec()),
-        ));
+        batch.push((b"/config/identity".to_vec(), Op::Put(identity.to_vec())));
         batch.push((
             b"/config/symbols".to_vec(),
-            fmerk::Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
+            Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
         ));
 
         persistent_store
@@ -423,7 +422,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 b"/height".to_vec(),
-                fmerk::Op::Put((current_height + 1).to_be_bytes().to_vec()),
+                Op::Put((current_height + 1).to_be_bytes().to_vec()),
             )])
             .unwrap();
         current_height
@@ -446,7 +445,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 b"/config/account_id".to_vec(),
-                fmerk::Op::Put(self.next_account_id.to_be_bytes().to_vec()),
+                Op::Put(self.next_account_id.to_be_bytes().to_vec()),
             )])
             .unwrap();
 
@@ -461,7 +460,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 b"/config/idstore_seed".to_vec(),
-                fmerk::Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
+                Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
             )])
             .unwrap();
 
@@ -478,7 +477,7 @@ impl LedgerStorage {
     }
 
     pub fn check_timed_out_transactions(&mut self) -> Result<(), ManyError> {
-        use fmerk::rocksdb::{Direction, IteratorMode, ReadOptions};
+        use rocksdb::{Direction, IteratorMode, ReadOptions};
 
         let mut options = ReadOptions::default();
         let mut bound = TRANSACTIONS_ROOT.to_vec();
@@ -493,7 +492,7 @@ impl LedgerStorage {
         let mut keys_to_delete: Vec<Vec<u8>> = Vec::new();
 
         for (k, v) in it {
-            let v = fmerk::tree::Tree::decode(k.to_vec(), v.as_ref());
+            let v = Tree::decode(k.to_vec(), v.as_ref());
 
             let storage: MultisigTransactionStorage = minicbor::decode(v.value())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
@@ -504,9 +503,7 @@ impl LedgerStorage {
         }
 
         for k in keys_to_delete {
-            self.persistent_store
-                .apply(&[(k, fmerk::Op::Delete)])
-                .unwrap();
+            self.persistent_store.apply(&[(k, Op::Delete)]).unwrap();
         }
 
         if !self.blockchain {
@@ -559,11 +556,11 @@ impl LedgerStorage {
             .apply(&[
                 (
                     key_for_transaction(transaction.id.clone()),
-                    fmerk::Op::Put(minicbor::to_vec(&transaction).unwrap()),
+                    Op::Put(minicbor::to_vec(&transaction).unwrap()),
                 ),
                 (
                     b"/transactions_count".to_vec(),
-                    fmerk::Op::Put((current_nb_transactions + 1).to_be_bytes().to_vec()),
+                    Op::Put((current_nb_transactions + 1).to_be_bytes().to_vec()),
                 ),
             ])
             .unwrap();
@@ -653,14 +650,14 @@ impl LedgerStorage {
         let key_from = key_for_account_balance(from, symbol);
         let key_to = key_for_account_balance(to, symbol);
 
-        let batch: Vec<fmerk::BatchEntry> = match key_from.cmp(&key_to) {
+        let batch: Vec<BatchEntry> = match key_from.cmp(&key_to) {
             Ordering::Less | Ordering::Equal => vec![
-                (key_from, fmerk::Op::Put(amount_from.to_vec())),
-                (key_to, fmerk::Op::Put(amount_to.to_vec())),
+                (key_from, Op::Put(amount_from.to_vec())),
+                (key_to, Op::Put(amount_to.to_vec())),
             ],
             _ => vec![
-                (key_to, fmerk::Op::Put(amount_to.to_vec())),
-                (key_from, fmerk::Op::Put(amount_from.to_vec())),
+                (key_to, Op::Put(amount_to.to_vec())),
+                (key_from, Op::Put(amount_from.to_vec())),
             ],
         };
 
@@ -772,7 +769,7 @@ impl LedgerStorage {
 
     pub fn delete_account(&mut self, id: &Identity) -> Result<(), ManyError> {
         self.persistent_store
-            .apply(&[(key_for_account(id), fmerk::Op::Delete)])
+            .apply(&[(key_for_account(id), Op::Delete)])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 
         if !self.blockchain {
@@ -805,7 +802,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 key_for_account(id),
-                fmerk::Op::Put(
+                Op::Put(
                     minicbor::to_vec(account)
                         .map_err(|e| ManyError::serialization_error(e.to_string()))?,
                 ),
@@ -828,7 +825,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 key_for_multisig_transaction(tx_id),
-                fmerk::Op::Put(
+                Op::Put(
                     minicbor::to_vec(tx)
                         .map_err(|e| ManyError::serialization_error(e.to_string()))?,
                 ),
@@ -857,6 +854,7 @@ impl LedgerStorage {
         match arg.transaction.as_ref() {
             AccountMultisigTransaction::Send(module::ledger::SendArgs { from, .. }) => {
                 if from.as_ref() != Some(&account_id) {
+                    warn!("{:?} != {}", from, account_id.to_string());
                     return Err(ManyError::unknown("Invalid transaction.".to_string()));
                 }
             }
@@ -1065,7 +1063,7 @@ impl LedgerStorage {
 
     fn delete_multisig_transaction(&mut self, tx_id: &[u8]) -> Result<(), ManyError> {
         self.persistent_store
-            .apply(&[(key_for_multisig_transaction(tx_id), fmerk::Op::Delete)])
+            .apply(&[(key_for_multisig_transaction(tx_id), Op::Delete)])
             .unwrap();
         if !self.blockchain {
             self.persistent_store
@@ -1123,7 +1121,7 @@ impl LedgerStorage {
                     &recall_phrase_cbor,
                 ]
                 .concat(),
-                fmerk::Op::Put(value.clone()),
+                Op::Put(value.clone()),
             ),
             (
                 vec![
@@ -1132,7 +1130,7 @@ impl LedgerStorage {
                     &address.to_vec(),
                 ]
                 .concat(),
-                fmerk::Op::Put(value),
+                Op::Put(value),
             ),
         ];
 
@@ -1191,16 +1189,16 @@ impl LedgerStorage {
 }
 
 pub struct LedgerIterator<'a> {
-    inner: fmerk::rocksdb::DBIterator<'a>,
+    inner: rocksdb::DBIterator<'a>,
 }
 
 impl<'a> LedgerIterator<'a> {
     pub fn scoped_by_id(
-        merk: &'a fmerk::Merk,
+        merk: &'a merk::Merk,
         range: CborRange<TransactionId>,
         order: SortOrder,
     ) -> Self {
-        use fmerk::rocksdb::{IteratorMode, ReadOptions};
+        use rocksdb::{IteratorMode, ReadOptions};
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
@@ -1234,7 +1232,7 @@ impl<'a> Iterator for LedgerIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|(k, v)| {
-            let new_v = fmerk::tree::Tree::decode(k.to_vec(), v.as_ref());
+            let new_v = Tree::decode(k.to_vec(), v.as_ref());
 
             (k, new_v.value().to_vec())
         })

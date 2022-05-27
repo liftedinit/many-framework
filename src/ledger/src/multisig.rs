@@ -115,7 +115,7 @@ fn submit_send(
         Err(ManyError::invalid_identity())
     } else {
         let transaction = ledger::AccountMultisigTransaction::Send(module::ledger::SendArgs {
-            from,
+            from: from.or(Some(account)),
             to: identity,
             symbol,
             amount: ledger::TokenAmount::from(amount),

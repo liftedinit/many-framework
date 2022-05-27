@@ -1,7 +1,7 @@
 use crate::error::unauthorized;
-use fmerk::Op;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::{Identity, ManyError};
+use merk::Op;
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -11,7 +11,7 @@ pub struct KvStoreStorage {
     /// Simple ACL scheme. Any prefix that matches the key
     acls: AclBTreeMap,
 
-    persistent_store: fmerk::Merk,
+    persistent_store: merk::Merk,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
@@ -27,7 +27,7 @@ impl std::fmt::Debug for KvStoreStorage {
 
 impl KvStoreStorage {
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
-        let persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let acls: AclBTreeMap =
             minicbor::decode(&persistent_store.get(b"/config/acls").unwrap().unwrap()).unwrap();
@@ -44,12 +44,12 @@ impl KvStoreStorage {
         persistent_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
-        let mut persistent_store = fmerk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         persistent_store
             .apply(&[(
                 b"/config/acls".to_vec(),
-                fmerk::Op::Put(minicbor::to_vec(&acls).unwrap()),
+                merk::Op::Put(minicbor::to_vec(&acls).unwrap()),
             )])
             .map_err(|e| e.to_string())?;
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
@@ -77,7 +77,7 @@ impl KvStoreStorage {
         self.persistent_store
             .apply(&[(
                 b"/height".to_vec(),
-                fmerk::Op::Put(current_height.to_be_bytes().to_vec()),
+                merk::Op::Put(current_height.to_be_bytes().to_vec()),
             )])
             .unwrap();
         self.persistent_store.commit(&[]).unwrap();
@@ -168,18 +168,18 @@ impl KvStoreStorage {
 }
 
 pub struct StorageIterator<'a> {
-    inner: fmerk::rocksdb::DBIterator<'a>,
+    inner: merk::rocksdb::DBIterator<'a>,
 }
 
 #[allow(dead_code)]
 impl<'a> StorageIterator<'a> {
-    pub fn new(merk: &'a fmerk::Merk) -> Self {
+    pub fn new(merk: &'a merk::Merk) -> Self {
         Self {
-            inner: merk.iter_opt(fmerk::rocksdb::IteratorMode::Start, Default::default()),
+            inner: merk.iter_opt(merk::rocksdb::IteratorMode::Start, Default::default()),
         }
     }
 
-    pub fn prefixed(merk: &'a fmerk::Merk, prefix: &[u8]) -> Self {
+    pub fn prefixed(merk: &'a merk::Merk, prefix: &[u8]) -> Self {
         if prefix.is_empty() {
             return Self::new(merk);
         }
@@ -188,12 +188,12 @@ impl<'a> StorageIterator<'a> {
         let last = upper_bound.last_mut().unwrap();
         *last += 1;
 
-        let mut opts = fmerk::rocksdb::ReadOptions::default();
+        let mut opts = merk::rocksdb::ReadOptions::default();
         opts.set_iterate_upper_bound(upper_bound);
 
         Self {
             inner: merk.iter_opt(
-                fmerk::rocksdb::IteratorMode::From(prefix, fmerk::rocksdb::Direction::Forward),
+                merk::rocksdb::IteratorMode::From(prefix, merk::rocksdb::Direction::Forward),
                 opts,
             ),
         }
