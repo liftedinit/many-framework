@@ -62,12 +62,12 @@ function teardown() {
     ledger --id=1 multisig submit "$account_id" send "$(identity 3)" 100 MFX
     tx_id=$(echo "$output" | grep -oE "[0-9a-f]+$")
     # Cannot execute if not approved.
-    ledger_error --id=1 multisig execute "$tx_id"
+    ledger --error --id=1 multisig execute "$tx_id"
 
     ledger --id=2 multisig approve "$tx_id"
 
     # Cannot execute if not submitted.
-    ledger_error --id=2 multisig execute "$tx_id"
+    ledger --error --id=2 multisig execute "$tx_id"
 
     ledger --id=1 multisig execute "$tx_id"
 
@@ -97,11 +97,11 @@ function teardown() {
     ledger --id=2 multisig approve "$tx_id"
     ledger --id=1 multisig revoke "$tx_id"
 
-    ledger_error --id=1 multisig execute "$tx_id"
+    ledger --error --id=1 multisig execute "$tx_id"
 
     ledger --id=1 multisig approve "$tx_id"
     ledger --id=2 multisig revoke "$tx_id"
-    ledger_error --id=1 multisig execute "$tx_id"
+    ledger --error --id=1 multisig execute "$tx_id"
 
     ledger --id=2 multisig approve "$tx_id"
     ledger --id=1 multisig execute "$tx_id"

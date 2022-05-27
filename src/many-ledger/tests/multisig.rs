@@ -1,6 +1,6 @@
 use many::server::module::account::features::multisig;
 use many::server::module::account::features::{FeatureInfo, FeatureSet};
-use many::server::module::account::{Account, CreateArgs};
+use many::server::module::account::{Account, CreateArgs, Role};
 use many::types::ledger::{Symbol, TokenAmount};
 use many::Identity;
 use many_ledger::storage::LedgerStorage;
@@ -41,14 +41,8 @@ fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Iden
             CreateArgs {
                 description: None,
                 roles: Some(BTreeMap::from_iter([
-                    (
-                        identity(2),
-                        BTreeSet::from_iter(["canMultisigApprove".to_string()]),
-                    ),
-                    (
-                        identity(3),
-                        BTreeSet::from_iter(["canMultisigSubmit".to_string()]),
-                    ),
+                    (identity(2), BTreeSet::from_iter([Role::CanMultisigApprove])),
+                    (identity(3), BTreeSet::from_iter([Role::CanMultisigSubmit])),
                 ])),
                 features: FeatureSet::from_iter([
                     multisig::MultisigAccountFeature::default().as_feature()
