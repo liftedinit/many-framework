@@ -1,4 +1,6 @@
+use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
+use coset::{CborSerializable, CoseKey};
 use many::message::error::ManyErrorCode;
 use many::message::ResponseMessage;
 use many::server::module::abci_backend::{
@@ -6,8 +8,12 @@ use many::server::module::abci_backend::{
 };
 use many::server::module::account::features::multisig;
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
-use many::server::module::{account, ledger, EmptyReturn};
-use many::types::ledger::{Symbol, TokenAmount, Transaction, TransactionKind};
+use many::server::module::idstore::{
+    GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
+    StoreReturns,
+};
+use many::server::module::{account, idstore, ledger, EmptyReturn};
+use many::types::ledger::{Symbol, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError};
 use minicbor::bytes::ByteVec;
@@ -54,6 +60,7 @@ pub(crate) fn validate_features_for_account(account: &account::Account) -> Resul
 }
 
 type TxResult = Result<Transaction, ManyError>;
+
 fn filter_account<'a>(
     it: Box<dyn Iterator<Item = TxResult> + 'a>,
     account: Option<VecOrSingle<Identity>>,
@@ -111,16 +118,6 @@ fn filter_date<'a>(
         Ok(Transaction { time, .. }) => range.contains(time),
     }))
 }
-
-/// The initial state schema, loaded from JSON.
-#[derive(serde::Deserialize, Debug, Default)]
-pub struct InitialStateJson {
-    identity: Identity,
-    initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
-    symbols: BTreeMap<Identity, String>,
-    hash: Option<String>,
-}
-
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
@@ -134,7 +131,7 @@ impl LedgerModuleImpl {
         blockchain: bool,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
-            let storage = LedgerStorage::new(
+            let mut storage = LedgerStorage::new(
                 state.symbols,
                 state.initial,
                 persistence_store_path,
@@ -142,6 +139,14 @@ impl LedgerModuleImpl {
                 blockchain,
             )
             .map_err(ManyError::unknown)?;
+
+            if let Some(accounts) = state.accounts {
+                for account in accounts {
+                    account
+                        .create_account(&mut storage)
+                        .expect("Could not create accounts");
+                }
+            }
 
             if let Some(h) = state.hash {
                 // Verify the hash.
@@ -236,10 +241,22 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
         } = args;
 
         let from = from.as_ref().unwrap_or(sender);
-
-        // TODO: allow some ACLs or delegation on the ledger.
         if from != sender {
-            return Err(error::unauthorized());
+            if let Some(account) = self.storage.get_account(from) {
+                if account
+                    .features
+                    .has_id(account::features::ledger::AccountLedger::ID)
+                {
+                    account.needs_role(
+                        sender,
+                        [account::Role::CanLedgerTransact, account::Role::Owner],
+                    )?;
+                } else {
+                    return Err(error::unauthorized());
+                }
+            } else {
+                return Err(error::unauthorized());
+            }
         }
 
         self.storage.send(from, &to, &symbol, amount)?;
@@ -307,6 +324,11 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
                 ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.list".to_string(), EndpointInfo { is_command: false }),
+
+                // IdStore
+                ("idstore.store".to_string(), EndpointInfo { is_command: true}),
+                ("idstore.getFromRecallPhrase".to_string(), EndpointInfo { is_command: true}),
+                ("idstore.getFromAddress".to_string(), EndpointInfo { is_command: true}),
 
                 // Accounts
                 ("account.create".to_string(), EndpointInfo { is_command: true }),
@@ -601,5 +623,350 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
         self.storage
             .withdraw_multisig(sender, args.token.as_slice())
             .map(|_| EmptyReturn)
+    }
+}
+
+/// Return a recall phrase
+//
+/// The following relation need to hold for having a valid decoding/encoding:
+///
+///     // length_bytes(data) * 8 + checksum = number_of(words) * 11
+///
+/// See [bip39-dict](https://github.com/vincenthz/bip39-dict) for details
+///  
+/// # Generic Arguments
+///
+/// * `W` - Word cound
+/// * `FB` - Full Bytes
+/// * `CS` - Checksum Bytes
+pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
+    seed: &[u8],
+) -> Result<Vec<String>, ManyError> {
+    let entropy = bip39_dict::Entropy::<FB>::from_slice(seed)
+        .ok_or_else(|| ManyError::unknown("Unable to generate entropy"))?;
+    let mnemonic = entropy.to_mnemonics::<W, CS>().unwrap();
+    let recall_phrase = mnemonic
+        .to_string(&bip39_dict::ENGLISH)
+        .split_whitespace()
+        .map(|e| e.to_string())
+        .collect::<Vec<String>>();
+    Ok(recall_phrase)
+}
+
+impl IdStoreModuleBackend for LedgerModuleImpl {
+    fn store(
+        &mut self,
+        sender: &Identity,
+        StoreArgs {
+            address,
+            cred_id,
+            public_key,
+        }: StoreArgs,
+    ) -> Result<StoreReturns, ManyError> {
+        if sender.is_anonymous() {
+            return Err(ManyError::invalid_identity());
+        }
+
+        if !address.is_public_key() {
+            return Err(idstore::invalid_address(address.to_string()));
+        }
+
+        if !(16..=1023).contains(&cred_id.0.len()) {
+            return Err(idstore::invalid_credential_id(hex::encode(&*cred_id.0)));
+        }
+
+        let _: CoseKey = CoseKey::from_slice(&public_key.0)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+        let mut current_try = 1u8;
+        let recall_phrase = loop {
+            if current_try > 8 {
+                return Err(idstore::recall_phrase_generation_failed());
+            }
+
+            let seed = self.storage.inc_idstore_seed();
+            // Entropy can only be generated if the seed array contains the
+            // EXACT amount of full bytes, i.e., the FB parameter of
+            // `generate_recall_phrase`
+            let recall_phrase = match seed {
+                0..=0xFFFF => generate_recall_phrase::<2, 2, 6>(&seed.to_be_bytes()[6..]),
+                0x10000..=0xFFFFFF => generate_recall_phrase::<3, 4, 1>(&seed.to_be_bytes()[4..]),
+                0x1000000..=0xFFFFFFFF => {
+                    generate_recall_phrase::<4, 5, 4>(&seed.to_be_bytes()[3..])
+                }
+                0x100000000..=0xFFFFFFFFFF => {
+                    generate_recall_phrase::<5, 6, 7>(&seed.to_be_bytes()[2..])
+                }
+                _ => unimplemented!(),
+            }?;
+
+            if self.storage.get_from_recall_phrase(&recall_phrase).is_ok() {
+                current_try += 1;
+                tracing::debug!("Recall phrase generation failed, retrying...")
+            } else {
+                break recall_phrase;
+            }
+        };
+
+        self.storage
+            .store(&recall_phrase, &address, cred_id, public_key)?;
+        Ok(StoreReturns(recall_phrase))
+    }
+
+    fn get_from_recall_phrase(
+        &self,
+        args: GetFromRecallPhraseArgs,
+    ) -> Result<GetReturns, ManyError> {
+        let (cred_id, public_key) = self.storage.get_from_recall_phrase(&args.0)?;
+        Ok(GetReturns {
+            cred_id,
+            public_key,
+        })
+    }
+
+    fn get_from_address(&self, args: GetFromAddressArgs) -> Result<GetReturns, ManyError> {
+        let (cred_id, public_key) = self.storage.get_from_address(&args.0)?;
+        Ok(GetReturns {
+            cred_id,
+            public_key,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use many::{
+        server::module::idstore::{CredentialId, PublicKey},
+        types::identity::{cose::testsutils::generate_random_eddsa_identity, CoseKeyIdentity},
+    };
+    use minicbor::bytes::ByteVec;
+
+    fn setup() -> (
+        CoseKeyIdentity,
+        CredentialId,
+        tempfile::TempDir,
+        Option<InitialStateJson>,
+    ) {
+        let id = generate_random_eddsa_identity();
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 16])));
+        let persistent = tempfile::tempdir().unwrap();
+
+        let content = std::fs::read_to_string("../../staging/ledger_state.json").unwrap();
+        let initial_state: InitialStateJson = serde_json::from_str(&content).unwrap();
+
+        (id, cred_id, persistent, Some(initial_state))
+    }
+
+    #[test]
+    fn idstore_store() {
+        let (id, cred_id, persistent, initial_state) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
+
+        // Basic call
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 2);
+
+        // Make sure another call provides a different result
+        let result2 = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result2.is_ok());
+        let rp2 = result2.unwrap().0;
+        assert_eq!(rp2.len(), 2);
+        assert_ne!(rp, rp2);
+
+        // Generate the first 8 recall phrase
+        for _ in 2..8 {
+            let result3 = module_impl.store(
+                &id.identity,
+                StoreArgs {
+                    address: id.identity,
+                    cred_id: cred_id.clone(),
+                    public_key: PublicKey(public_key.clone().into()),
+                },
+            );
+            assert!(result3.is_ok());
+        }
+
+        // And reset the seed 0
+        module_impl.storage.set_idstore_seed(0);
+
+        // This should trigger the `recall_phrase_generation_failed()` exception
+        let result4 = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result4.is_err());
+        assert_eq!(
+            result4.unwrap_err().code,
+            idstore::recall_phrase_generation_failed().code
+        );
+
+        // Generate a 3-words phrase
+        module_impl.storage.set_idstore_seed(0x10000);
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 3);
+
+        // Generate a 4-words phrase
+        module_impl.storage.set_idstore_seed(0x1000000);
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 4);
+
+        // Generate a 5-words phrase
+        module_impl.storage.set_idstore_seed(0x100000000);
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id,
+                public_key: PublicKey(public_key.into()),
+            },
+        );
+        assert!(result.is_ok());
+        let rp = result.unwrap().0;
+        assert_eq!(rp.len(), 5);
+    }
+
+    #[test]
+    fn idstore_store_anon() {
+        let (id, _, persistent, initial_state) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
+
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
+        let result = module_impl.store(
+            &Identity::anonymous(),
+            StoreArgs {
+                address: id.identity,
+                cred_id,
+                public_key: PublicKey(public_key.into()),
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().code, ManyError::invalid_identity().code);
+    }
+
+    #[test]
+    fn idstore_invalid_cred_id() {
+        let (id, _, persistent, initial_state) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
+
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id,
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            idstore::invalid_credential_id("".to_string()).code
+        );
+
+        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 1024])));
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id,
+                public_key: PublicKey(public_key.into()),
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            idstore::invalid_credential_id("".to_string()).code
+        );
+    }
+
+    #[test]
+    fn idstore_get_from_recall_phrase() {
+        let (id, cred_id, persistent, initial_state) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+
+        assert!(result.is_ok());
+        let store_return = result.unwrap();
+
+        let result = module_impl.get_from_recall_phrase(GetFromRecallPhraseArgs(store_return.0));
+        assert!(result.is_ok());
+        let get_returns = result.unwrap();
+
+        assert_eq!(get_returns.cred_id, cred_id);
+        assert_eq!(get_returns.public_key.0.to_vec(), public_key);
+    }
+
+    #[test]
+    fn idstore_get_from_address() {
+        let (id, cred_id, persistent, initial_state) = setup();
+        let public_key = id.key.unwrap().to_vec().unwrap();
+        let mut module_impl = LedgerModuleImpl::new(initial_state, persistent, false).unwrap();
+        let result = module_impl.store(
+            &id.identity,
+            StoreArgs {
+                address: id.identity,
+                cred_id: cred_id.clone(),
+                public_key: PublicKey(public_key.clone().into()),
+            },
+        );
+
+        assert!(result.is_ok());
+
+        let result = module_impl.get_from_address(GetFromAddressArgs(id.identity));
+        assert!(result.is_ok());
+        let get_returns = result.unwrap();
+
+        assert_eq!(get_returns.cred_id, cred_id);
+        assert_eq!(get_returns.public_key.0.to_vec(), public_key);
     }
 }

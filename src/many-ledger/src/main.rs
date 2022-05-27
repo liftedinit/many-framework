@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, account, ledger};
+use many::server::module::{abci_backend, account, idstore, ledger};
 use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -10,9 +10,11 @@ use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
 mod error;
+mod json;
 mod module;
 mod storage;
 
+use crate::json::InitialStateJson;
 use module::*;
 
 #[derive(Parser, Debug)]
@@ -161,6 +163,7 @@ fn main() {
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
+        s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
         s.add_module(account::AccountModule::new(module_impl.clone()));
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),

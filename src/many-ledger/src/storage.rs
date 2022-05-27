@@ -5,6 +5,8 @@ use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
 use many::server::module::account::features::multisig;
 use many::server::module::account::features::FeatureInfo;
+use many::server::module::idstore;
+use many::server::module::idstore::{CredentialId, PublicKey, RecallPhrase};
 use many::server::module::{account, EmptyReturn};
 use many::types::ledger::{
     AccountMultisigTransaction, Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo,
@@ -173,8 +175,33 @@ pub struct AccountStorage {
     transactions_in_flight: Vec<multisig::InfoReturn>,
 }
 
+#[derive(Clone, minicbor::Encode, minicbor::Decode)]
+#[cbor(map)]
+struct CredentialStorage {
+    #[n(0)]
+    cred_id: CredentialId,
+
+    #[n(1)]
+    public_key: PublicKey,
+}
+
+enum IdStoreRootSeparator {
+    RecallPhrase,
+    Address,
+}
+
+impl IdStoreRootSeparator {
+    fn value(&self) -> &[u8] {
+        match *self {
+            IdStoreRootSeparator::RecallPhrase => b"00",
+            IdStoreRootSeparator::Address => b"01",
+        }
+    }
+}
+
 pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
 pub(crate) const MULTISIG_TRANSACTIONS_ROOT: &[u8] = b"/multisig/";
+pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
 
 // Left-shift the height by this amount of bits
 const HEIGHT_TXID_SHIFT: u64 = 32;
@@ -239,6 +266,8 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Identity,
+
+    idstore_seed: u64,
 }
 
 impl LedgerStorage {
@@ -310,6 +339,15 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
+        let idstore_seed = persistent_store
+            .get(b"/config/idstore_seed")
+            .unwrap()
+            .map_or(0u64, |x| {
+                let mut bytes = [0u8; 8];
+                bytes.copy_from_slice(x.as_slice());
+                u64::from_be_bytes(bytes)
+            });
+
         let latest_tid = TransactionId::from(height << HEIGHT_TXID_SHIFT);
 
         Ok(Self {
@@ -321,6 +359,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
+            idstore_seed,
         })
     }
 
@@ -366,6 +405,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
+            idstore_seed: 0,
         })
     }
 
@@ -408,6 +448,23 @@ impl LedgerStorage {
         self.account_identity
             .with_subresource_id(current_id)
             .expect("Too many accounts")
+    }
+
+    pub(crate) fn inc_idstore_seed(&mut self) -> u64 {
+        let current_seed = self.idstore_seed;
+        self.idstore_seed += 1;
+        self.persistent_store
+            .apply(&[(
+                b"/config/idstore_seed".to_vec(),
+                fmerk::Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
+            )])
+            .unwrap();
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+
+        current_seed
     }
 
     fn new_transaction_id(&mut self) -> TransactionId {
@@ -1026,6 +1083,104 @@ impl LedgerStorage {
             ..Default::default()
         })
     }
+
+    // IdStore
+    pub fn store(
+        &mut self,
+        recall_phrase: &RecallPhrase,
+        address: &Identity,
+        cred_id: CredentialId,
+        public_key: PublicKey,
+    ) -> Result<(), ManyError> {
+        let recall_phrase_cbor = minicbor::to_vec(recall_phrase)
+            .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+        if self
+            .persistent_store
+            .get(&recall_phrase_cbor)
+            .map_err(|e| ManyError::unknown(e.to_string()))?
+            .is_some()
+        {
+            return Err(idstore::existing_entry());
+        }
+        let value = minicbor::to_vec(CredentialStorage {
+            cred_id,
+            public_key,
+        })
+        .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+
+        let batch = vec![
+            (
+                vec![
+                    IDSTORE_ROOT,
+                    IdStoreRootSeparator::RecallPhrase.value(),
+                    &recall_phrase_cbor,
+                ]
+                .concat(),
+                fmerk::Op::Put(value.clone()),
+            ),
+            (
+                vec![
+                    IDSTORE_ROOT,
+                    IdStoreRootSeparator::Address.value(),
+                    &address.to_vec(),
+                ]
+                .concat(),
+                fmerk::Op::Put(value),
+            ),
+        ];
+
+        self.persistent_store.apply(&batch).unwrap();
+
+        if !self.blockchain {
+            self.persistent_store
+                .commit(&[])
+                .expect("Could not commit to store.");
+        }
+
+        Ok(())
+    }
+
+    fn get_from_storage(
+        &self,
+        key: &Vec<u8>,
+        sep: IdStoreRootSeparator,
+    ) -> Result<Option<Vec<u8>>, ManyError> {
+        self.persistent_store
+            .get(&vec![IDSTORE_ROOT, sep.value(), key].concat())
+            .map_err(|e| ManyError::unknown(e.to_string()))
+    }
+
+    pub fn get_from_recall_phrase(
+        &self,
+        recall_phrase: &RecallPhrase,
+    ) -> Result<(CredentialId, PublicKey), ManyError> {
+        let recall_phrase_cbor = minicbor::to_vec(&recall_phrase)
+            .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+        if let Some(value) =
+            self.get_from_storage(&recall_phrase_cbor, IdStoreRootSeparator::RecallPhrase)?
+        {
+            let value: CredentialStorage = minicbor::decode(&value)
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            Ok((value.cred_id, value.public_key))
+        } else {
+            Err(idstore::entry_not_found(recall_phrase.join(" ")))
+        }
+    }
+
+    pub fn get_from_address(
+        &self,
+        address: &Identity,
+    ) -> Result<(CredentialId, PublicKey), ManyError> {
+        if let Some(value) =
+            self.get_from_storage(&address.to_vec(), IdStoreRootSeparator::Address)?
+        {
+            let value: CredentialStorage = minicbor::decode(&value)
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            Ok((value.cred_id, value.public_key))
+        } else {
+            Err(idstore::entry_not_found(address.to_string()))
+        }
+    }
 }
 
 pub struct LedgerIterator<'a> {
@@ -1079,55 +1234,66 @@ impl<'a> Iterator for LedgerIterator<'a> {
     }
 }
 
-#[test]
-fn transaction_key_size() {
-    let golden_size = key_for_transaction(TransactionId::from(0)).len();
+#[cfg(test)]
+pub mod tests {
+    use super::*;
 
-    assert_eq!(
-        golden_size,
-        key_for_transaction(TransactionId::from(u64::MAX)).len()
-    );
-
-    // Test at 1 byte, 2 bytes and 4 bytes boundaries.
-    for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
-        assert_eq!(
-            golden_size,
-            key_for_transaction(TransactionId::from(i - 1)).len()
-        );
-        assert_eq!(
-            golden_size,
-            key_for_transaction(TransactionId::from(i)).len()
-        );
-        assert_eq!(
-            golden_size,
-            key_for_transaction(TransactionId::from(i + 1)).len()
-        );
+    impl LedgerStorage {
+        pub fn set_idstore_seed(&mut self, seed: u64) {
+            self.idstore_seed = seed;
+        }
     }
 
-    assert_eq!(
-        golden_size,
-        key_for_transaction(TransactionId::from(
-            b"012345678901234567890123456789".to_vec()
-        ))
-        .len()
-    );
+    #[test]
+    fn transaction_key_size() {
+        let golden_size = key_for_transaction(TransactionId::from(0)).len();
 
-    // Trim the Tx ID if it's too long.
-    assert_eq!(
-        golden_size,
-        key_for_transaction(TransactionId::from(
-            b"0123456789012345678901234567890123456789".to_vec()
-        ))
-        .len()
-    );
-    assert_eq!(
-        key_for_transaction(TransactionId::from(
-            b"01234567890123456789012345678901".to_vec()
-        ))
-        .len(),
-        key_for_transaction(TransactionId::from(
-            b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
-        ))
-        .len()
-    )
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(u64::MAX)).len()
+        );
+
+        // Test at 1 byte, 2 bytes and 4 bytes boundaries.
+        for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
+            assert_eq!(
+                golden_size,
+                key_for_transaction(TransactionId::from(i - 1)).len()
+            );
+            assert_eq!(
+                golden_size,
+                key_for_transaction(TransactionId::from(i)).len()
+            );
+            assert_eq!(
+                golden_size,
+                key_for_transaction(TransactionId::from(i + 1)).len()
+            );
+        }
+
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(
+                b"012345678901234567890123456789".to_vec()
+            ))
+            .len()
+        );
+
+        // Trim the Tx ID if it's too long.
+        assert_eq!(
+            golden_size,
+            key_for_transaction(TransactionId::from(
+                b"0123456789012345678901234567890123456789".to_vec()
+            ))
+            .len()
+        );
+        assert_eq!(
+            key_for_transaction(TransactionId::from(
+                b"01234567890123456789012345678901".to_vec()
+            ))
+            .len(),
+            key_for_transaction(TransactionId::from(
+                b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
+            ))
+            .len()
+        )
+    }
 }

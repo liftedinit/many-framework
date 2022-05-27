@@ -284,6 +284,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bip39-dict"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33b74d395d6b577a1e3c1348545cef70a418281c83abbe50f5662ae4d4abf6d8"
+dependencies = [
+ "cryptoxide",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -729,6 +738,12 @@ dependencies = [
  "libloading",
  "target-lexicon",
 ]
+
+[[package]]
+name = "cryptoxide"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "129eabb7b0b78644a3a7e7cf220714aba47463bb281f69fa7a71ca5d12564cca"
 
 [[package]]
 name = "ct-logs"
@@ -1755,6 +1770,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=c80f6314957bc0d7b084c883367bc012b5d473f7#c80f6314957bc0d7b084c883367bc012b5d473f7"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1832,6 +1848,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=c80f6314957bc0d7b084c883367bc012b5d473f7#c80f6314957bc0d7b084c883367bc012b5d473f7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1898,7 +1915,9 @@ name = "many-ledger"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bip39-dict",
  "clap 3.1.18",
+ "coset",
  "fixed",
  "hex",
  "itertools",
@@ -1911,6 +1930,7 @@ dependencies = [
  "minicbor",
  "num-bigint",
  "num-traits",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sha3",
@@ -1925,6 +1945,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+source = "git+https://github.com/the-lifted-initiative/many-rs.git?rev=c80f6314957bc0d7b084c883367bc012b5d473f7#c80f6314957bc0d7b084c883367bc012b5d473f7"
 dependencies = [
  "inflections",
  "proc-macro2",

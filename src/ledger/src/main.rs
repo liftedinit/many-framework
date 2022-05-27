@@ -121,6 +121,11 @@ struct BalanceOpt {
 
 #[derive(Parser)]
 pub(crate) struct TargetCommandOpt {
+    /// The from identity, if different than the one provided by the
+    /// PEM argument.
+    #[clap(long)]
+    account: Option<Identity>,
+
     /// The account or target identity.
     identity: Identity,
 
@@ -263,17 +268,18 @@ pub(crate) fn wait_response(
 
 fn send(
     client: ManyClient,
+    from: Identity,
     to: Identity,
     amount: BigUint,
     symbol: String,
 ) -> Result<(), ManyError> {
     let symbol = resolve_symbol(&client, symbol)?;
 
-    if client.id.identity.is_anonymous() {
+    if from.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
         let arguments = SendArgs {
-            from: None,
+            from: Some(from),
             to,
             symbol,
             amount: TokenAmount::from(amount),
@@ -354,10 +360,14 @@ fn main() {
             balance(client, identity, symbols)
         }
         SubCommand::Send(TargetCommandOpt {
+            account,
             identity,
             amount,
             symbol,
-        }) => send(client, identity, amount, symbol),
+        }) => {
+            let from = account.unwrap_or(client.id.identity);
+            send(client, from, identity, amount, symbol)
+        }
         SubCommand::Multisig(opts) => multisig::multisig(client, opts),
     };
 

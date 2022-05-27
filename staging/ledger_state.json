@@ -2,11 +2,48 @@
   "identity": "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow",
   "initial": {
     "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
-      "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000
+      "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000000
+    },
+    "mqdukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iaaaaq25": {
+      "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": 1000000000
     }
   },
   "symbols": {
     "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "MFX"
   },
-  "hash": "2f136dfbb7bf5c2178297c8b6486162aeaf9555046a56b5f45995fec83639618"
+  "accounts": [
+    {
+      "subresource_id": 0,
+      "description": "Generic account for testing",
+      "roles": {
+        "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": ["owner", "canMultisigSubmit"],
+        "mafbp553oq57taqhnz3muqombqtw4eiqsqoaux4hmwtv2xuyf3": ["canMultisigApprove"],
+        "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow": ["canMultisigApprove"]
+      },
+      "features": [
+        {
+          "id": 1,
+          "arg": {
+            "threshold": 2,
+            "timeout_in_secs": 86400
+          }
+        }
+      ]
+    },
+    {
+      "subresource_id": 1,
+      "description": "Generic account for testing (2)",
+      "roles": {
+        "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": ["owner"],
+        "mafbp553oq57taqhnz3muqombqtw4eiqsqoaux4hmwtv2xuyf3": ["canLedgerTransact"],
+        "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow": ["canLedgerTransact"]
+      },
+      "features": [
+        {
+          "id": 0
+        }
+      ]
+    }
+  ],
+  "hash": "ca17a2c678d52849228b7f44f31ffdc4cdf1111b718d97043d7b313793a53a64"
 }
