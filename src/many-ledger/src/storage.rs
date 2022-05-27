@@ -20,7 +20,7 @@ use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use tracing::info;
+use tracing::{info, warn};
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
@@ -456,7 +456,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 b"/config/idstore_seed".to_vec(),
-                fmerk::Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
+                Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
             )])
             .unwrap();
 
@@ -850,6 +850,7 @@ impl LedgerStorage {
         match arg.transaction.as_ref() {
             AccountMultisigTransaction::Send(module::ledger::SendArgs { from, .. }) => {
                 if from.as_ref() != Some(&account_id) {
+                    warn!("{:?} != {}", from, account_id.to_string());
                     return Err(ManyError::unknown("Invalid transaction.".to_string()));
                 }
             }
@@ -1116,7 +1117,7 @@ impl LedgerStorage {
                     &recall_phrase_cbor,
                 ]
                 .concat(),
-                fmerk::Op::Put(value.clone()),
+                Op::Put(value.clone()),
             ),
             (
                 vec![
@@ -1125,7 +1126,7 @@ impl LedgerStorage {
                     &address.to_vec(),
                 ]
                 .concat(),
-                fmerk::Op::Put(value),
+                Op::Put(value),
             ),
         ];
 
