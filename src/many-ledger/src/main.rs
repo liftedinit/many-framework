@@ -17,6 +17,12 @@ mod storage;
 use crate::json::InitialStateJson;
 use module::*;
 
+#[derive(clap::ArgEnum, Clone, Debug)]
+enum LogStrategy {
+    Terminal,
+    Syslog,
+}
+
 #[derive(Parser, Debug)]
 #[clap(args_override_self(true))]
 struct Opts {
@@ -68,6 +74,10 @@ struct Opts {
     #[cfg(feature = "balance_testing")]
     #[clap(long)]
     balance_only_for_testing: Option<Vec<String>>,
+
+    /// Use given logging strategy
+    #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
+    logmode: LogStrategy,
 }
 
 fn main() {
@@ -81,6 +91,7 @@ fn main() {
         persistent,
         clean,
         allow_origin,
+        logmode,
         ..
     } = Opts::parse();
 
@@ -94,7 +105,22 @@ fn main() {
         x if x < 0 => LevelFilter::OFF,
         _ => unreachable!(),
     };
-    tracing_subscriber::fmt().with_max_level(log_level).init();
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder().with_max_level(log_level);
+
+    match logmode {
+        LogStrategy::Terminal => {
+            let subscriber = subscriber.with_writer(std::io::stderr);
+            subscriber.init();
+        }
+        LogStrategy::Syslog => {
+            let identity = std::ffi::CStr::from_bytes_with_nul(b"many-ledger\0").unwrap();
+            let (options, facility) = Default::default();
+            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+
+            let subscriber = subscriber.with_writer(syslog);
+            subscriber.init();
+        }
+    };
 
     debug!("{:?}", Opts::parse());
 
