@@ -99,7 +99,7 @@ async fn main() {
 
     match logmode {
         LogStrategy::Terminal => {
-            let subscriber = subscriber.with_writer(std::io::stdout);
+            let subscriber = subscriber.with_writer(std::io::stderr);
             subscriber.init();
         }
         LogStrategy::Syslog => {
