@@ -18,7 +18,7 @@ doc = false
 [dependencies]
 async-trait = "0.1.51"
 clap = { version = "3.0.0", features = ["derive"] }
-merk = { git = "https://github.com/liftedinit/merk.git", rev = "8bbff1dd2fbc8ed550263482870e740e63e30142" }
+merk = { git = "https://github.com/liftedinit/merk.git", rev = "616027f1d3d502f225ec7b28a9eebbc667a1c5c7" }
 hex = "0.4.3"
 itertools = "0.10.3"
 lazy_static = "1.4.0"
