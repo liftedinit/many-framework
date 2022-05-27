@@ -15,12 +15,10 @@ jobs:
       id: vars
       run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
     - name: Build
-      # run: cargo build --release
-      run: echo "Foobar" > Release_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}
-    # - name: Create release archive
-    #   run: find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz --null -T -
+      run: cargo build --release
+    - name: Create release archive
+      run: find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz --null -T -
     - name: Upload binary to release
       uses: softprops/action-gh-release@v1
       with:
-        # files: many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz
-        files: Release_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}
+        files: many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz
