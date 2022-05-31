@@ -1999,7 +1999,6 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 [[package]]
 name = "merk"
 version = "1.0.0"
-source = "git+https://github.com/liftedinit/merk.git?rev=253678fe9fdb02bd4ade04790ad8f41801c73d95#253678fe9fdb02bd4ade04790ad8f41801c73d95"
 dependencies = [
  "blake3",
  "byteorder",
