@@ -113,29 +113,6 @@
 
 . "${BASH_SOURCE%/*}/helper-function"
 
-# Unconditionally returns a failing status
-#
-# Will print an optional failure reason, the Bats 'run' command exit status, and
-# the output from the 'run' command, all to standard error.
-#
-# Globals:
-#   bats_fail_no_output:  If nonempty, will not print `status` and `output`
-#
-# Arguments:
-#   $1:  (optional) Reason to include in the failure output
-fail() {
-  set "$DISABLE_BATS_SHELL_OPTIONS"
-  local reason="$1"
-
-  if [[ -n "$reason" ]]; then
-    printf '%b\n' "$reason" >&2
-  fi
-  if [[ -z "$bats_fail_no_output" ]]; then
-    printf 'STATUS: %d\nOUTPUT:\n%b\n' "$status" "$output" >&2
-  fi
-  restore_bats_shell_options '1'
-}
-
 # Negates the expected outcome of an assertion from this file.
 #
 # The first argument should be the name of an assertion from this file _without_
