@@ -255,6 +255,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "base64"
+version = "0.20.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "149ea5dc24cb11513350770afebba32b68e3d2e356f9221351a2a1ee89112a82"
+
+[[package]]
 name = "base64ct"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1037,6 +1043,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "failure"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d32e9bd16cc02eae7db7ef620b392808b89f6a5e16bb3497d159c6b92a0f4f86"
+dependencies = [
+ "backtrace",
+ "failure_derive",
+]
+
+[[package]]
+name = "failure_derive"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
 name = "fastrand"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1312,7 +1340,7 @@ version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cff78e5788be1e0ab65b04d306b2ed5092c815ec97ec70f4ebd5aee158aa55d"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "bitflags",
  "bytes",
  "headers-core",
@@ -1521,6 +1549,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "idstore-export"
+version = "0.1.0"
+dependencies = [
+ "base64 0.20.0-alpha.1",
+ "clap 3.1.18",
+ "merk",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "indenter"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1669,14 +1708,12 @@ version = "0.1.0"
 dependencies = [
  "clap 3.1.18",
  "crc-any",
- "derive_builder",
  "hex",
  "humantime",
  "indicatif",
  "lazy_static",
  "many",
  "many-client",
- "merk",
  "minicbor",
  "num-bigint",
  "regex",
@@ -1756,7 +1793,7 @@ dependencies = [
  "asn1",
  "async-trait",
  "base32",
- "base64",
+ "base64 0.13.0",
  "coset",
  "crc-any",
  "cryptoki",
@@ -1834,7 +1871,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "base32",
- "base64",
+ "base64 0.13.0",
  "coset",
  "crc-any",
  "derive_builder",
@@ -1968,6 +2005,7 @@ dependencies = [
  "byteorder",
  "colored",
  "ed",
+ "failure",
  "hex",
  "jemallocator",
  "num_cpus",
@@ -2162,7 +2200,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7249a699cdeea261ac73f1bf9350777cb867324f44373aafb5a287365bf1771"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "byteorder",
  "md-5",
  "sha2 0.9.9",
@@ -2333,7 +2371,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9a3b09a20e374558580a4914d3b7d89bd61b954a5a5e1dcbea98753addb1947"
 dependencies = [
- "base64",
+ "base64 0.13.0",
 ]
 
 [[package]]
@@ -2645,7 +2683,7 @@ version = "0.11.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46a1f7aa4f35e5e8b4160449f51afc758f0ce6454315a9fa7d0d113e958c41eb"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -2763,7 +2801,7 @@ version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35edb675feee39aec9c99fa5ff985081995a06d594114ae14cbe797ad7b7a6d7"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "log",
  "ring 0.16.20",
  "sct",

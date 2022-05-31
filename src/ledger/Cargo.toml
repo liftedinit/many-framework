@@ -18,8 +18,6 @@ doc = false
 [dependencies]
 clap = { version = "3.0.0", features = ["derive"] }
 crc-any = "2.4.0"
-derive_builder = "0.10.2"
-merk = { git = "https://github.com/liftedinit/merk.git", rev = "253678fe9fdb02bd4ade04790ad8f41801c73d95" }
 hex = "0.4.3"
 humantime = "2.1.0"
 indicatif = "0.16.2"

@@ -8,6 +8,7 @@ FROM chef AS planner
 COPY /rust-toolchain.toml /Cargo.* ./
 RUN cargo version
 COPY /src/http_proxy/Cargo.toml ./src/http_proxy/
+COPY /src/idstore-export/Cargo.toml ./src/idstore-export/
 COPY /src/kvstore/Cargo.toml ./src/kvstore/
 COPY /src/ledger/Cargo.toml ./src/ledger/
 COPY /src/many-abci/Cargo.toml ./src/many-abci/
