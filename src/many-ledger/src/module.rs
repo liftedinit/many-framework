@@ -137,8 +137,20 @@ impl LedgerModuleImpl {
                 persistence_store_path,
                 state.identity,
                 blockchain,
+                state.id_store_seed,
+                state.id_store_keys.map(|keys| {
+                    keys.iter()
+                        .map(|(k, v)| {
+                            let k = base64::decode(&k).expect("Invalid base64 for key");
+                            let v = base64::decode(&v).expect("Invalid base64 for value");
+                            (k, v)
+                        })
+                        .collect()
+                }),
             )
             .map_err(ManyError::unknown)?;
+
+            let mut should_commit = false;
 
             if let Some(accounts) = state.accounts {
                 for account in accounts {
@@ -146,9 +158,12 @@ impl LedgerModuleImpl {
                         .create_account(&mut storage)
                         .expect("Could not create accounts");
                 }
-                storage.commit_persistent_store().expect("Could not commit");
+                should_commit = true;
             }
 
+            if should_commit {
+                storage.commit_persistent_store().expect("Could not commit");
+            }
             if let Some(h) = state.hash {
                 // Verify the hash.
                 let actual = hex::encode(storage.hash());
