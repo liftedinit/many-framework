@@ -17,6 +17,7 @@ doc = false
 
 [dependencies]
 async-trait = "0.1.51"
+base64 = "0.20.0-alpha.1"
 bip39-dict = "0.1"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"

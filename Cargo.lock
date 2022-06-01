@@ -1556,6 +1556,7 @@ dependencies = [
  "clap 3.1.18",
  "merk",
  "serde",
+ "serde_derive",
  "serde_json",
 ]
 
@@ -1933,6 +1934,7 @@ name = "many-ledger"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64 0.20.0-alpha.1",
  "bip39-dict",
  "clap 3.1.18",
  "coset",
