@@ -59,6 +59,32 @@ pub(crate) fn validate_features_for_account(account: &account::Account) -> Resul
     Ok(())
 }
 
+pub(crate) fn validate_roles_for_account(account: &account::Account) -> Result<(), ManyError> {
+    let features = account.features();
+
+    let mut allowed_roles = BTreeSet::from([account::Role::Owner]);
+    let mut account_roles = BTreeSet::<account::Role>::new();
+    for (_, r) in account.roles.iter() {
+        account_roles.extend(r.iter())
+    }
+
+    // TODO: somehow keep this list updated with the above.
+    if features.get::<multisig::MultisigAccountFeature>().is_ok() {
+        allowed_roles.append(&mut multisig::MultisigAccountFeature::roles());
+    }
+    if features.get::<account::features::ledger::AccountLedger>().is_ok() {
+        allowed_roles.append(&mut account::features::ledger::AccountLedger::roles());
+    }
+
+    for r in account_roles {
+        if !allowed_roles.contains(&r) {
+            return Err(account::errors::unknown_role(r.to_string()));
+        }
+    }
+
+    Ok(())
+}
+
 type TxResult = Result<Transaction, ManyError>;
 
 fn filter_account<'a>(
@@ -407,6 +433,9 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
         // Verify that we support all features.
         validate_features_for_account(&account)?;
+
+        // Verify the roles are supported by the features
+        validate_roles_for_account(&account)?;
 
         let id = self.storage.add_account(account)?;
         Ok(account::CreateReturn { id })
