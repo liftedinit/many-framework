@@ -28,7 +28,7 @@ lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 num-traits = "0.2.14"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "https://github.com/liftedinit/many-rs.git", rev = "be225fa715ab9e0a37460563d03e666134eefd38", features = ["pem", "raw"] }
+many = { git = "https://github.com/fmorency/many-rs.git", rev = "21b102eff8014999a3a0ac6901f8b4852eed2b06", features = ["pem", "raw"] }
 many-abci = { path = "../many-abci" }
 many-kvstore = { path = "../many-kvstore" }
 rand = "0.8"
@@ -43,8 +43,9 @@ tracing-syslog = { git = "https://github.com/max-heller/tracing-syslog.git", rev
 typenum = "1.15.0"
 
 [dev-dependencies]
-many = { git = "https://github.com/liftedinit/many-rs.git", rev = "be225fa715ab9e0a37460563d03e666134eefd38", features = ["testing"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "be225fa715ab9e0a37460563d03e666134eefd38" }
+once_cell = "1.12"
+many = { git = "https://github.com/fmorency/many-rs.git", rev = "21b102eff8014999a3a0ac6901f8b4852eed2b06", features = ["testing"] }
+many-client = { git = "https://github.com/fmorency/many-rs.git", rev = "21b102eff8014999a3a0ac6901f8b4852eed2b06" }
 tempfile = "3.3.0"
 
 [features]
