@@ -150,18 +150,12 @@ impl LedgerModuleImpl {
             )
             .map_err(ManyError::unknown)?;
 
-            let mut should_commit = false;
-
             if let Some(accounts) = state.accounts {
                 for account in accounts {
                     account
                         .create_account(&mut storage)
                         .expect("Could not create accounts");
                 }
-                should_commit = true;
-            }
-
-            if should_commit {
                 storage.commit_persistent_store().expect("Could not commit");
             }
             if let Some(h) = state.hash {

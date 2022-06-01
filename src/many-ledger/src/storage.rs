@@ -460,7 +460,7 @@ impl LedgerStorage {
     }
 
     pub(crate) fn inc_idstore_seed(&mut self) -> u64 {
-        let mut idstore_seed = self
+        let idstore_seed = self
             .persistent_store
             .get(b"/config/idstore_seed")
             .unwrap()
@@ -469,11 +469,11 @@ impl LedgerStorage {
                 bytes.copy_from_slice(x.as_slice());
                 u64::from_be_bytes(bytes)
             });
-        idstore_seed += 1;
+
         self.persistent_store
             .apply(&[(
                 b"/config/idstore_seed".to_vec(),
-                Op::Put(idstore_seed.to_be_bytes().to_vec()),
+                Op::Put((idstore_seed + 1).to_be_bytes().to_vec()),
             )])
             .unwrap();
 

@@ -43,7 +43,7 @@ fn main() {
     let root = JsonRoot {
         seed: merk
             .get(b"/config/idstore_seed")
-            .expect("Could not read see")
+            .expect("Could not read seed")
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];
                 bytes.copy_from_slice(x.as_slice());
