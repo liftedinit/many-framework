@@ -72,7 +72,10 @@ pub(crate) fn validate_roles_for_account(account: &account::Account) -> Result<(
     if features.get::<multisig::MultisigAccountFeature>().is_ok() {
         allowed_roles.append(&mut multisig::MultisigAccountFeature::roles());
     }
-    if features.get::<account::features::ledger::AccountLedger>().is_ok() {
+    if features
+        .get::<account::features::ledger::AccountLedger>()
+        .is_ok()
+    {
         allowed_roles.append(&mut account::features::ledger::AccountLedger::roles());
     }
 
@@ -1041,6 +1044,21 @@ mod tests {
 
         let create_return = result.unwrap();
         assert_ne!(create_return.id, Identity::anonymous());
+
+        // Verify we can't create an account with roles unsupported by feature
+        let mut args = CREATE_ARGS.clone();
+        if let Some(roles) = args.roles.as_mut() {
+            roles.insert(
+                identity(4),
+                BTreeSet::from_iter([account::Role::CanLedgerTransact]),
+            );
+        }
+        let result = module_impl.create(&id.identity, args);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            account::errors::unknown_role("").code,
+        );
     }
 
     #[test]
