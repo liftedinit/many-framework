@@ -31,7 +31,16 @@ fn setup<B: IntoIterator<Item = (Identity, u64)>>(b: B) -> LedgerStorage {
 
     let persistent_path = tempfile::tempdir().unwrap();
 
-    LedgerStorage::new(symbols, balances, persistent_path, identity(0), false).unwrap()
+    LedgerStorage::new(
+        symbols,
+        balances,
+        persistent_path,
+        identity(0),
+        false,
+        None,
+        None,
+    )
+    .unwrap()
 }
 
 fn create_account(storage: &mut LedgerStorage, account_owner: &Identity) -> Identity {
