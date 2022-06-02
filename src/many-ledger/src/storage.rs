@@ -1,5 +1,5 @@
 use crate::error;
-use crate::module::validate_features_for_account;
+use crate::module::{validate_features_for_account, validate_roles_for_account};
 use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
@@ -44,6 +44,9 @@ fn _execute_multisig_tx(
 
             // Verify that we support all features.
             validate_features_for_account(&account)?;
+
+            // Verify the roles are supported by the features
+            validate_roles_for_account(&account)?;
 
             let id = ledger.add_account(account)?;
             minicbor::to_vec(account::CreateReturn { id })
