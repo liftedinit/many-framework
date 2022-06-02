@@ -768,49 +768,41 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use coset::CborSerializable;
     use many::{
-        server::module::{
-            account::{
-                features::FeatureSet, AccountModuleBackend, AddRolesArgs, CreateArgs, CreateReturn,
-                DeleteArgs, GetRolesArgs, ListRolesArgs, RemoveRolesArgs, SetDescriptionArgs,
-            },
-            idstore::{CredentialId, PublicKey},
-        },
-        types::identity::{
-            cose::testsutils::generate_random_eddsa_identity, testing::identity, CoseKeyIdentity,
-        },
+        server::module::idstore::{self, CredentialId, IdStoreModuleBackend},
+        types::identity::cose::testsutils::generate_random_eddsa_identity,
     };
-    use minicbor::bytes::ByteVec;
-    use once_cell::sync::Lazy;
 
-    fn setup() -> (CoseKeyIdentity, CredentialId, LedgerModuleImpl) {
-        let id = generate_random_eddsa_identity();
-        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 16])));
-        let persistent = tempfile::tempdir().unwrap();
-
-        let content = std::fs::read_to_string("../../staging/ledger_state.json").unwrap();
-        let initial_state: InitialStateJson = serde_json::from_str(&content).unwrap();
-
-        let module_impl = LedgerModuleImpl::new(Some(initial_state), persistent, false).unwrap();
-
-        (id, cred_id, module_impl)
-    }
-
-    // IDSTORE TESTS
+    use crate::module::LedgerModuleImpl;
 
     #[test]
-    fn idstore_store() {
-        let (id, cred_id, mut module_impl) = setup();
-        let public_key = id.key.unwrap().to_vec().unwrap();
+    /// Test every recall phrase generation codepath
+    fn idstore_generate_recall_phrase_all_codepaths() {
+        let cose_key_id = generate_random_eddsa_identity();
+        let public_key: idstore::PublicKey =
+            idstore::PublicKey(cose_key_id.key.unwrap().to_vec().unwrap().into());
+        let mut module_impl = LedgerModuleImpl::new(
+            Some(
+                serde_json::from_str(
+                    &std::fs::read_to_string("../../staging/ledger_state.json").unwrap(),
+                )
+                .unwrap(),
+            ),
+            tempfile::tempdir().unwrap(),
+            false,
+        )
+        .unwrap();
+        let cred_id = CredentialId(vec![1; 16].into());
+        let id = cose_key_id.identity;
 
         // Basic call
         let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
+            &id,
+            idstore::StoreArgs {
+                address: id,
                 cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
+                public_key: public_key.clone(),
             },
         );
         assert!(result.is_ok());
@@ -819,11 +811,11 @@ mod tests {
 
         // Make sure another call provides a different result
         let result2 = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
+            &id,
+            idstore::StoreArgs {
+                address: id,
                 cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
+                public_key: public_key.clone(),
             },
         );
         assert!(result2.is_ok());
@@ -834,11 +826,11 @@ mod tests {
         // Generate the first 8 recall phrase
         for _ in 2..8 {
             let result3 = module_impl.store(
-                &id.identity,
-                StoreArgs {
-                    address: id.identity,
+                &id,
+                idstore::StoreArgs {
+                    address: id,
                     cred_id: cred_id.clone(),
-                    public_key: PublicKey(public_key.clone().into()),
+                    public_key: public_key.clone(),
                 },
             );
             assert!(result3.is_ok());
@@ -849,11 +841,11 @@ mod tests {
 
         // This should trigger the `recall_phrase_generation_failed()` exception
         let result4 = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
+            &id,
+            idstore::StoreArgs {
+                address: id,
                 cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
+                public_key: public_key.clone(),
             },
         );
         assert!(result4.is_err());
@@ -865,11 +857,11 @@ mod tests {
         // Generate a 3-words phrase
         module_impl.storage.set_idstore_seed(0x10000);
         let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
+            &id,
+            idstore::StoreArgs {
+                address: id,
                 cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
+                public_key: public_key.clone(),
             },
         );
         assert!(result.is_ok());
@@ -879,11 +871,11 @@ mod tests {
         // Generate a 4-words phrase
         module_impl.storage.set_idstore_seed(0x1000000);
         let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
+            &id,
+            idstore::StoreArgs {
+                address: id,
                 cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
+                public_key: public_key.clone(),
             },
         );
         assert!(result.is_ok());
@@ -893,380 +885,15 @@ mod tests {
         // Generate a 5-words phrase
         module_impl.storage.set_idstore_seed(0x100000000);
         let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
+            &id,
+            idstore::StoreArgs {
+                address: id,
                 cred_id,
-                public_key: PublicKey(public_key.into()),
+                public_key,
             },
         );
         assert!(result.is_ok());
         let rp = result.unwrap().0;
         assert_eq!(rp.len(), 5);
-    }
-
-    #[test]
-    fn idstore_store_anon() {
-        let (id, _, mut module_impl) = setup();
-        let public_key = id.key.unwrap().to_vec().unwrap();
-
-        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
-        let result = module_impl.store(
-            &Identity::anonymous(),
-            StoreArgs {
-                address: id.identity,
-                cred_id,
-                public_key: PublicKey(public_key.into()),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().code, ManyError::invalid_identity().code);
-    }
-
-    #[test]
-    fn idstore_invalid_cred_id() {
-        let (id, _, mut module_impl) = setup();
-        let public_key = id.key.unwrap().to_vec().unwrap();
-
-        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 15])));
-        let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
-                cred_id,
-                public_key: PublicKey(public_key.clone().into()),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            idstore::invalid_credential_id("".to_string()).code
-        );
-
-        let cred_id = CredentialId(ByteVec::from(Vec::from([1; 1024])));
-        let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
-                cred_id,
-                public_key: PublicKey(public_key.into()),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            idstore::invalid_credential_id("".to_string()).code
-        );
-    }
-
-    #[test]
-    fn idstore_get_from_recall_phrase() {
-        let (id, cred_id, mut module_impl) = setup();
-        let public_key = id.key.unwrap().to_vec().unwrap();
-        let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
-                cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
-            },
-        );
-
-        assert!(result.is_ok());
-        let store_return = result.unwrap();
-
-        let result = module_impl.get_from_recall_phrase(GetFromRecallPhraseArgs(store_return.0));
-        assert!(result.is_ok());
-        let get_returns = result.unwrap();
-
-        assert_eq!(get_returns.cred_id, cred_id);
-        assert_eq!(get_returns.public_key.0.to_vec(), public_key);
-    }
-
-    #[test]
-    fn idstore_get_from_address() {
-        let (id, cred_id, mut module_impl) = setup();
-        let public_key = id.key.unwrap().to_vec().unwrap();
-        let result = module_impl.store(
-            &id.identity,
-            StoreArgs {
-                address: id.identity,
-                cred_id: cred_id.clone(),
-                public_key: PublicKey(public_key.clone().into()),
-            },
-        );
-
-        assert!(result.is_ok());
-
-        let result = module_impl.get_from_address(GetFromAddressArgs(id.identity));
-        assert!(result.is_ok());
-        let get_returns = result.unwrap();
-
-        assert_eq!(get_returns.cred_id, cred_id);
-        assert_eq!(get_returns.public_key.0.to_vec(), public_key);
-
-        // Test with an invalid address
-        let result = module_impl.get_from_address(GetFromAddressArgs(Identity::anonymous()));
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            idstore::entry_not_found("".to_string()).code
-        );
-    }
-
-    // ACCOUNT TESTS
-    static CREATE_ARGS: Lazy<CreateArgs> = Lazy::new(|| CreateArgs {
-        description: Some("Foobar".to_string()),
-        roles: Some(BTreeMap::from_iter([
-            (
-                identity(2),
-                BTreeSet::from_iter([account::Role::CanMultisigApprove]),
-            ),
-            (
-                identity(3),
-                BTreeSet::from_iter([account::Role::CanMultisigSubmit]),
-            ),
-        ])),
-        features: FeatureSet::from_iter([multisig::MultisigAccountFeature::default().as_feature()]),
-    });
-
-    fn create_account(id: &CoseKeyIdentity, module_impl: &mut LedgerModuleImpl) -> CreateReturn {
-        module_impl
-            .create(&id.identity, CREATE_ARGS.clone())
-            .expect("Account creation failed")
-    }
-
-    #[test]
-    fn account_create() {
-        let (id, _, mut module_impl) = setup();
-        let result = module_impl.create(&id.identity, CREATE_ARGS.clone());
-        assert!(result.is_ok());
-
-        let create_return = result.unwrap();
-        assert_ne!(create_return.id, Identity::anonymous());
-
-        // Verify we can't create an account with roles unsupported by feature
-        let mut args = CREATE_ARGS.clone();
-        if let Some(roles) = args.roles.as_mut() {
-            roles.insert(
-                identity(4),
-                BTreeSet::from_iter([account::Role::CanLedgerTransact]),
-            );
-        }
-        let result = module_impl.create(&id.identity, args);
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::errors::unknown_role("").code,
-        );
-    }
-
-    #[test]
-    fn account_set_description() {
-        let (id, _, mut module_impl) = setup();
-        let account = create_account(&id, &mut module_impl);
-
-        let result = module_impl.set_description(
-            &id.identity,
-            SetDescriptionArgs {
-                account: account.id,
-                description: "New".to_string(),
-            },
-        );
-        assert!(result.is_ok());
-
-        let result = AccountModuleBackend::info(
-            &module_impl,
-            &id.identity,
-            account::InfoArgs {
-                account: account.id,
-            },
-        );
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().description, Some("New".to_string()));
-
-        // Verify non-owner is not able to change the description
-        let result = module_impl.set_description(
-            &identity(1),
-            SetDescriptionArgs {
-                account: account.id,
-                description: "Other".to_string(),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::errors::user_needs_role("owner").code
-        );
-    }
-
-    #[test]
-    fn account_list_roles() {
-        let (id, _, mut module_impl) = setup();
-        let account = create_account(&id, &mut module_impl);
-
-        let result = module_impl.list_roles(
-            &id.identity,
-            ListRolesArgs {
-                account: account.id,
-            },
-        );
-        assert!(result.is_ok());
-        let mut roles = BTreeSet::<account::Role>::new();
-        for (_, r) in CREATE_ARGS.clone().roles.unwrap().iter_mut() {
-            roles.append(r)
-        }
-        assert_eq!(result.unwrap().roles, roles,);
-    }
-
-    #[test]
-    fn account_get_roles() {
-        let (id, _, mut module_impl) = setup();
-        let account = create_account(&id, &mut module_impl);
-
-        let result = module_impl.get_roles(
-            &id.identity,
-            GetRolesArgs {
-                account: account.id,
-                identities: VecOrSingle::from(vec![identity(2), identity(3)]),
-            },
-        );
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().roles, CREATE_ARGS.clone().roles.unwrap());
-    }
-
-    #[test]
-    fn account_add_roles() {
-        let (id, _, mut module_impl) = setup();
-        let account = create_account(&id, &mut module_impl);
-
-        let mut new_role = BTreeMap::from_iter([(
-            identity(4),
-            BTreeSet::from_iter([account::Role::CanLedgerTransact]),
-        )]);
-        let result = module_impl.add_roles(
-            &id.identity,
-            AddRolesArgs {
-                account: account.id,
-                roles: new_role.clone(),
-            },
-        );
-        assert!(result.is_ok());
-
-        let result = module_impl.get_roles(
-            &id.identity,
-            GetRolesArgs {
-                account: account.id,
-                identities: VecOrSingle::from(vec![identity(2), identity(3), identity(4)]),
-            },
-        );
-        assert!(result.is_ok());
-        let mut roles = CREATE_ARGS.clone().roles.unwrap();
-        roles.append(&mut new_role);
-        assert_eq!(result.unwrap().roles, roles);
-
-        // Verify non-owner is not able to add role
-        let result = module_impl.add_roles(
-            &identity(2),
-            AddRolesArgs {
-                account: account.id,
-                roles: new_role.clone(),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::errors::user_needs_role("owner").code
-        );
-    }
-
-    #[test]
-    fn account_remove_roles() {
-        let (id, _, mut module_impl) = setup();
-        let account = create_account(&id, &mut module_impl);
-
-        let result = module_impl.remove_roles(
-            &id.identity,
-            RemoveRolesArgs {
-                account: account.id,
-                roles: BTreeMap::from_iter([(
-                    identity(2),
-                    BTreeSet::from_iter([account::Role::CanMultisigApprove]),
-                )]),
-            },
-        );
-        assert!(result.is_ok());
-
-        let result = module_impl.get_roles(
-            &id.identity,
-            GetRolesArgs {
-                account: account.id,
-                identities: VecOrSingle::from(vec![identity(2)]),
-            },
-        );
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().roles.get(&identity(2)).unwrap(),
-            &BTreeSet::<account::Role>::new()
-        );
-
-        // Verify non-owner is not able to remove role
-        let result = module_impl.remove_roles(
-            &identity(2),
-            RemoveRolesArgs {
-                account: account.id,
-                roles: BTreeMap::from_iter([(
-                    identity(2),
-                    BTreeSet::from_iter([account::Role::CanMultisigApprove]),
-                )]),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::errors::user_needs_role("owner").code
-        );
-    }
-
-    #[test]
-    fn account_delete() {
-        let (id, _, mut module_impl) = setup();
-        let account = create_account(&id, &mut module_impl);
-
-        let result = module_impl.delete(
-            &id.identity,
-            DeleteArgs {
-                account: account.id,
-            },
-        );
-        assert!(result.is_ok());
-
-        // Verify account has been deleted
-        let result = AccountModuleBackend::info(
-            &module_impl,
-            &id.identity,
-            account::InfoArgs {
-                account: account.id,
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::errors::unknown_account("").code
-        );
-
-        // Verify non-owner is unable to delete account
-        let account = create_account(&id, &mut module_impl);
-        let result = module_impl.delete(
-            &identity(2),
-            DeleteArgs {
-                account: account.id,
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::errors::user_needs_role("owner").code
-        );
     }
 }
