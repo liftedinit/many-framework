@@ -1751,7 +1751,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a#5c0db1078687b2ac8223a9e8043d29761f6c493a"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1769,7 +1769,7 @@ dependencies = [
  "hex",
  "json",
  "lazy_static",
- "many-macros 0.1.0 (git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a)",
+ "many-macros 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -1882,7 +1882,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a#5c0db1078687b2ac8223a9e8043d29761f6c493a"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1898,7 +1898,7 @@ dependencies = [
  "fixed",
  "hex",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a)",
+ "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -2000,9 +2000,9 @@ dependencies = [
  "hex",
  "itertools",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a)",
+ "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
  "many-abci",
- "many-client 0.1.0 (git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a)",
+ "many-client 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
  "many-kvstore",
  "merk",
  "minicbor",
@@ -2025,7 +2025,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?rev=5c0db1078687b2ac8223a9e8043d29761f6c493a#5c0db1078687b2ac8223a9e8043d29761f6c493a"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
 dependencies = [
  "inflections",
  "proc-macro2",
