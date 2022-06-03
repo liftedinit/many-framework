@@ -1,5 +1,5 @@
 use crate::error;
-use crate::module::validate_features_for_account;
+use crate::module::validate_account;
 use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
@@ -41,9 +41,7 @@ fn _execute_multisig_tx(
 
         AccountMultisigTransaction::AccountCreate(args) => {
             let account = account::Account::create(sender, args.clone());
-
-            // Verify that we support all features.
-            validate_features_for_account(&account)?;
+            validate_account(&account)?;
 
             let id = ledger.add_account(account)?;
             minicbor::to_vec(account::CreateReturn { id })
@@ -102,8 +100,30 @@ fn _execute_multisig_tx(
             minicbor::to_vec(EmptyReturn)
         }
 
-        AccountMultisigTransaction::AccountAddFeatures(_args) => {
-            return Err(ManyError::unknown("Unsupported method."));
+        AccountMultisigTransaction::AccountAddFeatures(args) => {
+            let mut account = ledger
+                .get_account(&args.account)
+                .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+            account.needs_role(sender, [account::Role::Owner])?;
+
+            for new_f in args.features.iter() {
+                if account.features.insert(new_f.clone()) {
+                    return Err(ManyError::unknown("Feature already part of the account."));
+                }
+            }
+            if let Some(ref r) = args.roles {
+                for (id, new_r) in r {
+                    for role in new_r {
+                        account.roles.entry(*id).or_default().insert(*role);
+                    }
+                }
+            }
+
+            validate_account(&account)?;
+
+            ledger.commit_account(&args.account, account)?;
+            minicbor::to_vec(EmptyReturn)
         }
 
         AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
