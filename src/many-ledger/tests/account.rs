@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::setup;
-use many::server::module::account::features::FeatureInfo;
+use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::account::{self, AccountModuleBackend};
 use many::types::identity::testing::identity;
 use many::types::VecOrSingle;
@@ -290,4 +290,185 @@ fn delete_non_owner() {
         result.unwrap_err().code,
         account::errors::user_needs_role("owner").code
     );
+}
+
+/// Verify that add_feature works with a valid feature.
+#[test]
+fn add_feature() {
+    let (mut module_impl, id, create_args) = setup_with_args();
+    let account = module_impl.create(&id, create_args).unwrap();
+
+    let info_before = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    // Prevent test from regressing.
+    assert!(!info_before
+        .features
+        .has_id(account::features::ledger::AccountLedger::ID));
+
+    module_impl
+        .add_features(
+            &id,
+            account::AddFeaturesArgs {
+                account: account.id,
+                roles: None,
+                features: account::features::FeatureSet::from_iter([
+                    account::features::ledger::AccountLedger.as_feature(),
+                ]),
+            },
+        )
+        .expect("Could not add feature");
+
+    let info_after = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    assert!(info_after
+        .features
+        .has_id(account::features::ledger::AccountLedger::ID));
+}
+
+/// Verify that add_feature works with a valid feature.
+#[test]
+fn add_feature_non_owner() {
+    let (mut module_impl, id, create_args) = setup_with_args();
+    let account = module_impl.create(&id, create_args).unwrap();
+
+    assert!(module_impl
+        .add_features(
+            &identity(4),
+            account::AddFeaturesArgs {
+                account: account.id,
+                roles: None,
+                features: account::features::FeatureSet::from_iter([
+                    account::features::ledger::AccountLedger.as_feature(),
+                ]),
+            },
+        )
+        .is_err());
+
+    let info_after = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    assert!(!info_after
+        .features
+        .has_id(account::features::ledger::AccountLedger::ID));
+}
+
+/// Verify that add_feature works with a valid feature.
+#[test]
+fn add_feature_and_role() {
+    let (mut module_impl, id, create_args) = setup_with_args();
+    let account = module_impl.create(&id, create_args).unwrap();
+
+    let info_before = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    // Prevent test from regressing.
+    assert!(!info_before
+        .features
+        .has_id(account::features::ledger::AccountLedger::ID));
+    assert!(!info_before.roles.contains_key(&identity(4)));
+
+    module_impl
+        .add_features(
+            &id,
+            account::AddFeaturesArgs {
+                account: account.id,
+                roles: Some(BTreeMap::from_iter([(
+                    identity(4),
+                    BTreeSet::from_iter([account::Role::Owner]),
+                )])),
+                features: account::features::FeatureSet::from_iter([
+                    account::features::ledger::AccountLedger.as_feature(),
+                ]),
+            },
+        )
+        .expect("Could not add feature");
+
+    let info_after = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    assert!(info_after
+        .features
+        .has_id(account::features::ledger::AccountLedger::ID));
+    assert!(info_after
+        .roles
+        .get(&identity(4))
+        .unwrap()
+        .contains(&account::Role::Owner));
+}
+
+/// Verify that add_feature cannot add existing features.
+#[test]
+fn add_feature_existing() {
+    let (mut module_impl, id, create_args) = setup_with_args();
+    let account = module_impl.create(&id, create_args).unwrap();
+
+    let info_before = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    assert!(info_before
+        .features
+        .has_id(account::features::multisig::MultisigAccountFeature::ID));
+
+    let result = module_impl.add_features(
+        &id,
+        account::AddFeaturesArgs {
+            account: account.id,
+            roles: None,
+            features: account::features::FeatureSet::from_iter([
+                account::features::multisig::MultisigAccountFeature::default().as_feature(),
+            ]),
+        },
+    );
+    assert!(result.is_err());
+
+    let info_after = account::AccountModuleBackend::info(
+        &module_impl,
+        &id,
+        account::InfoArgs {
+            account: account.id,
+        },
+    )
+    .expect("Could not get info");
+
+    assert!(info_after
+        .features
+        .has_id(account::features::multisig::MultisigAccountFeature::ID));
 }
