@@ -61,7 +61,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                     .client
                     .broadcast_tx_sync(tendermint_rpc::abci::Transaction::from(data))
                     .await
-                    .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+                    .map_err(ManyError::unexpected_transport_error)?;
 
                 let _ = minicbor::to_vec(response.data.value().to_vec())
                     .map_err(|e| ManyError::serialization_error(e.to_string()))?;
