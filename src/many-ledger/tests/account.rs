@@ -296,7 +296,7 @@ fn delete_non_owner() {
 #[test]
 fn add_feature() {
     let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args.clone()).unwrap();
+    let account = module_impl.create(&id, create_args).unwrap();
 
     let info_before = account::AccountModuleBackend::info(
         &module_impl,
@@ -343,7 +343,7 @@ fn add_feature() {
 #[test]
 fn add_feature_existing() {
     let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args.clone()).unwrap();
+    let account = module_impl.create(&id, create_args).unwrap();
 
     let info_before = account::AccountModuleBackend::info(
         &module_impl,
