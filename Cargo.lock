@@ -189,9 +189,9 @@ checksum = "30696a84d817107fc028e049980e09d5e140e8da8f1caeb17e8e950658a3cea9"
 
 [[package]]
 name = "async-trait"
-version = "0.1.53"
+version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed6aa3524a2dfcf9fe180c51eae2b58738348d819517ceadf95789c51fff7600"
+checksum = "96cf8829f67d2eab0b2dfa42c5d0ef737e0724e4a82b01b3e292456202b19716"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -364,9 +364,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.9.1"
+version = "3.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a45a46ab1f2412e53d3a0ade76ffad2025804294569aae387231a0cd6e0899"
+checksum = "37ccbd214614c6783386c1af30caf03192f17891059cecc394b4fb119e363de3"
 
 [[package]]
 name = "bytemuck"
@@ -1034,6 +1034,28 @@ checksum = "4c2b6b5a29c02cdc822728b7d7b8ae1bab3e3b05d44522770ddd49722eeac7eb"
 dependencies = [
  "indenter",
  "once_cell",
+]
+
+[[package]]
+name = "failure"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d32e9bd16cc02eae7db7ef620b392808b89f6a5e16bb3497d159c6b92a0f4f86"
+dependencies = [
+ "backtrace",
+ "failure_derive",
+]
+
+[[package]]
+name = "failure_derive"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
 ]
 
 [[package]]
@@ -1751,7 +1773,6 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1830,7 +1851,6 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1930,7 +1950,6 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -1966,12 +1985,12 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 [[package]]
 name = "merk"
 version = "1.0.0"
-source = "git+https://github.com/liftedinit/merk.git?rev=253678fe9fdb02bd4ade04790ad8f41801c73d95#253678fe9fdb02bd4ade04790ad8f41801c73d95"
 dependencies = [
  "blake3",
  "byteorder",
  "colored",
  "ed",
+ "failure",
  "hex",
  "jemallocator",
  "num_cpus",
@@ -2207,9 +2226,9 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.73"
+version = "0.9.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d5fd19fb3e0a8191c1e34935718976a3e70c112ab9a24af6d7cadccd9d90bc0"
+checksum = "835363342df5fba8354c5b453325b110ffd54044e588c539cf2f20a8014e4cb1"
 dependencies = [
  "autocfg",
  "cc",
@@ -3179,9 +3198,9 @@ checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "syn"
-version = "1.0.95"
+version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbaf6116ab8924f39d52792136fb74fd60a80194cf1b1c6ffa6453eef1c3f942"
+checksum = "0748dd251e24453cb8717f0354206b91557e4ec8703673a4b30208f2abaf1ebf"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3223,7 +3242,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#27e7f60faa4521d893262c3c13e90fc5af361811"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3251,7 +3270,7 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#27e7f60faa4521d893262c3c13e90fc5af361811"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3263,7 +3282,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#27e7f60faa4521d893262c3c13e90fc5af361811"
 dependencies = [
  "flex-error",
  "serde",
@@ -3276,7 +3295,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#27e7f60faa4521d893262c3c13e90fc5af361811"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3293,7 +3312,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#cd3e3913e899ca1c4743ff757c3465c9350be6b0"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#27e7f60faa4521d893262c3c13e90fc5af361811"
 dependencies = [
  "async-trait",
  "bytes",
