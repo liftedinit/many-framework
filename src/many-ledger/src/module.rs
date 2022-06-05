@@ -151,6 +151,8 @@ fn filter_date<'a>(
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
     storage: LedgerStorage,
+
+    should_validate_webauthn: bool,
 }
 
 impl LedgerModuleImpl {
@@ -196,7 +198,15 @@ impl LedgerModuleImpl {
             hash = hex::encode(storage.hash()).as_str()
         );
 
-        Ok(Self { storage })
+        Ok(Self {
+            storage,
+            should_validate_webauthn: true,
+        })
+    }
+
+    #[cfg(feature = "webauthn_testing")]
+    pub fn set_should_validate_webauthn_only_for_testing(&mut self, value: bool) {
+        self.should_validate_webauthn = value;
     }
 
     #[cfg(feature = "balance_testing")]
@@ -687,6 +697,23 @@ pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
 }
 
 impl IdStoreModuleBackend for LedgerModuleImpl {
+    fn validate_(
+        &self,
+        envelope: &coset::CoseSign1,
+        message: &many::message::RequestMessage,
+    ) -> Result<(), many::ManyError> {
+        if self.should_validate_webauthn
+            && !envelope
+                .unprotected
+                .rest
+                .iter()
+                .any(|(k, _)| k == &coset::Label::Text("webauthn".to_string()))
+        {
+            return Err(ManyError::non_webauthn_request_denied(&message.method));
+        }
+        Ok(())
+    }
+
     fn store(
         &mut self,
         sender: &Identity,

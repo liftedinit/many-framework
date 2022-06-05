@@ -75,6 +75,11 @@ struct Opts {
     #[clap(long)]
     balance_only_for_testing: Option<Vec<String>>,
 
+    /// Disable webauthn checks for the IdStore.
+    #[cfg(feature = "webauthn_testing")]
+    #[clap(long)]
+    disable_webauthn_only_for_testing: bool,
+
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
@@ -174,6 +179,19 @@ fn main() {
                 amount.parse::<u64>().expect("Invalid amount."),
                 Identity::from_str(symbol).expect("Invalid symbol."),
             )
+        }
+    }
+
+    #[cfg(feature = "webauthn_testing")]
+    {
+        let Opts {
+            disable_webauthn_only_for_testing,
+            ..
+        } = Opts::parse();
+
+        if disable_webauthn_only_for_testing {
+            let mut module_impl = module_impl.lock().unwrap();
+            module_impl.set_should_validate_webauthn_only_for_testing(false);
         }
     }
 
