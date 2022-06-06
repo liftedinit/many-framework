@@ -75,6 +75,13 @@ struct Opts {
     #[clap(long)]
     balance_only_for_testing: Option<Vec<String>>,
 
+    /// If set, this flag will disable any validation for webauthn tokens
+    /// to access the id store. WebAuthn signatures are still validated.
+    /// This requires the feature "webauthn_testing" to be enabled.
+    #[cfg(feature = "webauthn_testing")]
+    #[clap(long)]
+    disable_webauthn_only_for_testing: bool,
+
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
@@ -189,7 +196,27 @@ fn main() {
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
-        s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
+
+        let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
+        #[cfg(feature = "webauthn_testing")]
+        {
+            let Opts {
+                disable_webauthn_only_for_testing,
+                ..
+            } = Opts::parse();
+
+            if disable_webauthn_only_for_testing {
+                s.add_module(IdStoreWebAuthnModule {
+                    inner: idstore_module,
+                    check_webauthn: false,
+                });
+            } else {
+                s.add_module(idstore_module);
+            }
+        }
+        #[cfg(not(feature = "webauthn_testing"))]
+        s.add_module(idstore_module);
+
         s.add_module(account::AccountModule::new(module_impl.clone()));
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),

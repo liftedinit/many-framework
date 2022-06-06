@@ -1,8 +1,9 @@
 use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
-use coset::{CborSerializable, CoseKey};
+use coset::{CborSerializable, CoseKey, CoseSign1};
 use many::message::error::ManyErrorCode;
-use many::message::ResponseMessage;
+use many::message::{RequestMessage, ResponseMessage};
+use many::server::module;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
@@ -12,13 +13,14 @@ use many::server::module::idstore::{
     GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
     StoreReturns,
 };
-use many::server::module::{account, idstore, ledger, EmptyReturn};
+use many::server::module::{account, idstore, ledger, EmptyReturn, ManyModuleInfo};
 use many::types::ledger::{Symbol, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
-use many::{Identity, ManyError};
+use many::{Identity, ManyError, ManyModule};
 use minicbor::bytes::ByteVec;
 use minicbor::decode;
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{Debug, Formatter};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
@@ -84,6 +86,16 @@ pub(crate) fn validate_roles_for_account(account: &account::Account) -> Result<(
             return Err(account::errors::unknown_role(r.to_string()));
         }
     }
+
+    Ok(())
+}
+
+pub(crate) fn validate_account(account: &account::Account) -> Result<(), ManyError> {
+    // Verify that we support all features.
+    validate_features_for_account(account)?;
+
+    // Verify the roles are supported by the features
+    validate_roles_for_account(account)?;
 
     Ok(())
 }
@@ -434,11 +446,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<account::CreateReturn, ManyError> {
         let account = account::Account::create(sender, args);
 
-        // Verify that we support all features.
-        validate_features_for_account(&account)?;
-
-        // Verify the roles are supported by the features
-        validate_roles_for_account(&account)?;
+        validate_account(&account)?;
 
         let id = self.storage.add_account(account)?;
         Ok(account::CreateReturn { id })
@@ -582,10 +590,29 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn add_features(
         &mut self,
-        _sender: &Identity,
-        _args: account::AddFeaturesArgs,
-    ) -> Result<EmptyReturn, ManyError> {
-        Err(ManyError::unknown("Unsupported.".to_string()))
+        sender: &Identity,
+        args: account::AddFeaturesArgs,
+    ) -> Result<account::AddFeaturesReturn, ManyError> {
+        let mut account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+        account.needs_role(sender, [account::Role::Owner])?;
+
+        for new_f in args.features.iter() {
+            if account.features.insert(new_f.clone()) {
+                return Err(ManyError::unknown("Feature already part of the account."));
+            }
+        }
+        for (id, mut new_r) in args.roles.unwrap_or_default() {
+            account.roles.entry(id).or_default().append(&mut new_r);
+        }
+
+        validate_account(&account)?;
+
+        self.storage.commit_account(&args.account, account)?;
+        Ok(EmptyReturn)
     }
 }
 
@@ -763,6 +790,44 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
             cred_id,
             public_key,
         })
+    }
+}
+
+pub struct IdStoreWebAuthnModule<T: IdStoreModuleBackend> {
+    pub inner: module::idstore::IdStoreModule<T>,
+    pub check_webauthn: bool,
+}
+
+impl<T: IdStoreModuleBackend> Debug for IdStoreWebAuthnModule<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("IdStoreWebAuthnModule")
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
+    fn info(&self) -> &ManyModuleInfo {
+        self.inner.info()
+    }
+
+    fn validate(&self, message: &RequestMessage) -> Result<(), ManyError> {
+        self.inner.validate(message)
+    }
+
+    fn validate_envelope(
+        &self,
+        envelope: &CoseSign1,
+        message: &RequestMessage,
+    ) -> Result<(), ManyError> {
+        if self.check_webauthn {
+            self.inner.validate_envelope(envelope, message)
+        } else {
+            Ok(())
+        }
+    }
+
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, ManyError> {
+        self.inner.execute(message).await
     }
 }
 

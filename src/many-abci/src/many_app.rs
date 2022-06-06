@@ -61,7 +61,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                     .client
                     .broadcast_tx_sync(tendermint_rpc::abci::Transaction::from(data))
                     .await
-                    .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+                    .map_err(ManyError::unexpected_transport_error)?;
 
                 let _ = minicbor::to_vec(response.data.value().to_vec())
                     .map_err(|e| ManyError::serialization_error(e.to_string()))?;
@@ -100,9 +100,15 @@ impl<C: Client> Debug for AbciModuleMany<C> {
 #[async_trait]
 impl<C: Client + Sync + Send> LowLevelManyRequestHandler for AbciModuleMany<C> {
     async fn execute(&self, envelope: CoseSign1) -> Result<CoseSign1, String> {
-        self.execute_message(envelope)
-            .await
-            .map_err(|e| e.to_string())
+        let result = self.execute_message(envelope).await;
+
+        match result {
+            Ok(x) => Ok(x),
+            Err(e) => {
+                let response = ResponseMessage::error(&self.identity.identity, e);
+                many::message::encode_cose_sign1_from_response(response, &self.identity)
+            }
+        }
     }
 }
 
