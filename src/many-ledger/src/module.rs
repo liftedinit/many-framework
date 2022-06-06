@@ -768,13 +768,12 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
 
 #[cfg(test)]
 mod tests {
+    use crate::module::LedgerModuleImpl;
     use coset::CborSerializable;
     use many::{
         server::module::idstore::{self, CredentialId, IdStoreModuleBackend},
         types::identity::cose::testsutils::generate_random_eddsa_identity,
     };
-
-    use crate::module::LedgerModuleImpl;
 
     #[test]
     /// Test every recall phrase generation codepath
