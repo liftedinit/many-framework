@@ -210,9 +210,6 @@ fn main() {
                     inner: idstore_module,
                     check_webauthn: false,
                 });
-
-                let mut module_impl = module_impl.lock().unwrap();
-                module_impl.set_should_validate_webauthn_only_for_testing(false);
             } else {
                 s.add_module(idstore_module);
             }

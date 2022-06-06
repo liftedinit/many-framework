@@ -163,8 +163,6 @@ fn filter_date<'a>(
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
     storage: LedgerStorage,
-
-    should_validate_webauthn: bool,
 }
 
 impl LedgerModuleImpl {
@@ -210,15 +208,7 @@ impl LedgerModuleImpl {
             hash = hex::encode(storage.hash()).as_str()
         );
 
-        Ok(Self {
-            storage,
-            should_validate_webauthn: true,
-        })
-    }
-
-    #[cfg(feature = "webauthn_testing")]
-    pub fn set_should_validate_webauthn_only_for_testing(&mut self, value: bool) {
-        self.should_validate_webauthn = value;
+        Ok(Self { storage })
     }
 
     #[cfg(feature = "balance_testing")]
