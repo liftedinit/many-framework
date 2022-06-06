@@ -410,7 +410,7 @@ fn add_feature_and_role() {
         account_id,
     } = setup_with_account();
 
-    let info_before = account_info(&module_impl, &id, &account_id); 
+    let info_before = account_info(&module_impl, &id, &account_id);
     // Prevent test from regressing.
     assert!(!info_before
         .features
@@ -433,7 +433,7 @@ fn add_feature_and_role() {
         )
         .expect("Could not add feature");
 
-    let info_after = account_info(&module_impl, &id, &account_id); 
+    let info_after = account_info(&module_impl, &id, &account_id);
 
     assert!(info_after
         .features
@@ -454,7 +454,7 @@ fn add_feature_existing() {
         account_id,
     } = setup_with_account();
 
-    let info_before = account_info(&module_impl, &id, &account_id); 
+    let info_before = account_info(&module_impl, &id, &account_id);
 
     assert!(info_before
         .features
@@ -472,7 +472,7 @@ fn add_feature_existing() {
     );
     assert!(result.is_err());
 
-    let info_after = account_info(&module_impl, &id, &account_id); 
+    let info_after = account_info(&module_impl, &id, &account_id);
 
     assert!(info_after
         .features

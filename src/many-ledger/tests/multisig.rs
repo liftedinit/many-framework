@@ -85,7 +85,7 @@ fn get_approbation(info: &InfoReturn, id: &Identity) -> bool {
 
 #[test]
 /// Verify owner can submit a transaction
-fn multisig_submit_transaction() {
+fn submit_transaction() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
@@ -109,7 +109,7 @@ fn multisig_submit_transaction() {
 
 #[test]
 /// Verify identity with `canMultisigSubmit` can submit a transaction
-fn multisig_submit_transaction_valid_role() {
+fn submit_transaction_valid_role() {
     let SetupWithAccountAndTx {
         mut module_impl,
         account_id,
@@ -123,7 +123,7 @@ fn multisig_submit_transaction_valid_role() {
 
 #[test]
 /// Verify identity with `canMultisigApprove` can't submit a transaction
-fn multisig_submit_transaction_invalid_role() {
+fn submit_transaction_invalid_role() {
     let SetupWithAccountAndTx {
         mut module_impl,
         account_id,
@@ -141,7 +141,7 @@ fn multisig_submit_transaction_invalid_role() {
 
 #[test]
 /// Veryfy owner can set new defaults
-fn multisig_set_defaults() {
+fn set_defaults() {
     let SetupWithAccount {
         mut module_impl,
         id,
@@ -167,7 +167,7 @@ fn multisig_set_defaults() {
 proptest! {
     #[test]
     /// Verify non-owner are unable to change the defaults
-    fn multisig_set_defaults_invalid_user(seed in 4..u32::MAX) {
+    fn set_defaults_invalid_user(seed in 4..u32::MAX) {
         let SetupWithAccount {
             mut module_impl,
             id,
@@ -203,7 +203,7 @@ proptest! {
 
 #[test]
 /// Verify identity with `canMultisigApprove` and identity with `canMultisigSubmit` can approve a transaction
-fn multisig_approve() {
+fn approve() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
@@ -244,7 +244,7 @@ fn multisig_approve() {
 
 #[test]
 /// Verify identity not part of the account can't approve a transaction
-fn multisig_approve_invalid() {
+fn approve_invalid() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
@@ -273,7 +273,7 @@ fn multisig_approve_invalid() {
 
 #[test]
 /// Verify identity with `owner`, `canMultisigSubmit` and `canMultisigApprove` can revoke a transaction
-fn multisig_revoke() {
+fn revoke() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
@@ -310,7 +310,7 @@ fn multisig_revoke() {
 
 #[test]
 /// Verify identity not part of the account can't revoke a transaction
-fn multisig_revoke_invalid() {
+fn revoke_invalid() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
@@ -338,7 +338,7 @@ proptest! {
     #[test]
     /// Verify we can execute a transaction when the threshold is reached
     /// Both manual and automatic execution are tested
-    fn multisig_execute(execute_automatically in any::<bool>()) {
+    fn execute(execute_automatically in any::<bool>()) {
         let SetupWithAccountAndTx {
             mut module_impl,
             id,
@@ -417,7 +417,7 @@ proptest! {
 
 #[test]
 /// Verify identities with `owner` and `canMultisigSubmit` can withdraw a transaction
-fn multisig_withdraw() {
+fn withdraw() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
@@ -448,7 +448,7 @@ fn multisig_withdraw() {
 
 #[test]
 /// Verify identity with `canMultisigApprove` and identity not part of the account can't withdraw a transaction
-fn multisig_withdraw_invalid() {
+fn withdraw_invalid() {
     let SetupWithAccountAndTx {
         mut module_impl,
         id,
