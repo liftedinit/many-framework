@@ -90,6 +90,16 @@ pub(crate) fn validate_roles_for_account(account: &account::Account) -> Result<(
     Ok(())
 }
 
+pub(crate) fn validate_account(account: &account::Account) -> Result<(), ManyError> {
+    // Verify that we support all features.
+    validate_features_for_account(account)?;
+
+    // Verify the roles are supported by the features
+    validate_roles_for_account(account)?;
+
+    Ok(())
+}
+
 type TxResult = Result<Transaction, ManyError>;
 
 fn filter_account<'a>(
@@ -446,11 +456,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<account::CreateReturn, ManyError> {
         let account = account::Account::create(sender, args);
 
-        // Verify that we support all features.
-        validate_features_for_account(&account)?;
-
-        // Verify the roles are supported by the features
-        validate_roles_for_account(&account)?;
+        validate_account(&account)?;
 
         let id = self.storage.add_account(account)?;
         Ok(account::CreateReturn { id })
@@ -594,10 +600,29 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn add_features(
         &mut self,
-        _sender: &Identity,
-        _args: account::AddFeaturesArgs,
-    ) -> Result<EmptyReturn, ManyError> {
-        Err(ManyError::unknown("Unsupported.".to_string()))
+        sender: &Identity,
+        args: account::AddFeaturesArgs,
+    ) -> Result<account::AddFeaturesReturn, ManyError> {
+        let mut account = self
+            .storage
+            .get_account(&args.account)
+            .ok_or_else(|| account::errors::unknown_account(args.account))?;
+
+        account.needs_role(sender, [account::Role::Owner])?;
+
+        for new_f in args.features.iter() {
+            if account.features.insert(new_f.clone()) {
+                return Err(ManyError::unknown("Feature already part of the account."));
+            }
+        }
+        for (id, mut new_r) in args.roles.unwrap_or_default() {
+            account.roles.entry(id).or_default().append(&mut new_r);
+        }
+
+        validate_account(&account)?;
+
+        self.storage.commit_account(&args.account, account)?;
+        Ok(EmptyReturn)
     }
 }
 
