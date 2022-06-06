@@ -1,8 +1,9 @@
 use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
-use coset::{CborSerializable, CoseKey};
+use coset::{CborSerializable, CoseKey, CoseSign1};
 use many::message::error::ManyErrorCode;
-use many::message::ResponseMessage;
+use many::message::{RequestMessage, ResponseMessage};
+use many::server::module;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
@@ -12,13 +13,14 @@ use many::server::module::idstore::{
     GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
     StoreReturns,
 };
-use many::server::module::{account, idstore, ledger, EmptyReturn};
+use many::server::module::{account, idstore, ledger, EmptyReturn, ManyModuleInfo};
 use many::types::ledger::{Symbol, Transaction, TransactionKind};
 use many::types::{CborRange, Timestamp, VecOrSingle};
-use many::{Identity, ManyError};
+use many::{Identity, ManyError, ManyModule};
 use minicbor::bytes::ByteVec;
 use minicbor::decode;
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{Debug, Formatter};
 use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
@@ -697,23 +699,6 @@ pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
 }
 
 impl IdStoreModuleBackend for LedgerModuleImpl {
-    fn validate_(
-        &self,
-        envelope: &coset::CoseSign1,
-        message: &many::message::RequestMessage,
-    ) -> Result<(), many::ManyError> {
-        if self.should_validate_webauthn
-            && !envelope
-                .unprotected
-                .rest
-                .iter()
-                .any(|(k, _)| k == &coset::Label::Text("webauthn".to_string()))
-        {
-            return Err(ManyError::non_webauthn_request_denied(&message.method));
-        }
-        Ok(())
-    }
-
     fn store(
         &mut self,
         sender: &Identity,
@@ -790,6 +775,44 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
             cred_id,
             public_key,
         })
+    }
+}
+
+pub struct IdStoreWebAuthnModule<T: IdStoreModuleBackend> {
+    pub inner: module::idstore::IdStoreModule<T>,
+    pub check_webauthn: bool,
+}
+
+impl<T: IdStoreModuleBackend> Debug for IdStoreWebAuthnModule<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("IdStoreWebAuthnModule")
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
+    fn info(&self) -> &ManyModuleInfo {
+        self.inner.info()
+    }
+
+    fn validate(&self, message: &RequestMessage) -> Result<(), ManyError> {
+        self.inner.validate(message)
+    }
+
+    fn validate_envelope(
+        &self,
+        envelope: &CoseSign1,
+        message: &RequestMessage,
+    ) -> Result<(), ManyError> {
+        if self.check_webauthn {
+            self.inner.validate_envelope(envelope, message)
+        } else {
+            Ok(())
+        }
+    }
+
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, ManyError> {
+        self.inner.execute(message).await
     }
 }
 

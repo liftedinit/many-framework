@@ -75,7 +75,9 @@ struct Opts {
     #[clap(long)]
     balance_only_for_testing: Option<Vec<String>>,
 
-    /// Disable webauthn checks for the IdStore.
+    /// If set, this flag will disable any validation for webauthn tokens
+    /// to access the id store. WebAuthn signatures are still validated.
+    /// This requires the feature "webauthn_testing" to be enabled.
     #[cfg(feature = "webauthn_testing")]
     #[clap(long)]
     disable_webauthn_only_for_testing: bool,
@@ -182,19 +184,6 @@ fn main() {
         }
     }
 
-    #[cfg(feature = "webauthn_testing")]
-    {
-        let Opts {
-            disable_webauthn_only_for_testing,
-            ..
-        } = Opts::parse();
-
-        if disable_webauthn_only_for_testing {
-            let mut module_impl = module_impl.lock().unwrap();
-            module_impl.set_should_validate_webauthn_only_for_testing(false);
-        }
-    }
-
     let many = ManyServer::simple(
         "many-ledger",
         key,
@@ -207,7 +196,30 @@ fn main() {
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
-        s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
+
+        let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
+        #[cfg(feature = "webauthn_testing")]
+        {
+            let Opts {
+                disable_webauthn_only_for_testing,
+                ..
+            } = Opts::parse();
+
+            if disable_webauthn_only_for_testing {
+                s.add_module(IdStoreWebAuthnModule {
+                    inner: idstore_module,
+                    check_webauthn: false,
+                });
+
+                let mut module_impl = module_impl.lock().unwrap();
+                module_impl.set_should_validate_webauthn_only_for_testing(false);
+            } else {
+                s.add_module(idstore_module);
+            }
+        }
+        #[cfg(not(feature = "webauthn_testing"))]
+        s.add_module(idstore_module);
+
         s.add_module(account::AccountModule::new(module_impl.clone()));
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),
