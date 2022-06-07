@@ -46,6 +46,8 @@ typenum = "1.15.0"
 once_cell = "1.12"
 many = { git = "https://github.com/liftedinit/many-rs.git", rev = "ec45c26d908f099ecbcfc93a9399c96de81b3f7c", features = ["testing"] }
 many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "ec45c26d908f099ecbcfc93a9399c96de81b3f7c" }
+many-ledger = { path = ".", features = ["balance_testing"]}
+proptest = "1"
 tempfile = "3.3.0"
 
 [features]
