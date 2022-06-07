@@ -1,38 +1,81 @@
-mod common;
-use crate::common::setup;
+pub mod common;
+use crate::common::{setup, Setup};
 use many::{
-    server::module::idstore::{self, IdStoreModuleBackend},
+    server::module::idstore::{self, CredentialId, IdStoreModuleBackend, PublicKey},
     Identity, ManyError,
 };
 use many_ledger::module::LedgerModuleImpl;
 
-/// Setup utility for `idstore` tests
-fn setup_with_args() -> (LedgerModuleImpl, Identity, idstore::StoreArgs) {
-    let (id, cred_id, public_key, module_impl) = setup();
-    (
+pub struct SetupWithArgs {
+    pub module_impl: LedgerModuleImpl,
+    pub id: Identity,
+    pub args: idstore::StoreArgs,
+}
+
+fn setup_with_args() -> SetupWithArgs {
+    let Setup {
         module_impl,
-        id.identity,
-        idstore::StoreArgs {
-            address: id.identity,
+        id,
+        cred_id,
+        public_key,
+    } = setup();
+    SetupWithArgs {
+        module_impl,
+        id,
+        args: idstore::StoreArgs {
+            address: id,
             cred_id,
             public_key,
         },
-    )
+    }
+}
+
+pub struct SetupWithStore {
+    pub module_impl: LedgerModuleImpl,
+    pub id: Identity,
+    pub cred_id: CredentialId,
+    pub public_key: PublicKey,
+    pub recall_phrase: Vec<String>,
+}
+
+fn setup_with_store() -> SetupWithStore {
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        args,
+    } = setup_with_args();
+    let result = module_impl.store(&id, args.clone());
+    assert!(result.is_ok());
+    SetupWithStore {
+        module_impl,
+        id,
+        cred_id: args.cred_id,
+        public_key: args.public_key,
+        recall_phrase: result.unwrap().0,
+    }
 }
 
 #[test]
 /// Verify basic id storage
 fn store() {
-    let (mut module_impl, id, store_args) = setup_with_args();
-    let result = module_impl.store(&id, store_args);
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        args,
+    } = setup_with_args();
+    let result = module_impl.store(&id, args);
     assert!(result.is_ok());
 }
 
 #[test]
 /// Verify we're unable to store as anonymous
 fn store_anon() {
-    let (mut module_impl, _, store_args) = setup_with_args();
-    let result = module_impl.store(&Identity::anonymous(), store_args);
+    let SetupWithArgs {
+        mut module_impl,
+        args,
+        ..
+    } = setup_with_args();
+    let result = module_impl.store(&Identity::anonymous(), args);
     assert!(result.is_err());
     assert_eq!(result.unwrap_err().code, ManyError::invalid_identity().code);
 }
@@ -40,9 +83,13 @@ fn store_anon() {
 #[test]
 /// Verify we're unable to store when credential ID is too small
 fn invalid_cred_id_too_small() {
-    let (mut module_impl, id, mut store_args) = setup_with_args();
-    store_args.cred_id = idstore::CredentialId(vec![1; 15].into());
-    let result = module_impl.store(&id, store_args);
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        mut args,
+    } = setup_with_args();
+    args.cred_id = idstore::CredentialId(vec![1; 15].into());
+    let result = module_impl.store(&id, args);
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code,
@@ -53,9 +100,13 @@ fn invalid_cred_id_too_small() {
 #[test]
 /// Verify we're unable to store when credential ID is too long
 fn invalid_cred_id_too_long() {
-    let (mut module_impl, id, mut store_args) = setup_with_args();
-    store_args.cred_id = idstore::CredentialId(vec![1; 1024].into());
-    let result = module_impl.store(&id, store_args);
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        mut args,
+    } = setup_with_args();
+    args.cred_id = idstore::CredentialId(vec![1; 1024].into());
+    let result = module_impl.store(&id, args);
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code,
@@ -66,26 +117,25 @@ fn invalid_cred_id_too_long() {
 #[test]
 /// Verify we can fetch ID from the recall phrase
 fn get_from_recall_phrase() {
-    let (mut module_impl, id, store_args) = setup_with_args();
-    let result = module_impl.store(&id, store_args.clone());
-    assert!(result.is_ok());
-    let store_return = result.unwrap();
-
+    let SetupWithStore {
+        module_impl,
+        cred_id,
+        public_key,
+        recall_phrase,
+        ..
+    } = setup_with_store();
     let result =
-        module_impl.get_from_recall_phrase(idstore::GetFromRecallPhraseArgs(store_return.0));
+        module_impl.get_from_recall_phrase(idstore::GetFromRecallPhraseArgs(recall_phrase));
     assert!(result.is_ok());
     let get_returns = result.unwrap();
-    assert_eq!(get_returns.cred_id, store_args.cred_id);
-    assert_eq!(get_returns.public_key, store_args.public_key);
+    assert_eq!(get_returns.cred_id, cred_id);
+    assert_eq!(get_returns.public_key, public_key);
 }
 
 #[test]
 /// Verify we can't fetch ID from an invalid recall phrase
 fn get_from_invalid_recall_phrase() {
-    let (mut module_impl, id, store_args) = setup_with_args();
-    let result = module_impl.store(&id, store_args);
-    assert!(result.is_ok());
-
+    let SetupWithStore { module_impl, .. } = setup_with_store();
     let result = module_impl
         .get_from_recall_phrase(idstore::GetFromRecallPhraseArgs(vec!["Foo".to_string()]));
     assert!(result.is_err());
@@ -98,24 +148,24 @@ fn get_from_invalid_recall_phrase() {
 #[test]
 /// Verify we can fetch ID from the public address
 fn get_from_address() {
-    let (mut module_impl, id, store_args) = setup_with_args();
-    let result = module_impl.store(&id, store_args.clone());
-    assert!(result.is_ok());
-
+    let SetupWithStore {
+        module_impl,
+        id,
+        cred_id,
+        public_key,
+        ..
+    } = setup_with_store();
     let result = module_impl.get_from_address(idstore::GetFromAddressArgs(id));
     assert!(result.is_ok());
     let get_returns = result.unwrap();
-    assert_eq!(get_returns.cred_id, store_args.cred_id);
-    assert_eq!(get_returns.public_key, store_args.public_key);
+    assert_eq!(get_returns.cred_id, cred_id);
+    assert_eq!(get_returns.public_key, public_key);
 }
 
 #[test]
 /// Verify we can't fetch ID from an invalid address
 fn get_from_invalid_address() {
-    let (mut module_impl, id, store_args) = setup_with_args();
-    let result = module_impl.store(&id, store_args);
-    assert!(result.is_ok());
-
+    let SetupWithStore { module_impl, .. } = setup_with_store();
     let result = module_impl.get_from_address(idstore::GetFromAddressArgs(Identity::anonymous()));
     assert!(result.is_err());
     assert_eq!(

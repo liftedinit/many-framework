@@ -177,10 +177,10 @@ impl MultisigTransactionStorage {
     }
 }
 
-const MULTISIG_DEFAULT_THRESHOLD: u64 = 1;
-const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
-const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
-const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
+pub const MULTISIG_DEFAULT_THRESHOLD: u64 = 1;
+pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
+pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
+pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
 
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
