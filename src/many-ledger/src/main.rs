@@ -171,7 +171,7 @@ fn main() {
         for balance in balance_only_for_testing.unwrap_or_default() {
             let args: Vec<&str> = balance.splitn(3, ':').collect();
             let (identity, amount, symbol) = (
-                args.get(0).unwrap(),
+                args.first().unwrap(),
                 args.get(1).expect("No amount."),
                 args.get(2).expect("No symbol."),
             );
