@@ -105,7 +105,7 @@ impl<C: Client + Sync + Send> LowLevelManyRequestHandler for AbciModuleMany<C> {
         match result {
             Ok(x) => Ok(x),
             Err(e) => {
-                let response = ResponseMessage::error(&self.identity.identity, e);
+                let response = ResponseMessage::error(&self.identity.identity, None, e);
                 many::message::encode_cose_sign1_from_response(response, &self.identity)
             }
         }
