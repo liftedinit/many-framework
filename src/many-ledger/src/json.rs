@@ -137,7 +137,7 @@ pub struct InitialStateJson {
 impl InitialStateJson {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(path.as_ref()).map_err(Box::new)?;
-        let s = json5::from_str(&content).map_err(|e| Box::new(e))?;
+        let s = json5::from_str(&content).map_err(Box::new)?;
         Ok(s)
     }
 
@@ -155,9 +155,7 @@ impl InitialStateJson {
                         .symbols
                         .iter()
                         .find_map(|(s, n)| {
-                            if *s == token_name.as_str() {
-                                Some(*s)
-                            } else if n == token_name {
+                            if *s == token_name.as_str() || n == token_name {
                                 Some(*s)
                             } else {
                                 None
