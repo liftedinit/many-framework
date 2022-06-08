@@ -58,71 +58,40 @@ fn _execute_multisig_tx(
         }
 
         AccountMultisigTransaction::AccountSetDescription(args) => {
-            let mut account = ledger
+            let account = ledger
                 .get_account(&args.account)
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
             account.needs_role(sender, [account::Role::Owner])?;
-            account.set_description(Some(args.description.clone()));
-            ledger.commit_account(&args.account, account)?;
+            ledger.set_description(account, args.clone())?;
             minicbor::to_vec(EmptyReturn)
         }
 
         AccountMultisigTransaction::AccountAddRoles(args) => {
-            let mut account = ledger
+            let account = ledger
                 .get_account(&args.account)
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
             account.needs_role(sender, [account::Role::Owner])?;
-
-            for (id, roles) in args.roles.iter() {
-                for r in roles {
-                    account.add_role(id, *r);
-                }
-            }
-
-            ledger.commit_account(&args.account, account)?;
+            ledger.add_roles(account, args.clone())?;
             minicbor::to_vec(EmptyReturn)
         }
 
         AccountMultisigTransaction::AccountRemoveRoles(args) => {
-            let mut account = ledger
+            let account = ledger
                 .get_account(&args.account)
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
             account.needs_role(sender, [account::Role::Owner])?;
-
-            for (id, roles) in args.roles.iter() {
-                for r in roles {
-                    account.remove_role(id, *r);
-                }
-            }
-
-            ledger.commit_account(&args.account, account)?;
+            ledger.remove_roles(account, args.clone())?;
             minicbor::to_vec(EmptyReturn)
         }
 
         AccountMultisigTransaction::AccountAddFeatures(args) => {
-            let mut account = ledger
+            let account = ledger
                 .get_account(&args.account)
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
             account.needs_role(sender, [account::Role::Owner])?;
-
-            for new_f in args.features.iter() {
-                if account.features.insert(new_f.clone()) {
-                    return Err(ManyError::unknown("Feature already part of the account."));
-                }
-            }
-            if let Some(ref r) = args.roles {
-                for (id, new_r) in r {
-                    for role in new_r {
-                        account.roles.entry(*id).or_default().insert(*role);
-                    }
-                }
-            }
-
-            validate_account(&account)?;
-
-            ledger.commit_account(&args.account, account)?;
+            ledger.add_features(account, args.clone())?;
             minicbor::to_vec(EmptyReturn)
         }
 
@@ -707,7 +676,11 @@ impl LedgerStorage {
         LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
     }
 
-    pub fn add_account(&mut self, mut account: account::Account) -> Result<Identity, ManyError> {
+    pub(crate) fn _add_account(
+        &mut self,
+        mut account: account::Account,
+        add_transaction: bool,
+    ) -> Result<Identity, ManyError> {
         let id = self.new_account_id();
 
         // Set the multisig threshold properly.
@@ -743,7 +716,21 @@ impl LedgerStorage {
             account.features.insert(multisig.as_feature());
         }
 
+        if add_transaction {
+            self.add_transaction(TransactionInfo::AccountCreate {
+                account: id,
+                description: account.clone().description,
+                roles: account.clone().roles,
+                features: account.clone().features,
+            });
+        }
+
         self.commit_account(&id, account)?;
+        Ok(id)
+    }
+
+    pub fn add_account(&mut self, account: account::Account) -> Result<Identity, ManyError> {
+        let id = self._add_account(account, true)?;
         Ok(id)
     }
 
@@ -792,11 +779,94 @@ impl LedgerStorage {
             .apply(&[(key_for_account(id), Op::Delete)])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 
+        self.add_transaction(TransactionInfo::AccountDelete { account: *id });
+
         if !self.blockchain {
             self.persistent_store
                 .commit(&[])
                 .expect("Could not commit to store.");
         }
+        Ok(())
+    }
+
+    pub fn set_description(
+        &mut self,
+        mut account: account::Account,
+        args: module::account::SetDescriptionArgs,
+    ) -> Result<(), ManyError> {
+        account.set_description(Some(args.clone().description));
+        self.add_transaction(TransactionInfo::AccountSetDescription {
+            account: args.account,
+            description: args.description,
+        });
+        self.commit_account(&args.account, account)?;
+        Ok(())
+    }
+
+    pub fn add_roles(
+        &mut self,
+        mut account: account::Account,
+        args: module::account::AddRolesArgs,
+    ) -> Result<(), ManyError> {
+        for (id, roles) in &args.roles {
+            for r in roles {
+                account.add_role(id, *r);
+            }
+        }
+
+        self.add_transaction(TransactionInfo::AccountAddRoles {
+            account: args.account,
+            roles: args.clone().roles,
+        });
+        self.commit_account(&args.account, account)?;
+        Ok(())
+    }
+
+    pub fn remove_roles(
+        &mut self,
+        mut account: account::Account,
+        args: module::account::RemoveRolesArgs,
+    ) -> Result<(), ManyError> {
+        for (id, roles) in &args.roles {
+            for r in roles {
+                account.remove_role(id, *r);
+            }
+        }
+
+        self.add_transaction(TransactionInfo::AccountRemoveRoles {
+            account: args.account,
+            roles: args.clone().roles,
+        });
+        self.commit_account(&args.account, account)?;
+        Ok(())
+    }
+
+    pub fn add_features(
+        &mut self,
+        mut account: account::Account,
+        args: module::account::AddFeaturesArgs,
+    ) -> Result<(), ManyError> {
+        for new_f in args.features.iter() {
+            if account.features.insert(new_f.clone()) {
+                return Err(ManyError::unknown("Feature already part of the account."));
+            }
+        }
+        if let Some(ref r) = args.roles {
+            for (id, new_r) in r {
+                for role in new_r {
+                    account.roles.entry(*id).or_default().insert(*role);
+                }
+            }
+        }
+
+        validate_account(&account)?;
+
+        self.add_transaction(TransactionInfo::AccountAddFeatures {
+            account: args.account,
+            roles: args.clone().roles.unwrap_or_default(), // TODO: Verify this
+            features: args.clone().features,
+        });
+        self.commit_account(&args.account, account)?;
         Ok(())
     }
 
