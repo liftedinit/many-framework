@@ -7,8 +7,10 @@ on:
 jobs:
   build:
     name: Create release
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
     steps:
     - uses: actions/checkout@v2
     - name: Set outputs
@@ -24,5 +26,5 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz
+          many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}_${{ matrix.os }}.tar.gz
           sha1sum.txt
