@@ -24,6 +24,7 @@ fixed = "1.11.0"
 merk = { git = "https://github.com/liftedinit/merk.git", rev = "253678fe9fdb02bd4ade04790ad8f41801c73d95" }
 hex = "0.4.3"
 itertools = "0.10.3"
+json5 = "0.4.1"
 lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 num-traits = "0.2.14"

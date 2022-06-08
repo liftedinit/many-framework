@@ -7,6 +7,7 @@ use many::types::ledger::{Symbol, TokenAmount};
 use many::{Identity, ManyError};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::Path;
 
 #[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct MultisigFeatureArgJson {
@@ -121,8 +122,48 @@ impl AccountJson {
 #[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct InitialStateJson {
     pub identity: Identity,
-    pub initial: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
+    pub initial: BTreeMap<Identity, BTreeMap<String, TokenAmount>>,
     pub symbols: BTreeMap<Identity, String>,
     pub accounts: Option<Vec<AccountJson>>,
     pub hash: Option<String>,
+}
+
+impl InitialStateJson {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(path.as_ref()).map_err(Box::new)?;
+        let s = json5::from_str(&content).map_err(|e| Box::new(e))?;
+        Ok(s)
+    }
+
+    pub fn symbols(&self) -> BTreeMap<Identity, String> {
+        self.symbols.clone()
+    }
+
+    pub fn balances(&self) -> Result<BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>, ManyError> {
+        self.initial
+            .iter()
+            .map(|(id, b)| {
+                let mut balances = BTreeMap::new();
+                for (token_name, amount) in b {
+                    let symbol = self
+                        .symbols
+                        .iter()
+                        .find_map(|(s, n)| {
+                            if *s == token_name.as_str() {
+                                Some(*s)
+                            } else if n == token_name {
+                                Some(*s)
+                            } else {
+                                None
+                            }
+                        })
+                        .ok_or_else(|| {
+                            ManyError::unknown(format!("Could not resolve symbol '{}'", token_name))
+                        })?;
+                    balances.insert(symbol, amount.clone());
+                }
+                Ok((*id, balances))
+            })
+            .collect()
+    }
 }
