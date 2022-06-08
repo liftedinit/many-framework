@@ -78,27 +78,30 @@ pub struct AccountJson {
 
 impl AccountJson {
     pub fn create_account(&self, ledger: &mut LedgerStorage) -> Result<(), ManyError> {
-        let id = ledger.add_account(account::Account {
-            description: self.description.clone(),
-            roles: self
-                .roles
-                .iter()
-                .map(|(id, roles)| {
-                    (*id, {
-                        roles
-                            .iter()
-                            .map(|s| std::str::FromStr::from_str(s))
-                            .collect::<Result<BTreeSet<account::Role>, _>>()
-                            .expect("Invalid role.")
+        let id = ledger._add_account(
+            account::Account {
+                description: self.description.clone(),
+                roles: self
+                    .roles
+                    .iter()
+                    .map(|(id, roles)| {
+                        (*id, {
+                            roles
+                                .iter()
+                                .map(|s| std::str::FromStr::from_str(s))
+                                .collect::<Result<BTreeSet<account::Role>, _>>()
+                                .expect("Invalid role.")
+                        })
                     })
-                })
-                .collect(),
-            features: self
-                .features
-                .iter()
-                .map(|f| f.try_into_feature().expect("Unsupported feature."))
-                .collect(),
-        })?;
+                    .collect(),
+                features: self
+                    .features
+                    .iter()
+                    .map(|f| f.try_into_feature().expect("Unsupported feature."))
+                    .collect(),
+            },
+            false,
+        )?;
 
         if self.subresource_id.is_some()
             && id.subresource_id().is_some()

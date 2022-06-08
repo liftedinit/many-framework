@@ -1414,8 +1414,8 @@ version = "0.1.0"
 dependencies = [
  "clap 3.1.18",
  "hex",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
- "many-client 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
+ "many",
+ "many-client",
  "many-kvstore",
  "minicbor",
  "new_mime_guess",
@@ -1656,8 +1656,8 @@ version = "0.1.0"
 dependencies = [
  "clap 3.1.18",
  "hex",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
- "many-client 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
+ "many",
+ "many-client",
  "many-kvstore",
  "minicbor",
  "tokio",
@@ -1689,8 +1689,8 @@ dependencies = [
  "humantime",
  "indicatif",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
- "many-client 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
+ "many",
+ "many-client",
  "merk",
  "minicbor",
  "num-bigint",
@@ -1766,7 +1766,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=9f37f2bcdbd55cb6bece9f511dabd646718c0c18#9f37f2bcdbd55cb6bece9f511dabd646718c0c18"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1784,59 +1784,7 @@ dependencies = [
  "hex",
  "json",
  "lazy_static",
- "many-macros 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
- "minicbor",
- "num-bigint",
- "num-derive",
- "num-traits",
- "once_cell",
- "openssh-keys",
- "p256",
- "pem",
- "pkcs8 0.8.0",
- "rand 0.7.3",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "ring 0.16.20",
- "ring-compat",
- "serde",
- "serde_json",
- "sha2 0.10.2",
- "sha3",
- "signature",
- "simple_asn1",
- "static_assertions",
- "strum",
- "strum_macros",
- "thiserror",
- "tiny_http",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "many"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba#b2b00ab4fb87bc4379f0d082839f1d4488d337ba"
-dependencies = [
- "anyhow",
- "asn1",
- "async-trait",
- "base32",
- "base64",
- "coset",
- "crc-any",
- "cryptoki",
- "derive_builder",
- "ecdsa",
- "ed25519",
- "ed25519-dalek",
- "fixed",
- "hex",
- "json",
- "lazy_static",
- "many-macros 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba)",
+ "many-macros",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -1877,8 +1825,8 @@ dependencies = [
  "coset",
  "hex",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
- "many-client 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
+ "many",
+ "many-client",
  "minicbor",
  "reqwest",
  "sha2 0.10.2",
@@ -1897,7 +1845,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=9f37f2bcdbd55cb6bece9f511dabd646718c0c18#9f37f2bcdbd55cb6bece9f511dabd646718c0c18"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1913,50 +1861,7 @@ dependencies = [
  "fixed",
  "hex",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
- "minicbor",
- "num-bigint",
- "num-derive",
- "num-traits",
- "openssh-keys",
- "p256",
- "pkcs8 0.8.0",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "ring 0.16.20",
- "ring-compat",
- "serde",
- "sha3",
- "signature",
- "simple_asn1",
- "static_assertions",
- "thiserror",
- "tiny_http",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "many-client"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba#b2b00ab4fb87bc4379f0d082839f1d4488d337ba"
-dependencies = [
- "anyhow",
- "async-trait",
- "backtrace",
- "base32",
- "base64",
- "coset",
- "crc-any",
- "derive_builder",
- "ecdsa",
- "ed25519",
- "ed25519-dalek",
- "fixed",
- "hex",
- "lazy_static",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba)",
+ "many",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -1989,7 +1894,7 @@ dependencies = [
  "hex",
  "itertools",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7)",
+ "many",
  "many-abci",
  "merk",
  "minicbor",
@@ -2015,9 +1920,9 @@ dependencies = [
  "hex",
  "itertools",
  "lazy_static",
- "many 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba)",
+ "many",
  "many-abci",
- "many-client 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba)",
+ "many-client",
  "many-kvstore",
  "many-ledger",
  "merk",
@@ -2042,20 +1947,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=312a2a728f776632416c1a8fcd000e7fd93d92e7#312a2a728f776632416c1a8fcd000e7fd93d92e7"
-dependencies = [
- "inflections",
- "proc-macro2",
- "quote",
- "serde",
- "serde_tokenstream",
- "syn",
-]
-
-[[package]]
-name = "many-macros"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=b2b00ab4fb87bc4379f0d082839f1d4488d337ba#b2b00ab4fb87bc4379f0d082839f1d4488d337ba"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=9f37f2bcdbd55cb6bece9f511dabd646718c0c18#9f37f2bcdbd55cb6bece9f511dabd646718c0c18"
 dependencies = [
  "inflections",
  "proc-macro2",

@@ -457,18 +457,17 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: account::SetDescriptionArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        let mut account = self
+        let account = self
             .storage
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
-        if account.has_role(sender, account::Role::Owner) {
-            account.set_description(Some(args.description));
-            self.storage.commit_account(&args.account, account)?;
-            Ok(EmptyReturn)
-        } else {
-            Err(account::errors::user_needs_role("owner"))
+        if !account.has_role(sender, account::Role::Owner) {
+            return Err(account::errors::user_needs_role("owner"));
         }
+
+        self.storage.set_description(account, args)?;
+        Ok(EmptyReturn)
     }
 
     fn list_roles(
@@ -508,7 +507,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: account::AddRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        let mut account = self
+        let account = self
             .storage
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
@@ -516,13 +515,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         if !account.has_role(sender, account::Role::Owner) {
             return Err(account::errors::user_needs_role("owner"));
         }
-        for (id, roles) in args.roles {
-            for r in roles {
-                account.add_role(&id, r);
-            }
-        }
-
-        self.storage.commit_account(&args.account, account)?;
+        self.storage.add_roles(account, args)?;
         Ok(EmptyReturn)
     }
 
@@ -531,7 +524,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: account::RemoveRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
-        let mut account = self
+        let account = self
             .storage
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
@@ -539,13 +532,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         if !account.has_role(sender, account::Role::Owner) {
             return Err(account::errors::user_needs_role(account::Role::Owner));
         }
-        for (id, roles) in args.roles {
-            for r in roles {
-                account.remove_role(&id, r);
-            }
-        }
-
-        self.storage.commit_account(&args.account, account)?;
+        self.storage.remove_roles(account, args)?;
         Ok(EmptyReturn)
     }
 
@@ -593,25 +580,13 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
         sender: &Identity,
         args: account::AddFeaturesArgs,
     ) -> Result<account::AddFeaturesReturn, ManyError> {
-        let mut account = self
+        let account = self
             .storage
             .get_account(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         account.needs_role(sender, [account::Role::Owner])?;
-
-        for new_f in args.features.iter() {
-            if account.features.insert(new_f.clone()) {
-                return Err(ManyError::unknown("Feature already part of the account."));
-            }
-        }
-        for (id, mut new_r) in args.roles.unwrap_or_default() {
-            account.roles.entry(id).or_default().append(&mut new_r);
-        }
-
-        validate_account(&account)?;
-
-        self.storage.commit_account(&args.account, account)?;
+        self.storage.add_features(account, args)?;
         Ok(EmptyReturn)
     }
 }

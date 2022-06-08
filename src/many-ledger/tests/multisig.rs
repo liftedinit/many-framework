@@ -10,7 +10,6 @@ use many::{
 use many_ledger::module::LedgerModuleImpl;
 use proptest::prelude::*;
 use proptest::test_runner::Config;
-use std::str::FromStr;
 
 /// Returns informations about the given account
 fn account_info(
@@ -91,7 +90,7 @@ fn submit_transaction() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
 
     let submit_args = submit_args(account_id, tx.clone(), None);
     let result = module_impl.multisig_submit_transaction(&id, submit_args.clone());
@@ -115,7 +114,7 @@ fn submit_transaction_valid_role() {
         account_id,
         tx,
         ..
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result =
         module_impl.multisig_submit_transaction(&identity(3), submit_args(account_id, tx, None));
     assert!(result.is_ok());
@@ -129,7 +128,7 @@ fn submit_transaction_invalid_role() {
         account_id,
         tx,
         ..
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result =
         module_impl.multisig_submit_transaction(&identity(2), submit_args(account_id, tx, None));
     assert!(result.is_err());
@@ -146,7 +145,7 @@ fn set_defaults() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.multisig_set_defaults(
         &id,
         account::features::multisig::SetDefaultsArgs {
@@ -172,7 +171,7 @@ proptest! {
             mut module_impl,
             id,
             account_id,
-        } = setup_with_account();
+        } = setup_with_account(AccountType::Multisig);
         let result = module_impl.multisig_set_defaults(
             &identity(seed),
             account::features::multisig::SetDefaultsArgs {
@@ -209,7 +208,7 @@ fn approve() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
     assert!(result.is_ok());
     let submit_return = result.unwrap();
@@ -250,7 +249,7 @@ fn approve_invalid() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
     assert!(result.is_ok());
     let submit_return = result.unwrap();
@@ -279,7 +278,7 @@ fn revoke() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
     assert!(result.is_ok());
     let token = result.unwrap().token;
@@ -316,7 +315,7 @@ fn revoke_invalid() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
     assert!(result.is_ok());
     let token = result.unwrap().token;
@@ -344,11 +343,11 @@ proptest! {
             id,
             account_id,
             tx,
-        } = setup_with_account_and_tx();
+        } = setup_with_account_and_tx(AccountType::Multisig);
         module_impl.set_balance_only_for_testing(
             account_id,
             10000,
-            Identity::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap(),
+            *MFX_SYMBOL,
         );
         let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, Some(execute_automatically)));
         assert!(result.is_ok());
@@ -423,7 +422,7 @@ fn withdraw() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     for i in [id, identity(3)] {
         let result =
             module_impl.multisig_submit_transaction(&i, submit_args(account_id, tx.clone(), None));
@@ -454,7 +453,7 @@ fn withdraw_invalid() {
         id,
         account_id,
         tx,
-    } = setup_with_account_and_tx();
+    } = setup_with_account_and_tx(AccountType::Multisig);
     let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
     assert!(result.is_ok());
     let token = result.unwrap().token;

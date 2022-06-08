@@ -1,5 +1,7 @@
 pub mod common;
-use crate::common::{setup_with_account, setup_with_args, SetupWithAccount, SetupWithArgs};
+use crate::common::{
+    setup_with_account, setup_with_args, AccountType, SetupWithAccount, SetupWithArgs,
+};
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::account::{self, AccountModuleBackend};
 use many::types::identity::testing::identity;
@@ -31,7 +33,7 @@ fn create() {
         mut module_impl,
         id,
         args,
-    } = setup_with_args();
+    } = setup_with_args(AccountType::Multisig);
     let result = module_impl.create(&id, args);
     assert!(result.is_ok());
 }
@@ -43,7 +45,7 @@ fn create_invalid_role() {
         mut module_impl,
         id,
         mut args,
-    } = setup_with_args();
+    } = setup_with_args(AccountType::Multisig);
     if let Some(roles) = args.roles.as_mut() {
         roles.insert(
             identity(4),
@@ -65,7 +67,7 @@ fn set_description() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.set_description(
         &id,
         account::SetDescriptionArgs {
@@ -87,7 +89,7 @@ fn set_description_non_owner() {
         mut module_impl,
         account_id,
         ..
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.set_description(
         &identity(1),
         account::SetDescriptionArgs {
@@ -109,7 +111,7 @@ fn list_roles() {
         module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.list_roles(
         &id,
         account::ListRolesArgs {
@@ -135,7 +137,7 @@ fn get_roles() {
         module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let identities = vec![identity(2), identity(3)];
     let result = module_impl.get_roles(
         &id,
@@ -162,7 +164,7 @@ fn add_roles() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let new_role = (
         identity(4),
         BTreeSet::from_iter([account::Role::CanLedgerTransact]),
@@ -191,7 +193,7 @@ fn add_roles_non_owner() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let mut new_role = BTreeMap::from_iter([(
         identity(4),
         BTreeSet::from_iter([account::Role::CanLedgerTransact]),
@@ -219,7 +221,7 @@ fn remove_roles() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.remove_roles(
         &id,
         account::RemoveRolesArgs {
@@ -253,7 +255,7 @@ fn remove_roles_non_owner() {
         mut module_impl,
         account_id,
         ..
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.remove_roles(
         &identity(2),
         account::RemoveRolesArgs {
@@ -278,7 +280,7 @@ fn delete() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.delete(
         &id,
         account::DeleteArgs {
@@ -308,7 +310,7 @@ fn delete_non_owner() {
         mut module_impl,
         account_id,
         ..
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.delete(
         &identity(2),
         account::DeleteArgs {
@@ -329,7 +331,7 @@ fn add_feature() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
 
     let info_before = account::AccountModuleBackend::info(
         &module_impl,
@@ -379,7 +381,7 @@ fn add_feature_non_owner() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
 
     assert!(module_impl
         .add_features(
@@ -408,7 +410,7 @@ fn add_feature_and_role() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
 
     let info_before = account_info(&module_impl, &id, &account_id);
     // Prevent test from regressing.
@@ -452,7 +454,7 @@ fn add_feature_existing() {
         mut module_impl,
         id,
         account_id,
-    } = setup_with_account();
+    } = setup_with_account(AccountType::Multisig);
 
     let info_before = account_info(&module_impl, &id, &account_id);
 
