@@ -6,7 +6,9 @@
   // know the private key for this, just that its not reused.
   identity: "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow",
 
-  // Initial balances for this ledger.
+  // Initial balances for this ledger. The symbols can be either the identity or
+  // the name of the symbol. The symbol is validated during initialization so it
+  // must match an existing symbol.
   initial: {
     "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp": {
       "MFX": 1000000000
@@ -43,6 +45,7 @@
       // List of features for the account. The `arg` key is any valid JSON and will be
       // parsed and interpreted by the many-ledger CLI before creating the account.
       // Validation still happens for the features and their arg.
+      // Features don't have name, only their Feature ID.
       features: [
         {
           id: 1,

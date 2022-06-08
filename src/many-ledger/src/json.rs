@@ -71,6 +71,7 @@ impl Ord for FeatureJson {
 
 #[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct AccountJson {
+    pub id: Option<Identity>,
     pub subresource_id: Option<u32>,
     pub description: Option<String>,
     pub roles: BTreeMap<Identity, BTreeSet<String>>,
@@ -112,6 +113,11 @@ impl AccountJson {
                 id.subresource_id().unwrap().to_string(),
                 self.subresource_id.unwrap().to_string(),
             ));
+        }
+        if let Some(self_id) = self.id {
+            if id != self_id {
+                return Err(error::unexpected_account_id(id, self_id));
+            }
         }
 
         Ok(())

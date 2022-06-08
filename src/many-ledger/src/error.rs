@@ -10,5 +10,7 @@ define_attribute_many_error!(
             => "Invalid initial state hash. Expected '{expected}', was '{actual}'.",
         6: pub fn unexpected_subresource_id(expected, actual)
             => "Invalid initial state account subresource_id. Expected '{expected}', was '{actual}'.",
+        7: pub fn unexpected_account_id(expected, actual)
+            => "Invalid initial state account id. Expected '{expected}', was '{actual}'.",
     }
 );
