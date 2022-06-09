@@ -38,7 +38,7 @@ local ledger(i, user, id_with_balances) = {
     ],
     command: [
         "--abci",
-        "--state=/genfiles/ledger_state.json",
+        "--state=/genfiles/ledger_state.json5",
         "--pem=/genfiles/ledger.pem",
     ] + generate_balance_flags(id_with_balances),
 };

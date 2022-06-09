@@ -149,10 +149,8 @@ fn main() {
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
     let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
 
-    let state: Option<InitialStateJson> = state.map(|state| {
-        let content = std::fs::read_to_string(&state).unwrap();
-        serde_json::from_str(&content).unwrap()
-    });
+    let state: Option<InitialStateJson> =
+        state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
     let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));

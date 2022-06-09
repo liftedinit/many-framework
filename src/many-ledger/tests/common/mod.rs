@@ -12,6 +12,7 @@ use many::{
     },
     Identity,
 };
+use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
 use once_cell::sync::Lazy;
 use std::{
@@ -35,10 +36,8 @@ pub fn setup() -> Setup {
     Setup {
         module_impl: LedgerModuleImpl::new(
             Some(
-                serde_json::from_str(
-                    &std::fs::read_to_string("../../staging/ledger_state.json").unwrap(),
-                )
-                .unwrap(),
+                InitialStateJson::read("../../staging/ledger_state.json5")
+                    .expect("Could not read initial state."),
             ),
             tempfile::tempdir().unwrap(),
             false,
