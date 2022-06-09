@@ -34,8 +34,6 @@ function teardown() {
     many_message --id=0 idstore.store "{0: 10000_1(h'"${identity_hex}"'), 1: h'"${cred_id}"', 2: h'"${key2cose}"'}"
     assert_output '{0: ["abandon", "again"]}'
 
-    echo ${cred_id^^}
-
     many_message --id=0 idstore.getFromRecallPhrase "$output"
     assert_output --partial "0: h'"${cred_id,,}"'"
     assert_output --partial "1: h'"${key2cose}"'"
