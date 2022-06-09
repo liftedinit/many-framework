@@ -488,7 +488,7 @@ fn expires() {
         );
 
         module_impl
-            .multisig_submit_transaction(&owner_id, submit_args(account_id, tx.clone(), None))
+            .multisig_submit_transaction(&owner_id, submit_args(account_id, tx, None))
             .unwrap()
             .token
     });

@@ -1850,6 +1850,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1928,6 +1929,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2030,6 +2032,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
 dependencies = [
  "inflections",
  "proc-macro2",
