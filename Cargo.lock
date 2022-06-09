@@ -4190,3 +4190,8 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "many-cli"
+version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
