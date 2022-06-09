@@ -394,7 +394,7 @@ proptest! {
                     assert!(result.is_err());
                     assert_eq!(
                         result.unwrap_err().code,
-                        account::features::multisig::errors::transaction_cannot_be_found().code
+                        account::features::multisig::errors::transaction_expired_or_withdrawn().code
                     );
                 } else {
                     // We have enough approvers and the manual execution succeeded.
@@ -436,12 +436,10 @@ fn withdraw() {
             },
         );
         assert!(result.is_ok());
-        let result = module_impl.multisig_info(&i, account::features::multisig::InfoArgs { token });
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::features::multisig::errors::transaction_cannot_be_found().code
-        );
+        let result = module_impl
+            .multisig_info(&i, account::features::multisig::InfoArgs { token })
+            .unwrap();
+        assert_eq!(result.state, MultisigTransactionState::Withdrawn);
     }
 }
 
