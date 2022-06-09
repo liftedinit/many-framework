@@ -471,3 +471,70 @@ fn withdraw_invalid() {
         );
     }
 }
+
+#[test]
+/// Verify that transactions expire after a while.
+fn expires() {
+    let mut setup = Setup::new(true);
+    let account_id = setup.create_account(AccountType::Multisig);
+    let owner_id = setup.id;
+
+    let (h, token) = setup.block(|Setup { module_impl, .. }| {
+        let tx = many::types::ledger::AccountMultisigTransaction::Send(
+            many::server::module::ledger::SendArgs {
+                from: Some(account_id),
+                to: identity(3),
+                symbol: *MFX_SYMBOL,
+                amount: many::types::ledger::TokenAmount::from(10u16),
+            },
+        );
+
+        module_impl
+            .multisig_submit_transaction(&owner_id, submit_args(account_id, tx.clone(), None))
+            .unwrap()
+            .token
+    });
+    assert_eq!(h, 1);
+
+    let (h, ()) = setup.block(|_| {});
+    assert_eq!(h, 2);
+
+    setup
+        .module_impl
+        .multisig_info(
+            &owner_id,
+            account::features::multisig::InfoArgs {
+                token: token.clone(),
+            },
+        )
+        .unwrap();
+
+    setup.inc_time(1_000_000);
+    let (h, ()) = setup.block(|_| {});
+    assert_eq!(h, 3);
+
+    let info = setup
+        .module_impl
+        .multisig_info(
+            &owner_id,
+            account::features::multisig::InfoArgs {
+                token: token.clone(),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(info.state, MultisigTransactionState::Expired);
+
+    // Can't approve.
+    setup.block(|Setup { module_impl, .. }| {
+        let result = module_impl.multisig_approve(
+            &owner_id,
+            account::features::multisig::ApproveArgs { token },
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code,
+            account::features::multisig::errors::transaction_expired_or_withdrawn().code
+        );
+    });
+}

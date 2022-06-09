@@ -1,4 +1,5 @@
 use coset::CborSerializable;
+use many::server::module::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many::server::module::{self};
 use many::{
     server::module::{
@@ -23,30 +24,112 @@ use std::{
 pub static MFX_SYMBOL: Lazy<Identity> = Lazy::new(|| {
     Identity::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
 });
+
 pub struct Setup {
     pub module_impl: LedgerModuleImpl,
     pub id: Identity,
     pub cred_id: CredentialId,
     pub public_key: PublicKey,
+
+    time: Option<u64>,
 }
-/// Setup a new identity, credential ID, public key and ledger module implementation
-pub fn setup() -> Setup {
-    let id = generate_random_eddsa_identity();
-    let public_key = PublicKey(id.clone().key.unwrap().to_vec().unwrap().into());
-    Setup {
-        module_impl: LedgerModuleImpl::new(
-            Some(
-                InitialStateJson::read("../../staging/ledger_state.json5")
-                    .expect("Could not read initial state."),
-            ),
-            tempfile::tempdir().unwrap(),
-            false,
-        )
-        .unwrap(),
-        id: id.identity,
-        cred_id: CredentialId(vec![1; 16].into()),
-        public_key,
+
+impl Default for Setup {
+    fn default() -> Self {
+        Self::new(false)
     }
+}
+
+impl Setup {
+    pub fn new(blockchain: bool) -> Self {
+        let id = generate_random_eddsa_identity();
+        let public_key = PublicKey(id.clone().key.unwrap().to_vec().unwrap().into());
+
+        Self {
+            module_impl: LedgerModuleImpl::new(
+                Some(
+                    InitialStateJson::read("../../staging/ledger_state.json5")
+                        .expect("Could not read initial state."),
+                ),
+                tempfile::tempdir().unwrap(),
+                blockchain,
+            )
+            .unwrap(),
+            id: id.identity,
+            cred_id: CredentialId(vec![1; 16].into()),
+            public_key,
+            time: Some(1_000_000),
+        }
+    }
+
+    pub fn create_account_args(&mut self, account_type: AccountType) -> account::CreateArgs {
+        let (roles, features) = match account_type {
+            AccountType::Multisig => {
+                let roles = Some(BTreeMap::from_iter([
+                    (
+                        identity(2),
+                        BTreeSet::from_iter([account::Role::CanMultisigApprove]),
+                    ),
+                    (
+                        identity(3),
+                        BTreeSet::from_iter([account::Role::CanMultisigSubmit]),
+                    ),
+                ]));
+                let features = account::features::FeatureSet::from_iter([
+                    account::features::multisig::MultisigAccountFeature::default().as_feature(),
+                ]);
+                (roles, features)
+            }
+            AccountType::Ledger => {
+                let roles = Some(BTreeMap::from_iter([(
+                    identity(2),
+                    BTreeSet::from_iter([account::Role::CanLedgerTransact]),
+                )]));
+                let features = account::features::FeatureSet::from_iter([
+                    account::features::ledger::AccountLedger.as_feature(),
+                ]);
+                (roles, features)
+            }
+        };
+
+        account::CreateArgs {
+            description: Some("Foobar".to_string()),
+            roles,
+            features,
+        }
+    }
+
+    pub fn create_account(&mut self, account_type: AccountType) -> Identity {
+        let args = self.create_account_args(account_type);
+        self.module_impl.create(&self.id, args).unwrap().id
+    }
+
+    pub fn inc_time(&mut self, amount: u64) {
+        self.time = Some(self.time.unwrap_or_default() + amount);
+    }
+
+    pub fn block<R>(&mut self, inner_f: impl FnOnce(&mut Self) -> R) -> (u64, R) {
+        if let Some(t) = self.time {
+            self.time = Some(t + 1000);
+        }
+
+        self.module_impl
+            .begin_block(AbciBlock { time: self.time })
+            .expect("Could not begin block");
+
+        let r = inner_f(self);
+
+        self.module_impl.end_block().expect("Could not end block");
+        self.module_impl.commit().expect("Could not commit block");
+
+        let info = ManyAbciModuleBackend::info(&self.module_impl).expect("Could not get info.");
+
+        (info.height, r)
+    }
+}
+
+pub fn setup() -> Setup {
+    Setup::default()
 }
 
 pub struct SetupWithArgs {
@@ -62,50 +145,13 @@ pub enum AccountType {
 }
 
 pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
-    let Setup {
-        module_impl,
-        id,
-        cred_id: _cred_id,
-        public_key: _public_key,
-    } = setup();
-
-    let (roles, features) = match account_type {
-        AccountType::Multisig => {
-            let roles = Some(BTreeMap::from_iter([
-                (
-                    identity(2),
-                    BTreeSet::from_iter([account::Role::CanMultisigApprove]),
-                ),
-                (
-                    identity(3),
-                    BTreeSet::from_iter([account::Role::CanMultisigSubmit]),
-                ),
-            ]));
-            let features = account::features::FeatureSet::from_iter([
-                account::features::multisig::MultisigAccountFeature::default().as_feature(),
-            ]);
-            (roles, features)
-        }
-        AccountType::Ledger => {
-            let roles = Some(BTreeMap::from_iter([(
-                identity(2),
-                BTreeSet::from_iter([account::Role::CanLedgerTransact]),
-            )]));
-            let features = account::features::FeatureSet::from_iter([
-                account::features::ledger::AccountLedger.as_feature(),
-            ]);
-            (roles, features)
-        }
-    };
+    let mut setup = Setup::default();
+    let args = setup.create_account_args(account_type);
 
     SetupWithArgs {
-        module_impl,
-        id,
-        args: account::CreateArgs {
-            description: Some("Foobar".to_string()),
-            roles,
-            features,
-        },
+        module_impl: setup.module_impl,
+        id: setup.id,
+        args,
     }
 }
 

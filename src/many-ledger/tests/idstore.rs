@@ -18,6 +18,7 @@ fn setup_with_args() -> SetupWithArgs {
         id,
         cred_id,
         public_key,
+        ..
     } = setup();
     SetupWithArgs {
         module_impl,
