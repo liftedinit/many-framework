@@ -1850,7 +1850,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=b9eb77713e4d725df7bc3254a36c4844e3f7e86c#b9eb77713e4d725df7bc3254a36c4844e3f7e86c"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1929,7 +1929,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=b9eb77713e4d725df7bc3254a36c4844e3f7e86c#b9eb77713e4d725df7bc3254a36c4844e3f7e86c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2032,7 +2032,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=b9eb77713e4d725df7bc3254a36c4844e3f7e86c#b9eb77713e4d725df7bc3254a36c4844e3f7e86c"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -4193,8 +4193,3 @@ dependencies = [
  "syn",
  "synstructure",
 ]
-
-[[patch.unused]]
-name = "many-cli"
-version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs?rev=5d3a790c5b4c562f7989a570a60b65c29b18257f#5d3a790c5b4c562f7989a570a60b65c29b18257f"

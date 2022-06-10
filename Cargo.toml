@@ -14,12 +14,7 @@ strip = true  # Strip debug info from release build
 lto = true  # Perform "fat" LTO
 codegen-units = 1 # Improve the performance of the generated code at the cost of compile time
 
-[patch."https://github.com/liftedinit/many-rs.git"]
-many = { git = "https://github.com/hansl/many-rs", rev = "5d3a790c5b4c562f7989a570a60b65c29b18257f"}
-many-cli = { git = "https://github.com/hansl/many-rs", rev = "5d3a790c5b4c562f7989a570a60b65c29b18257f"}
-many-client = { git = "https://github.com/hansl/many-rs", rev = "5d3a790c5b4c562f7989a570a60b65c29b18257f"}
-many-macros = { git = "https://github.com/hansl/many-rs", rev = "5d3a790c5b4c562f7989a570a60b65c29b18257f"}
-
+# [patch."https://github.com/liftedinit/many-rs.git"]
 # many = { path = "../many-rs/src/many" }
 # many-cli = { path = "../many-rs/src/many-cli" }
 # many-client = { path = "../many-rs/src/many-client" }

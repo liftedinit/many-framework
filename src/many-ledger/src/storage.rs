@@ -148,6 +148,11 @@ pub struct MultisigTransactionStorage {
 }
 
 impl MultisigTransactionStorage {
+    pub fn disable(&mut self, state: MultisigTransactionState) {
+        self.disabled = true;
+        self.info.state = state;
+    }
+
     pub fn should_execute(&self) -> bool {
         self.info.approvers.values().filter(|i| i.approved).count() >= self.info.threshold as usize
     }
@@ -477,9 +482,11 @@ impl LedgerStorage {
         self.latest_tid.clone()
     }
 
-    pub fn check_timed_out_transactions(&mut self) -> Result<(), ManyError> {
+    pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
         use rocksdb::{Direction, IteratorMode, ReadOptions};
 
+        // Set the iterator bounds to iterate all multisig transactions.
+        // We will break the loop later if we can.
         let mut options = ReadOptions::default();
         options.set_iterate_lower_bound(MULTISIG_TRANSACTIONS_ROOT);
         let mut bound = MULTISIG_TRANSACTIONS_ROOT.to_vec();
@@ -500,14 +507,15 @@ impl LedgerStorage {
 
             if storage.info.timeout.0 > now {
                 if !storage.disabled {
-                    storage.disabled = true;
-                    storage.info.state = MultisigTransactionState::Expired;
+                    storage.disable(MultisigTransactionState::Expired);
 
                     if let Ok(v) = minicbor::to_vec(storage) {
                         batch.push((k.to_vec(), Op::Put(v)));
                     }
                 }
             } else if let Ok(d) = now.duration_since(storage.creation) {
+                // Since the DB is ordered by transaction ID (keys), at this point we don't need
+                // to continue since we know that the rest is all timed out anyway.
                 if d.as_secs() > MULTISIG_MAXIMUM_TIMEOUT_IN_SECS {
                     break;
                 }
@@ -528,7 +536,7 @@ impl LedgerStorage {
     pub fn commit(&mut self) -> AbciCommitInfo {
         // First check if there's any need to clean up multisig transactions. Ignore
         // errors.
-        let _ = self.check_timed_out_transactions();
+        let _ = self.check_timed_out_multisig_transactions();
 
         let height = self.inc_height();
         let retain_height = 0;
@@ -1028,7 +1036,6 @@ impl LedgerStorage {
                 execute_automatically,
                 timeout,
                 data: arg.data.clone(),
-
                 state: MultisigTransactionState::Pending,
             },
             creation: self.now(),
@@ -1183,7 +1190,7 @@ impl LedgerStorage {
             return Err(multisig::errors::cannot_execute_transaction());
         }
 
-        self.disable_multisig_transaction(tx_id, MultisigTransactionState::Withdrawn)?;
+        self.disable_multisig_transaction(&[tx_id], MultisigTransactionState::Withdrawn)?;
         self.add_transaction(TransactionInfo::AccountMultisigWithdraw {
             account: storage.account,
             token: tx_id.to_vec().into(),
@@ -1201,8 +1208,7 @@ impl LedgerStorage {
         if storage.disabled {
             return Err(account::features::multisig::errors::transaction_expired_or_withdrawn());
         }
-        storage.disabled = true;
-        storage.info.state = state;
+        storage.disable(state);
 
         let v =
             minicbor::to_vec(storage).map_err(|e| ManyError::serialization_error(e.to_string()))?;
@@ -1226,7 +1232,7 @@ impl LedgerStorage {
     ) -> Result<ResponseMessage, ManyError> {
         let result = _execute_multisig_tx(self, tx_id, storage);
         self.disable_multisig_transaction(
-            tx_id,
+            &[tx_id],
             if automatic {
                 MultisigTransactionState::ExecutedAutomatically
             } else {
