@@ -621,8 +621,7 @@ impl LedgerStorage {
         }
 
         if amount.is_zero() {
-            return Err(error::amount_is_zero())
-
+            return Err(error::amount_is_zero());
         }
 
         if to.is_anonymous() || from.is_anonymous() {
