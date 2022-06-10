@@ -12,5 +12,9 @@ define_attribute_many_error!(
             => "Invalid initial state account subresource_id. Expected '{expected}', was '{actual}'.",
         7: pub fn unexpected_account_id(expected, actual)
             => "Invalid initial state account id. Expected '{expected}', was '{actual}'.",
+        8: pub fn destination_is_source()
+            => "Unable to send tokens to a destination (to) that is the same as the source (from).",
+        9: pub fn amount_is_zero()
+            => "Unable to send zero (0) token.",
     }
 );
