@@ -505,7 +505,7 @@ impl LedgerStorage {
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             let now = self.now();
 
-            if storage.info.timeout.0 > now {
+            if now >= storage.info.timeout.0 {
                 if !storage.disabled {
                     storage.disable(MultisigTransactionState::Expired);
 
@@ -523,6 +523,8 @@ impl LedgerStorage {
         }
 
         if !batch.is_empty() {
+            // Reverse the batch so keys are in sorted order.
+            batch.reverse();
             self.persistent_store.apply(&batch).unwrap();
         }
 

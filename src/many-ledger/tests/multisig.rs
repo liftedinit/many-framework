@@ -474,11 +474,10 @@ fn withdraw_invalid() {
 /// Verify that transactions expire after a while.
 fn expires() {
     let mut setup = Setup::new(true);
-    let account_id = setup.create_account(AccountType::Multisig);
+    let account_id = setup.create_account_(AccountType::Multisig);
     let owner_id = setup.id;
 
-    let (h, token) =
-        setup.block(|setup| setup.multisig_send(account_id, identity(3), 10u32, *MFX_SYMBOL));
+    let (h, token) = setup.block(|setup| setup.multisig_send_(account_id, identity(3), 10u32));
     assert_eq!(h, 1);
 
     let (h, ()) = setup.block(|_| {});
@@ -486,7 +485,12 @@ fn expires() {
 
     // Assert that it still exists and is not disabled.
     setup.assert_multisig_info(&token, |i| {
-        assert_eq!(i.state, MultisigTransactionState::Pending);
+        assert_eq!(
+            i.state,
+            MultisigTransactionState::Pending,
+            "State: {:#?}",
+            i
+        );
     });
 
     setup.inc_time(1_000_000);
@@ -510,17 +514,19 @@ fn expires() {
 #[test]
 fn multiple_multisig() {
     let mut setup = Setup::new(true);
+    setup.set_balance(setup.id, 1_000_000, *MFX_SYMBOL);
     let account_ids: Vec<Identity> = (0..5)
         .into_iter()
-        .map(|_| setup.create_account(AccountType::Multisig))
+        .map(|_| setup.create_account_(AccountType::Multisig))
         .collect();
 
     // Create 3 transactions in a block.
     let (h, mut tokens) = setup.block(|setup| {
+        // Does not validate when created.
         vec![
-            setup.multisig_send(account_ids[0], identity(3), 10u32, *MFX_SYMBOL),
-            setup.multisig_send(account_ids[1], identity(4), 15u32, *MFX_SYMBOL),
-            setup.multisig_send(account_ids[2], identity(5), 20u32, *MFX_SYMBOL),
+            setup.multisig_send_(account_ids[0], identity(3), 10u32),
+            setup.multisig_send_(account_ids[1], identity(4), 15u32),
+            setup.multisig_send_(account_ids[2], identity(5), 20u32),
         ]
     });
     assert_eq!(h, 1);
@@ -528,9 +534,9 @@ fn multiple_multisig() {
     // Create 3 more transactions in a block.
     let (h, mut tokens2) = setup.block(|setup| {
         vec![
-            setup.multisig_send(account_ids[0], identity(3), 10u32, *MFX_SYMBOL),
-            setup.multisig_send(account_ids[1], identity(4), 15u32, *MFX_SYMBOL),
-            setup.multisig_send(account_ids[2], identity(5), 20u32, *MFX_SYMBOL),
+            setup.multisig_send_(account_ids[0], identity(6), 10u32),
+            setup.multisig_send_(account_ids[1], identity(7), 15u32),
+            setup.multisig_send_(account_ids[2], identity(8), 20u32),
         ]
     });
     assert_eq!(h, 2);
@@ -542,8 +548,21 @@ fn multiple_multisig() {
         setup.multisig_approve_(identity(2), &tokens[1]);
         setup.multisig_approve_(identity(2), &tokens[2]);
         setup.multisig_approve_(identity(2), &tokens[3]);
-        setup.multisig_execute_(&tokens[2]);
-        setup.multisig_execute_(&tokens[3]);
+        assert_eq!(
+            setup.multisig_execute(&tokens[2]).unwrap_err(),
+            account::features::multisig::errors::cannot_execute_transaction(),
+        );
+
+        setup.multisig_approve_(identity(3), &tokens[2]);
+        setup.multisig_approve_(identity(3), &tokens[3]);
+
+        // Is okay.
+        setup.send_(setup.id, account_ids[2], 100u32);
+        let data = setup.multisig_execute_(&tokens[2]).data;
+        assert!(data.is_ok(), "Err: {}", data.unwrap_err());
+
+        // Insufficient funds.
+        assert!(setup.multisig_execute_(&tokens[3]).data.is_err());
     });
     assert_eq!(h, 3);
 
@@ -563,9 +582,10 @@ fn multiple_multisig() {
         assert_eq!(i.state, MultisigTransactionState::Pending);
     });
 
-    assert_eq!(setup.balance(account_ids[0], *MFX_SYMBOL), 10u16);
-    assert_eq!(setup.balance(account_ids[1], *MFX_SYMBOL), 10u16);
-    assert_eq!(setup.balance(account_ids[2], *MFX_SYMBOL), 10u16);
-    assert_eq!(setup.balance(account_ids[3], *MFX_SYMBOL), 10u16);
-    assert_eq!(setup.balance(account_ids[4], *MFX_SYMBOL), 10u16);
+    assert_eq!(setup.balance_(account_ids[0]), 0u16);
+    assert_eq!(setup.balance_(account_ids[1]), 0u16);
+    assert_eq!(setup.balance_(account_ids[2]), 80u16);
+    assert_eq!(setup.balance_(identity(5)), 20u16);
+    assert_eq!(setup.balance_(account_ids[3]), 0u16);
+    assert_eq!(setup.balance_(account_ids[4]), 0u16);
 }

@@ -4,8 +4,9 @@ use many::server::module::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many::server::module::account::features::multisig::{
     AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
 };
-use many::server::module::ledger::BalanceArgs;
+use many::server::module::ledger::{BalanceArgs, LedgerCommandsModuleBackend};
 use many::server::module::{self};
+use many::types::ledger::Symbol;
 use many::{
     server::module::{
         account::{self, features::FeatureInfo, AccountModuleBackend},
@@ -75,6 +76,11 @@ impl Setup {
         }
     }
 
+    pub fn set_balance(&mut self, id: Identity, amount: u64, symbol: Symbol) {
+        self.module_impl
+            .set_balance_only_for_testing(id, amount, symbol);
+    }
+
     pub fn create_account_args(&mut self, account_type: AccountType) -> account::CreateArgs {
         let (roles, features) = match account_type {
             AccountType::Multisig => {
@@ -112,34 +118,65 @@ impl Setup {
         }
     }
 
-    pub fn balance(&self, account: Identity, symbol: Identity) -> TokenAmount {
-        self.module_impl
+    pub fn balance(&self, account: Identity, symbol: Symbol) -> Result<TokenAmount, ManyError> {
+        Ok(self
+            .module_impl
             .balance(
                 &account,
                 BalanceArgs {
                     account: None,
                     symbols: Some(vec![symbol].into()),
                 },
-            )
-            .expect("Could not get the balance")
+            )?
             .balances
             .get(&symbol)
             .cloned()
-            .unwrap_or_default()
+            .unwrap_or_default())
+    }
+    pub fn balance_(&self, account: Identity) -> TokenAmount {
+        self.balance(account, *MFX_SYMBOL).unwrap()
     }
 
-    pub fn create_account(&mut self, account_type: AccountType) -> Identity {
+    pub fn send(
+        &mut self,
+        from: Identity,
+        to: Identity,
+        amount: impl Into<TokenAmount>,
+        symbol: Symbol,
+    ) -> Result<(), ManyError> {
+        self.module_impl.send(
+            &from,
+            many::server::module::ledger::SendArgs {
+                from: Some(from),
+                to,
+                amount: amount.into(),
+                symbol,
+            },
+        )?;
+        Ok(())
+    }
+    pub fn send_(&mut self, from: Identity, to: Identity, amount: impl Into<TokenAmount>) {
+        self.send(from, to, amount, *MFX_SYMBOL)
+            .expect("Could not send tokens")
+    }
+
+    pub fn create_account(&mut self, account_type: AccountType) -> Result<Identity, ManyError> {
         let args = self.create_account_args(account_type);
-        self.module_impl.create(&self.id, args).unwrap().id
+        self.module_impl.create(&self.id, args).map(|x| x.id)
+    }
+    pub fn create_account_(&mut self, account_type: AccountType) -> Identity {
+        self.create_account(account_type).unwrap()
     }
 
     pub fn inc_time(&mut self, amount: u64) {
         self.time = Some(self.time.unwrap_or_default() + amount);
     }
 
+    /// Execute a block begin+inner_f+end+commit.
+    /// See https://docs.tendermint.com/master/spec/abci/abci.html#block-execution
     pub fn block<R>(&mut self, inner_f: impl FnOnce(&mut Self) -> R) -> (u64, R) {
         if let Some(t) = self.time {
-            self.time = Some(t + 1000);
+            self.time = Some(t + 1);
         }
 
         self.module_impl
@@ -161,7 +198,7 @@ impl Setup {
         &mut self,
         account_id: Identity,
         transaction: many::types::ledger::AccountMultisigTransaction,
-    ) -> ByteVec {
+    ) -> Result<ByteVec, ManyError> {
         self.module_impl
             .multisig_submit_transaction(
                 &self.id,
@@ -175,8 +212,14 @@ impl Setup {
                     data: None,
                 },
             )
-            .unwrap()
-            .token
+            .map(|x| x.token)
+    }
+    pub fn create_multisig_(
+        &mut self,
+        account_id: Identity,
+        transaction: many::types::ledger::AccountMultisigTransaction,
+    ) -> ByteVec {
+        self.create_multisig(account_id, transaction).unwrap()
     }
 
     /// Send some tokens as a multisig transaction.
@@ -186,7 +229,7 @@ impl Setup {
         to: Identity,
         amount: impl Into<TokenAmount>,
         symbol: Identity,
-    ) -> ByteVec {
+    ) -> Result<ByteVec, ManyError> {
         self.create_multisig(
             account_id,
             many::types::ledger::AccountMultisigTransaction::Send(
@@ -198,6 +241,15 @@ impl Setup {
                 },
             ),
         )
+    }
+    pub fn multisig_send_(
+        &mut self,
+        account_id: Identity,
+        to: Identity,
+        amount: impl Into<TokenAmount>,
+    ) -> ByteVec {
+        self.multisig_send(account_id, to, amount, *MFX_SYMBOL)
+            .unwrap()
     }
 
     /// Approve a multisig transaction.
@@ -298,8 +350,7 @@ pub fn setup_with_account_and_tx(account_type: AccountType) -> SetupWithAccountA
         many::server::module::ledger::SendArgs {
             from: Some(account_id),
             to: identity(3),
-            symbol: Identity::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz")
-                .unwrap(),
+            symbol: *MFX_SYMBOL,
             amount: many::types::ledger::TokenAmount::from(10u16),
         },
     );
