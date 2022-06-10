@@ -1190,7 +1190,7 @@ impl LedgerStorage {
             return Err(multisig::errors::cannot_execute_transaction());
         }
 
-        self.disable_multisig_transaction(&[tx_id], MultisigTransactionState::Withdrawn)?;
+        self.disable_multisig_transaction(tx_id, MultisigTransactionState::Withdrawn)?;
         self.add_transaction(TransactionInfo::AccountMultisigWithdraw {
             account: storage.account,
             token: tx_id.to_vec().into(),
@@ -1232,7 +1232,7 @@ impl LedgerStorage {
     ) -> Result<ResponseMessage, ManyError> {
         let result = _execute_multisig_tx(self, tx_id, storage);
         self.disable_multisig_transaction(
-            &[tx_id],
+            tx_id,
             if automatic {
                 MultisigTransactionState::ExecutedAutomatically
             } else {

@@ -1,5 +1,10 @@
 use coset::CborSerializable;
+use many::message::ResponseMessage;
 use many::server::module::abci_backend::{AbciBlock, ManyAbciModuleBackend};
+use many::server::module::account::features::multisig::{
+    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
+};
+use many::server::module::ledger::BalanceArgs;
 use many::server::module::{self};
 use many::{
     server::module::{
@@ -11,10 +16,11 @@ use many::{
         identity::{cose::testsutils::generate_random_eddsa_identity, testing::identity},
         ledger::{AccountMultisigTransaction, TokenAmount},
     },
-    Identity,
+    Identity, ManyError,
 };
 use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
+use minicbor::bytes::ByteVec;
 use once_cell::sync::Lazy;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -24,6 +30,13 @@ use std::{
 pub static MFX_SYMBOL: Lazy<Identity> = Lazy::new(|| {
     Identity::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
 });
+
+pub fn assert_many_err<I: std::fmt::Debug + std::cmp::PartialEq>(
+    r: Result<I, ManyError>,
+    err: ManyError,
+) {
+    assert_eq!(r, Err(err));
+}
 
 pub struct Setup {
     pub module_impl: LedgerModuleImpl,
@@ -99,6 +112,22 @@ impl Setup {
         }
     }
 
+    pub fn balance(&self, account: Identity, symbol: Identity) -> TokenAmount {
+        self.module_impl
+            .balance(
+                &account,
+                BalanceArgs {
+                    account: None,
+                    symbols: Some(vec![symbol].into()),
+                },
+            )
+            .expect("Could not get the balance")
+            .balances
+            .get(&symbol)
+            .cloned()
+            .unwrap_or_default()
+    }
+
     pub fn create_account(&mut self, account_type: AccountType) -> Identity {
         let args = self.create_account_args(account_type);
         self.module_impl.create(&self.id, args).unwrap().id
@@ -125,6 +154,82 @@ impl Setup {
         let info = ManyAbciModuleBackend::info(&self.module_impl).expect("Could not get info.");
 
         (info.height, r)
+    }
+
+    /// Create a multisig transaction using the owner ID.
+    pub fn create_multisig(
+        &mut self,
+        account_id: Identity,
+        transaction: many::types::ledger::AccountMultisigTransaction,
+    ) -> ByteVec {
+        self.module_impl
+            .multisig_submit_transaction(
+                &self.id,
+                account::features::multisig::SubmitTransactionArgs {
+                    account: account_id,
+                    memo: Some("Foo".to_string()),
+                    transaction: Box::new(transaction),
+                    threshold: None,
+                    timeout_in_secs: None,
+                    execute_automatically: None,
+                    data: None,
+                },
+            )
+            .unwrap()
+            .token
+    }
+
+    /// Send some tokens as a multisig transaction.
+    pub fn multisig_send(
+        &mut self,
+        account_id: Identity,
+        to: Identity,
+        amount: impl Into<TokenAmount>,
+        symbol: Identity,
+    ) -> ByteVec {
+        self.create_multisig(
+            account_id,
+            many::types::ledger::AccountMultisigTransaction::Send(
+                many::server::module::ledger::SendArgs {
+                    from: Some(account_id),
+                    to,
+                    symbol,
+                    amount: amount.into(),
+                },
+            ),
+        )
+    }
+
+    /// Approve a multisig transaction.
+    pub fn multisig_approve(&mut self, id: Identity, token: &ByteVec) -> Result<(), ManyError> {
+        let token = token.clone();
+        self.module_impl
+            .multisig_approve(&id, account::features::multisig::ApproveArgs { token })?;
+        Ok(())
+    }
+    pub fn multisig_approve_(&mut self, id: Identity, token: &ByteVec) {
+        self.multisig_approve(id, token)
+            .expect("Could not approve multisig")
+    }
+
+    /// Execute the transaction.
+    pub fn multisig_execute(&mut self, token: &ByteVec) -> Result<ResponseMessage, ManyError> {
+        let token = token.clone();
+        self.module_impl
+            .multisig_execute(&self.id, ExecuteArgs { token })
+    }
+    pub fn multisig_execute_(&mut self, token: &ByteVec) -> ResponseMessage {
+        self.multisig_execute(token)
+            .expect("Could not execute multisig")
+    }
+
+    pub fn assert_multisig_info(&self, token: &ByteVec, assert_f: impl FnOnce(InfoReturn)) {
+        let token = token.clone();
+        assert_f(
+            self.module_impl
+                .multisig_info(&self.id, account::features::multisig::InfoArgs { token })
+                .expect("Could not find multisig info"),
+        );
     }
 }
 
