@@ -649,10 +649,14 @@ impl LedgerStorage {
         symbol: &Symbol,
         amount: TokenAmount,
     ) -> Result<(), ManyError> {
-        if amount.is_zero() || from == to {
-            // NOOP.
-            return Ok(());
+        if from == to {
+            return Err(error::destination_is_source());
         }
+
+        if amount.is_zero() {
+            return Err(error::amount_is_zero());
+        }
+
         if to.is_anonymous() || from.is_anonymous() {
             return Err(error::anonymous_cannot_hold_funds());
         }
