@@ -1,9 +1,10 @@
 pub mod common;
 use common::*;
 use many::server::module::account::features::multisig::*;
+use many::server::module::ledger;
 use many::{
+    server::module::account::features::multisig::AccountMultisigModuleBackend,
     server::module::account::{self, AccountModuleBackend},
-    server::module::{self, account::features::multisig::AccountMultisigModuleBackend},
     types::{self, identity::testing::identity},
     Identity,
 };
@@ -32,10 +33,10 @@ fn account_arguments(
     module_impl: &mut LedgerModuleImpl,
     id: &Identity,
     account_id: Identity,
-) -> account::features::multisig::MultisigAccountFeatureArg {
+) -> MultisigAccountFeatureArg {
     account_info(module_impl, id, account_id)
         .features
-        .get::<account::features::multisig::MultisigAccountFeature>()
+        .get::<MultisigAccountFeature>()
         .unwrap()
         .arg
 }
@@ -45,8 +46,8 @@ fn submit_args(
     account_id: Identity,
     transaction: types::ledger::AccountMultisigTransaction,
     execute_automatically: Option<bool>,
-) -> account::features::multisig::SubmitTransactionArgs {
-    account::features::multisig::SubmitTransactionArgs {
+) -> SubmitTransactionArgs {
+    SubmitTransactionArgs {
         account: account_id,
         memo: Some("Foo".to_string()),
         transaction: Box::new(transaction),
@@ -62,10 +63,10 @@ fn tx_info(
     module_impl: &mut LedgerModuleImpl,
     id: Identity,
     token: &minicbor::bytes::ByteVec,
-) -> module::account::features::multisig::InfoReturn {
+) -> InfoReturn {
     let result = module_impl.multisig_info(
         &id,
-        account::features::multisig::InfoArgs {
+        InfoArgs {
             token: token.clone(),
         },
     );
@@ -148,7 +149,7 @@ fn set_defaults() {
     } = setup_with_account(AccountType::Multisig);
     let result = module_impl.multisig_set_defaults(
         &id,
-        account::features::multisig::SetDefaultsArgs {
+        SetDefaultsArgs {
             account: account_id,
             threshold: Some(1),
             timeout_in_secs: Some(12),
@@ -218,7 +219,7 @@ fn approve() {
 
     let result = module_impl.multisig_approve(
         &identity(2),
-        account::features::multisig::ApproveArgs {
+        ApproveArgs {
             token: submit_return.clone().token,
         },
     );
@@ -230,7 +231,7 @@ fn approve() {
 
     let result = module_impl.multisig_approve(
         &identity(3),
-        account::features::multisig::ApproveArgs {
+        ApproveArgs {
             token: submit_return.clone().token,
         },
     );
@@ -259,14 +260,14 @@ fn approve_invalid() {
 
     let result = module_impl.multisig_approve(
         &identity(6),
-        account::features::multisig::ApproveArgs {
+        ApproveArgs {
             token: submit_return.clone().token,
         },
     );
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code,
-        account::features::multisig::errors::user_cannot_approve_transaction().code
+        errors::user_cannot_approve_transaction().code
     );
 }
 
@@ -289,7 +290,7 @@ fn revoke() {
     for i in [id, identity(2), identity(3)] {
         let result = module_impl.multisig_approve(
             &i,
-            account::features::multisig::ApproveArgs {
+            ApproveArgs {
                 token: token.clone(),
             },
         );
@@ -298,7 +299,7 @@ fn revoke() {
 
         let result = module_impl.multisig_revoke(
             &i,
-            account::features::multisig::RevokeArgs {
+            RevokeArgs {
                 token: token.clone(),
             },
         );
@@ -321,14 +322,11 @@ fn revoke_invalid() {
     let token = result.unwrap().token;
     assert!(get_approbation(&tx_info(&mut module_impl, id, &token), &id));
 
-    let result = module_impl.multisig_revoke(
-        &identity(6),
-        account::features::multisig::RevokeArgs { token },
-    );
+    let result = module_impl.multisig_revoke(&identity(6), RevokeArgs { token });
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code,
-        account::features::multisig::errors::user_cannot_approve_transaction().code
+        errors::user_cannot_approve_transaction().code
     );
 }
 
@@ -394,7 +392,7 @@ proptest! {
                     assert!(result.is_err());
                     assert_eq!(
                         result.unwrap_err().code,
-                        account::features::multisig::errors::transaction_cannot_be_found().code
+                        account::features::multisig::errors::transaction_expired_or_withdrawn().code
                     );
                 } else {
                     // We have enough approvers and the manual execution succeeded.
@@ -431,17 +429,13 @@ fn withdraw() {
 
         let result = module_impl.multisig_withdraw(
             &i,
-            account::features::multisig::WithdrawArgs {
+            WithdrawArgs {
                 token: token.clone(),
             },
         );
         assert!(result.is_ok());
-        let result = module_impl.multisig_info(&i, account::features::multisig::InfoArgs { token });
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code,
-            account::features::multisig::errors::transaction_cannot_be_found().code
-        );
+        let result = module_impl.multisig_info(&i, InfoArgs { token }).unwrap();
+        assert_eq!(result.state, MultisigTransactionState::Withdrawn);
     }
 }
 
@@ -460,14 +454,137 @@ fn withdraw_invalid() {
     for i in [identity(2), identity(6)] {
         let result = module_impl.multisig_withdraw(
             &i,
-            account::features::multisig::WithdrawArgs {
+            WithdrawArgs {
                 token: token.clone(),
             },
         );
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code,
-            account::features::multisig::errors::cannot_execute_transaction().code
+            errors::cannot_execute_transaction().code
         );
     }
+}
+
+#[test]
+/// Verify that transactions expire after a while.
+fn expires() {
+    let mut setup = Setup::new(true);
+    let account_id = setup.create_account_(AccountType::Multisig);
+    let owner_id = setup.id;
+
+    let (h, token) = setup.block(|setup| setup.multisig_send_(account_id, identity(3), 10u32));
+    assert_eq!(h, 1);
+
+    let (h, ()) = setup.block(|_| {});
+    assert_eq!(h, 2);
+
+    // Assert that it still exists and is not disabled.
+    setup.assert_multisig_info(&token, |i| {
+        assert_eq!(
+            i.state,
+            MultisigTransactionState::Pending,
+            "State: {:#?}",
+            i
+        );
+    });
+
+    setup.inc_time(1_000_000);
+    let (h, ()) = setup.block(|_| {});
+    assert_eq!(h, 3);
+
+    setup.assert_multisig_info(&token, |i| {
+        assert_eq!(i.state, MultisigTransactionState::Expired);
+    });
+
+    // Can't approve.
+    setup.block(|setup| {
+        assert_eq!(
+            setup.multisig_approve(owner_id, &token),
+            Err(errors::transaction_expired_or_withdrawn())
+        );
+    });
+}
+
+/// Verifies that multiple transactions can be in flight and resolved separately.
+#[test]
+fn multiple_multisig() {
+    let mut setup = Setup::new(true);
+    setup.set_balance(setup.id, 1_000_000, *MFX_SYMBOL);
+    let account_ids: Vec<Identity> = (0..5)
+        .into_iter()
+        .map(|_| setup.create_account_(AccountType::Multisig))
+        .collect();
+
+    // Create 3 transactions in a block.
+    let (h, mut tokens) = setup.block(|setup| {
+        // Does not validate when created.
+        vec![
+            setup.multisig_send_(account_ids[0], identity(3), 10u32),
+            setup.multisig_send_(account_ids[1], identity(4), 15u32),
+            setup.multisig_send_(account_ids[2], identity(5), 20u32),
+        ]
+    });
+    assert_eq!(h, 1);
+
+    // Create 3 more transactions in a block.
+    let (h, mut tokens2) = setup.block(|setup| {
+        vec![
+            setup.multisig_send_(account_ids[0], identity(6), 10u32),
+            setup.multisig_send_(account_ids[1], identity(7), 15u32),
+            setup.multisig_send_(account_ids[2], identity(8), 20u32),
+        ]
+    });
+    assert_eq!(h, 2);
+    tokens.append(&mut tokens2);
+
+    // Approve 4 of them in a block. Execute 2.
+    let (h, _) = setup.block(|setup| {
+        setup.multisig_approve_(identity(2), &tokens[0]);
+        setup.multisig_approve_(identity(2), &tokens[1]);
+        setup.multisig_approve_(identity(2), &tokens[2]);
+        setup.multisig_approve_(identity(2), &tokens[3]);
+        assert_eq!(
+            setup.multisig_execute(&tokens[2]).unwrap_err(),
+            errors::cannot_execute_transaction(),
+        );
+
+        setup.multisig_approve_(identity(3), &tokens[2]);
+        setup.multisig_approve_(identity(3), &tokens[3]);
+
+        // Is okay.
+        setup.send_(setup.id, account_ids[2], 100u32);
+        let data = setup.multisig_execute_(&tokens[2]).data;
+        assert!(data.is_ok(), "Err: {}", data.unwrap_err());
+
+        // Insufficient funds.
+        assert_many_err(
+            setup.multisig_execute_(&tokens[3]).data,
+            ledger::insufficient_funds(),
+        );
+    });
+    assert_eq!(h, 3);
+
+    setup.assert_multisig_info(&tokens[0], |i| {
+        assert_eq!(i.state, MultisigTransactionState::Pending);
+    });
+    setup.assert_multisig_info(&tokens[1], |i| {
+        assert_eq!(i.state, MultisigTransactionState::Pending);
+    });
+    setup.assert_multisig_info(&tokens[2], |i| {
+        assert_eq!(i.state, MultisigTransactionState::ExecutedManually);
+    });
+    setup.assert_multisig_info(&tokens[3], |i| {
+        assert_eq!(i.state, MultisigTransactionState::ExecutedManually);
+    });
+    setup.assert_multisig_info(&tokens[4], |i| {
+        assert_eq!(i.state, MultisigTransactionState::Pending);
+    });
+
+    assert_eq!(setup.balance_(account_ids[0]), 0u16);
+    assert_eq!(setup.balance_(account_ids[1]), 0u16);
+    assert_eq!(setup.balance_(account_ids[2]), 80u16);
+    assert_eq!(setup.balance_(identity(5)), 20u16);
+    assert_eq!(setup.balance_(account_ids[3]), 0u16);
+    assert_eq!(setup.balance_(account_ids[4]), 0u16);
 }
