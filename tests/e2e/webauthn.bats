@@ -22,7 +22,7 @@ function teardown() {
           -v \
           --clean \
           --persistent "$(mktemp -d)" \
-          --state "$GIT_ROOT/staging/ledger_state.json" \
+          --state "$GIT_ROOT/staging/ledger_state.json5" \
           --pem "$(pem 0)" \
           "--disable-webauthn-only-for-testing" # Disable WebAuthn check for this test
     wait_for_background_output "Running accept thread"
@@ -50,7 +50,7 @@ function teardown() {
           -v \
           --clean \
           --persistent "$(mktemp -d)" \
-          --state "$GIT_ROOT/staging/ledger_state.json" \
+          --state "$GIT_ROOT/staging/ledger_state.json5" \
           --pem "$(pem 0)"
     wait_for_background_output "Running accept thread"
 
