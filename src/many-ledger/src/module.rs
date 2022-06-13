@@ -173,8 +173,8 @@ impl LedgerModuleImpl {
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
             let mut storage = LedgerStorage::new(
-                state.symbols,
-                state.initial,
+                state.symbols(),
+                state.balances()?,
                 persistence_store_path,
                 state.identity,
                 blockchain,
@@ -808,6 +808,7 @@ impl<T: IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::json::InitialStateJson;
     use crate::module::LedgerModuleImpl;
     use coset::CborSerializable;
     use many::{
@@ -823,10 +824,8 @@ mod tests {
             idstore::PublicKey(cose_key_id.key.unwrap().to_vec().unwrap().into());
         let mut module_impl = LedgerModuleImpl::new(
             Some(
-                serde_json::from_str(
-                    &std::fs::read_to_string("../../staging/ledger_state.json").unwrap(),
-                )
-                .unwrap(),
+                InitialStateJson::read("../../staging/ledger_state.json5")
+                    .expect("Could not read initial state."),
             ),
             tempfile::tempdir().unwrap(),
             false,

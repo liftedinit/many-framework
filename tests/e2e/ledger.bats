@@ -18,7 +18,7 @@ function setup() {
           -v \
           --clean \
           --persistent "$(mktemp -d)" \
-          --state "$GIT_ROOT/staging/ledger_state.json" \
+          --state "$GIT_ROOT/staging/ledger_state.json5" \
           --pem "$(pem 0)" \
           "--balance-only-for-testing=$(identity 1):$START_BALANCE:$MFX_ADDRESS" \
           "--balance-only-for-testing=$(identity 2):$START_BALANCE:$MFX_ADDRESS"
