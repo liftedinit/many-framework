@@ -1,9 +1,10 @@
 pub mod common;
 use common::*;
 use many::server::module::account::features::multisig::*;
+use many::server::module::ledger;
 use many::{
+    server::module::account::features::multisig::AccountMultisigModuleBackend,
     server::module::account::{self, AccountModuleBackend},
-    server::module::{self, account::features::multisig::AccountMultisigModuleBackend},
     types::{self, identity::testing::identity},
     Identity,
 };
@@ -32,10 +33,10 @@ fn account_arguments(
     module_impl: &mut LedgerModuleImpl,
     id: &Identity,
     account_id: Identity,
-) -> account::features::multisig::MultisigAccountFeatureArg {
+) -> MultisigAccountFeatureArg {
     account_info(module_impl, id, account_id)
         .features
-        .get::<account::features::multisig::MultisigAccountFeature>()
+        .get::<MultisigAccountFeature>()
         .unwrap()
         .arg
 }
@@ -45,8 +46,8 @@ fn submit_args(
     account_id: Identity,
     transaction: types::ledger::AccountMultisigTransaction,
     execute_automatically: Option<bool>,
-) -> account::features::multisig::SubmitTransactionArgs {
-    account::features::multisig::SubmitTransactionArgs {
+) -> SubmitTransactionArgs {
+    SubmitTransactionArgs {
         account: account_id,
         memo: Some("Foo".to_string()),
         transaction: Box::new(transaction),
@@ -62,10 +63,10 @@ fn tx_info(
     module_impl: &mut LedgerModuleImpl,
     id: Identity,
     token: &minicbor::bytes::ByteVec,
-) -> module::account::features::multisig::InfoReturn {
+) -> InfoReturn {
     let result = module_impl.multisig_info(
         &id,
-        account::features::multisig::InfoArgs {
+        InfoArgs {
             token: token.clone(),
         },
     );
@@ -148,7 +149,7 @@ fn set_defaults() {
     } = setup_with_account(AccountType::Multisig);
     let result = module_impl.multisig_set_defaults(
         &id,
-        account::features::multisig::SetDefaultsArgs {
+        SetDefaultsArgs {
             account: account_id,
             threshold: Some(1),
             timeout_in_secs: Some(12),
@@ -218,7 +219,7 @@ fn approve() {
 
     let result = module_impl.multisig_approve(
         &identity(2),
-        account::features::multisig::ApproveArgs {
+        ApproveArgs {
             token: submit_return.clone().token,
         },
     );
@@ -230,7 +231,7 @@ fn approve() {
 
     let result = module_impl.multisig_approve(
         &identity(3),
-        account::features::multisig::ApproveArgs {
+        ApproveArgs {
             token: submit_return.clone().token,
         },
     );
@@ -259,14 +260,14 @@ fn approve_invalid() {
 
     let result = module_impl.multisig_approve(
         &identity(6),
-        account::features::multisig::ApproveArgs {
+        ApproveArgs {
             token: submit_return.clone().token,
         },
     );
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code,
-        account::features::multisig::errors::user_cannot_approve_transaction().code
+        errors::user_cannot_approve_transaction().code
     );
 }
 
@@ -289,7 +290,7 @@ fn revoke() {
     for i in [id, identity(2), identity(3)] {
         let result = module_impl.multisig_approve(
             &i,
-            account::features::multisig::ApproveArgs {
+            ApproveArgs {
                 token: token.clone(),
             },
         );
@@ -298,7 +299,7 @@ fn revoke() {
 
         let result = module_impl.multisig_revoke(
             &i,
-            account::features::multisig::RevokeArgs {
+            RevokeArgs {
                 token: token.clone(),
             },
         );
@@ -321,14 +322,11 @@ fn revoke_invalid() {
     let token = result.unwrap().token;
     assert!(get_approbation(&tx_info(&mut module_impl, id, &token), &id));
 
-    let result = module_impl.multisig_revoke(
-        &identity(6),
-        account::features::multisig::RevokeArgs { token },
-    );
+    let result = module_impl.multisig_revoke(&identity(6), RevokeArgs { token });
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code,
-        account::features::multisig::errors::user_cannot_approve_transaction().code
+        errors::user_cannot_approve_transaction().code
     );
 }
 
@@ -431,14 +429,12 @@ fn withdraw() {
 
         let result = module_impl.multisig_withdraw(
             &i,
-            account::features::multisig::WithdrawArgs {
+            WithdrawArgs {
                 token: token.clone(),
             },
         );
         assert!(result.is_ok());
-        let result = module_impl
-            .multisig_info(&i, account::features::multisig::InfoArgs { token })
-            .unwrap();
+        let result = module_impl.multisig_info(&i, InfoArgs { token }).unwrap();
         assert_eq!(result.state, MultisigTransactionState::Withdrawn);
     }
 }
@@ -458,14 +454,14 @@ fn withdraw_invalid() {
     for i in [identity(2), identity(6)] {
         let result = module_impl.multisig_withdraw(
             &i,
-            account::features::multisig::WithdrawArgs {
+            WithdrawArgs {
                 token: token.clone(),
             },
         );
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code,
-            account::features::multisig::errors::cannot_execute_transaction().code
+            errors::cannot_execute_transaction().code
         );
     }
 }
@@ -505,7 +501,7 @@ fn expires() {
     setup.block(|setup| {
         assert_eq!(
             setup.multisig_approve(owner_id, &token),
-            Err(account::features::multisig::errors::transaction_expired_or_withdrawn())
+            Err(errors::transaction_expired_or_withdrawn())
         );
     });
 }
@@ -550,7 +546,7 @@ fn multiple_multisig() {
         setup.multisig_approve_(identity(2), &tokens[3]);
         assert_eq!(
             setup.multisig_execute(&tokens[2]).unwrap_err(),
-            account::features::multisig::errors::cannot_execute_transaction(),
+            errors::cannot_execute_transaction(),
         );
 
         setup.multisig_approve_(identity(3), &tokens[2]);
@@ -562,7 +558,10 @@ fn multiple_multisig() {
         assert!(data.is_ok(), "Err: {}", data.unwrap_err());
 
         // Insufficient funds.
-        assert!(setup.multisig_execute_(&tokens[3]).data.is_err());
+        assert_many_err(
+            setup.multisig_execute_(&tokens[3]).data,
+            ledger::insufficient_funds(),
+        );
     });
     assert_eq!(h, 3);
 

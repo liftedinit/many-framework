@@ -1,6 +1,5 @@
 //! Tests regarding blockchain behaviour.
-#![allow(dead_code)]
-mod common;
+pub mod common;
 
 use common::*;
 use many::types::identity::testing::identity;

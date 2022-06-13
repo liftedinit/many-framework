@@ -32,10 +32,7 @@ pub static MFX_SYMBOL: Lazy<Identity> = Lazy::new(|| {
     Identity::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
 });
 
-pub fn assert_many_err<I: std::fmt::Debug + std::cmp::PartialEq>(
-    r: Result<I, ManyError>,
-    err: ManyError,
-) {
+pub fn assert_many_err<I: std::fmt::Debug + PartialEq>(r: Result<I, ManyError>, err: ManyError) {
     assert_eq!(r, Err(err));
 }
 
@@ -133,6 +130,7 @@ impl Setup {
             .cloned()
             .unwrap_or_default())
     }
+
     pub fn balance_(&self, account: Identity) -> TokenAmount {
         self.balance(account, *MFX_SYMBOL).unwrap()
     }
@@ -146,7 +144,7 @@ impl Setup {
     ) -> Result<(), ManyError> {
         self.module_impl.send(
             &from,
-            many::server::module::ledger::SendArgs {
+            module::ledger::SendArgs {
                 from: Some(from),
                 to,
                 amount: amount.into(),
@@ -155,6 +153,7 @@ impl Setup {
         )?;
         Ok(())
     }
+
     pub fn send_(&mut self, from: Identity, to: Identity, amount: impl Into<TokenAmount>) {
         self.send(from, to, amount, *MFX_SYMBOL)
             .expect("Could not send tokens")
@@ -164,6 +163,7 @@ impl Setup {
         let args = self.create_account_args(account_type);
         self.module_impl.create(&self.id, args).map(|x| x.id)
     }
+
     pub fn create_account_(&mut self, account_type: AccountType) -> Identity {
         self.create_account(account_type).unwrap()
     }
@@ -197,7 +197,7 @@ impl Setup {
     pub fn create_multisig(
         &mut self,
         account_id: Identity,
-        transaction: many::types::ledger::AccountMultisigTransaction,
+        transaction: AccountMultisigTransaction,
     ) -> Result<ByteVec, ManyError> {
         self.module_impl
             .multisig_submit_transaction(
@@ -214,10 +214,11 @@ impl Setup {
             )
             .map(|x| x.token)
     }
+
     pub fn create_multisig_(
         &mut self,
         account_id: Identity,
-        transaction: many::types::ledger::AccountMultisigTransaction,
+        transaction: AccountMultisigTransaction,
     ) -> ByteVec {
         self.create_multisig(account_id, transaction).unwrap()
     }
@@ -232,16 +233,15 @@ impl Setup {
     ) -> Result<ByteVec, ManyError> {
         self.create_multisig(
             account_id,
-            many::types::ledger::AccountMultisigTransaction::Send(
-                many::server::module::ledger::SendArgs {
-                    from: Some(account_id),
-                    to,
-                    symbol,
-                    amount: amount.into(),
-                },
-            ),
+            AccountMultisigTransaction::Send(module::ledger::SendArgs {
+                from: Some(account_id),
+                to,
+                symbol,
+                amount: amount.into(),
+            }),
         )
     }
+
     pub fn multisig_send_(
         &mut self,
         account_id: Identity,
@@ -259,6 +259,7 @@ impl Setup {
             .multisig_approve(&id, account::features::multisig::ApproveArgs { token })?;
         Ok(())
     }
+
     pub fn multisig_approve_(&mut self, id: Identity, token: &ByteVec) {
         self.multisig_approve(id, token)
             .expect("Could not approve multisig")
@@ -270,6 +271,7 @@ impl Setup {
         self.module_impl
             .multisig_execute(&self.id, ExecuteArgs { token })
     }
+
     pub fn multisig_execute_(&mut self, token: &ByteVec) -> ResponseMessage {
         self.multisig_execute(token)
             .expect("Could not execute multisig")
@@ -346,14 +348,12 @@ pub fn setup_with_account_and_tx(account_type: AccountType) -> SetupWithAccountA
         account_id,
     } = setup_with_account(account_type);
 
-    let tx = many::types::ledger::AccountMultisigTransaction::Send(
-        many::server::module::ledger::SendArgs {
-            from: Some(account_id),
-            to: identity(3),
-            symbol: *MFX_SYMBOL,
-            amount: many::types::ledger::TokenAmount::from(10u16),
-        },
-    );
+    let tx = AccountMultisigTransaction::Send(module::ledger::SendArgs {
+        from: Some(account_id),
+        to: identity(3),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
 
     SetupWithAccountAndTx {
         module_impl,
@@ -371,7 +371,7 @@ pub fn verify_balance(
 ) {
     let result = module_impl.balance(
         &id,
-        module::ledger::BalanceArgs {
+        BalanceArgs {
             account: Some(id),
             symbols: Some(vec![symbol].into()),
         },
