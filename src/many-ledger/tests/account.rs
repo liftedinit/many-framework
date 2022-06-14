@@ -55,8 +55,8 @@ fn create_invalid_role() {
     let result = module_impl.create(&id, args);
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::unknown_role("").code,
+        result.unwrap_err().code(),
+        account::errors::unknown_role("").code(),
     );
 }
 
@@ -99,8 +99,8 @@ fn set_description_non_owner() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
@@ -209,8 +209,8 @@ fn add_roles_non_owner() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
@@ -268,8 +268,8 @@ fn remove_roles_non_owner() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
@@ -298,8 +298,8 @@ fn delete() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::unknown_account("").code
+        result.unwrap_err().code(),
+        account::errors::unknown_account("").code()
     );
 }
 
@@ -319,8 +319,8 @@ fn delete_non_owner() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 

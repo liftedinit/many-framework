@@ -65,7 +65,7 @@ fn send_account_missing_feature() {
         },
     );
     assert!(result.is_err());
-    assert_eq!(result.unwrap_err().code, error::unauthorized().code);
+    assert_eq!(result.unwrap_err().code(), error::unauthorized().code());
 }
 
 #[test]
@@ -85,5 +85,5 @@ fn send_invalid_account() {
         },
     );
     assert!(result.is_err());
-    assert_eq!(result.unwrap_err().code, error::unauthorized().code);
+    assert_eq!(result.unwrap_err().code(), error::unauthorized().code());
 }

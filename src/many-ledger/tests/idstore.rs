@@ -78,7 +78,10 @@ fn store_anon() {
     } = setup_with_args();
     let result = module_impl.store(&Identity::anonymous(), args);
     assert!(result.is_err());
-    assert_eq!(result.unwrap_err().code, ManyError::invalid_identity().code);
+    assert_eq!(
+        result.unwrap_err().code(),
+        ManyError::invalid_identity().code()
+    );
 }
 
 #[test]
@@ -93,8 +96,8 @@ fn invalid_cred_id_too_small() {
     let result = module_impl.store(&id, args);
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        idstore::invalid_credential_id("".to_string()).code
+        result.unwrap_err().code(),
+        idstore::invalid_credential_id("".to_string()).code()
     );
 }
 
@@ -110,8 +113,8 @@ fn invalid_cred_id_too_long() {
     let result = module_impl.store(&id, args);
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        idstore::invalid_credential_id("".to_string()).code
+        result.unwrap_err().code(),
+        idstore::invalid_credential_id("".to_string()).code()
     );
 }
 
@@ -141,8 +144,8 @@ fn get_from_invalid_recall_phrase() {
         .get_from_recall_phrase(idstore::GetFromRecallPhraseArgs(vec!["Foo".to_string()]));
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        idstore::entry_not_found("".to_string()).code
+        result.unwrap_err().code(),
+        idstore::entry_not_found("".to_string()).code()
     );
 }
 
@@ -170,7 +173,7 @@ fn get_from_invalid_address() {
     let result = module_impl.get_from_address(idstore::GetFromAddressArgs(Identity::anonymous()));
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        idstore::entry_not_found("".to_string()).code
+        result.unwrap_err().code(),
+        idstore::entry_not_found("".to_string()).code()
     );
 }
