@@ -39,7 +39,7 @@ function teardown() {
     assert_output --partial "1: h'"${key2cose}"'"
 
     many_message --id=0 idstore.getFromAddress '{0: "'$(identity 1)'"}'
-    assert_output --partial "0: h'"${cred_id,,}"'"
+    assert_output --partial "0: h'"$(echo $cred_id | tr A-Z a-z)"'"
     assert_output --partial "1: h'"${key2cose}"'"
 
     stop_background_run
