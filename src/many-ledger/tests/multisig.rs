@@ -134,8 +134,8 @@ fn submit_transaction_invalid_role() {
         module_impl.multisig_submit_transaction(&identity(2), submit_args(account_id, tx, None));
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("").code()
     );
 }
 
@@ -184,8 +184,8 @@ proptest! {
         );
         assert!(result.is_err());
         assert_eq!(
-            result.unwrap_err().code,
-            account::errors::user_needs_role("").code
+            result.unwrap_err().code(),
+            account::errors::user_needs_role("").code()
         );
 
         let arguments = account_arguments(&mut module_impl, &id, account_id);
@@ -266,8 +266,8 @@ fn approve_invalid() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        errors::user_cannot_approve_transaction().code
+        result.unwrap_err().code(),
+        errors::user_cannot_approve_transaction().code()
     );
 }
 
@@ -325,8 +325,8 @@ fn revoke_invalid() {
     let result = module_impl.multisig_revoke(&identity(6), RevokeArgs { token });
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        errors::user_cannot_approve_transaction().code
+        result.unwrap_err().code(),
+        errors::user_cannot_approve_transaction().code()
     );
 }
 
@@ -391,8 +391,8 @@ proptest! {
                     // it manually returns an error.
                     assert!(result.is_err());
                     assert_eq!(
-                        result.unwrap_err().code,
-                        account::features::multisig::errors::transaction_expired_or_withdrawn().code
+                        result.unwrap_err().code(),
+                        account::features::multisig::errors::transaction_expired_or_withdrawn().code()
                     );
                 } else {
                     // We have enough approvers and the manual execution succeeded.
@@ -403,8 +403,8 @@ proptest! {
                 // Not enough approbation for execution yet.
                 assert!(result.is_err());
                 assert_eq!(
-                    result.unwrap_err().code,
-                    account::features::multisig::errors::cannot_execute_transaction().code
+                    result.unwrap_err().code(),
+                    account::features::multisig::errors::cannot_execute_transaction().code()
                 );
                 assert!(get_approbation(&tx_info(&mut module_impl, i, &token), &i));
             }
@@ -460,8 +460,8 @@ fn withdraw_invalid() {
         );
         assert!(result.is_err());
         assert_eq!(
-            result.unwrap_err().code,
-            errors::cannot_execute_transaction().code
+            result.unwrap_err().code(),
+            errors::cannot_execute_transaction().code()
         );
     }
 }

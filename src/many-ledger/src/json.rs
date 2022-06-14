@@ -101,6 +101,7 @@ impl AccountJson {
                     .iter()
                     .map(|f| f.try_into_feature().expect("Unsupported feature."))
                     .collect(),
+                disabled: None,
             },
             false,
         )?;

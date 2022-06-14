@@ -48,12 +48,12 @@ pub(crate) fn validate_features_for_account(account: &account::Account) -> Resul
 
     // TODO: somehow keep this list updated with the above.
     if let Err(e) = features.get::<multisig::MultisigAccountFeature>() {
-        if e.code != ManyErrorCode::AttributeNotFound {
+        if e.code() != ManyErrorCode::AttributeNotFound {
             return Err(e);
         }
     }
     if let Err(e) = features.get::<account::features::ledger::AccountLedger>() {
-        if e.code != ManyErrorCode::AttributeNotFound {
+        if e.code() != ManyErrorCode::AttributeNotFound {
             return Err(e);
         }
     }
@@ -545,6 +545,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             description,
             roles,
             features,
+            ..
         } = self
             .storage
             .get_account(&args.account)
@@ -888,8 +889,8 @@ mod tests {
         );
         assert!(result4.is_err());
         assert_eq!(
-            result4.unwrap_err().code,
-            idstore::recall_phrase_generation_failed().code
+            result4.unwrap_err().code(),
+            idstore::recall_phrase_generation_failed().code()
         );
 
         // Generate a 3-words phrase
