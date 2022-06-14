@@ -142,8 +142,19 @@ impl Setup {
         amount: impl Into<TokenAmount>,
         symbol: Symbol,
     ) -> Result<(), ManyError> {
+        self.send_as(from, from, to, amount, symbol)
+    }
+
+    pub fn send_as(
+        &mut self,
+        sender: Identity,
+        from: Identity,
+        to: Identity,
+        amount: impl Into<TokenAmount>,
+        symbol: Symbol,
+    ) -> Result<(), ManyError> {
         self.module_impl.send(
-            &from,
+            &sender,
             module::ledger::SendArgs {
                 from: Some(from),
                 to,

@@ -588,3 +588,26 @@ fn multiple_multisig() {
     assert_eq!(setup.balance_(account_ids[3]), 0u16);
     assert_eq!(setup.balance_(account_ids[4]), 0u16);
 }
+
+#[test]
+/// Issue #113
+fn send_tx_on_behalf_as_owner() {
+    let mut setup = Setup::new(false);
+
+    // Account doesn't have feature 0
+    let account_id = setup.create_account_(AccountType::Multisig);
+    setup.set_balance(account_id, 1_000_000, *MFX_SYMBOL);
+
+    // Sending as the account is permitted
+    let result = setup.send_as(account_id, account_id, identity(4), 10u32, *MFX_SYMBOL);
+    assert!(result.is_ok());
+
+    // Sending as the account owner is permitted, even without feature 0
+    let result = setup.send_as(setup.id, account_id, identity(4), 10u32, *MFX_SYMBOL);
+    assert!(result.is_ok());
+
+    // identity(2) should not be allowed to send on behalf of the account.
+    // identity(2) is not an account owner
+    let result = setup.send_as(identity(2), account_id, identity(4), 10u32, *MFX_SYMBOL);
+    assert_many_err(result, many_ledger::error::unauthorized());
+}
