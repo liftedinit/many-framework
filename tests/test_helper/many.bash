@@ -5,7 +5,7 @@ function pem() {
 
 # Print the X-coord of an Ed25519 public key
 function ed25519_x_coord() {
-    openssl pkey -in "$(pem "$1")" -text_pub -noout | grep "    " | awk '{printf("%s ",$0)} END { printf "\n" }' | sed '$s/ *//g' | tr -d ':'
+    openssl pkey -in "$(pem "$1")" -text_pub -noout | grep "    " | awk '{printf("%s ",$0)} END { printf "\n" }' | tr -d ' ' | tr -d ':'
 }
 
 # Return a CBOR encoded CoseKey created from a Ed25519 key.
