@@ -35,7 +35,7 @@ function teardown() {
     assert_output '{0: ["abandon", "again"]}'
 
     many_message --id=0 idstore.getFromRecallPhrase "$output"
-    assert_output --partial "0: h'"${cred_id,,}"'"
+    assert_output --partial "0: h'"$(echo $cred_id | tr A-Z a-z)"'"
     assert_output --partial "1: h'"${key2cose}"'"
 
     many_message --id=0 idstore.getFromAddress '{0: "'$(identity 1)'"}'
