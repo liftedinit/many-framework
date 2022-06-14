@@ -53,10 +53,10 @@ fn send_account_missing_feature() {
     let SetupWithAccount {
         mut module_impl,
         account_id,
-        id,
+        ..
     } = setup_with_account(AccountType::Multisig);
     let result = module_impl.send(
-        &id,
+        &identity(2),
         module::ledger::SendArgs {
             from: Some(account_id),
             to: identity(1),
