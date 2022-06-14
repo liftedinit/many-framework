@@ -78,7 +78,10 @@ fn store_anon() {
     } = setup_with_args();
     let result = module_impl.store(&Identity::anonymous(), args);
     assert!(result.is_err());
-    assert_eq!(result.unwrap_err().code(), ManyError::invalid_identity().code());
+    assert_eq!(
+        result.unwrap_err().code(),
+        ManyError::invalid_identity().code()
+    );
 }
 
 #[test]
