@@ -285,16 +285,15 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
         let from = from.as_ref().unwrap_or(sender);
         if from != sender {
             if let Some(account) = self.storage.get_account(from) {
-                if account
-                    .features
-                    .has_id(account::features::ledger::AccountLedger::ID)
-                {
-                    account.needs_role(
-                        sender,
-                        [account::Role::CanLedgerTransact, account::Role::Owner],
-                    )?;
-                } else {
-                    return Err(error::unauthorized());
+                if !account.has_role(sender, account::Role::Owner) {
+                    if account
+                        .features
+                        .has_id(account::features::ledger::AccountLedger::ID)
+                    {
+                        account.needs_role(sender, [account::Role::CanLedgerTransact])?;
+                    } else {
+                        return Err(error::unauthorized());
+                    }
                 }
             } else {
                 return Err(error::unauthorized());
