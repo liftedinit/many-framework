@@ -12,7 +12,7 @@ use many::server::module::{account, EmptyReturn};
 use many::types::ledger::{
     AccountMultisigTransaction, Symbol, TokenAmount, Transaction, TransactionId, TransactionInfo,
 };
-use many::types::{CborRange, SortOrder, Timestamp};
+use many::types::{CborRange, Either, SortOrder, Timestamp};
 use many::{Identity, ManyError};
 use merk::tree::Tree;
 use merk::{rocksdb, BatchEntry, Op};
@@ -162,19 +162,6 @@ pub const MULTISIG_DEFAULT_THRESHOLD: u64 = 1;
 pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
 pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
-
-#[derive(Clone, minicbor::Encode, minicbor::Decode)]
-#[cbor(map)]
-pub struct AccountStorage {
-    #[n(0)]
-    identity: Identity,
-
-    #[n(1)]
-    account: account::Account,
-
-    #[n(2)]
-    transactions_in_flight: Vec<multisig::InfoReturn>,
-}
 
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
@@ -812,18 +799,25 @@ impl LedgerStorage {
     }
 
     pub fn delete_account(&mut self, id: &Identity) -> Result<(), ManyError> {
-        self.persistent_store
-            .apply(&[(key_for_account(id), Op::Delete)])
-            .map_err(|e| ManyError::unknown(e.to_string()))?;
+        let mut account = self
+            .get_account_even_disabled(id)
+            .ok_or_else(|| account::errors::unknown_account(*id))?;
 
-        self.add_transaction(TransactionInfo::AccountDelete { account: *id });
+        if account.disabled.is_none() || account.disabled == Some(Either::Left(false)) {
+            account.disabled = Some(Either::Left(true));
+            self.commit_account(id, account)?;
+            self.add_transaction(TransactionInfo::AccountDelete { account: *id });
 
-        if !self.blockchain {
-            self.persistent_store
-                .commit(&[])
-                .expect("Could not commit to store.");
+            if !self.blockchain {
+                self.persistent_store
+                    .commit(&[])
+                    .expect("Could not commit to store.");
+            }
+
+            Ok(())
+        } else {
+            Err(account::errors::unknown_account(*id))
         }
-        Ok(())
     }
 
     pub fn set_description(
@@ -908,12 +902,22 @@ impl LedgerStorage {
     }
 
     pub fn get_account(&self, id: &Identity) -> Option<account::Account> {
+        self.get_account_even_disabled(id).and_then(|x| {
+            if x.disabled.is_none() || x.disabled == Some(Either::Left(false)) {
+                Some(x)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn get_account_even_disabled(&self, id: &Identity) -> Option<account::Account> {
         self.persistent_store
             .get(&key_for_account(id))
             .unwrap_or_default()
             .as_ref()
             .and_then(|bytes| {
-                minicbor::decode(bytes)
+                minicbor::decode::<account::Account>(bytes)
                     .map_err(|e| ManyError::deserialization_error(e.to_string()))
                     .ok()
             })

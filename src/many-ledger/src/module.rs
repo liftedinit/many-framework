@@ -545,16 +545,17 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             description,
             roles,
             features,
-            ..
+            disabled,
         } = self
             .storage
-            .get_account(&args.account)
+            .get_account_even_disabled(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         Ok(account::InfoReturn {
             description,
             roles,
             features,
+            disabled,
         })
     }
 
