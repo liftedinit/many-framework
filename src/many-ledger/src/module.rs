@@ -119,7 +119,7 @@ fn filter_account<'a>(
     }
 }
 
-fn filter_transaction_kind<'a>(
+fn filter_event_kind<'a>(
     it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
     transaction_kind: Option<VecOrSingle<events::EventKind>>,
 ) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
@@ -312,23 +312,8 @@ impl module::events::EventsModuleBackend for LedgerModuleImpl {
         _args: module::events::InfoArgs,
     ) -> Result<module::events::InfoReturn, ManyError> {
         Ok(module::events::InfoReturn {
-            total: self.storage.nb_transactions(),
-            event_types: vec![
-                events::EventKind::AccountAddFeatures,
-                events::EventKind::AccountAddRoles,
-                events::EventKind::AccountCreate,
-                events::EventKind::AccountDisable,
-                events::EventKind::AccountMultisigApprove,
-                events::EventKind::AccountMultisigExecute,
-                events::EventKind::AccountMultisigExpired,
-                events::EventKind::AccountMultisigRevoke,
-                events::EventKind::AccountMultisigSetDefaults,
-                events::EventKind::AccountMultisigSubmit,
-                events::EventKind::AccountMultisigWithdraw,
-                events::EventKind::AccountRemoveRoles,
-                events::EventKind::AccountSetDescription,
-                events::EventKind::Send,
-            ],
+            total: self.storage.nb_events(),
+            event_types: events::EventKind::iter().collect(),
         })
     }
 
@@ -348,7 +333,7 @@ impl module::events::EventsModuleBackend for LedgerModuleImpl {
         });
 
         let storage = &self.storage;
-        let nb_events = storage.nb_transactions();
+        let nb_events = storage.nb_events();
         let iter = storage.iter(
             filter.id_range.unwrap_or_default(),
             order.unwrap_or_default(),
@@ -360,7 +345,7 @@ impl module::events::EventsModuleBackend for LedgerModuleImpl {
         }));
 
         let iter = filter_account(iter, filter.account);
-        let iter = filter_transaction_kind(iter, filter.kind);
+        let iter = filter_event_kind(iter, filter.kind);
         let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
 

@@ -25,7 +25,7 @@ fn setup() -> LedgerStorage {
     }
 
     // Check that we have 5 transactions (5 sends).
-    assert_eq!(storage.nb_transactions(), 5);
+    assert_eq!(storage.nb_events(), 5);
 
     storage
 }
