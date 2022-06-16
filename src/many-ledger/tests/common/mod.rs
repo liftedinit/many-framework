@@ -6,6 +6,7 @@ use many::server::module::account::features::multisig::{
 };
 use many::server::module::ledger::{BalanceArgs, LedgerCommandsModuleBackend};
 use many::server::module::{self};
+use many::types::events;
 use many::types::ledger::Symbol;
 use many::{
     server::module::{
@@ -15,7 +16,7 @@ use many::{
     },
     types::{
         identity::{cose::testsutils::generate_random_eddsa_identity, testing::identity},
-        ledger::{AccountMultisigTransaction, TokenAmount},
+        ledger::TokenAmount,
     },
     Identity, ManyError,
 };
@@ -197,7 +198,7 @@ impl Setup {
     pub fn create_multisig(
         &mut self,
         account_id: Identity,
-        transaction: AccountMultisigTransaction,
+        transaction: events::AccountMultisigTransaction,
     ) -> Result<ByteVec, ManyError> {
         self.module_impl
             .multisig_submit_transaction(
@@ -218,7 +219,7 @@ impl Setup {
     pub fn create_multisig_(
         &mut self,
         account_id: Identity,
-        transaction: AccountMultisigTransaction,
+        transaction: events::AccountMultisigTransaction,
     ) -> ByteVec {
         self.create_multisig(account_id, transaction).unwrap()
     }
@@ -233,7 +234,7 @@ impl Setup {
     ) -> Result<ByteVec, ManyError> {
         self.create_multisig(
             account_id,
-            AccountMultisigTransaction::Send(module::ledger::SendArgs {
+            events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
                 from: Some(account_id),
                 to,
                 symbol,
@@ -338,7 +339,7 @@ pub struct SetupWithAccountAndTx {
     pub module_impl: LedgerModuleImpl,
     pub id: Identity,
     pub account_id: Identity,
-    pub tx: AccountMultisigTransaction,
+    pub tx: events::AccountMultisigTransaction,
 }
 
 pub fn setup_with_account_and_tx(account_type: AccountType) -> SetupWithAccountAndTx {
@@ -348,7 +349,7 @@ pub fn setup_with_account_and_tx(account_type: AccountType) -> SetupWithAccountA
         account_id,
     } = setup_with_account(account_type);
 
-    let tx = AccountMultisigTransaction::Send(module::ledger::SendArgs {
+    let tx = events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
         from: Some(account_id),
         to: identity(3),
         symbol: *MFX_SYMBOL,

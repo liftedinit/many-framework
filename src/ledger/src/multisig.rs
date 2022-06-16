@@ -4,6 +4,7 @@ use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::account;
 use many::server::module::account::features::multisig;
+use many::types::events;
 use many::types::ledger;
 use many::{Identity, ManyError};
 use many_client::ManyClient;
@@ -114,7 +115,7 @@ fn submit_send(
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let transaction = ledger::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+        let transaction = events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
             from: from.or(Some(account)),
             to: identity,
             symbol,
@@ -159,7 +160,7 @@ fn submit_set_defaults(
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let transaction = ledger::AccountMultisigTransaction::AccountMultisigSetDefaults(
+        let transaction = events::AccountMultisigTransaction::AccountMultisigSetDefaults(
             multisig::SetDefaultsArgs {
                 account: target,
                 threshold: opts.threshold,
