@@ -1,4 +1,5 @@
-use many::types::ledger::{TokenAmount, Transaction, TransactionId};
+use many::types::events::{EventId, EventLog};
+use many::types::ledger::TokenAmount;
 use many::types::{CborRange, SortOrder};
 use many::Identity;
 use many_ledger::storage::LedgerStorage;
@@ -15,9 +16,7 @@ fn setup() -> LedgerStorage {
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
-    let mut storage =
-        many_ledger::storage::LedgerStorage::new(symbols, balances, persistent_path, id2, false)
-            .unwrap();
+    let mut storage = LedgerStorage::new(symbols, balances, persistent_path, id2, false).unwrap();
 
     for _ in 0..5 {
         storage
@@ -33,9 +32,9 @@ fn setup() -> LedgerStorage {
 
 fn iter_asc(
     storage: &LedgerStorage,
-    start: Bound<TransactionId>,
-    end: Bound<TransactionId>,
-) -> impl Iterator<Item = Transaction> + '_ {
+    start: Bound<EventId>,
+    end: Bound<EventId>,
+) -> impl Iterator<Item = EventLog> + '_ {
     storage
         .iter(CborRange { start, end }, SortOrder::Ascending)
         .into_iter()
