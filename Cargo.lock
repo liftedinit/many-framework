@@ -1850,6 +1850,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=d60a669b913af0ebcefd6fbdb149a70882447e59#d60a669b913af0ebcefd6fbdb149a70882447e59"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1928,7 +1929,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=0ef580ed2691f59c017ecff89bb708447d920f30#0ef580ed2691f59c017ecff89bb708447d920f30"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=d60a669b913af0ebcefd6fbdb149a70882447e59#d60a669b913af0ebcefd6fbdb149a70882447e59"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2031,6 +2032,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=d60a669b913af0ebcefd6fbdb149a70882447e59#d60a669b913af0ebcefd6fbdb149a70882447e59"
 dependencies = [
  "inflections",
  "proc-macro2",
