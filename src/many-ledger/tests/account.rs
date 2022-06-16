@@ -281,9 +281,9 @@ fn delete() {
         id,
         account_id,
     } = setup_with_account(AccountType::Multisig);
-    let result = module_impl.delete(
+    let result = module_impl.disable(
         &id,
-        account::DeleteArgs {
+        account::DisableArgs {
             account: account_id,
         },
     );
@@ -308,9 +308,9 @@ fn delete_non_owner() {
         account_id,
         ..
     } = setup_with_account(AccountType::Multisig);
-    let result = module_impl.delete(
+    let result = module_impl.disable(
         &identity(2),
-        account::DeleteArgs {
+        account::DisableArgs {
             account: account_id,
         },
     );

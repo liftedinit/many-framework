@@ -2,10 +2,11 @@ pub mod common;
 use std::ops::Bound;
 
 use common::*;
-use many::server::module::ledger::{LedgerCommandsModuleBackend, LedgerTransactionsModuleBackend};
+use many::server::module::events::EventsModuleBackend;
+use many::server::module::ledger::LedgerCommandsModuleBackend;
 use many::server::module::{self};
+use many::types::events::{EventInfo, EventKind};
 use many::types::identity::testing::identity;
-use many::types::ledger::{TransactionInfo, TransactionKind};
 use many::types::{CborRange, Timestamp, TransactionFilter};
 use many_ledger::module::LedgerModuleImpl;
 
@@ -30,13 +31,13 @@ fn transactions() {
         id,
         ..
     } = setup();
-    let result = module_impl.transactions(module::ledger::TransactionsArgs {});
+    let result = EventsModuleBackend::info(&module_impl, module::events::InfoArgs {});
     assert!(result.is_ok());
-    assert_eq!(result.unwrap().nb_transactions, 0);
+    assert_eq!(result.unwrap().total, 0);
     send(&mut module_impl, id, identity(1));
-    let result = module_impl.transactions(module::ledger::TransactionsArgs {});
+    let result = EventsModuleBackend::info(&module_impl, module::events::InfoArgs {});
     assert!(result.is_ok());
-    assert_eq!(result.unwrap().nb_transactions, 1);
+    assert_eq!(result.unwrap().total, 1);
 }
 
 #[test]
@@ -47,15 +48,15 @@ fn list() {
         ..
     } = setup();
     send(&mut module_impl, id, identity(1));
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: None,
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.nb_transactions, 1);
-    assert_eq!(list_return.transactions.len(), 1);
+    assert_eq!(list_return.nb_events, 1);
+    assert_eq!(list_return.events.len(), 1);
 }
 
 #[test]
@@ -67,7 +68,7 @@ fn list_filter_account() {
     } = setup_with_account(AccountType::Ledger);
     send(&mut module_impl, id, identity(3));
     send(&mut module_impl, account_id, identity(1));
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: Some(TransactionFilter {
@@ -77,14 +78,14 @@ fn list_filter_account() {
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.nb_transactions, 3);
-    assert_eq!(list_return.transactions.len(), 2); // 1 send + 1 create
-    for tx in list_return.transactions {
+    assert_eq!(list_return.nb_events, 3);
+    assert_eq!(list_return.events.len(), 2); // 1 send + 1 create
+    for tx in list_return.events {
         match tx.content {
-            TransactionInfo::AccountCreate { account, .. } => {
+            EventInfo::AccountCreate { account, .. } => {
                 assert_eq!(account, account_id);
             }
-            TransactionInfo::Send { from, .. } => {
+            EventInfo::Send { from, .. } => {
                 assert_eq!(from, account_id);
             }
             _ => unimplemented!(),
@@ -100,21 +101,21 @@ fn list_filter_kind() {
         ..
     } = setup();
     send(&mut module_impl, id, identity(1));
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: Some(TransactionFilter {
-            kind: Some(vec![TransactionKind::Send].into()),
+            kind: Some(vec![EventKind::Send].into()),
             ..TransactionFilter::default()
         }),
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.nb_transactions, 1);
-    assert_eq!(list_return.transactions.len(), 1);
-    assert_eq!(list_return.transactions[0].kind(), TransactionKind::Send);
-    assert_eq!(list_return.transactions[0].symbol(), Some(&*MFX_SYMBOL));
-    assert!(list_return.transactions[0].is_about(&id));
+    assert_eq!(list_return.nb_events, 1);
+    assert_eq!(list_return.events.len(), 1);
+    assert_eq!(list_return.events[0].kind(), EventKind::Send);
+    assert_eq!(list_return.events[0].symbol(), Some(&*MFX_SYMBOL));
+    assert!(list_return.events[0].is_about(&id));
 }
 
 #[test]
@@ -125,7 +126,7 @@ fn list_filter_symbol() {
         ..
     } = setup();
     send(&mut module_impl, id, identity(1));
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: Some(TransactionFilter {
@@ -135,13 +136,13 @@ fn list_filter_symbol() {
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.nb_transactions, 1);
-    assert_eq!(list_return.transactions.len(), 1);
-    assert_eq!(list_return.transactions[0].kind(), TransactionKind::Send);
-    assert_eq!(list_return.transactions[0].symbol(), Some(&*MFX_SYMBOL));
-    assert!(list_return.transactions[0].is_about(&id));
+    assert_eq!(list_return.nb_events, 1);
+    assert_eq!(list_return.events.len(), 1);
+    assert_eq!(list_return.events[0].kind(), EventKind::Send);
+    assert_eq!(list_return.events[0].symbol(), Some(&*MFX_SYMBOL));
+    assert!(list_return.events[0].is_about(&id));
 
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: Some(TransactionFilter {
@@ -151,7 +152,7 @@ fn list_filter_symbol() {
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.transactions.len(), 0);
+    assert_eq!(list_return.events.len(), 0);
 }
 
 #[test]
@@ -167,7 +168,7 @@ fn list_filter_date() {
     // See https://github.com/liftedinit/many-rs/issues/110
     std::thread::sleep(std::time::Duration::new(1, 0));
     let after = Timestamp::now();
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: Some(TransactionFilter {
@@ -180,17 +181,17 @@ fn list_filter_date() {
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.nb_transactions, 1);
-    assert_eq!(list_return.transactions.len(), 1);
-    assert_eq!(list_return.transactions[0].kind(), TransactionKind::Send);
-    assert_eq!(list_return.transactions[0].symbol(), Some(&*MFX_SYMBOL));
-    assert!(list_return.transactions[0].is_about(&id));
+    assert_eq!(list_return.nb_events, 1);
+    assert_eq!(list_return.events.len(), 1);
+    assert_eq!(list_return.events[0].kind(), EventKind::Send);
+    assert_eq!(list_return.events[0].symbol(), Some(&*MFX_SYMBOL));
+    assert!(list_return.events[0].is_about(&id));
 
     // TODO: Remove this when we support factional seconds
     // See https://github.com/liftedinit/many-rs/issues/110
     std::thread::sleep(std::time::Duration::new(1, 0));
     let now = Timestamp::now();
-    let result = module_impl.list(module::ledger::ListArgs {
+    let result = module_impl.list(module::events::ListArgs {
         count: None,
         order: None,
         filter: Some(TransactionFilter {
@@ -203,5 +204,5 @@ fn list_filter_date() {
     });
     assert!(result.is_ok());
     let list_return = result.unwrap();
-    assert_eq!(list_return.transactions.len(), 0);
+    assert_eq!(list_return.events.len(), 0);
 }

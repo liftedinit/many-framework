@@ -1408,6 +1408,7 @@ impl<'a> Iterator for LedgerIterator<'a> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use many::types::events::EventId;
 
     impl LedgerStorage {
         pub fn set_idstore_seed(&mut self, seed: u64) {
@@ -1417,51 +1418,36 @@ pub mod tests {
 
     #[test]
     fn transaction_key_size() {
-        let golden_size = key_for_transaction(TransactionId::from(0)).len();
+        let golden_size = key_for_transaction(EventId::from(0)).len();
 
         assert_eq!(
             golden_size,
-            key_for_transaction(TransactionId::from(u64::MAX)).len()
+            key_for_transaction(EventId::from(u64::MAX)).len()
         );
 
         // Test at 1 byte, 2 bytes and 4 bytes boundaries.
         for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
-            assert_eq!(
-                golden_size,
-                key_for_transaction(TransactionId::from(i - 1)).len()
-            );
-            assert_eq!(
-                golden_size,
-                key_for_transaction(TransactionId::from(i)).len()
-            );
-            assert_eq!(
-                golden_size,
-                key_for_transaction(TransactionId::from(i + 1)).len()
-            );
+            assert_eq!(golden_size, key_for_transaction(EventId::from(i - 1)).len());
+            assert_eq!(golden_size, key_for_transaction(EventId::from(i)).len());
+            assert_eq!(golden_size, key_for_transaction(EventId::from(i + 1)).len());
         }
 
         assert_eq!(
             golden_size,
-            key_for_transaction(TransactionId::from(
-                b"012345678901234567890123456789".to_vec()
-            ))
-            .len()
+            key_for_transaction(EventId::from(b"012345678901234567890123456789".to_vec())).len()
         );
 
         // Trim the Tx ID if it's too long.
         assert_eq!(
             golden_size,
-            key_for_transaction(TransactionId::from(
+            key_for_transaction(EventId::from(
                 b"0123456789012345678901234567890123456789".to_vec()
             ))
             .len()
         );
         assert_eq!(
-            key_for_transaction(TransactionId::from(
-                b"01234567890123456789012345678901".to_vec()
-            ))
-            .len(),
-            key_for_transaction(TransactionId::from(
+            key_for_transaction(EventId::from(b"01234567890123456789012345678901".to_vec())).len(),
+            key_for_transaction(EventId::from(
                 b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
             ))
             .len()

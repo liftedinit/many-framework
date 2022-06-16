@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, account, idstore, ledger};
+use many::server::module::{abci_backend, account, events, idstore, ledger};
 use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -193,7 +193,7 @@ fn main() {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
-        s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
+        s.add_module(events::EventsModule::new(module_impl.clone()));
 
         let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
         #[cfg(feature = "webauthn_testing")]

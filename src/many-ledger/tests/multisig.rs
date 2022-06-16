@@ -44,7 +44,7 @@ fn account_arguments(
 /// Generate some SubmitTransactionArgs for testing
 fn submit_args(
     account_id: Identity,
-    transaction: types::ledger::AccountMultisigTransaction,
+    transaction: types::events::AccountMultisigTransaction,
     execute_automatically: Option<bool>,
 ) -> SubmitTransactionArgs {
     SubmitTransactionArgs {
