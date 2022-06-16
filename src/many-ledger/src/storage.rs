@@ -705,6 +705,9 @@ impl LedgerStorage {
     ) -> Result<Identity, ManyError> {
         let id = self.new_account_id();
 
+        // The account MUST own itself.
+        account.add_role(&id, account::Role::Owner);
+
         // Set the multisig threshold properly.
         if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
             multisig.arg.threshold =
@@ -717,7 +720,9 @@ impl LedgerStorage {
                                 || roles.contains(&account::Role::CanMultisigApprove)
                                 || roles.contains(&account::Role::CanMultisigSubmit)
                         })
-                        .count() as u64,
+                        .count() as u64
+                        - 1u64, // We need to subtract one because the account owns itself.
+                                // The account can approve but should not be included in the threshold.
                 ));
             multisig.arg.timeout_in_secs = Some(
                 multisig
@@ -855,6 +860,17 @@ impl LedgerStorage {
         mut account: account::Account,
         args: account::RemoveRolesArgs,
     ) -> Result<(), ManyError> {
+        // We should not be able to remove the Owner role from the account itself
+        if args.roles.contains_key(&args.account)
+            && args
+                .roles
+                .get(&args.account)
+                .unwrap()
+                .contains(&account::Role::Owner)
+        {
+            return Err(account::errors::account_must_own_itself());
+        }
+
         for (id, roles) in &args.roles {
             for r in roles {
                 account.remove_role(id, *r);
