@@ -311,6 +311,7 @@ impl module::events::EventsModuleBackend for LedgerModuleImpl {
         &self,
         _args: module::events::InfoArgs,
     ) -> Result<module::events::InfoReturn, ManyError> {
+        use strum::IntoEnumIterator;
         Ok(module::events::InfoReturn {
             total: self.storage.nb_events(),
             event_types: events::EventKind::iter().collect(),
