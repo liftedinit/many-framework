@@ -185,7 +185,7 @@ impl IdStoreRootSeparator {
     }
 }
 
-pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
+pub(crate) const EVENTS_ROOT: &[u8] = b"/events/";
 pub(crate) const MULTISIG_TRANSACTIONS_ROOT: &[u8] = b"/multisig/";
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
 
@@ -202,7 +202,7 @@ pub(super) fn key_for_account_balance(id: &Identity, symbol: &Symbol) -> Vec<u8>
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
-/// Returns the storage key for a transaction in the kv-store.
+/// Returns the storage key for an event in the kv-store.
 pub(super) fn key_for_event(id: events::EventId) -> Vec<u8> {
     let id = id.as_ref();
     let id = if id.len() > EVENT_ID_KEY_SIZE_IN_BYTES {
@@ -213,7 +213,7 @@ pub(super) fn key_for_event(id: events::EventId) -> Vec<u8> {
 
     let mut exp_id = [0u8; EVENT_ID_KEY_SIZE_IN_BYTES];
     exp_id[(EVENT_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
-    vec![TRANSACTIONS_ROOT.to_vec(), exp_id.to_vec()].concat()
+    vec![EVENTS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
 pub(super) fn key_for_account(id: &Identity) -> Vec<u8> {
@@ -499,7 +499,7 @@ impl LedgerStorage {
                     }
                 }
             } else if let Ok(d) = now.duration_since(storage.creation) {
-                // Since the DB is ordered by transaction ID (keys), at this point we don't need
+                // Since the DB is ordered by event ID (keys), at this point we don't need
                 // to continue since we know that the rest is all timed out anyway.
                 if d.as_secs() > MULTISIG_MAXIMUM_TIMEOUT_IN_SECS {
                     break;
@@ -542,7 +542,7 @@ impl LedgerStorage {
 
     pub fn nb_events(&self) -> u64 {
         self.persistent_store
-            .get(b"/transactions_count")
+            .get(b"/events_count")
             .unwrap()
             .map_or(0, |x| {
                 let mut bytes = [0u8; 8];
@@ -552,8 +552,8 @@ impl LedgerStorage {
     }
 
     fn log_event(&mut self, content: events::EventInfo) {
-        let current_nb_transactions = self.nb_events();
-        let transaction = events::EventLog {
+        let current_nb_events = self.nb_events();
+        let event = events::EventLog {
             id: self.new_event_id(),
             time: self.now().into(),
             content,
@@ -562,12 +562,12 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[
                 (
-                    key_for_event(transaction.id.clone()),
-                    Op::Put(minicbor::to_vec(&transaction).unwrap()),
+                    key_for_event(event.id.clone()),
+                    Op::Put(minicbor::to_vec(&event).unwrap()),
                 ),
                 (
-                    b"/transactions_count".to_vec(),
-                    Op::Put((current_nb_transactions + 1).to_be_bytes().to_vec()),
+                    b"/events_count".to_vec(),
+                    Op::Put((current_nb_events + 1).to_be_bytes().to_vec()),
                 ),
             ])
             .unwrap();
@@ -701,7 +701,7 @@ impl LedgerStorage {
     pub(crate) fn _add_account(
         &mut self,
         mut account: account::Account,
-        add_transaction: bool,
+        add_event: bool,
     ) -> Result<Identity, ManyError> {
         let id = self.new_account_id();
 
@@ -738,7 +738,7 @@ impl LedgerStorage {
             account.features.insert(multisig.as_feature());
         }
 
-        if add_transaction {
+        if add_event {
             self.log_event(events::EventInfo::AccountCreate {
                 account: id,
                 description: account.clone().description,
@@ -1370,14 +1370,14 @@ impl<'a> LedgerIterator<'a> {
         match range.start_bound() {
             Bound::Included(x) => opts.set_iterate_lower_bound(key_for_event(x.clone())),
             Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_event(x.clone() + 1)),
-            Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
+            Bound::Unbounded => opts.set_iterate_lower_bound(EVENTS_ROOT),
         }
         match range.end_bound() {
             Bound::Included(x) => opts.set_iterate_upper_bound(key_for_event(x.clone() + 1)),
             Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_event(x.clone())),
             Bound::Unbounded => {
-                let mut bound = TRANSACTIONS_ROOT.to_vec();
-                bound[TRANSACTIONS_ROOT.len() - 1] += 1;
+                let mut bound = EVENTS_ROOT.to_vec();
+                bound[EVENTS_ROOT.len() - 1] += 1;
                 opts.set_iterate_upper_bound(bound);
             }
         }
