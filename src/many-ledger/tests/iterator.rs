@@ -47,10 +47,10 @@ fn range_works() {
 
     // Get the first event ID.
     let mut iter = iter_asc(&storage, Bound::Unbounded, Bound::Unbounded);
-    let first_tx = iter.next().expect("No events?");
-    let first_id = first_tx.id;
-    let last_tx = iter.last().expect("Only 1 event");
-    let last_id = last_tx.id;
+    let first_ev = iter.next().expect("No events?");
+    let first_id = first_ev.id;
+    let last_ev = iter.last().expect("Only 1 event");
+    let last_id = last_ev.id;
 
     // Make sure exclusive range removes the first_id.
     assert!(iter_asc(
