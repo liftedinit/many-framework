@@ -3,7 +3,7 @@ use crate::module::validate_account;
 use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
-use many::server::module::account::features::multisig;
+use many::server::module::account::features::multisig::{self, SubmitTransactionReturn};
 use many::server::module::account::features::multisig::MultisigTransactionState;
 use many::server::module::account::features::FeatureInfo;
 use many::server::module::idstore;
@@ -107,8 +107,8 @@ fn _execute_multisig_tx(
         }
 
         events::AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
-            ledger.create_multisig_transaction(sender, arg.clone())?;
-            minicbor::to_vec(EmptyReturn)
+            let token = ledger.create_multisig_transaction(sender, arg.clone())?;
+            minicbor::to_vec(SubmitTransactionReturn { token: token.into() })
         }
 
         events::AccountMultisigTransaction::AccountMultisigSetDefaults(arg) => {
@@ -1179,6 +1179,7 @@ impl LedgerStorage {
             .get_account(&storage.account)
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
+        // TODO: Better error message
         if !(account.has_role(sender, account::Role::Owner) || storage.info.submitter == *sender) {
             return Err(multisig::errors::cannot_execute_transaction());
         }
