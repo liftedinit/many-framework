@@ -682,10 +682,13 @@ fn recursive_multisig() {
     setup.multisig_approve_(identity(2), &token);
     setup.multisig_approve_(identity(3), &token);
 
-    // The execution should fail because acc1 do NOT have the permission to submit a multisig on behalf of acc2 
+    // The execution should fail because acc1 do NOT have the permission to submit a multisig on behalf of acc2
     let response = setup.multisig_execute_(&token);
     assert!(response.data.is_err());
-    assert_many_err(response.data, account::errors::user_needs_role("canMultisigSubmit"));
+    assert_many_err(
+        response.data,
+        account::errors::user_needs_role("canMultisigSubmit"),
+    );
 
     // Let's add `canMultisigSubmit` permission to acc1 on acc2 using identity(666) as the sender, which is the owner of acc2
     setup.add_roles_as(
@@ -703,7 +706,12 @@ fn recursive_multisig() {
     // This time, the execution should fail because acc2 doesn't have the Multisig account feature
     let response = setup.multisig_execute_(&token);
     assert!(response.data.is_err());
-    assert_many_err(response.data, many::ManyError::attribute_not_found(account::features::multisig::MultisigAccountFeature::ID));
+    assert_many_err(
+        response.data,
+        many::ManyError::attribute_not_found(
+            account::features::multisig::MultisigAccountFeature::ID,
+        ),
+    );
 
     // Let's make acc2 a Multisig account
     let acc2 = setup.create_account_as_(identity(666), AccountType::Multisig);
@@ -736,7 +744,7 @@ fn recursive_multisig() {
         BTreeMap::from([(acc1, BTreeSet::from([account::Role::CanMultisigSubmit]))]),
     );
 
-    let tx = setup.create_multisig_as(acc1, acc1, multisig_tx.clone());
+    let tx = setup.create_multisig_as(acc1, acc1, multisig_tx);
     let token = tx.unwrap();
     setup.multisig_approve_(identity(2), &token);
     setup.multisig_approve_(identity(3), &token);
@@ -746,7 +754,8 @@ fn recursive_multisig() {
     assert!(response.data.is_ok());
 
     // At this point we submitted a new Multisig tx to send funds from acc2 to some Identity
-    let result: account::features::multisig::SubmitTransactionReturn = minicbor::decode(&response.data.unwrap()).unwrap();
+    let result: account::features::multisig::SubmitTransactionReturn =
+        minicbor::decode(&response.data.unwrap()).unwrap();
     let token = result.token;
 
     // Approve and execute the tx

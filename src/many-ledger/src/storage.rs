@@ -3,8 +3,8 @@ use crate::module::validate_account;
 use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
-use many::server::module::account::features::multisig::{self, SubmitTransactionReturn};
 use many::server::module::account::features::multisig::MultisigTransactionState;
+use many::server::module::account::features::multisig::{self, SubmitTransactionReturn};
 use many::server::module::account::features::FeatureInfo;
 use many::server::module::idstore;
 use many::server::module::idstore::{CredentialId, PublicKey, RecallPhrase};
@@ -108,7 +108,9 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
             let token = ledger.create_multisig_transaction(sender, arg.clone())?;
-            minicbor::to_vec(SubmitTransactionReturn { token: token.into() })
+            minicbor::to_vec(SubmitTransactionReturn {
+                token: token.into(),
+            })
         }
 
         events::AccountMultisigTransaction::AccountMultisigSetDefaults(arg) => {
