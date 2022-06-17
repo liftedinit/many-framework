@@ -1,4 +1,6 @@
 pub mod common;
+use std::collections::{BTreeMap, BTreeSet};
+
 use common::*;
 use many::server::module::account::features::multisig::*;
 use many::server::module::ledger;
@@ -529,4 +531,118 @@ fn multiple_multisig() {
     assert_eq!(setup.balance_(identity(5)), 20u16);
     assert_eq!(setup.balance_(account_ids[3]), 0u16);
     assert_eq!(setup.balance_(account_ids[4]), 0u16);
+}
+
+#[test]
+// Send funds on behalf on another account using a multisig
+// Both the sender and the account from which the funds are transfered only have the Multisig feature
+fn multisig_send_from_another_identity_owner() {
+    let mut setup = Setup::new(false);
+
+    // Create two accounts with different owners
+    let acc1 = setup.create_account_as_(setup.id, AccountType::Multisig);
+    let acc2 = setup.create_account_as_(identity(666), AccountType::Multisig);
+
+    setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
+
+    // Prepare a Send transaction from acc2 to some Identity
+    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+        from: Some(acc2),
+        to: identity(1234),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
+
+    // Create a multisig tx on acc1 which sends funds from acc2 to some Identity
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx.clone());
+    let token = tx.unwrap();
+
+    // Approve the tx
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // Execute the tx
+    let response = setup.multisig_execute_(&token);
+
+    // Execution fails because acc1 is don't have the required permission on acc2
+    assert!(response.data.is_err());
+    assert_many_err(
+        response.data,
+        account::errors::user_needs_role("canLedgerTransact"),
+    );
+
+    // Let's add acc1 as an owner of acc2 using identity(666) as the sender, which is the owner of acc2
+    setup.add_roles_as(
+        identity(666),
+        acc2,
+        BTreeMap::from([(acc1, BTreeSet::from([account::Role::Owner]))]),
+    );
+
+    // Recreate the tx and approve it
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx);
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // At this point, acc1 is an owner of acc2. Multisig tx execution should work
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
+}
+
+#[test]
+// Send funds on behalf on another account using a multisig
+// The sender account only has the Multisig feature
+// The account from which the funds are transfered only have the Ledger feature
+fn multisig_send_from_another_identity_with_perm() {
+    let mut setup = Setup::new(false);
+
+    // Create two accounts with different owners
+    let acc1 = setup.create_account_as_(setup.id, AccountType::Multisig);
+    let acc2 = setup.create_account_as_(identity(666), AccountType::Ledger);
+
+    setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
+
+    // Prepare a Send transaction from acc2 to some Identity.
+    // acc2 doesn't have the Multisig feature
+    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+        from: Some(acc2),
+        to: identity(1234),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
+
+    // Create a multisig tx on acc1 which sends funds from acc2 to some Identity
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx.clone());
+    let token = tx.unwrap();
+
+    // Approve the tx
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // Execute the tx
+    let response = setup.multisig_execute_(&token);
+
+    // Execution fails because acc1 is NOT owner on acc2
+    assert!(response.data.is_err());
+    assert_many_err(
+        response.data,
+        account::errors::user_needs_role("canLedgerTransact"),
+    );
+
+    // Let's add `canLedgerTransact` permission to acc1 on acc2 using identity(666) as the sender, which is the owner of acc2
+    setup.add_roles_as(
+        identity(666),
+        acc2,
+        BTreeMap::from([(acc1, BTreeSet::from([account::Role::CanLedgerTransact]))]),
+    );
+
+    // Recreate the tx and approve it
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx);
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // At this point, acc1 has the rights to send funds from acc2. Multisig tx execution should work
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
 }

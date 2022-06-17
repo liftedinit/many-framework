@@ -172,13 +172,25 @@ impl Setup {
             .expect("Could not send tokens")
     }
 
-    pub fn create_account(&mut self, account_type: AccountType) -> Result<Identity, ManyError> {
+    pub fn create_account_as(
+        &mut self,
+        id: Identity,
+        account_type: AccountType,
+    ) -> Result<Identity, ManyError> {
         let args = create_account_args(account_type);
-        self.module_impl.create(&self.id, args).map(|x| x.id)
+        self.module_impl.create(&id, args).map(|x| x.id)
+    }
+
+    pub fn create_account(&mut self, account_type: AccountType) -> Result<Identity, ManyError> {
+        self.create_account_as(self.id, account_type)
     }
 
     pub fn create_account_(&mut self, account_type: AccountType) -> Identity {
         self.create_account(account_type).unwrap()
+    }
+
+    pub fn create_account_as_(&mut self, id: Identity, account_type: AccountType) -> Identity {
+        self.create_account_as(id, account_type).unwrap()
     }
 
     pub fn inc_time(&mut self, amount: u64) {
@@ -206,19 +218,53 @@ impl Setup {
         (info.height, r)
     }
 
+    pub fn add_roles_as(
+        &mut self,
+        id: Identity,
+        account_id: Identity,
+        roles: BTreeMap<Identity, BTreeSet<account::Role>>,
+    ) {
+        self.module_impl
+            .add_roles(
+                &id,
+                account::AddRolesArgs {
+                    account: account_id,
+                    roles,
+                },
+            )
+            .unwrap();
+    }
+
+    pub fn add_roles(
+        &mut self,
+        account_id: Identity,
+        roles: BTreeMap<Identity, BTreeSet<account::Role>>,
+    ) {
+        self.add_roles_as(self.id, account_id, roles);
+    }
+
     /// Create a multisig transaction using the owner ID.
     pub fn create_multisig(
         &mut self,
         account_id: Identity,
-        transaction: events::AccountMultisigTransaction,
+        event: events::AccountMultisigTransaction,
+    ) -> Result<ByteVec, ManyError> {
+        self.create_multisig_as(self.id, account_id, event)
+    }
+
+    pub fn create_multisig_as(
+        &mut self,
+        id: Identity,
+        account_id: Identity,
+        event: events::AccountMultisigTransaction,
     ) -> Result<ByteVec, ManyError> {
         self.module_impl
             .multisig_submit_transaction(
-                &self.id,
+                &id,
                 account::features::multisig::SubmitTransactionArgs {
                     account: account_id,
                     memo: Some("Foo".to_string()),
-                    transaction: Box::new(transaction),
+                    transaction: Box::new(event),
                     threshold: None,
                     timeout_in_secs: None,
                     execute_automatically: None,
