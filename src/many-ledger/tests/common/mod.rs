@@ -324,11 +324,18 @@ impl Setup {
             .expect("Could not approve multisig")
     }
 
+    pub fn multisig_execute_as(&mut self, id: Identity, token: &ByteVec) -> Result<ResponseMessage, ManyError> {
+        self.module_impl
+            .multisig_execute(&id, ExecuteArgs { token: token.clone() })
+    }
+
     /// Execute the transaction.
     pub fn multisig_execute(&mut self, token: &ByteVec) -> Result<ResponseMessage, ManyError> {
-        let token = token.clone();
-        self.module_impl
-            .multisig_execute(&self.id, ExecuteArgs { token })
+        self.multisig_execute_as(self.id, token)
+    }
+
+    pub fn multisig_execute_as_(&mut self, id: Identity, token: &ByteVec) -> ResponseMessage {
+        self.multisig_execute_as(id, token).unwrap()
     }
 
     pub fn multisig_execute_(&mut self, token: &ByteVec) -> ResponseMessage {
