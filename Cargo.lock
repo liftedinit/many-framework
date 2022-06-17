@@ -1906,7 +1906,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d60a669b913af0ebcefd6fbdb149a70882447e59#d60a669b913af0ebcefd6fbdb149a70882447e59"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba#8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba"
 dependencies = [
  "anyhow",
  "async-trait",

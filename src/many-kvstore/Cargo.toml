@@ -24,7 +24,7 @@ itertools = "0.10.3"
 lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 minicbor = { version = "0.12.0", features = ["derive", "std"] }
-many = { git = "https://github.com/liftedinit/many-rs.git", rev = "d60a669b913af0ebcefd6fbdb149a70882447e59", features = ["pem"] }
+many = { git = "https://github.com/liftedinit/many-rs.git", rev = "8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba", features = ["pem"] }
 many-abci = { path = "../many-abci" }
 serde = "1.0.130"
 serde_json = "1.0.72"
