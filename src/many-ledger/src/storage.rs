@@ -19,7 +19,6 @@ use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use tracing::{info, warn};
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,

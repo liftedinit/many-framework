@@ -24,6 +24,7 @@ use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
 use minicbor::bytes::ByteVec;
 use once_cell::sync::Lazy;
+use proptest::prelude::*;
 use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
@@ -35,6 +36,43 @@ pub static MFX_SYMBOL: Lazy<Identity> = Lazy::new(|| {
 
 pub fn assert_many_err<I: std::fmt::Debug + PartialEq>(r: Result<I, ManyError>, err: ManyError) {
     assert_eq!(r, Err(err));
+}
+
+fn create_account_args(account_type: AccountType) -> account::CreateArgs {
+    let (roles, features) = match account_type {
+        AccountType::Multisig => {
+            let roles = Some(BTreeMap::from_iter([
+                (
+                    identity(2),
+                    BTreeSet::from_iter([account::Role::CanMultisigApprove]),
+                ),
+                (
+                    identity(3),
+                    BTreeSet::from_iter([account::Role::CanMultisigSubmit]),
+                ),
+            ]));
+            let features = account::features::FeatureSet::from_iter([
+                account::features::multisig::MultisigAccountFeature::default().as_feature(),
+            ]);
+            (roles, features)
+        }
+        AccountType::Ledger => {
+            let roles = Some(BTreeMap::from_iter([(
+                identity(2),
+                BTreeSet::from_iter([account::Role::CanLedgerTransact]),
+            )]));
+            let features = account::features::FeatureSet::from_iter([
+                account::features::ledger::AccountLedger.as_feature(),
+            ]);
+            (roles, features)
+        }
+    };
+
+    account::CreateArgs {
+        description: Some("Foobar".to_string()),
+        roles,
+        features,
+    }
 }
 
 pub struct Setup {
@@ -77,43 +115,6 @@ impl Setup {
     pub fn set_balance(&mut self, id: Identity, amount: u64, symbol: Symbol) {
         self.module_impl
             .set_balance_only_for_testing(id, amount, symbol);
-    }
-
-    pub fn create_account_args(&mut self, account_type: AccountType) -> account::CreateArgs {
-        let (roles, features) = match account_type {
-            AccountType::Multisig => {
-                let roles = Some(BTreeMap::from_iter([
-                    (
-                        identity(2),
-                        BTreeSet::from_iter([account::Role::CanMultisigApprove]),
-                    ),
-                    (
-                        identity(3),
-                        BTreeSet::from_iter([account::Role::CanMultisigSubmit]),
-                    ),
-                ]));
-                let features = account::features::FeatureSet::from_iter([
-                    account::features::multisig::MultisigAccountFeature::default().as_feature(),
-                ]);
-                (roles, features)
-            }
-            AccountType::Ledger => {
-                let roles = Some(BTreeMap::from_iter([(
-                    identity(2),
-                    BTreeSet::from_iter([account::Role::CanLedgerTransact]),
-                )]));
-                let features = account::features::FeatureSet::from_iter([
-                    account::features::ledger::AccountLedger.as_feature(),
-                ]);
-                (roles, features)
-            }
-        };
-
-        account::CreateArgs {
-            description: Some("Foobar".to_string()),
-            roles,
-            features,
-        }
     }
 
     pub fn balance(&self, account: Identity, symbol: Symbol) -> Result<TokenAmount, ManyError> {
@@ -172,7 +173,7 @@ impl Setup {
     }
 
     pub fn create_account(&mut self, account_type: AccountType) -> Result<Identity, ManyError> {
-        let args = self.create_account_args(account_type);
+        let args = create_account_args(account_type);
         self.module_impl.create(&self.id, args).map(|x| x.id)
     }
 
@@ -309,6 +310,7 @@ pub struct SetupWithArgs {
     pub args: account::CreateArgs,
 }
 
+#[derive(Clone)]
 #[non_exhaustive]
 pub enum AccountType {
     Multisig,
@@ -316,8 +318,8 @@ pub enum AccountType {
 }
 
 pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
-    let mut setup = Setup::default();
-    let args = setup.create_account_args(account_type);
+    let setup = Setup::default();
+    let args = create_account_args(account_type);
 
     SetupWithArgs {
         module_impl: setup.module_impl,
@@ -346,6 +348,7 @@ pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
     }
 }
 
+#[derive(Debug)]
 pub struct SetupWithAccountAndTx {
     pub module_impl: LedgerModuleImpl,
     pub id: Identity,
@@ -353,25 +356,199 @@ pub struct SetupWithAccountAndTx {
     pub tx: events::AccountMultisigTransaction,
 }
 
-pub fn setup_with_account_and_tx(account_type: AccountType) -> SetupWithAccountAndTx {
-    let SetupWithAccount {
-        module_impl,
-        id,
-        account_id,
-    } = setup_with_account(account_type);
-
-    let tx = events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+fn event_from_kind(
+    event: events::EventKind,
+    module_impl: &mut LedgerModuleImpl,
+    id: Identity,
+    account_id: Identity,
+    account_type: AccountType,
+) -> events::AccountMultisigTransaction {
+    let send_tx = events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
         from: Some(account_id),
         to: identity(3),
         symbol: *MFX_SYMBOL,
         amount: many::types::ledger::TokenAmount::from(10u16),
     });
 
-    SetupWithAccountAndTx {
-        module_impl,
-        id,
-        account_id,
-        tx,
+    match event {
+        events::EventKind::Send => send_tx,
+        events::EventKind::AccountCreate => {
+            events::AccountMultisigTransaction::AccountCreate(create_account_args(account_type))
+        }
+        events::EventKind::AccountDisable => {
+            events::AccountMultisigTransaction::AccountDisable(account::DisableArgs {
+                account: account_id,
+            })
+        }
+        events::EventKind::AccountSetDescription => {
+            events::AccountMultisigTransaction::AccountSetDescription(account::SetDescriptionArgs {
+                account: account_id,
+                description: "New description".to_string(),
+            })
+        }
+        events::EventKind::AccountAddRoles => {
+            events::AccountMultisigTransaction::AccountAddRoles(account::AddRolesArgs {
+                account: account_id,
+                roles: BTreeMap::from([(
+                    identity(100),
+                    BTreeSet::from([account::Role::CanMultisigSubmit]),
+                )]),
+            })
+        }
+        events::EventKind::AccountRemoveRoles => {
+            events::AccountMultisigTransaction::AccountRemoveRoles(account::RemoveRolesArgs {
+                account: account_id,
+                roles: BTreeMap::from([(
+                    identity(3),
+                    BTreeSet::from([account::Role::CanMultisigSubmit]),
+                )]),
+            })
+        }
+        events::EventKind::AccountAddFeatures => {
+            events::AccountMultisigTransaction::AccountAddFeatures(account::AddFeaturesArgs {
+                account: account_id,
+                roles: Some(BTreeMap::from([(
+                    identity(200),
+                    BTreeSet::from([account::Role::CanLedgerTransact]),
+                )])),
+                features: account::features::FeatureSet::from_iter([
+                    account::features::ledger::AccountLedger.as_feature(),
+                ]),
+            })
+        }
+        events::EventKind::AccountMultisigSubmit => {
+            events::AccountMultisigTransaction::AccountMultisigSubmit(
+                account::features::multisig::SubmitTransactionArgs {
+                    account: account_id,
+                    memo: Some("A memo".to_string()),
+                    transaction: Box::new(send_tx),
+                    threshold: None,
+                    timeout_in_secs: None,
+                    execute_automatically: Some(false),
+                    data: None,
+                },
+            )
+        }
+        events::EventKind::AccountMultisigApprove => {
+            let token = module_impl
+                .multisig_submit_transaction(
+                    &id,
+                    account::features::multisig::SubmitTransactionArgs {
+                        account: account_id,
+                        memo: Some("A memo".to_string()),
+                        transaction: Box::new(send_tx),
+                        threshold: None,
+                        timeout_in_secs: None,
+                        execute_automatically: Some(false),
+                        data: None,
+                    },
+                )
+                .unwrap()
+                .token;
+            events::AccountMultisigTransaction::AccountMultisigApprove(
+                account::features::multisig::ApproveArgs { token },
+            )
+        }
+        events::EventKind::AccountMultisigRevoke => {
+            let token = module_impl
+                .multisig_submit_transaction(
+                    &id,
+                    account::features::multisig::SubmitTransactionArgs {
+                        account: account_id,
+                        memo: Some("A memo".to_string()),
+                        transaction: Box::new(send_tx),
+                        threshold: None,
+                        timeout_in_secs: None,
+                        execute_automatically: Some(false),
+                        data: None,
+                    },
+                )
+                .unwrap()
+                .token;
+
+            events::AccountMultisigTransaction::AccountMultisigRevoke(
+                account::features::multisig::RevokeArgs { token },
+            )
+        }
+        events::EventKind::AccountMultisigExecute => {
+            let token = module_impl
+                .multisig_submit_transaction(
+                    &id,
+                    account::features::multisig::SubmitTransactionArgs {
+                        account: account_id,
+                        memo: Some("A memo".to_string()),
+                        transaction: Box::new(send_tx),
+                        threshold: None,
+                        timeout_in_secs: None,
+                        execute_automatically: Some(false),
+                        data: None,
+                    },
+                )
+                .unwrap()
+                .token;
+            // Pre-approve the transaction
+            for i in [id, identity(2), identity(3)] {
+                let _ = module_impl.multisig_approve(
+                    &i,
+                    account::features::multisig::ApproveArgs {
+                        token: token.clone(),
+                    },
+                );
+            }
+            events::AccountMultisigTransaction::AccountMultisigExecute(
+                account::features::multisig::ExecuteArgs { token },
+            )
+        }
+        events::EventKind::AccountMultisigWithdraw => {
+            let token = module_impl
+                .multisig_submit_transaction(
+                    &id,
+                    account::features::multisig::SubmitTransactionArgs {
+                        account: account_id,
+                        memo: Some("A memo".to_string()),
+                        transaction: Box::new(send_tx),
+                        threshold: None,
+                        timeout_in_secs: None,
+                        execute_automatically: Some(false),
+                        data: None,
+                    },
+                )
+                .unwrap()
+                .token;
+            events::AccountMultisigTransaction::AccountMultisigWithdraw(
+                account::features::multisig::WithdrawArgs { token },
+            )
+        }
+        events::EventKind::AccountMultisigSetDefaults => {
+            events::AccountMultisigTransaction::AccountMultisigSetDefaults(
+                account::features::multisig::SetDefaultsArgs {
+                    account: account_id,
+                    threshold: Some(1),
+                    timeout_in_secs: Some(500),
+                    execute_automatically: Some(true),
+                },
+            )
+        }
+        _ => unimplemented!(),
+    }
+}
+
+prop_compose! {
+    pub fn setup_with_account_and_tx(account_type: AccountType)(event in arb_event_kind()) -> SetupWithAccountAndTx {
+        let SetupWithAccount {
+            mut module_impl,
+            id,
+            account_id,
+        } = setup_with_account(account_type.clone());
+
+        let event = event_from_kind(event, &mut module_impl, id, account_id, account_type.clone());
+
+        SetupWithAccountAndTx {
+            module_impl,
+            id,
+            account_id,
+            tx: event,
+        }
     }
 }
 
@@ -391,4 +568,25 @@ pub fn verify_balance(
     assert!(result.is_ok());
     let balances = result.unwrap();
     assert_eq!(balances.balances, BTreeMap::from([(symbol, amount)]));
+}
+
+fn arb_event_kind() -> impl Strategy<Value = events::EventKind> {
+    prop_oneof![
+        // Ledger-related
+        Just(events::EventKind::Send),
+        // Account-related
+        Just(events::EventKind::AccountCreate),
+        Just(events::EventKind::AccountDisable),
+        Just(events::EventKind::AccountSetDescription),
+        Just(events::EventKind::AccountAddRoles),
+        Just(events::EventKind::AccountRemoveRoles),
+        Just(events::EventKind::AccountAddFeatures),
+        // Multisig-related
+        Just(events::EventKind::AccountMultisigSubmit),
+        Just(events::EventKind::AccountMultisigApprove),
+        Just(events::EventKind::AccountMultisigRevoke),
+        Just(events::EventKind::AccountMultisigExecute),
+        Just(events::EventKind::AccountMultisigWithdraw),
+        Just(events::EventKind::AccountMultisigSetDefaults),
+    ]
 }
