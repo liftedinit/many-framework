@@ -184,35 +184,35 @@ impl IdStoreRootSeparator {
     }
 }
 
-pub(crate) const TRANSACTIONS_ROOT: &[u8] = b"/transactions/";
+pub(crate) const EVENTS_ROOT: &[u8] = b"/events/";
 pub(crate) const MULTISIG_TRANSACTIONS_ROOT: &[u8] = b"/multisig/";
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
 
 // Left-shift the height by this amount of bits
-const HEIGHT_TXID_SHIFT: u64 = 32;
+const HEIGHT_EVENTID_SHIFT: u64 = 32;
 
-/// Number of bytes in a transaction ID when serialized. Keys smaller than this
+/// Number of bytes in an event ID when serialized. Keys smaller than this
 /// will have `\0` prepended, and keys larger will be cut to this number of
 /// bytes.
-const TRANSACTION_ID_KEY_SIZE_IN_BYTES: usize = 32;
+const EVENT_ID_KEY_SIZE_IN_BYTES: usize = 32;
 
 /// Returns the key for the persistent kv-store.
 pub(super) fn key_for_account_balance(id: &Identity, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
-/// Returns the storage key for a transaction in the kv-store.
-pub(super) fn key_for_transaction(id: events::EventId) -> Vec<u8> {
+/// Returns the storage key for an event in the kv-store.
+pub(super) fn key_for_event(id: events::EventId) -> Vec<u8> {
     let id = id.as_ref();
-    let id = if id.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
-        &id[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
+    let id = if id.len() > EVENT_ID_KEY_SIZE_IN_BYTES {
+        &id[0..EVENT_ID_KEY_SIZE_IN_BYTES]
     } else {
         id
     };
 
-    let mut exp_id = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
-    exp_id[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
-    vec![TRANSACTIONS_ROOT.to_vec(), exp_id.to_vec()].concat()
+    let mut exp_id = [0u8; EVENT_ID_KEY_SIZE_IN_BYTES];
+    exp_id[(EVENT_ID_KEY_SIZE_IN_BYTES - id.len())..].copy_from_slice(id);
+    vec![EVENTS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
 pub(super) fn key_for_account(id: &Identity) -> Vec<u8> {
@@ -221,14 +221,14 @@ pub(super) fn key_for_account(id: &Identity) -> Vec<u8> {
 
 /// Returns the storage key for a multisig pending transaction.
 pub(super) fn key_for_multisig_transaction(token: &[u8]) -> Vec<u8> {
-    let token = if token.len() > TRANSACTION_ID_KEY_SIZE_IN_BYTES {
-        &token[0..TRANSACTION_ID_KEY_SIZE_IN_BYTES]
+    let token = if token.len() > EVENT_ID_KEY_SIZE_IN_BYTES {
+        &token[0..EVENT_ID_KEY_SIZE_IN_BYTES]
     } else {
         token
     };
 
-    let mut exp_token = [0u8; TRANSACTION_ID_KEY_SIZE_IN_BYTES];
-    exp_token[(TRANSACTION_ID_KEY_SIZE_IN_BYTES - token.len())..].copy_from_slice(token);
+    let mut exp_token = [0u8; EVENT_ID_KEY_SIZE_IN_BYTES];
+    exp_token[(EVENT_ID_KEY_SIZE_IN_BYTES - token.len())..].copy_from_slice(token);
 
     vec![MULTISIG_TRANSACTIONS_ROOT, &exp_token[..]]
         .concat()
@@ -338,7 +338,7 @@ impl LedgerStorage {
                 u64::from_be_bytes(bytes)
             });
 
-        let latest_tid = events::EventId::from(height << HEIGHT_TXID_SHIFT);
+        let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         Ok(Self {
             symbols,
@@ -498,7 +498,7 @@ impl LedgerStorage {
                     }
                 }
             } else if let Ok(d) = now.duration_since(storage.creation) {
-                // Since the DB is ordered by transaction ID (keys), at this point we don't need
+                // Since the DB is ordered by event ID (keys), at this point we don't need
                 // to continue since we know that the rest is all timed out anyway.
                 if d.as_secs() > MULTISIG_MAXIMUM_TIMEOUT_IN_SECS {
                     break;
@@ -531,7 +531,7 @@ impl LedgerStorage {
         let hash = self.persistent_store.root_hash().to_vec();
         self.current_hash = Some(hash.clone());
 
-        self.latest_tid = events::EventId::from(height << HEIGHT_TXID_SHIFT);
+        self.latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         AbciCommitInfo {
             retain_height,
@@ -539,9 +539,9 @@ impl LedgerStorage {
         }
     }
 
-    pub fn nb_transactions(&self) -> u64 {
+    pub fn nb_events(&self) -> u64 {
         self.persistent_store
-            .get(b"/transactions_count")
+            .get(b"/events_count")
             .unwrap()
             .map_or(0, |x| {
                 let mut bytes = [0u8; 8];
@@ -551,8 +551,8 @@ impl LedgerStorage {
     }
 
     fn log_event(&mut self, content: events::EventInfo) {
-        let current_nb_transactions = self.nb_transactions();
-        let transaction = events::EventLog {
+        let current_nb_events = self.nb_events();
+        let event = events::EventLog {
             id: self.new_event_id(),
             time: self.now().into(),
             content,
@@ -561,12 +561,12 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[
                 (
-                    key_for_transaction(transaction.id.clone()),
-                    Op::Put(minicbor::to_vec(&transaction).unwrap()),
+                    key_for_event(event.id.clone()),
+                    Op::Put(minicbor::to_vec(&event).unwrap()),
                 ),
                 (
-                    b"/transactions_count".to_vec(),
-                    Op::Put((current_nb_transactions + 1).to_be_bytes().to_vec()),
+                    b"/events_count".to_vec(),
+                    Op::Put((current_nb_events + 1).to_be_bytes().to_vec()),
                 ),
             ])
             .unwrap();
@@ -700,7 +700,7 @@ impl LedgerStorage {
     pub(crate) fn _add_account(
         &mut self,
         mut account: account::Account,
-        add_transaction: bool,
+        add_event: bool,
     ) -> Result<Identity, ManyError> {
         let id = self.new_account_id();
 
@@ -741,7 +741,7 @@ impl LedgerStorage {
             account.features.insert(multisig.as_feature());
         }
 
-        if add_transaction {
+        if add_event {
             self.log_event(events::EventInfo::AccountCreate {
                 account: id,
                 description: account.clone().description,
@@ -1382,16 +1382,16 @@ impl<'a> LedgerIterator<'a> {
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
-            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone())),
-            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_transaction(x.clone() + 1)),
-            Bound::Unbounded => opts.set_iterate_lower_bound(TRANSACTIONS_ROOT),
+            Bound::Included(x) => opts.set_iterate_lower_bound(key_for_event(x.clone())),
+            Bound::Excluded(x) => opts.set_iterate_lower_bound(key_for_event(x.clone() + 1)),
+            Bound::Unbounded => opts.set_iterate_lower_bound(EVENTS_ROOT),
         }
         match range.end_bound() {
-            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_transaction(x.clone() + 1)),
-            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_transaction(x.clone())),
+            Bound::Included(x) => opts.set_iterate_upper_bound(key_for_event(x.clone() + 1)),
+            Bound::Excluded(x) => opts.set_iterate_upper_bound(key_for_event(x.clone())),
             Bound::Unbounded => {
-                let mut bound = TRANSACTIONS_ROOT.to_vec();
-                bound[TRANSACTIONS_ROOT.len() - 1] += 1;
+                let mut bound = EVENTS_ROOT.to_vec();
+                bound[EVENTS_ROOT.len() - 1] += 1;
                 opts.set_iterate_upper_bound(bound);
             }
         }
@@ -1431,37 +1431,34 @@ pub mod tests {
     }
 
     #[test]
-    fn transaction_key_size() {
-        let golden_size = key_for_transaction(EventId::from(0)).len();
+    fn event_key_size() {
+        let golden_size = key_for_event(EventId::from(0)).len();
 
-        assert_eq!(
-            golden_size,
-            key_for_transaction(EventId::from(u64::MAX)).len()
-        );
+        assert_eq!(golden_size, key_for_event(EventId::from(u64::MAX)).len());
 
         // Test at 1 byte, 2 bytes and 4 bytes boundaries.
         for i in [u8::MAX as u64, u16::MAX as u64, u32::MAX as u64] {
-            assert_eq!(golden_size, key_for_transaction(EventId::from(i - 1)).len());
-            assert_eq!(golden_size, key_for_transaction(EventId::from(i)).len());
-            assert_eq!(golden_size, key_for_transaction(EventId::from(i + 1)).len());
+            assert_eq!(golden_size, key_for_event(EventId::from(i - 1)).len());
+            assert_eq!(golden_size, key_for_event(EventId::from(i)).len());
+            assert_eq!(golden_size, key_for_event(EventId::from(i + 1)).len());
         }
 
         assert_eq!(
             golden_size,
-            key_for_transaction(EventId::from(b"012345678901234567890123456789".to_vec())).len()
+            key_for_event(EventId::from(b"012345678901234567890123456789".to_vec())).len()
         );
 
-        // Trim the Tx ID if it's too long.
+        // Trim the Event ID if it's too long.
         assert_eq!(
             golden_size,
-            key_for_transaction(EventId::from(
+            key_for_event(EventId::from(
                 b"0123456789012345678901234567890123456789".to_vec()
             ))
             .len()
         );
         assert_eq!(
-            key_for_transaction(EventId::from(b"01234567890123456789012345678901".to_vec())).len(),
-            key_for_transaction(EventId::from(
+            key_for_event(EventId::from(b"01234567890123456789012345678901".to_vec())).len(),
+            key_for_event(EventId::from(
                 b"0123456789012345678901234567890123456789012345678901234567890123456789".to_vec()
             ))
             .len()
