@@ -190,7 +190,7 @@ pub(crate) const MULTISIG_TRANSACTIONS_ROOT: &[u8] = b"/multisig/";
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
 
 // Left-shift the height by this amount of bits
-const HEIGHT_TXID_SHIFT: u64 = 32;
+const HEIGHT_EVENTID_SHIFT: u64 = 32;
 
 /// Number of bytes in an event ID when serialized. Keys smaller than this
 /// will have `\0` prepended, and keys larger will be cut to this number of
@@ -339,7 +339,7 @@ impl LedgerStorage {
                 u64::from_be_bytes(bytes)
             });
 
-        let latest_tid = events::EventId::from(height << HEIGHT_TXID_SHIFT);
+        let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         Ok(Self {
             symbols,
@@ -532,7 +532,7 @@ impl LedgerStorage {
         let hash = self.persistent_store.root_hash().to_vec();
         self.current_hash = Some(hash.clone());
 
-        self.latest_tid = events::EventId::from(height << HEIGHT_TXID_SHIFT);
+        self.latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         AbciCommitInfo {
             retain_height,
@@ -1434,7 +1434,7 @@ pub mod tests {
             key_for_event(EventId::from(b"012345678901234567890123456789".to_vec())).len()
         );
 
-        // Trim the Tx ID if it's too long.
+        // Trim the Event ID if it's too long.
         assert_eq!(
             golden_size,
             key_for_event(EventId::from(

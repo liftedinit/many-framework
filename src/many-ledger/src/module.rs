@@ -26,7 +26,7 @@ use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
 
-const MAXIMUM_TRANSACTION_COUNT: usize = 100;
+const MAXIMUM_EVENT_COUNT: usize = 100;
 
 fn get_roles_for_account(account: &account::Account) -> BTreeSet<account::Role> {
     let features = account.features();
@@ -121,9 +121,9 @@ fn filter_account<'a>(
 
 fn filter_event_kind<'a>(
     it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
-    transaction_kind: Option<VecOrSingle<events::EventKind>>,
+    event_kind: Option<VecOrSingle<events::EventKind>>,
 ) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
-    if let Some(k) = transaction_kind {
+    if let Some(k) = event_kind {
         let k: Vec<events::EventKind> = k.into();
         Box::new(it.filter(move |t| match t {
             Err(_) => true,
@@ -328,8 +328,8 @@ impl module::events::EventsModuleBackend for LedgerModuleImpl {
         } = args;
         let filter = filter.unwrap_or_default();
 
-        let count = count.map_or(MAXIMUM_TRANSACTION_COUNT, |c| {
-            std::cmp::min(c as usize, MAXIMUM_TRANSACTION_COUNT)
+        let count = count.map_or(MAXIMUM_EVENT_COUNT, |c| {
+            std::cmp::min(c as usize, MAXIMUM_EVENT_COUNT)
         });
 
         let storage = &self.storage;
@@ -365,8 +365,10 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.info".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.balance".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
-                ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
-                ("ledger.list".to_string(), EndpointInfo { is_command: false }),
+
+                // Events
+                ("events.info".to_string(), EndpointInfo { is_command: false }),
+                ("events.list".to_string(), EndpointInfo { is_command: false }),
 
                 // IdStore
                 ("idstore.store".to_string(), EndpointInfo { is_command: true}),

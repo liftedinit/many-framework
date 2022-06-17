@@ -24,7 +24,7 @@ fn setup() -> LedgerStorage {
             .unwrap();
     }
 
-    // Check that we have 5 transactions (5 sends).
+    // Check that we have 5 events (5 sends).
     assert_eq!(storage.nb_events(), 5);
 
     storage
@@ -38,18 +38,18 @@ fn iter_asc(
     storage
         .iter(CborRange { start, end }, SortOrder::Ascending)
         .into_iter()
-        .map(|(_, v)| minicbor::decode(&v).expect("Iterator item not a transaction."))
+        .map(|(_, v)| minicbor::decode(&v).expect("Iterator item not an event."))
 }
 
 #[test]
 fn range_works() {
     let storage = setup();
 
-    // Get the first transaction ID.
+    // Get the first event ID.
     let mut iter = iter_asc(&storage, Bound::Unbounded, Bound::Unbounded);
-    let first_tx = iter.next().expect("No transactions?");
+    let first_tx = iter.next().expect("No events?");
     let first_id = first_tx.id;
-    let last_tx = iter.last().expect("Only 1 transaction");
+    let last_tx = iter.last().expect("Only 1 event");
     let last_id = last_tx.id;
 
     // Make sure exclusive range removes the first_id.
