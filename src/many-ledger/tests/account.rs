@@ -34,6 +34,16 @@ fn create() {
     } = setup_with_args(AccountType::Multisig);
     let result = module_impl.create(&id, args);
     assert!(result.is_ok());
+
+    // Verify the account owns itself
+    let account_id = result.unwrap().id;
+    let info = account_info(&module_impl, &id, &account_id);
+    assert!(info.roles.contains_key(&account_id));
+    assert!(info
+        .roles
+        .get(&account_id)
+        .unwrap()
+        .contains(&account::Role::Owner));
 }
 
 #[test]
@@ -272,8 +282,28 @@ fn remove_roles_non_owner() {
 }
 
 #[test]
-/// Verify we can delete account
-fn delete() {
+fn remove_owner_role() {
+    let SetupWithAccount {
+        mut module_impl,
+        account_id,
+        id,
+    } = setup_with_account(AccountType::Multisig);
+
+    // Removing the owner role from the account itself should result in an error
+    let result = module_impl.remove_roles(
+        &id,
+        account::RemoveRolesArgs {
+            account: account_id,
+            roles: BTreeMap::from_iter([(account_id, BTreeSet::from_iter([account::Role::Owner]))]),
+        },
+    );
+    assert!(result.is_err());
+    assert_many_err(result, account::errors::account_must_own_itself());
+}
+
+#[test]
+/// Verify we can disable account
+fn disable() {
     let SetupWithAccount {
         mut module_impl,
         id,
@@ -299,8 +329,8 @@ fn delete() {
 }
 
 #[test]
-/// Verify non-owner is unable to delete account
-fn delete_non_owner() {
+/// Verify non-owner is unable to disable account
+fn disable_non_owner() {
     let SetupWithAccount {
         mut module_impl,
         account_id,
