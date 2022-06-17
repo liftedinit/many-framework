@@ -1828,7 +1828,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=3f05acb4bab0c0c72be350896b92808096e6eb21#3f05acb4bab0c0c72be350896b92808096e6eb21"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba#8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1907,7 +1907,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=3f05acb4bab0c0c72be350896b92808096e6eb21#3f05acb4bab0c0c72be350896b92808096e6eb21"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba#8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2000,6 +2000,7 @@ dependencies = [
  "sha3",
  "signal-hook",
  "simple_asn1",
+ "strum",
  "tempfile",
  "tracing",
  "tracing-subscriber",
@@ -2010,7 +2011,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=3f05acb4bab0c0c72be350896b92808096e6eb21#3f05acb4bab0c0c72be350896b92808096e6eb21"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba#8afb5690f378c9ac2fe3ade9ccbbc7aeca6162ba"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -3339,9 +3340,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "strum"
-version = "0.24.0"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e96acfc1b70604b8b2f1ffa4c57e59176c7dbb05d556c71ecd2f5498a1dee7f8"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 
 [[package]]
 name = "strum_macros"

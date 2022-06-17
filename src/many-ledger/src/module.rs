@@ -14,7 +14,8 @@ use many::server::module::idstore::{
     StoreReturns,
 };
 use many::server::module::{account, idstore, ledger, EmptyReturn, ManyModuleInfo};
-use many::types::ledger::{Symbol, Transaction, TransactionKind};
+use many::types::events;
+use many::types::ledger::Symbol;
 use many::types::{CborRange, Timestamp, VecOrSingle};
 use many::{Identity, ManyError, ManyModule};
 use minicbor::bytes::ByteVec;
@@ -25,7 +26,7 @@ use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 use tracing::info;
 
-const MAXIMUM_TRANSACTION_COUNT: usize = 100;
+const MAXIMUM_EVENT_COUNT: usize = 100;
 
 fn get_roles_for_account(account: &account::Account) -> BTreeSet<account::Role> {
     let features = account.features();
@@ -100,12 +101,12 @@ pub(crate) fn validate_account(account: &account::Account) -> Result<(), ManyErr
     Ok(())
 }
 
-type TxResult = Result<Transaction, ManyError>;
+type EventLogResult = Result<events::EventLog, ManyError>;
 
 fn filter_account<'a>(
-    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
     account: Option<VecOrSingle<Identity>>,
-) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
     if let Some(account) = account {
         let account: Vec<Identity> = account.into();
         Box::new(it.filter(move |t| match t {
@@ -118,12 +119,12 @@ fn filter_account<'a>(
     }
 }
 
-fn filter_transaction_kind<'a>(
-    it: Box<dyn Iterator<Item = TxResult> + 'a>,
-    transaction_kind: Option<VecOrSingle<TransactionKind>>,
-) -> Box<dyn Iterator<Item = TxResult> + 'a> {
-    if let Some(k) = transaction_kind {
-        let k: Vec<TransactionKind> = k.into();
+fn filter_event_kind<'a>(
+    it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
+    event_kind: Option<VecOrSingle<events::EventKind>>,
+) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
+    if let Some(k) = event_kind {
+        let k: Vec<events::EventKind> = k.into();
         Box::new(it.filter(move |t| match t {
             Err(_) => true,
             Ok(t) => k.contains(&t.kind()),
@@ -134,9 +135,9 @@ fn filter_transaction_kind<'a>(
 }
 
 fn filter_symbol<'a>(
-    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
     symbol: Option<VecOrSingle<Symbol>>,
-) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
     if let Some(s) = symbol {
         let s: BTreeSet<Symbol> = s.into();
         Box::new(it.filter(move |t| match t {
@@ -150,13 +151,13 @@ fn filter_symbol<'a>(
 }
 
 fn filter_date<'a>(
-    it: Box<dyn Iterator<Item = TxResult> + 'a>,
+    it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
     range: CborRange<Timestamp>,
-) -> Box<dyn Iterator<Item = TxResult> + 'a> {
+) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
     Box::new(it.filter(move |t| match t {
         // Propagate the errors.
         Err(_) => true,
-        Ok(Transaction { time, .. }) => range.contains(time),
+        Ok(events::EventLog { time, .. }) => range.contains(time),
     }))
 }
 /// A simple ledger that keeps transactions in memory.
@@ -305,51 +306,53 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
     }
 }
 
-impl ledger::LedgerTransactionsModuleBackend for LedgerModuleImpl {
-    fn transactions(
+impl module::events::EventsModuleBackend for LedgerModuleImpl {
+    fn info(
         &self,
-        _args: ledger::TransactionsArgs,
-    ) -> Result<ledger::TransactionsReturns, ManyError> {
-        Ok(ledger::TransactionsReturns {
-            nb_transactions: self.storage.nb_transactions(),
+        _args: module::events::InfoArgs,
+    ) -> Result<module::events::InfoReturn, ManyError> {
+        use strum::IntoEnumIterator;
+        Ok(module::events::InfoReturn {
+            total: self.storage.nb_events(),
+            event_types: events::EventKind::iter().collect(),
         })
     }
 
-    fn list(&self, args: ledger::ListArgs) -> Result<ledger::ListReturns, ManyError> {
-        let ledger::ListArgs {
+    fn list(
+        &self,
+        args: module::events::ListArgs,
+    ) -> Result<module::events::ListReturns, ManyError> {
+        let module::events::ListArgs {
             count,
             order,
             filter,
         } = args;
         let filter = filter.unwrap_or_default();
 
-        let count = count.map_or(MAXIMUM_TRANSACTION_COUNT, |c| {
-            std::cmp::min(c as usize, MAXIMUM_TRANSACTION_COUNT)
+        let count = count.map_or(MAXIMUM_EVENT_COUNT, |c| {
+            std::cmp::min(c as usize, MAXIMUM_EVENT_COUNT)
         });
 
         let storage = &self.storage;
-        let nb_transactions = storage.nb_transactions();
+        let nb_events = storage.nb_events();
         let iter = storage.iter(
             filter.id_range.unwrap_or_default(),
             order.unwrap_or_default(),
         );
 
         let iter = Box::new(iter.map(|(_k, v)| {
-            decode::<Transaction>(v.as_slice())
+            decode::<events::EventLog>(v.as_slice())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))
         }));
 
         let iter = filter_account(iter, filter.account);
-        let iter = filter_transaction_kind(iter, filter.kind);
+        let iter = filter_event_kind(iter, filter.kind);
         let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
 
-        let transactions: Vec<Transaction> = iter.take(count).collect::<Result<_, _>>()?;
+        let events: Vec<events::EventLog> = iter.take(count).collect::<Result<_, _>>()?;
 
-        Ok(ledger::ListReturns {
-            nb_transactions,
-            transactions,
-        })
+        Ok(module::events::ListReturns { nb_events, events })
     }
 }
 
@@ -363,8 +366,10 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("ledger.info".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.balance".to_string(), EndpointInfo { is_command: false }),
                 ("ledger.send".to_string(), EndpointInfo { is_command: true }),
-                ("ledger.transactions".to_string(), EndpointInfo { is_command: false }),
-                ("ledger.list".to_string(), EndpointInfo { is_command: false }),
+
+                // Events
+                ("events.info".to_string(), EndpointInfo { is_command: false }),
+                ("events.list".to_string(), EndpointInfo { is_command: false }),
 
                 // IdStore
                 ("idstore.store".to_string(), EndpointInfo { is_command: true}),
@@ -379,7 +384,7 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("account.addRoles".to_string(), EndpointInfo { is_command: true }),
                 ("account.removeRoles".to_string(), EndpointInfo { is_command: true }),
                 ("account.info".to_string(), EndpointInfo { is_command: false }),
-                ("account.delete".to_string(), EndpointInfo { is_command: true }),
+                ("account.disable".to_string(), EndpointInfo { is_command: true }),
                 ("account.addFeatures".to_string(), EndpointInfo { is_command: true }),
 
                 // Account Features - Multisig
@@ -544,23 +549,24 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             description,
             roles,
             features,
-            ..
+            disabled,
         } = self
             .storage
-            .get_account(&args.account)
+            .get_account_even_disabled(&args.account)
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         Ok(account::InfoReturn {
             description,
             roles,
             features,
+            disabled,
         })
     }
 
-    fn delete(
+    fn disable(
         &mut self,
         sender: &Identity,
-        args: account::DeleteArgs,
+        args: account::DisableArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
             .storage
@@ -571,7 +577,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
             return Err(account::errors::user_needs_role(account::Role::Owner));
         }
 
-        self.storage.delete_account(&args.account)?;
+        self.storage.disable_account(&args.account)?;
         Ok(EmptyReturn)
     }
 
