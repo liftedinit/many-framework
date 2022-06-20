@@ -587,6 +587,9 @@ fn multisig_send_from_another_identity_owner() {
     // At this point, acc1 is an owner of acc2. Multisig tx execution should work
     let response = setup.multisig_execute_(&token);
     assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+    assert_eq!(setup.balance_(acc2), 999_990u32);
+
 }
 
 #[test]
@@ -645,6 +648,8 @@ fn multisig_send_from_another_identity_with_perm() {
     // At this point, acc1 has the rights to send funds from acc2. Multisig tx execution should work
     let response = setup.multisig_execute_(&token);
     assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+    assert_eq!(setup.balance_(acc2), 999_990u32);
 }
 
 #[test]
@@ -765,4 +770,6 @@ fn recursive_multisig() {
     // Execute the tx as acc2 which owns itself
     let response = setup.multisig_execute_as_(acc2, &token);
     assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+    assert_eq!(setup.balance_(acc2), 999_990u32);
 }
