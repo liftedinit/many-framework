@@ -299,8 +299,6 @@ proptest! {
             10000,
             *MFX_SYMBOL,
         );
-        tracing::info!("execute id: {id}");
-        tracing::info!("execute account_id: {account_id}");
         let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, Some(execute_automatically)));
         assert!(result.is_ok());
         let token = result.unwrap().token;
@@ -351,9 +349,7 @@ proptest! {
                 } else {
                     // We have enough approvers and the manual execution succeeded.
                     assert!(result.is_ok());
-                    let data = result.unwrap().data;
-                    println!("{:?}", data);
-                    assert!(data.is_ok());
+                    assert!(result.unwrap().data.is_ok());
                 }
             } else {
                 // Not enough approbation for execution yet.
