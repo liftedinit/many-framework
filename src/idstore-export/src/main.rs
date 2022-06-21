@@ -16,8 +16,8 @@ struct Opts {
 
 #[derive(serde_derive::Serialize)]
 struct JsonRoot {
-    seed: u64,
-    keys: BTreeMap<String, String>,
+    id_store_seed: u64,
+    id_store_keys: BTreeMap<String, String>,
 }
 
 fn main() {
@@ -41,7 +41,7 @@ fn main() {
     }
 
     let root = JsonRoot {
-        seed: merk
+        id_store_seed: merk
             .get(b"/config/idstore_seed")
             .expect("Could not read seed")
             .map_or(0u64, |x| {
@@ -49,7 +49,7 @@ fn main() {
                 bytes.copy_from_slice(x.as_slice());
                 u64::from_be_bytes(bytes)
             }),
-        keys: idstore,
+        id_store_keys: idstore,
     };
 
     println!(

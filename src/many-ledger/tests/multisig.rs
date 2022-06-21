@@ -58,19 +58,6 @@ fn submit_args(
         execute_automatically,
         data: None,
     }
-
-    let persistent_path = tempfile::tempdir().unwrap();
-
-    LedgerStorage::new(
-        symbols,
-        balances,
-        persistent_path,
-        identity(0),
-        false,
-        None,
-        None,
-    )
-    .unwrap()
 }
 
 /// Returns the multisig transaction info

@@ -33,8 +33,8 @@ function teardown() {
     assert_output --partial "1: h'${key2cose}'"
 
     many_message --id=0 idstore.getFromAddress '{0: "'$(identity 1)'"}'
-    assert_output --partial "0: h'"$(echo $cred_id | tr A-Z a-z)"'"
-    assert_output --partial "1: h'"${key2cose}"'"
+    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
+    assert_output --partial "1: h'${key2cose}'"
 }
 
 @test "$SUITE: IdStore store deny non-webauthn" {
@@ -46,9 +46,16 @@ function teardown() {
 
 @test "$SUITE: IdStore export works" {
     which jq || skip "'jq' needs to be installed for this test."
+    local ledger_db
+    local state
+    ledger_db="$(mktemp -d)"
+    state="$GIT_ROOT/tests/e2e/webauthn_state.json"
 
-    start_ledger --pem "$(pem 0)" \
-          --disable-webauthn-only-for-testing # Disable WebAuthn check for this test
+    start_ledger \
+        "--persistent=$ledger_db" \
+        "--state=$state" \
+        --pem "$(pem 0)" \
+        --disable-webauthn-only-for-testing # Disable WebAuthn check for this test
 
     identity_hex=$(identity_hex 1)
     cred_id=$(cred_id)
@@ -61,7 +68,30 @@ function teardown() {
     stop_background_run
 
     # Export to a temp file.
-    local EXPORT_FILE
-    EXPORT_FILE="$(mktemp)"
-    "$GIT_ROOT/target/debug/idstore-export"  >
+    local export_file
+    export_file="$(mktemp)"
+    "$GIT_ROOT/target/debug/idstore-export" "$ledger_db" > "$export_file"
+    local import_file
+    import_file="$(mktemp)"
+    jq -s '.[0] * .[1]' "$state" "$export_file" > "$import_file"
+
+    cat $import_file >&2
+
+    start_ledger \
+        --persistent="$ledger_db" \
+        --state="$import_file" \
+        --pem "$(pem 0)" \
+        --disable-webauthn-only-for-testing # Disable WebAuthn check for this test
+
+    # Continue the test.
+    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex}'), 1: h'${cred_id}', 2: h'${key2cose}'}"
+    assert_output '{0: ["abandon", "asset"]}'
+
+    many_message --id=0 idstore.getFromRecallPhrase "$output"
+    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
+    assert_output --partial "1: h'${key2cose}'"
+
+    many_message --id=0 idstore.getFromAddress '{0: "'$(identity 1)'"}'
+    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
+    assert_output --partial "1: h'${key2cose}'"
 }

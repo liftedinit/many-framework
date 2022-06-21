@@ -63,9 +63,6 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                     .await
                     .map_err(ManyError::unexpected_transport_error)?;
 
-                let _ = minicbor::to_vec(response.data.value().to_vec())
-                    .map_err(|e| ManyError::serialization_error(e.to_string()))?;
-
                 // A command will always return an empty payload with an ASYNC attribute.
                 let response =
                     ResponseMessage::from_request(&message, &self.identity.identity, Ok(vec![]))
