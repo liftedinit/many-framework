@@ -589,7 +589,6 @@ fn multisig_send_from_another_identity_owner() {
     assert!(response.data.is_ok());
     assert_eq!(setup.balance_(identity(1234)), 10u16);
     assert_eq!(setup.balance_(acc2), 999_990u32);
-
 }
 
 #[test]
