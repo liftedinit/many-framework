@@ -1,3 +1,26 @@
+
+function start_ledger() {
+    local persistent
+    persistent="$(mktemp -d)"
+
+    while (( $# > 0 )); do
+        case "$1" in
+            --persistent=*) persistent="${1#--persistent=})"; shift ;;
+            --) shift; break ;;
+            *) break ;;
+        esac
+    done
+
+
+    run_in_background "$GIT_ROOT/target/debug/many-ledger" \
+        -v \
+        --clean \
+        --persistent "$persistent" \
+        --state "$GIT_ROOT/staging/ledger_state.json5" \
+        "$@"
+    wait_for_background_output "Running accept thread"
+}
+
 function pem() {
     [ -f "$PEM_ROOT/id-$1.pem" ] || openssl genpkey -algorithm Ed25519 -out "$PEM_ROOT/id-$1.pem" >/dev/null
     echo "$PEM_ROOT/id-$1.pem"
