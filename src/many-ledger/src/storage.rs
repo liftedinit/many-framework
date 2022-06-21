@@ -3,8 +3,8 @@ use crate::module::validate_account;
 use many::message::ResponseMessage;
 use many::server::module;
 use many::server::module::abci_backend::AbciCommitInfo;
-use many::server::module::account::features::multisig;
 use many::server::module::account::features::multisig::MultisigTransactionState;
+use many::server::module::account::features::multisig::{self, SubmitTransactionReturn};
 use many::server::module::account::features::FeatureInfo;
 use many::server::module::idstore;
 use many::server::module::idstore::{CredentialId, PublicKey, RecallPhrase};
@@ -19,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use tracing::{info, warn};
+use tracing::info;
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
@@ -29,12 +29,24 @@ fn _execute_multisig_tx(
     let sender = &storage.account;
     match &storage.info.transaction {
         events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
-            from: _from,
+            from,
             to,
             symbol,
             amount,
         }) => {
-            ledger.send(sender, to, symbol, amount.clone())?;
+            // Use the `from` field to resolve the account sending the funds
+            let from = from.ok_or_else(ManyError::invalid_from_identity)?;
+
+            // The account executing the transaction should have the rights to send the funds
+            let account = ledger
+                .get_account(&from)
+                .ok_or_else(|| account::errors::unknown_account(from))?;
+            account.needs_role(
+                sender,
+                [account::Role::CanLedgerTransact, account::Role::Owner],
+            )?;
+
+            ledger.send(&from, to, symbol, amount.clone())?;
             minicbor::to_vec(EmptyReturn)
         }
 
@@ -95,8 +107,10 @@ fn _execute_multisig_tx(
         }
 
         events::AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
-            ledger.create_multisig_transaction(sender, arg.clone())?;
-            minicbor::to_vec(EmptyReturn)
+            let token = ledger.create_multisig_transaction(sender, arg.clone())?;
+            minicbor::to_vec(SubmitTransactionReturn {
+                token: token.into(),
+            })
         }
 
         events::AccountMultisigTransaction::AccountMultisigSetDefaults(arg) => {
@@ -992,18 +1006,6 @@ impl LedgerStorage {
         let event_id = self.new_event_id();
         let account_id = arg.account;
 
-        // Validate the transaction's information.
-        #[allow(clippy::single_match)]
-        match arg.transaction.as_ref() {
-            events::AccountMultisigTransaction::Send(module::ledger::SendArgs { from, .. }) => {
-                if from.as_ref() != Some(&account_id) {
-                    warn!("{:?} != {}", from, account_id.to_string());
-                    return Err(ManyError::unknown("Invalid transaction.".to_string()));
-                }
-            }
-            _ => {}
-        }
-
         let account = self
             .get_account(&account_id)
             .ok_or_else(|| account::errors::unknown_account(account_id))?;
@@ -1179,6 +1181,7 @@ impl LedgerStorage {
             .get_account(&storage.account)
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
+        // TODO: Better error message
         if !(account.has_role(sender, account::Role::Owner) || storage.info.submitter == *sender) {
             return Err(multisig::errors::cannot_execute_transaction());
         }
@@ -1253,6 +1256,7 @@ impl LedgerStorage {
         automatic: bool,
     ) -> Result<ResponseMessage, ManyError> {
         let result = _execute_multisig_tx(self, tx_id, storage);
+
         self.disable_multisig_transaction(
             tx_id,
             if automatic {

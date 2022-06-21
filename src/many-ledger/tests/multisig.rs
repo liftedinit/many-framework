@@ -1,6 +1,8 @@
 pub mod common;
+use std::collections::{BTreeMap, BTreeSet};
+
 use common::*;
-use many::server::module::account::features::multisig::*;
+use many::server::module::account::features::{multisig::*, TryCreateFeature};
 use many::server::module::ledger;
 use many::{
     server::module::account::features::multisig::AccountMultisigModuleBackend,
@@ -84,62 +86,6 @@ fn get_approbation(info: &InfoReturn, id: &Identity) -> bool {
 }
 
 #[test]
-/// Verify owner can submit a transaction
-fn submit_transaction() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-
-    let submit_args = submit_args(account_id, tx.clone(), None);
-    let result = module_impl.multisig_submit_transaction(&id, submit_args.clone());
-    assert!(result.is_ok());
-
-    let tx_info = tx_info(&mut module_impl, id, &result.unwrap().token);
-    assert_eq!(tx_info.memo, submit_args.memo);
-    assert_eq!(tx_info.transaction, tx);
-    assert_eq!(tx_info.submitter, id);
-    assert!(get_approbation(&tx_info, &id));
-    assert_eq!(tx_info.threshold, 3);
-    assert!(!tx_info.execute_automatically);
-    assert_eq!(tx_info.data, submit_args.data);
-}
-
-#[test]
-/// Verify identity with `canMultisigSubmit` can submit a transaction
-fn submit_transaction_valid_role() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        account_id,
-        tx,
-        ..
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result =
-        module_impl.multisig_submit_transaction(&identity(3), submit_args(account_id, tx, None));
-    assert!(result.is_ok());
-}
-
-#[test]
-/// Verify identity with `canMultisigApprove` can't submit a transaction
-fn submit_transaction_invalid_role() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        account_id,
-        tx,
-        ..
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result =
-        module_impl.multisig_submit_transaction(&identity(2), submit_args(account_id, tx, None));
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().code(),
-        account::errors::user_needs_role("").code()
-    );
-}
-
-#[test]
 /// Veryfy owner can set new defaults
 fn set_defaults() {
     let SetupWithAccount {
@@ -165,6 +111,45 @@ fn set_defaults() {
 }
 
 proptest! {
+    #![proptest_config(Config { cases: 200, source_file: Some("tests/multisig"), .. Config::default() })]
+
+    #[test]
+    /// Verify owner can submit a transaction
+    fn submit_transaction(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let submit_args = submit_args(account_id, tx.clone(), None);
+        let result = module_impl.multisig_submit_transaction(&id, submit_args.clone());
+        assert!(result.is_ok());
+
+        let tx_info = tx_info(&mut module_impl, id, &result.unwrap().token);
+        assert_eq!(tx_info.memo, submit_args.memo);
+        assert_eq!(tx_info.transaction, tx);
+        assert_eq!(tx_info.submitter, id);
+        assert!(get_approbation(&tx_info, &id));
+        assert_eq!(tx_info.threshold, 3);
+        assert!(!tx_info.execute_automatically);
+        assert_eq!(tx_info.data, submit_args.data);
+    }
+
+    #[test]
+    /// Verify identity with `canMultisigSubmit` can submit a transaction
+    fn submit_transaction_valid_role(SetupWithAccountAndTx { mut module_impl, account_id, tx, .. } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result =
+            module_impl.multisig_submit_transaction(&identity(3), submit_args(account_id, tx, None));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    /// Verify identity with `canMultisigApprove` can't submit a transaction
+    fn submit_transaction_invalid_role(SetupWithAccountAndTx { mut module_impl, account_id, tx, .. } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result =
+            module_impl.multisig_submit_transaction(&identity(2), submit_args(account_id, tx, None));
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code(),
+            account::errors::user_needs_role("").code()
+        );
+    }
+
     #[test]
     /// Verify non-owner are unable to change the defaults
     fn set_defaults_invalid_user(seed in 4..u32::MAX) {
@@ -199,149 +184,116 @@ proptest! {
             Some(many_ledger::storage::MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY)
         );
     }
-}
 
-#[test]
-/// Verify identity with `canMultisigApprove` and identity with `canMultisigSubmit` can approve a transaction
-fn approve() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
-    assert!(result.is_ok());
-    let submit_return = result.unwrap();
-    let info = tx_info(&mut module_impl, id, &submit_return.token);
-    assert!(get_approbation(&info, &id));
-    assert_eq!(info.threshold, 3);
+    #[test]
+    /// Verify identity with `canMultisigApprove` and identity with `canMultisigSubmit` can approve a transaction
+    fn approve(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
+        assert!(result.is_ok());
+        let submit_return = result.unwrap();
+        let info = tx_info(&mut module_impl, id, &submit_return.token);
+        assert!(get_approbation(&info, &id));
+        assert_eq!(info.threshold, 3);
 
-    let result = module_impl.multisig_approve(
-        &identity(2),
-        ApproveArgs {
-            token: submit_return.clone().token,
-        },
-    );
-    assert!(result.is_ok());
-    assert!(get_approbation(
-        &tx_info(&mut module_impl, id, &submit_return.token),
-        &identity(2)
-    ));
-
-    let result = module_impl.multisig_approve(
-        &identity(3),
-        ApproveArgs {
-            token: submit_return.clone().token,
-        },
-    );
-    assert!(result.is_ok());
-    assert!(get_approbation(
-        &tx_info(&mut module_impl, id, &submit_return.token),
-        &identity(3)
-    ));
-}
-
-#[test]
-/// Verify identity not part of the account can't approve a transaction
-fn approve_invalid() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
-    assert!(result.is_ok());
-    let submit_return = result.unwrap();
-    let info = tx_info(&mut module_impl, id, &submit_return.token);
-    assert!(get_approbation(&info, &id));
-    assert_eq!(info.threshold, 3);
-
-    let result = module_impl.multisig_approve(
-        &identity(6),
-        ApproveArgs {
-            token: submit_return.clone().token,
-        },
-    );
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().code(),
-        errors::user_cannot_approve_transaction().code()
-    );
-}
-
-#[test]
-/// Verify identity with `owner`, `canMultisigSubmit` and `canMultisigApprove` can revoke a transaction
-fn revoke() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
-    assert!(result.is_ok());
-    let token = result.unwrap().token;
-    let info = tx_info(&mut module_impl, id, &token);
-    assert!(get_approbation(&info, &id));
-    assert_eq!(info.threshold, 3);
-
-    for i in [id, identity(2), identity(3)] {
         let result = module_impl.multisig_approve(
-            &i,
+            &identity(2),
             ApproveArgs {
-                token: token.clone(),
+                token: submit_return.clone().token,
             },
         );
         assert!(result.is_ok());
-        assert!(get_approbation(&tx_info(&mut module_impl, i, &token), &i));
+        assert!(get_approbation(
+            &tx_info(&mut module_impl, id, &submit_return.token),
+            &identity(2)
+        ));
 
-        let result = module_impl.multisig_revoke(
-            &i,
-            RevokeArgs {
-                token: token.clone(),
+        let result = module_impl.multisig_approve(
+            &identity(3),
+            ApproveArgs {
+                token: submit_return.clone().token,
             },
         );
         assert!(result.is_ok());
-        assert!(!get_approbation(&tx_info(&mut module_impl, i, &token), &i));
+        assert!(get_approbation(
+            &tx_info(&mut module_impl, id, &submit_return.token),
+            &identity(3)
+        ));
     }
-}
 
-#[test]
-/// Verify identity not part of the account can't revoke a transaction
-fn revoke_invalid() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
-    assert!(result.is_ok());
-    let token = result.unwrap().token;
-    assert!(get_approbation(&tx_info(&mut module_impl, id, &token), &id));
+    #[test]
+    /// Verify identity not part of the account can't approve a transaction
+    fn approve_invalid(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
+        assert!(result.is_ok());
+        let submit_return = result.unwrap();
+        let info = tx_info(&mut module_impl, id, &submit_return.token);
+        assert!(get_approbation(&info, &id));
+        assert_eq!(info.threshold, 3);
 
-    let result = module_impl.multisig_revoke(&identity(6), RevokeArgs { token });
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().code(),
-        errors::user_cannot_approve_transaction().code()
-    );
-}
+        let result = module_impl.multisig_approve(
+            &identity(6),
+            ApproveArgs {
+                token: submit_return.clone().token,
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code(),
+            errors::user_cannot_approve_transaction().code()
+        );
+    }
 
-proptest! {
-    #![proptest_config(Config { cases: 2, source_file: Some("tests/multisig"), .. Config::default() })]
+    #[test]
+    /// Verify identity with `owner`, `canMultisigSubmit` and `canMultisigApprove` can revoke a transaction
+    fn revoke(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
+        assert!(result.is_ok());
+        let token = result.unwrap().token;
+        let info = tx_info(&mut module_impl, id, &token);
+        assert!(get_approbation(&info, &id));
+        assert_eq!(info.threshold, 3);
+
+        for i in [id, identity(2), identity(3)] {
+            let result = module_impl.multisig_approve(
+                &i,
+                ApproveArgs {
+                    token: token.clone(),
+                },
+            );
+            assert!(result.is_ok());
+            assert!(get_approbation(&tx_info(&mut module_impl, i, &token), &i));
+
+            let result = module_impl.multisig_revoke(
+                &i,
+                RevokeArgs {
+                    token: token.clone(),
+                },
+            );
+            assert!(result.is_ok());
+            assert!(!get_approbation(&tx_info(&mut module_impl, i, &token), &i));
+        }
+    }
+
+    #[test]
+    /// Verify identity not part of the account can't revoke a transaction
+    fn revoke_invalid(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
+        assert!(result.is_ok());
+        let token = result.unwrap().token;
+        assert!(get_approbation(&tx_info(&mut module_impl, id, &token), &id));
+
+        let result = module_impl.multisig_revoke(&identity(6), RevokeArgs { token });
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().code(),
+            errors::user_cannot_approve_transaction().code()
+        );
+    }
+
     #[test]
     /// Verify we can execute a transaction when the threshold is reached
     /// Both manual and automatic execution are tested
-    fn execute(execute_automatically in any::<bool>()) {
-        let SetupWithAccountAndTx {
-            mut module_impl,
-            id,
-            account_id,
-            tx,
-        } = setup_with_account_and_tx(AccountType::Multisig);
+    fn execute(execute_automatically in any::<bool>(), SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
         module_impl.set_balance_only_for_testing(
             account_id,
             10000,
@@ -410,59 +362,47 @@ proptest! {
             }
         }
     }
-}
 
-#[test]
-/// Verify identities with `owner` and `canMultisigSubmit` can withdraw a transaction
-fn withdraw() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    for i in [id, identity(3)] {
-        let result =
-            module_impl.multisig_submit_transaction(&i, submit_args(account_id, tx.clone(), None));
+    #[test]
+    /// Verify identities with `owner` and `canMultisigSubmit` can withdraw a transaction
+    fn withdraw(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        for i in [id, identity(3)] {
+            let result =
+                module_impl.multisig_submit_transaction(&i, submit_args(account_id, tx.clone(), None));
+            assert!(result.is_ok());
+            let token = result.unwrap().token;
+
+            let result = module_impl.multisig_withdraw(
+                &i,
+                WithdrawArgs {
+                    token: token.clone(),
+                },
+            );
+            assert!(result.is_ok());
+            let result = module_impl.multisig_info(&i, InfoArgs { token }).unwrap();
+            assert_eq!(result.state, MultisigTransactionState::Withdrawn);
+        }
+    }
+
+    #[test]
+    /// Verify identity with `canMultisigApprove` and identity not part of the account can't withdraw a transaction
+    fn withdraw_invalid(SetupWithAccountAndTx { mut module_impl, id, account_id, tx } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
         assert!(result.is_ok());
         let token = result.unwrap().token;
-
-        let result = module_impl.multisig_withdraw(
-            &i,
-            WithdrawArgs {
-                token: token.clone(),
-            },
-        );
-        assert!(result.is_ok());
-        let result = module_impl.multisig_info(&i, InfoArgs { token }).unwrap();
-        assert_eq!(result.state, MultisigTransactionState::Withdrawn);
-    }
-}
-
-#[test]
-/// Verify identity with `canMultisigApprove` and identity not part of the account can't withdraw a transaction
-fn withdraw_invalid() {
-    let SetupWithAccountAndTx {
-        mut module_impl,
-        id,
-        account_id,
-        tx,
-    } = setup_with_account_and_tx(AccountType::Multisig);
-    let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, None));
-    assert!(result.is_ok());
-    let token = result.unwrap().token;
-    for i in [identity(2), identity(6)] {
-        let result = module_impl.multisig_withdraw(
-            &i,
-            WithdrawArgs {
-                token: token.clone(),
-            },
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().code(),
-            errors::cannot_execute_transaction().code()
-        );
+        for i in [identity(2), identity(6)] {
+            let result = module_impl.multisig_withdraw(
+                &i,
+                WithdrawArgs {
+                    token: token.clone(),
+                },
+            );
+            assert!(result.is_err());
+            assert_eq!(
+                result.unwrap_err().code(),
+                errors::cannot_execute_transaction().code()
+            );
+        }
     }
 }
 
@@ -587,4 +527,244 @@ fn multiple_multisig() {
     assert_eq!(setup.balance_(identity(5)), 20u16);
     assert_eq!(setup.balance_(account_ids[3]), 0u16);
     assert_eq!(setup.balance_(account_ids[4]), 0u16);
+}
+
+#[test]
+// Send funds on behalf on another account using a multisig
+// Both the sender and the account from which the funds are transfered only have the Multisig feature
+fn multisig_send_from_another_identity_owner() {
+    let mut setup = Setup::new(false);
+
+    // Create two accounts with different owners
+    let acc1 = setup.create_account_as_(setup.id, AccountType::Multisig);
+    let acc2 = setup.create_account_as_(identity(666), AccountType::Multisig);
+
+    setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
+
+    // Prepare a Send transaction from acc2 to some Identity
+    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+        from: Some(acc2),
+        to: identity(1234),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
+
+    // Create a multisig tx on acc1 which sends funds from acc2 to some Identity
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx.clone());
+    let token = tx.unwrap();
+
+    // Approve the tx
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // Execute the tx
+    let response = setup.multisig_execute_(&token);
+
+    // Execution fails because acc1 is don't have the required permission on acc2
+    assert!(response.data.is_err());
+    assert_many_err(
+        response.data,
+        account::errors::user_needs_role("canLedgerTransact"),
+    );
+
+    // Let's add acc1 as an owner of acc2 using identity(666) as the sender, which is the owner of acc2
+    setup.add_roles_as(
+        identity(666),
+        acc2,
+        BTreeMap::from([(acc1, BTreeSet::from([account::Role::Owner]))]),
+    );
+
+    // Recreate the tx and approve it
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx);
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // At this point, acc1 is an owner of acc2. Multisig tx execution should work
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+    assert_eq!(setup.balance_(acc2), 999_990u32);
+}
+
+#[test]
+// Send funds on behalf on another account using a multisig
+// The sender account only has the Multisig feature
+// The account from which the funds are transfered only have the Ledger feature
+fn multisig_send_from_another_identity_with_perm() {
+    let mut setup = Setup::new(false);
+
+    // Create two accounts with different owners
+    let acc1 = setup.create_account_as_(setup.id, AccountType::Multisig);
+    let acc2 = setup.create_account_as_(identity(666), AccountType::Ledger);
+
+    setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
+
+    // Prepare a Send transaction from acc2 to some Identity.
+    // acc2 doesn't have the Multisig feature
+    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+        from: Some(acc2),
+        to: identity(1234),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
+
+    // Create a multisig tx on acc1 which sends funds from acc2 to some Identity
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx.clone());
+    let token = tx.unwrap();
+
+    // Approve the tx
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // Execute the tx
+    let response = setup.multisig_execute_(&token);
+
+    // Execution fails because acc1 is NOT owner on acc2
+    assert!(response.data.is_err());
+    assert_many_err(
+        response.data,
+        account::errors::user_needs_role("canLedgerTransact"),
+    );
+
+    // Let's add `canLedgerTransact` permission to acc1 on acc2 using identity(666) as the sender, which is the owner of acc2
+    setup.add_roles_as(
+        identity(666),
+        acc2,
+        BTreeMap::from([(acc1, BTreeSet::from([account::Role::CanLedgerTransact]))]),
+    );
+
+    // Recreate the tx and approve it
+    let tx = setup.create_multisig_as(acc1, acc1, send_tx);
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // At this point, acc1 has the rights to send funds from acc2. Multisig tx execution should work
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+    assert_eq!(setup.balance_(acc2), 999_990u32);
+}
+
+#[test]
+fn recursive_multisig() {
+    let mut setup = Setup::new(false);
+
+    let acc1 = setup.create_account_as_(setup.id, AccountType::Multisig);
+    let acc2 = setup.create_account_as_(identity(666), AccountType::Ledger);
+
+    setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
+
+    // acc2 doesn't have the Multisig feature
+    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+        from: Some(acc2),
+        to: identity(1234),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
+
+    let multisig_tx = types::events::AccountMultisigTransaction::AccountMultisigSubmit(
+        account::features::multisig::SubmitTransactionArgs {
+            account: acc2,
+            memo: None,
+            transaction: Box::new(send_tx),
+            threshold: None,
+            timeout_in_secs: None,
+            execute_automatically: Some(false),
+            data: None,
+        },
+    );
+
+    // Create a multisig on acc1 which contains a multisig submit on acc2 which sends funds from acc2 to some Identity
+    let tx = setup.create_multisig_as(acc1, acc1, multisig_tx.clone());
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // The execution should fail because acc1 do NOT have the permission to submit a multisig on behalf of acc2
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_err());
+    assert_many_err(
+        response.data,
+        account::errors::user_needs_role("canMultisigSubmit"),
+    );
+
+    // Let's add `canMultisigSubmit` permission to acc1 on acc2 using identity(666) as the sender, which is the owner of acc2
+    setup.add_roles_as(
+        identity(666),
+        acc2,
+        BTreeMap::from([(acc1, BTreeSet::from([account::Role::CanMultisigSubmit]))]),
+    );
+
+    // Re-create the multisig and re-execute it
+    let tx = setup.create_multisig_as(acc1, acc1, multisig_tx);
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // This time, the execution should fail because acc2 doesn't have the Multisig account feature
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_err());
+    assert_many_err(
+        response.data,
+        many::ManyError::attribute_not_found(
+            account::features::multisig::MultisigAccountFeature::ID,
+        ),
+    );
+
+    // Let's make acc2 a Multisig account
+    let acc2 = setup.create_account_as_(identity(666), AccountType::Multisig);
+    setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
+
+    // Recreate the tx
+    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+        from: Some(acc2),
+        to: identity(1234),
+        symbol: *MFX_SYMBOL,
+        amount: many::types::ledger::TokenAmount::from(10u16),
+    });
+
+    let multisig_tx = types::events::AccountMultisigTransaction::AccountMultisigSubmit(
+        account::features::multisig::SubmitTransactionArgs {
+            account: acc2,
+            memo: None,
+            transaction: Box::new(send_tx),
+            threshold: None,
+            timeout_in_secs: None,
+            execute_automatically: None,
+            data: None,
+        },
+    );
+
+    // Let's add `canMultisigSubmit` permission to acc1 on acc2 using identity(666) as the sender, which is the owner of acc2
+    setup.add_roles_as(
+        identity(666),
+        acc2,
+        BTreeMap::from([(acc1, BTreeSet::from([account::Role::CanMultisigSubmit]))]),
+    );
+
+    let tx = setup.create_multisig_as(acc1, acc1, multisig_tx);
+    let token = tx.unwrap();
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // Execute the tx. Sender is setup.id which is an owner of acc1
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
+
+    // At this point we submitted a new Multisig tx to send funds from acc2 to some Identity
+    let result: account::features::multisig::SubmitTransactionReturn =
+        minicbor::decode(&response.data.unwrap()).unwrap();
+    let token = result.token;
+
+    // Approve and execute the tx
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    // Execute the tx as acc2 which owns itself
+    let response = setup.multisig_execute_as_(acc2, &token);
+    assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+    assert_eq!(setup.balance_(acc2), 999_990u32);
 }
