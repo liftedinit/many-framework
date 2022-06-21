@@ -342,15 +342,6 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
-        let idstore_seed = persistent_store
-            .get(b"/config/idstore_seed")
-            .unwrap()
-            .map_or(0u64, |x| {
-                let mut bytes = [0u8; 8];
-                bytes.copy_from_slice(x.as_slice());
-                u64::from_be_bytes(bytes)
-            });
-
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         Ok(Self {
