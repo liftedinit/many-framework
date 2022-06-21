@@ -1,208 +1,239 @@
-mod common;
-
-use crate::common::setup;
+pub mod common;
+use crate::common::*;
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
 use many::server::module::account::{self, AccountModuleBackend};
 use many::types::identity::testing::identity;
-use many::types::VecOrSingle;
+use many::types::{Either, VecOrSingle};
 use many::Identity;
 use many_ledger::module::LedgerModuleImpl;
 use std::collections::{BTreeMap, BTreeSet};
 
-fn setup_with_args() -> (LedgerModuleImpl, Identity, account::CreateArgs) {
-    let (id, _, _, module_impl) = setup();
-    (
+fn account_info(
+    module_impl: &LedgerModuleImpl,
+    id: &Identity,
+    account_id: &Identity,
+) -> account::InfoReturn {
+    let result = AccountModuleBackend::info(
         module_impl,
-        id.identity,
-        account::CreateArgs {
-            description: Some("Foobar".to_string()),
-            roles: Some(BTreeMap::from_iter([
-                (
-                    identity(2),
-                    BTreeSet::from_iter([account::Role::CanMultisigApprove]),
-                ),
-                (
-                    identity(3),
-                    BTreeSet::from_iter([account::Role::CanMultisigSubmit]),
-                ),
-            ])),
-            features: account::features::FeatureSet::from_iter([
-                account::features::multisig::MultisigAccountFeature::default().as_feature(),
-            ]),
+        id,
+        account::InfoArgs {
+            account: *account_id,
         },
-    )
+    );
+    assert!(result.is_ok());
+    result.unwrap()
 }
 
 #[test]
 /// Verify we can create an account
 fn create() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let result = module_impl.create(&id, create_args);
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        args,
+    } = setup_with_args(AccountType::Multisig);
+    let result = module_impl.create(&id, args);
     assert!(result.is_ok());
+
+    // Verify the account owns itself
+    let account_id = result.unwrap().id;
+    let info = account_info(&module_impl, &id, &account_id);
+    assert!(info.roles.contains_key(&account_id));
+    assert!(info
+        .roles
+        .get(&account_id)
+        .unwrap()
+        .contains(&account::Role::Owner));
 }
 
 #[test]
 /// Verify we can't create an account with roles unsupported by feature
 fn create_invalid_role() {
-    let (mut module_impl, id, mut create_args) = setup_with_args();
-    if let Some(roles) = create_args.roles.as_mut() {
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        mut args,
+    } = setup_with_args(AccountType::Multisig);
+    if let Some(roles) = args.roles.as_mut() {
         roles.insert(
             identity(4),
             BTreeSet::from_iter([account::Role::CanLedgerTransact]),
         );
     }
-    let result = module_impl.create(&id, create_args);
+    let result = module_impl.create(&id, args);
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::unknown_role("").code,
+        result.unwrap_err().code(),
+        account::errors::unknown_role("").code(),
     );
 }
 
 #[test]
 /// Verify we can change the account description
 fn set_description() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.set_description(
         &id,
         account::SetDescriptionArgs {
-            account: account.id,
+            account: account_id,
             description: "New".to_string(),
         },
     );
     assert!(result.is_ok());
-
-    let result = AccountModuleBackend::info(
-        &module_impl,
-        &id,
-        account::InfoArgs {
-            account: account.id,
-        },
+    assert_eq!(
+        account_info(&module_impl, &id, &account_id).description,
+        Some("New".to_string())
     );
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().description, Some("New".to_string()));
 }
 
 #[test]
 /// Verify non-owner is not able to change the description
 fn set_description_non_owner() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        account_id,
+        ..
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.set_description(
         &identity(1),
         account::SetDescriptionArgs {
-            account: account.id,
+            account: account_id,
             description: "Other".to_string(),
         },
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
 #[test]
 /// Verify we can list account roles
 fn list_roles() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args.clone()).unwrap();
+    let SetupWithAccount {
+        module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.list_roles(
         &id,
         account::ListRolesArgs {
-            account: account.id,
+            account: account_id,
         },
     );
     assert!(result.is_ok());
     let mut roles = BTreeSet::<account::Role>::new();
-    for (_, r) in create_args.roles.unwrap().iter_mut() {
+    for (_, r) in account_info(&module_impl, &id, &account_id)
+        .roles
+        .iter_mut()
+    {
         roles.append(r)
     }
-    assert_eq!(result.unwrap().roles, roles,);
+    roles.remove(&account::Role::Owner);
+    assert_eq!(result.unwrap().roles, roles);
 }
 
 #[test]
 /// Verify we can get given identities account roles
 fn get_roles() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args.clone()).unwrap();
+    let SetupWithAccount {
+        module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
+    let identities = vec![identity(2), identity(3)];
     let result = module_impl.get_roles(
         &id,
         account::GetRolesArgs {
-            account: account.id,
-            identities: VecOrSingle::from(vec![identity(2), identity(3)]),
+            account: account_id,
+            identities: VecOrSingle::from(identities.clone()),
         },
     );
     assert!(result.is_ok());
-    assert_eq!(result.unwrap().roles, create_args.roles.unwrap());
+    assert_eq!(
+        result.unwrap().roles,
+        account_info(&module_impl, &id, &account_id)
+            .roles
+            .into_iter()
+            .filter(|&(k, _)| identities.contains(&k))
+            .collect()
+    );
 }
 
 #[test]
 /// Verify we can add new roles
 fn add_roles() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args.clone()).unwrap();
-    let mut new_role = BTreeMap::from_iter([(
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
+    let new_role = (
         identity(4),
         BTreeSet::from_iter([account::Role::CanLedgerTransact]),
-    )]);
+    );
     let result = module_impl.add_roles(
         &id,
         account::AddRolesArgs {
-            account: account.id,
-            roles: new_role.clone(),
+            account: account_id,
+            roles: BTreeMap::from_iter([new_role.clone()]),
         },
     );
     assert!(result.is_ok());
-
-    let result = module_impl.get_roles(
-        &id,
-        account::GetRolesArgs {
-            account: account.id,
-            identities: VecOrSingle::from(vec![identity(2), identity(3), identity(4)]),
-        },
-    );
-    assert!(result.is_ok());
-    let mut roles = create_args.roles.unwrap();
-    roles.append(&mut new_role);
-    assert_eq!(result.unwrap().roles, roles);
+    let identities = vec![identity(4)];
+    assert!(account_info(&module_impl, &id, &account_id)
+        .roles
+        .into_iter()
+        .find(|&(k, _)| identities.contains(&k))
+        .filter(|role| role == &new_role)
+        .is_some())
 }
 
 #[test]
 /// Verify non-owner is not able to add role
 fn add_roles_non_owner() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args.clone()).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
     let mut new_role = BTreeMap::from_iter([(
         identity(4),
         BTreeSet::from_iter([account::Role::CanLedgerTransact]),
     )]);
-    let mut roles = create_args.roles.unwrap();
+    let mut roles = account_info(&module_impl, &id, &account_id).roles;
     roles.append(&mut new_role);
     let result = module_impl.add_roles(
         &identity(2),
         account::AddRolesArgs {
-            account: account.id,
+            account: account_id,
             roles: new_role.clone(),
         },
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
 #[test]
 /// Verify we can remove roles
 fn remove_roles() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.remove_roles(
         &id,
         account::RemoveRolesArgs {
-            account: account.id,
+            account: account_id,
             roles: BTreeMap::from_iter([(
                 identity(2),
                 BTreeSet::from_iter([account::Role::CanMultisigApprove]),
@@ -214,7 +245,7 @@ fn remove_roles() {
     let result = module_impl.get_roles(
         &id,
         account::GetRolesArgs {
-            account: account.id,
+            account: account_id,
             identities: VecOrSingle::from(vec![identity(2)]),
         },
     );
@@ -228,12 +259,15 @@ fn remove_roles() {
 #[test]
 // Verify non-owner is not able to remove role
 fn remove_roles_non_owner() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        account_id,
+        ..
+    } = setup_with_account(AccountType::Multisig);
     let result = module_impl.remove_roles(
         &identity(2),
         account::RemoveRolesArgs {
-            account: account.id,
+            account: account_id,
             roles: BTreeMap::from_iter([(
                 identity(2),
                 BTreeSet::from_iter([account::Role::CanMultisigApprove]),
@@ -242,20 +276,43 @@ fn remove_roles_non_owner() {
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
 #[test]
-/// Verify we can delete account
-fn delete() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
-    let result = module_impl.delete(
+fn remove_owner_role() {
+    let SetupWithAccount {
+        mut module_impl,
+        account_id,
+        id,
+    } = setup_with_account(AccountType::Multisig);
+
+    // Removing the owner role from the account itself should result in an error
+    let result = module_impl.remove_roles(
         &id,
-        account::DeleteArgs {
-            account: account.id,
+        account::RemoveRolesArgs {
+            account: account_id,
+            roles: BTreeMap::from_iter([(account_id, BTreeSet::from_iter([account::Role::Owner]))]),
+        },
+    );
+    assert!(result.is_err());
+    assert_many_err(result, account::errors::account_must_own_itself());
+}
+
+#[test]
+/// Verify we can disable account
+fn disable() {
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
+    let result = module_impl.disable(
+        &id,
+        account::DisableArgs {
+            account: account_id,
         },
     );
     assert!(result.is_ok());
@@ -264,45 +321,48 @@ fn delete() {
         &module_impl,
         &id,
         account::InfoArgs {
-            account: account.id,
+            account: account_id,
         },
     );
-    assert!(result.is_err());
-    assert_eq!(
-        result.unwrap_err().code,
-        account::errors::unknown_account("").code
-    );
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().disabled.unwrap(), Either::Left(true));
 }
 
 #[test]
-/// Verify non-owner is unable to delete account
-fn delete_non_owner() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
-    let result = module_impl.delete(
+/// Verify non-owner is unable to disable account
+fn disable_non_owner() {
+    let SetupWithAccount {
+        mut module_impl,
+        account_id,
+        ..
+    } = setup_with_account(AccountType::Multisig);
+    let result = module_impl.disable(
         &identity(2),
-        account::DeleteArgs {
-            account: account.id,
+        account::DisableArgs {
+            account: account_id,
         },
     );
     assert!(result.is_err());
     assert_eq!(
-        result.unwrap_err().code,
-        account::errors::user_needs_role("owner").code
+        result.unwrap_err().code(),
+        account::errors::user_needs_role("owner").code()
     );
 }
 
 /// Verify that add_feature works with a valid feature.
 #[test]
 fn add_feature() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
 
     let info_before = account::AccountModuleBackend::info(
         &module_impl,
         &id,
         account::InfoArgs {
-            account: account.id,
+            account: account_id,
         },
     )
     .expect("Could not get info");
@@ -316,7 +376,7 @@ fn add_feature() {
         .add_features(
             &id,
             account::AddFeaturesArgs {
-                account: account.id,
+                account: account_id,
                 roles: None,
                 features: account::features::FeatureSet::from_iter([
                     account::features::ledger::AccountLedger.as_feature(),
@@ -329,7 +389,7 @@ fn add_feature() {
         &module_impl,
         &id,
         account::InfoArgs {
-            account: account.id,
+            account: account_id,
         },
     )
     .expect("Could not get info");
@@ -342,14 +402,17 @@ fn add_feature() {
 /// Verify that add_feature works with a valid feature.
 #[test]
 fn add_feature_non_owner() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
 
     assert!(module_impl
         .add_features(
             &identity(4),
             account::AddFeaturesArgs {
-                account: account.id,
+                account: account_id,
                 roles: None,
                 features: account::features::FeatureSet::from_iter([
                     account::features::ledger::AccountLedger.as_feature(),
@@ -358,14 +421,7 @@ fn add_feature_non_owner() {
         )
         .is_err());
 
-    let info_after = account::AccountModuleBackend::info(
-        &module_impl,
-        &id,
-        account::InfoArgs {
-            account: account.id,
-        },
-    )
-    .expect("Could not get info");
+    let info_after = account_info(&module_impl, &id, &account_id);
 
     assert!(!info_after
         .features
@@ -375,18 +431,13 @@ fn add_feature_non_owner() {
 /// Verify that add_feature works with a valid feature.
 #[test]
 fn add_feature_and_role() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
 
-    let info_before = account::AccountModuleBackend::info(
-        &module_impl,
-        &id,
-        account::InfoArgs {
-            account: account.id,
-        },
-    )
-    .expect("Could not get info");
-
+    let info_before = account_info(&module_impl, &id, &account_id);
     // Prevent test from regressing.
     assert!(!info_before
         .features
@@ -397,7 +448,7 @@ fn add_feature_and_role() {
         .add_features(
             &id,
             account::AddFeaturesArgs {
-                account: account.id,
+                account: account_id,
                 roles: Some(BTreeMap::from_iter([(
                     identity(4),
                     BTreeSet::from_iter([account::Role::Owner]),
@@ -409,14 +460,7 @@ fn add_feature_and_role() {
         )
         .expect("Could not add feature");
 
-    let info_after = account::AccountModuleBackend::info(
-        &module_impl,
-        &id,
-        account::InfoArgs {
-            account: account.id,
-        },
-    )
-    .expect("Could not get info");
+    let info_after = account_info(&module_impl, &id, &account_id);
 
     assert!(info_after
         .features
@@ -431,17 +475,13 @@ fn add_feature_and_role() {
 /// Verify that add_feature cannot add existing features.
 #[test]
 fn add_feature_existing() {
-    let (mut module_impl, id, create_args) = setup_with_args();
-    let account = module_impl.create(&id, create_args).unwrap();
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
 
-    let info_before = account::AccountModuleBackend::info(
-        &module_impl,
-        &id,
-        account::InfoArgs {
-            account: account.id,
-        },
-    )
-    .expect("Could not get info");
+    let info_before = account_info(&module_impl, &id, &account_id);
 
     assert!(info_before
         .features
@@ -450,7 +490,7 @@ fn add_feature_existing() {
     let result = module_impl.add_features(
         &id,
         account::AddFeaturesArgs {
-            account: account.id,
+            account: account_id,
             roles: None,
             features: account::features::FeatureSet::from_iter([
                 account::features::multisig::MultisigAccountFeature::default().as_feature(),
@@ -459,16 +499,32 @@ fn add_feature_existing() {
     );
     assert!(result.is_err());
 
-    let info_after = account::AccountModuleBackend::info(
-        &module_impl,
-        &id,
-        account::InfoArgs {
-            account: account.id,
-        },
-    )
-    .expect("Could not get info");
+    let info_after = account_info(&module_impl, &id, &account_id);
 
     assert!(info_after
         .features
         .has_id(account::features::multisig::MultisigAccountFeature::ID));
+}
+
+#[test]
+/// Issue #113
+fn send_tx_on_behalf_as_owner() {
+    let mut setup = Setup::new(false);
+
+    // Account doesn't have feature 0
+    let account_id = setup.create_account_(AccountType::Multisig);
+    setup.set_balance(account_id, 1_000_000, *MFX_SYMBOL);
+
+    // Sending as the account is permitted
+    let result = setup.send_as(account_id, account_id, identity(4), 10u32, *MFX_SYMBOL);
+    assert!(result.is_ok());
+
+    // Sending as the account owner is permitted, even without feature 0
+    let result = setup.send_as(setup.id, account_id, identity(4), 10u32, *MFX_SYMBOL);
+    assert!(result.is_ok());
+
+    // identity(2) should not be allowed to send on behalf of the account.
+    // identity(2) is not an account owner
+    let result = setup.send_as(identity(2), account_id, identity(4), 10u32, *MFX_SYMBOL);
+    assert_many_err(result, many_ledger::error::unauthorized());
 }

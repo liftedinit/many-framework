@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::{abci_backend, account, idstore, ledger};
+use many::server::module::{abci_backend, account, events, idstore, ledger};
 use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
 use many::types::identity::cose::CoseKeyIdentity;
@@ -75,6 +75,13 @@ struct Opts {
     #[clap(long)]
     balance_only_for_testing: Option<Vec<String>>,
 
+    /// If set, this flag will disable any validation for webauthn tokens
+    /// to access the id store. WebAuthn signatures are still validated.
+    /// This requires the feature "webauthn_testing" to be enabled.
+    #[cfg(feature = "webauthn_testing")]
+    #[clap(long)]
+    disable_webauthn_only_for_testing: bool,
+
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
@@ -142,10 +149,8 @@ fn main() {
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
     let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
 
-    let state: Option<InitialStateJson> = state.map(|state| {
-        let content = std::fs::read_to_string(&state).unwrap();
-        serde_json::from_str(&content).unwrap()
-    });
+    let state: Option<InitialStateJson> =
+        state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
     let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
@@ -164,7 +169,7 @@ fn main() {
         for balance in balance_only_for_testing.unwrap_or_default() {
             let args: Vec<&str> = balance.splitn(3, ':').collect();
             let (identity, amount, symbol) = (
-                args.get(0).unwrap(),
+                args.first().unwrap(),
                 args.get(1).expect("No amount."),
                 args.get(2).expect("No symbol."),
             );
@@ -188,8 +193,28 @@ fn main() {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
-        s.add_module(ledger::LedgerTransactionsModule::new(module_impl.clone()));
-        s.add_module(idstore::IdStoreModule::new(module_impl.clone()));
+        s.add_module(events::EventsModule::new(module_impl.clone()));
+
+        let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
+        #[cfg(feature = "webauthn_testing")]
+        {
+            let Opts {
+                disable_webauthn_only_for_testing,
+                ..
+            } = Opts::parse();
+
+            if disable_webauthn_only_for_testing {
+                s.add_module(IdStoreWebAuthnModule {
+                    inner: idstore_module,
+                    check_webauthn: false,
+                });
+            } else {
+                s.add_module(idstore_module);
+            }
+        }
+        #[cfg(not(feature = "webauthn_testing"))]
+        s.add_module(idstore_module);
+
         s.add_module(account::AccountModule::new(module_impl.clone()));
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),

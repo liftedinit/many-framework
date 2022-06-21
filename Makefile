@@ -16,10 +16,9 @@ generate-test-coverage:
 	RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="coverage/lcov-%p-%m.profraw" cargo test --all --all-features
 
 coverage/index.html: target/bin/grcov generate-test-coverage coverage/report.lcov
-	target/bin/grcov src --binary-path target/debug/ -s . -t html --branch --ignore-not-existing -o ./coverage/
+	target/bin/grcov src --binary-path target/debug/ -s . --keep-only 'src/**'  -t html --branch --ignore-not-existing -o ./coverage/
 
 .PHONY: code-coverage
 code-coverage: coverage/index.html
 
 single-node:
-

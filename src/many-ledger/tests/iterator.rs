@@ -1,4 +1,5 @@
-use many::types::ledger::{TokenAmount, Transaction, TransactionId};
+use many::types::events::{EventId, EventLog};
+use many::types::ledger::TokenAmount;
 use many::types::{CborRange, SortOrder};
 use many::Identity;
 use many_ledger::storage::LedgerStorage;
@@ -32,33 +33,33 @@ fn setup() -> LedgerStorage {
             .unwrap();
     }
 
-    // Check that we have 5 transactions (5 sends).
-    assert_eq!(storage.nb_transactions(), 5);
+    // Check that we have 5 events (5 sends).
+    assert_eq!(storage.nb_events(), 5);
 
     storage
 }
 
 fn iter_asc(
     storage: &LedgerStorage,
-    start: Bound<TransactionId>,
-    end: Bound<TransactionId>,
-) -> impl Iterator<Item = Transaction> + '_ {
+    start: Bound<EventId>,
+    end: Bound<EventId>,
+) -> impl Iterator<Item = EventLog> + '_ {
     storage
         .iter(CborRange { start, end }, SortOrder::Ascending)
         .into_iter()
-        .map(|(_, v)| minicbor::decode(&v).expect("Iterator item not a transaction."))
+        .map(|(_, v)| minicbor::decode(&v).expect("Iterator item not an event."))
 }
 
 #[test]
 fn range_works() {
     let storage = setup();
 
-    // Get the first transaction ID.
+    // Get the first event ID.
     let mut iter = iter_asc(&storage, Bound::Unbounded, Bound::Unbounded);
-    let first_tx = iter.next().expect("No transactions?");
-    let first_id = first_tx.id;
-    let last_tx = iter.last().expect("Only 1 transaction");
-    let last_id = last_tx.id;
+    let first_ev = iter.next().expect("No events?");
+    let first_id = first_ev.id;
+    let last_ev = iter.last().expect("Only 1 event");
+    let last_id = last_ev.id;
 
     // Make sure exclusive range removes the first_id.
     assert!(iter_asc(

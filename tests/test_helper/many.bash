@@ -3,6 +3,22 @@ function pem() {
     echo "$PEM_ROOT/id-$1.pem"
 }
 
+# Print the X-coord of an Ed25519 public key
+function ed25519_x_coord() {
+    openssl pkey -in "$(pem "$1")" -text_pub -noout | grep "    " | awk '{printf("%s ",$0)} END { printf "\n" }' | tr -d ' ' | tr -d ':'
+}
+
+# Return a CBOR encoded CoseKey created from a Ed25519 key.
+# Requires https://github.com/cabo/cbor-diag in your $PATH
+function key2cose() {
+  echo "{1: 1, 2: h'"$(identity_hex "$1")"', 3: -8, 4: [2], -1: 6, -2: h'"$(ed25519_x_coord "$1")"'}" | diag2cbor.rb | xxd -p -c 10000
+}
+
+# Return 16 bytes of random data
+function cred_id() {
+  hexdump -vn16 -e'4/4 "%08X" 1 "\n"' /dev/urandom
+}
+
 function many_message() {
     local pem_arg
     local error
@@ -26,6 +42,10 @@ function many_message() {
 
 function identity() {
     command many id "$(pem "$1")"
+}
+
+function identity_hex() {
+    command many id $(many id "$(pem "$1")")
 }
 
 function account() {

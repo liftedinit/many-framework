@@ -7,8 +7,10 @@ on:
 jobs:
   build:
     name: Create release
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
     steps:
     - uses: actions/checkout@v2
     - name: Set outputs
@@ -17,8 +19,12 @@ jobs:
     - name: Build
       run: cargo build --release
     - name: Create release archive
-      run: find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz --null -T -
+      run: |
+        find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}-${{ matrix.os }}.tar.gz --null -T -
+        sha1sum *.tar.gz > sha1sum.txt
     - name: Upload binary to release
       uses: softprops/action-gh-release@v1
       with:
-        files: many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}.tar.gz
+        files: |
+          many-framework_*.tar.gz
+          sha1sum.txt

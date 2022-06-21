@@ -54,7 +54,7 @@ genfiles/node%: genfiles/openssl-docker
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
 	mkdir -p "$@/persistent-ledger"
-	cp ledger_state.json $@/ledger_state.json
+	cp ledger_state.json5 $@/ledger_state.json5
 
 
 genfiles/generate-tendermint-e2e-config:
