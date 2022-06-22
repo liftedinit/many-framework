@@ -381,9 +381,9 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("events.list".to_string(), EndpointInfo { is_command: false }),
 
                 // IdStore
-                ("idstore.store".to_string(), EndpointInfo { is_command: true}),
-                ("idstore.getFromRecallPhrase".to_string(), EndpointInfo { is_command: true}),
-                ("idstore.getFromAddress".to_string(), EndpointInfo { is_command: true}),
+                ("idstore.store".to_string(), EndpointInfo { is_command: true }),
+                ("idstore.getFromRecallPhrase".to_string(), EndpointInfo { is_command: false }),
+                ("idstore.getFromAddress".to_string(), EndpointInfo { is_command: false }),
 
                 // Accounts
                 ("account.create".to_string(), EndpointInfo { is_command: true }),
