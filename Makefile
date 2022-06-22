@@ -7,6 +7,9 @@ clean:
 target/bin/grcov:
 	cargo install grcov --root target/
 
+target/debug/:
+	cargo build --all-features
+
 coverage/report.lcov: target/bin/grcov target/debug/
 	target/bin/grcov src --binary-path target/debug/ -s . --keep-only 'src/**' --prefix-dir $PWD -t lcov --branch --ignore-not-existing -o coverage/report.lcov
 

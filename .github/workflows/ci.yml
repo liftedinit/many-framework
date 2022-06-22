@@ -5,6 +5,7 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.make.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -23,6 +24,7 @@ jobs:
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
+            RUSTC_WRAPPER: sccache
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
         exclude:
@@ -37,6 +39,7 @@ jobs:
       RUSTV: ${{ matrix.rust }}
       SCCACHE_CACHE_SIZE: 2G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
 
     steps:
       - uses: actions/checkout@v2
