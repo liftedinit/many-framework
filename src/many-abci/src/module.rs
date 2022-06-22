@@ -81,10 +81,10 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                     .await
                 {
                     Ok(tx) => {
-                        tracing::warn!("result: {}", hex::encode(tx.tx_result.data.value()));
+                        tracing::warn!("result: {}", hex::encode(tx.tx_result.data.as_bytes()));
                         Ok(StatusReturn::Done {
                             response: Box::new(
-                                ResponseMessage::from_bytes(tx.tx_result.data.value())
+                                ResponseMessage::from_bytes(tx.tx_result.data.as_bytes())
                                     .map_err(abci_frontend::abci_transport_error)?,
                             ),
                         })

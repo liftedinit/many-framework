@@ -266,8 +266,6 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Identity,
-
-    idstore_seed: u64,
 }
 
 impl LedgerStorage {
@@ -344,15 +342,6 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
-        let idstore_seed = persistent_store
-            .get(b"/config/idstore_seed")
-            .unwrap()
-            .map_or(0u64, |x| {
-                let mut bytes = [0u8; 8];
-                bytes.copy_from_slice(x.as_slice());
-                u64::from_be_bytes(bytes)
-            });
-
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         Ok(Self {
@@ -364,7 +353,6 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
-            idstore_seed,
         })
     }
 
@@ -374,6 +362,8 @@ impl LedgerStorage {
         persistent_path: P,
         identity: Identity,
         blockchain: bool,
+        maybe_seed: Option<u64>,
+        maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<Self, String> {
         let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
@@ -399,6 +389,22 @@ impl LedgerStorage {
         persistent_store
             .apply(batch.as_slice())
             .map_err(|e| e.to_string())?;
+
+        // Apply keys and seed.
+        if let Some(seed) = maybe_seed {
+            persistent_store
+                .apply(&[(
+                    b"/config/idstore_seed".to_vec(),
+                    Op::Put(seed.to_be_bytes().to_vec()),
+                )])
+                .unwrap();
+        }
+        if let Some(keys) = maybe_keys {
+            for (k, v) in keys {
+                persistent_store.apply(&[(k, Op::Put(v))]).unwrap();
+            }
+        }
+
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
 
         Ok(Self {
@@ -410,7 +416,6 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            idstore_seed: 0,
         })
     }
 
@@ -460,12 +465,20 @@ impl LedgerStorage {
     }
 
     pub(crate) fn inc_idstore_seed(&mut self) -> u64 {
-        let current_seed = self.idstore_seed;
-        self.idstore_seed += 1;
+        let idstore_seed = self
+            .persistent_store
+            .get(b"/config/idstore_seed")
+            .unwrap()
+            .map_or(0u64, |x| {
+                let mut bytes = [0u8; 8];
+                bytes.copy_from_slice(x.as_slice());
+                u64::from_be_bytes(bytes)
+            });
+
         self.persistent_store
             .apply(&[(
                 b"/config/idstore_seed".to_vec(),
-                Op::Put(self.idstore_seed.to_be_bytes().to_vec()),
+                Op::Put((idstore_seed + 1).to_be_bytes().to_vec()),
             )])
             .unwrap();
 
@@ -473,7 +486,7 @@ impl LedgerStorage {
             self.persistent_store.commit(&[]).unwrap();
         }
 
-        current_seed
+        idstore_seed
     }
 
     fn new_event_id(&mut self) -> events::EventId {
@@ -1431,7 +1444,14 @@ pub mod tests {
 
     impl LedgerStorage {
         pub fn set_idstore_seed(&mut self, seed: u64) {
-            self.idstore_seed = seed;
+            self.persistent_store
+                .apply(&[(
+                    b"/config/idstore_seed".to_vec(),
+                    Op::Put(seed.to_be_bytes().to_vec()),
+                )])
+                .unwrap();
+
+            self.persistent_store.commit(&[]).unwrap();
         }
     }
 

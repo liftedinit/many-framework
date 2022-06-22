@@ -132,6 +132,8 @@ pub struct InitialStateJson {
     pub initial: BTreeMap<Identity, BTreeMap<String, TokenAmount>>,
     pub symbols: BTreeMap<Identity, String>,
     pub accounts: Option<Vec<AccountJson>>,
+    pub id_store_seed: Option<u64>,
+    pub id_store_keys: Option<BTreeMap<String, String>>,
     pub hash: Option<String>,
 }
 

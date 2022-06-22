@@ -2,6 +2,7 @@
 
 members = [
     "src/http_proxy",
+    "src/idstore-export",
     "src/ledger",
     "src/kvstore",
     "src/many-abci",
