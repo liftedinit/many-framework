@@ -26,10 +26,10 @@ single-node:
 
 .PHONY: check-clippy
 check-clippy:
-	cargo fmt --all -- --checl
+	cargo fmt --all -- --check
 	cargo clippy --all-targets --all-features -- -D clippy::all
 
-build-all-tests:
+build-all-test:
 	cargo build --lib --tests --all-features --all-targets
 
 run-all-unit-test:
