@@ -35,7 +35,7 @@ jobs:
 
     env:
       RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
+      RUSTC_WORKSPACE_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
       SCCACHE_CACHE_SIZE: 2G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
