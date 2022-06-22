@@ -86,7 +86,7 @@ jobs:
         run: sccache --start-server
 
       - name: Install grcov
-        if: matrix.make == 'Coverage'
+        if: matrix.make.name == 'Coverage'
         uses: actions-rs/cargo@v1
         with:
           command: install
@@ -101,7 +101,7 @@ jobs:
         run: sccache --stop-server || true
 
       - name: Upload artifact
-        if: matrix.make == 'Coverage'
+        if: matrix.make.name == 'Coverage'
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage
