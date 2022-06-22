@@ -21,10 +21,10 @@ jobs:
     - name: Create release archive
       run: |
         find target/release/ -maxdepth 1 -executable -type f -print0 | tar czvf many-framework_${{ github.ref_name }}_${{ steps.vars.outputs.sha_short }}-${{ matrix.os }}.tar.gz --null -T -
-        sha1sum *.tar.gz > sha1sum.txt
+        sha1sum *${{ matrix.os }}.tar.gz > sha1sum-${{ matrix.os }}.txt
     - name: Upload binary to release
       uses: softprops/action-gh-release@v1
       with:
         files: |
           many-framework_*.tar.gz
-          sha1sum.txt
+          sha1sum-*.txt
