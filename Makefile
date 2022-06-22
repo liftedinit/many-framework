@@ -13,7 +13,7 @@ coverage/report.lcov: target/bin/grcov target/debug/
 generate-lcov-coverage: coverage/report.lcov
 
 generate-test-coverage:
-	RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="coverage/lcov-%p-%m.profraw" cargo test --all --all-features
+	RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="coverage/lcov-%p-%m.profraw" make run-all-unit-test
 
 coverage/index.html: target/bin/grcov generate-test-coverage coverage/report.lcov
 	target/bin/grcov src --binary-path target/debug/ -s . --keep-only 'src/**'  -t html --branch --ignore-not-existing -o ./coverage/
@@ -22,3 +22,19 @@ coverage/index.html: target/bin/grcov generate-test-coverage coverage/report.lco
 code-coverage: coverage/index.html
 
 single-node:
+	bash scripts/run.sh
+
+.PHONY: check-clippy
+check-clippy:
+	cargo fmt --all -- --checl
+	cargo clippy --all-targets --all-features -- -D clippy::all
+
+build-all-tests:
+	cargo build --lib --tests --all-features --all-targets
+
+run-all-unit-test:
+	cargo test --lib --all-targets --all-features
+
+run-all-doc-test:
+	cargo test --all-features --doc
+
