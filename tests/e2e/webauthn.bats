@@ -2,6 +2,22 @@ GIT_ROOT="$BATS_TEST_DIRNAME/../../"
 
 load '../test_helper/load'
 
+# Pass in the recall phrase, the identity, the cred id and the key cose.
+function assert_idstore() {
+    local recall="$1"
+    local identity="$2"
+    local cred_id="$3"
+    local key2cose="$4"
+
+    many_message --id=0 idstore.getFromRecallPhrase "$recall"
+    assert_output --partial "0: h'$(echo "$cred_id" | tr A-Z a-z)'"
+    assert_output --partial "1: h'${key2cose}'"
+
+    many_message --id=0 idstore.getFromAddress '{0: "'"$identity"'"}'
+    assert_output --partial "0: h'$(echo "$cred_id" | tr A-Z a-z)'"
+    assert_output --partial "1: h'${key2cose}'"
+}
+
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
@@ -28,13 +44,7 @@ function teardown() {
     many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex}'), 1: h'${cred_id}', 2: h'${key2cose}'}"
     assert_output '{0: ["abandon", "again"]}'
 
-    many_message --id=0 idstore.getFromRecallPhrase "$output"
-    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
-    assert_output --partial "1: h'${key2cose}'"
-
-    many_message --id=0 idstore.getFromAddress '{0: "'$(identity 1)'"}'
-    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
-    assert_output --partial "1: h'${key2cose}'"
+    assert_idstore "$output" "$(identity 1)" "$cred_id" "$key2cose"
 }
 
 @test "$SUITE: IdStore store deny non-webauthn" {
@@ -57,12 +67,17 @@ function teardown() {
         --pem "$(pem 0)" \
         --disable-webauthn-only-for-testing # Disable WebAuthn check for this test
 
-    identity_hex=$(identity_hex 1)
-    cred_id=$(cred_id)
-    key2cose=$(key2cose 1)
+    local identity_hex_1
+    local cred_id_1
+    local key2cose_1
+    identity_hex_1=$(identity_hex 1)
+    cred_id_1=$(cred_id)
+    key2cose_1=$(key2cose 1)
 
-    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex}'), 1: h'${cred_id}', 2: h'${key2cose}'}"
+    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex_1}'), 1: h'${cred_id_1}', 2: h'${key2cose_1}'}"
     assert_output '{0: ["abandon", "again"]}'
+    local recall_1
+    recall_1="$output"
 
     # Stop and regenesis.
     stop_background_run
@@ -83,15 +98,19 @@ function teardown() {
         --pem "$(pem 0)" \
         --disable-webauthn-only-for-testing # Disable WebAuthn check for this test
 
+    local identity_hex_2
+    local cred_id_2
+    local key2cose_2
+    identity_hex_2=$(identity_hex 2)
+    cred_id_2=$(cred_id)
+    key2cose_2=$(key2cose 2)
+
     # Continue the test.
-    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex}'), 1: h'${cred_id}', 2: h'${key2cose}'}"
+    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex_2}'), 1: h'${cred_id_2}', 2: h'${key2cose_2}'}"
     assert_output '{0: ["abandon", "asset"]}'
+    local recall_2
+    recall_2="$output"
 
-    many_message --id=0 idstore.getFromRecallPhrase "$output"
-    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
-    assert_output --partial "1: h'${key2cose}'"
-
-    many_message --id=0 idstore.getFromAddress '{0: "'$(identity 1)'"}'
-    assert_output --partial "0: h'$(echo $cred_id | tr A-Z a-z)'"
-    assert_output --partial "1: h'${key2cose}'"
+    assert_idstore "$recall_1" "$(identity 1)" "$cred_id_1" "$key2cose_1"
+    assert_idstore "$recall_2" "$(identity 2)" "$cred_id_2" "$key2cose_2"
 }
