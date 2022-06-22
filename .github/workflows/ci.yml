@@ -24,7 +24,6 @@ jobs:
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
-            RUSTC_WRAPPER: sccache
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
         exclude:
@@ -32,6 +31,10 @@ jobs:
             rust: nightly
             make:
               name: Clippy
+          - os: macos-latest
+            rust: nightly
+            make:
+              name: Coverage
 
     env:
       RUST_BACKTRACE: full

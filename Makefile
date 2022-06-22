@@ -11,6 +11,7 @@ target/debug/:
 	cargo build --all-features
 
 coverage/report.lcov: target/bin/grcov target/debug/
+	make generate-test-coverage
 	target/bin/grcov src --binary-path target/debug/ -s . --keep-only 'src/**' --prefix-dir $PWD -t lcov --branch --ignore-not-existing -o coverage/report.lcov
 
 generate-lcov-coverage: coverage/report.lcov
