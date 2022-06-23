@@ -38,17 +38,17 @@ impl Display for Amount {
         write!(f, "{}", self.0)
     }
 }
-impl minicbor::Encode for Amount {
-    fn encode<W: Write>(&self, e: &mut Encoder<W>) -> Result<(), Error<W::Error>> {
+impl minicbor::Encode<()> for Amount {
+    fn encode<W: Write>(&self, e: &mut Encoder<W>, _: &mut ()) -> Result<(), Error<W::Error>> {
         e.tag(Tag::PosBignum)?.bytes(&self.0.to_bytes_be())?;
         Ok(())
     }
 }
-impl<'b> minicbor::Decode<'b> for Amount {
-    fn decode(d: &mut Decoder<'b>) -> Result<Self, minicbor::decode::Error> {
+impl<'b> minicbor::Decode<'b, ()> for Amount {
+    fn decode(d: &mut Decoder<'b>, _: &mut ()) -> Result<Self, minicbor::decode::Error> {
         let t = d.tag()?;
         if t != Tag::PosBignum {
-            Err(minicbor::decode::Error::Message("Invalid tag."))
+            Err(minicbor::decode::Error::message("Invalid tag."))
         } else {
             Ok(Amount(BigUint::from_bytes_be(d.bytes()?)))
         }
