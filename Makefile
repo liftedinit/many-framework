@@ -28,10 +28,12 @@ code-coverage: coverage/index.html
 single-node:
 	bash scripts/run.sh
 
-.PHONY: check-clippy
+.PHONY: check-clippy ch
 check-clippy:
 	cargo fmt --all -- --check
+check-fmt:
 	cargo clippy --all-targets --all-features -- -D clippy::all
+check-lint: check-clippy check-fmt
 
 build-all-test:
 	cargo build --lib --tests --all-features --all-targets

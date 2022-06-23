@@ -10,11 +10,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-latest]
         rust: [nightly]
         make:
-          - name: Clippy
-            task: "check-clippy"
+          - name: Lint
+            task: "check-lint"
           - name: Unit tests
             task: "build-all-test run-all-unit-test"
           - name: Doc tests
@@ -22,17 +22,23 @@ jobs:
           - name: Coverage
             task: "coverage/report.lcov"
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
+            sccache-path: /home/runner/.cache/sccache
+          - os: ubuntu-22.04
             sccache-path: /home/runner/.cache/sccache
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
         exclude:
           - os: macos-latest
-            rust: nightly
             make:
-              name: Clippy
+              name: Lint
           - os: macos-latest
-            rust: nightly
+            make:
+              name: Coverage
+          - os: ubuntu-20.04
+            make:
+              name: Lint
+          - os: ubuntu-20.04
             make:
               name: Coverage
 
@@ -103,6 +109,7 @@ jobs:
 
       - name: Print sccache stats
         run: sccache --show-stats
+
       - name: Stop sccache server
         run: sccache --stop-server || true
 
