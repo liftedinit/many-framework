@@ -3,7 +3,6 @@
 # Requirements
 # - The `tendermint` binary should be in your $PATH
 # - `tmux` should be installed and in your $PATH
-# - The certificate `id1.pem` should exist in $HOME/Identities
 # - A `debug` build of the `many-ledger` repository
 #
 # Usage
@@ -27,6 +26,23 @@ verlte() {
 # Ver1 < Ver2
 verlt() {
     ! verlte "$2" "$1"
+}
+
+check_dep() {
+    which "$1" >/dev/null || {
+        echo You need the binary \""$1"\" installed and accessible to use this script.
+        false
+    }
+}
+
+check_deps() {
+    local return_value
+    return_value=0
+    check_dep tendermint || return_value=$(( return_value + 1 ))
+    check_dep openssl || return_value=$(( return_value + 1 ))
+    check_dep tmux || return_value=$(( return_value + 1 ))
+
+    return $return_value
 }
 
 main() {
@@ -64,6 +80,16 @@ main() {
   [ -x ./target/bin/toml ] || cargo install --root ./target -- toml-cli
   tmux kill-session -t "$tmux_name" || true
 
+  local pem_root
+  pem_root="$root_dir/pem"
+  [ -x "$pem_root" ] || {
+      # Create 5 keys in the root.
+      mkdir -p "$pem_root"
+      for fn in "$pem_root"/id{1,2,3,4,5}.pem; do
+          openssl genpkey -algorithm Ed25519 > "$fn"
+      done
+  }
+
   [ -x $root_dir/ledger ] || {
     TMHOME="$root_dir/ledger" tendermint init validator
     TMHOME="$root_dir/kvstore" tendermint init validator
@@ -83,18 +109,20 @@ main() {
 
   tmux new-session -s "$tmux_name" -n tendermint-ledger -d "TMHOME=\"$root_dir/ledger\" tendermint start 2>&1 | tee \"$root_dir/tendermint-ledger.log\""
   tmux new-window -t "$tmux_name" -n tendermint-kvstore "TMHOME=\"$root_dir/kvstore\" tendermint start 2>&1 | tee \"$root_dir/tendermint-kvstore.log\""
+#  tmux setw remain-on-exit on
 
-  tmux new-window -t "$tmux_name" -n ledger "./target/debug/many-ledger -v -v --abci --addr 127.0.0.1:8001 --pem $HOME/Identities/id1.pem --state ./staging/ledger_state.json5 --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/many-ledger.log\""
-  tmux new-window -t "$tmux_name" -n ledger-abci "./target/debug/many-abci -v -v --many 127.0.0.1:8000 --many-app http://localhost:8001 --many-pem $HOME/Identities/id1.pem --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee \"$root_dir/many-abci-ledger.log\""
+  tmux new-window -t "$tmux_name" -n ledger -e SHELL=bash "./target/debug/many-ledger -v -v --abci --addr 127.0.0.1:8001 --pem \"$pem_root/id1.pem\" --state ./staging/ledger_state.json5 --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/many-ledger.log\""
+  tmux new-window -t "$tmux_name" -n ledger-abci "./target/debug/many-abci -v -v --many 127.0.0.1:8000 --many-app http://localhost:8001 --many-pem \"$pem_root/id2.pem\" --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee \"$root_dir/many-abci-ledger.log\""
 
-  tmux new-window -t "$tmux_name" -n kvstore "./target/debug/many-kvstore --abci --port 8010 --pem $HOME/Identities/id1.pem --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/many-kvstore.log\""
-  tmux new-window -t "$tmux_name" -n kvstore-abci "./target/debug/many-abci -v --many 127.0.0.1:8011 --many-app http://localhost:8010 --many-pem $HOME/Identities/id1.pem --abci 127.0.0.1:16658 --tendermint http://localhost:16657/ 2>&1 | tee \"$root_dir/many-abci-kvstore.log\""
+  tmux new-window -t "$tmux_name" -n kvstore "./target/debug/many-kvstore --abci --port 8010 --pem \"$pem_root/id3.pem\" --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/many-kvstore.log\""
+  tmux new-window -t "$tmux_name" -n kvstore-abci "./target/debug/many-abci -v --many 127.0.0.1:8011 --many-app http://localhost:8010 --many-pem \"$pem_root/id4.pem\" --abci 127.0.0.1:16658 --tendermint http://localhost:16657/ 2>&1 | tee \"$root_dir/many-abci-kvstore.log\""
 
-  tmux new-window -t "$tmux_name" -n http "./target/debug/http_proxy -v http://localhost:8011 --pem $HOME/Identities/id1.pem --addr 0.0.0.0:8888 2>&1 | tee \"$root_dir/http.log\""
+  tmux new-window -t "$tmux_name" -n http "./target/debug/http_proxy -v http://localhost:8011 --pem \"$pem_root/id5.pem\" --addr 0.0.0.0:8888 2>&1 | tee \"$root_dir/http.log\""
 
-  tmux new-window -t "$tmux_name" "$SHELL"
+  tmux new-window -t "$tmux_name"
 
   tmux -2 attach-session -t "$tmux_name"
 }
 
+check_deps
 main "${1:-}" "${2:-}"
