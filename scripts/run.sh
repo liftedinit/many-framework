@@ -8,14 +8,14 @@
 # Usage
 # $ cd /path/to/many-ledger
 # $ ./script/run.sh
-
-set -pube  # .. snicker ..
+set -pube # .. snicker ..
+TM_MIN_VERSION=0.35.0 # The minimum tendermint version supported
 
 toml_set() {
-  local tmp=$(mktemp)
-  ./target/bin/toml set "$1" "$2" "$3" > "$tmp"
-  cp "$tmp" "$1"
-  rm $tmp
+    local tmp=$(mktemp)
+    ./target/bin/toml set "$1" "$2" "$3" >"$tmp"
+    cp "$tmp" "$1"
+    rm $tmp
 }
 
 # Ver1 <= Ver2
@@ -38,90 +38,104 @@ check_dep() {
 check_deps() {
     local return_value
     return_value=0
-    check_dep tendermint || return_value=$(( return_value + 1 ))
-    check_dep openssl || return_value=$(( return_value + 1 ))
-    check_dep tmux || return_value=$(( return_value + 1 ))
+    check_dep tmux || return_value=$((return_value + 1))
+
+    # Check that tendermint is installed AND that it has the minimum version.
+    if ! command -v tendermint >/dev/null; then
+        echo "The command 'tendermint' could not be found."
+        echo "Please install 'tendermint' from https://github.com/tendermint/tendermint/releases"
+        echo "The 'tendermint' binary should be in your '$PATH'"
+        return_value=$((return_value + 1))
+    else
+        local tm_current_version
+        tm_current_version=$(tendermint version | cut -d '-' -f 1)
+        verlt "$tm_current_version" $TM_MIN_VERSION && {
+            echo Tendermint version should be at least $TM_MIN_VERSION.
+            echo Current version is "$tm_current_version".
+            return_value=$((return_value + 1))
+        }
+    fi
+
+    # Check that openssl is installed and support the right algorithm.
+    if ! command -v openssl >/dev/null; then
+        echo OpenSSL is not installed or could not be found.
+        echo Please installed it using your platforms package manager.
+        return_value=$((return_value + 1))
+    else
+        if ! command -v openssl genpkey -algorithm Ed25519 >/dev/null; then
+            echo OpenSSL does not support generating Ed25519 keys.
+            echo You should have at least version 3.0.2.
+            echo This is a typical problem with MacOS. Install openssl using homebrew to fix.
+            return_value=$((return_value + 1))
+        fi
+    fi
 
     return $return_value
 }
 
 main() {
-  TM_MIN_VERSION=0.35.0  # The minimum tendermint version supported
+    local tm_current_version
+    tm_current_version="$(tendermint version | cut -d '-' -f 1)"
+    echo "Current Tendermint version: $tm_current_version"
 
-  if ! command -v tendermint &> /dev/null
-  then
-      echo "The command 'tendermint' could not be found."
-      echo "Please install 'tendermint' from https://github.com/tendermint/tendermint/releases"
-      echo "The 'tendermint' binary should be in your '$PATH'"
-      exit
-  fi
+    cd "$(dirname "$0")/.."
 
-  tm_current_version=$(tendermint version | cut -d '-' -f 1)
-  verlt $tm_current_version $TM_MIN_VERSION && \
-    printf "Tendermint version should be at least $TM_MIN_VERSION.\nCurrent version is $tm_current_version\n" && \
-    exit 1
+    local root_dir
+    if [ -n "$1" ]; then
+        root_dir="$1"
+    else
+        root_dir=$(mktemp -d)
+    fi
+    echo Using directory "$root_dir" for tendermint root.
 
-  echo "Current Tendermint version: $tm_current_version"
+    local tmux_name
+    tmux_name="${2:-many}"
 
-  cd "$(dirname "$0")/.."
+    cargo build
+    [ -x ./target/bin/toml ] || cargo install --root ./target -- toml-cli
+    tmux kill-session -t "$tmux_name" || true
 
-  local root_dir
-  if [ -n "$1" ]; then
-    root_dir="$1"
-  else
-    root_dir=$(mktemp -d)
-  fi
-  echo Using directory "$root_dir" for tendermint root.
+    local pem_root
+    pem_root="$root_dir/pem"
+    [ -x "$pem_root" ] || {
+        # Create 5 keys in the root.
+        mkdir -p "$pem_root"
+        for fn in "$pem_root"/id{1,2,3,4,5}.pem; do
+            openssl genpkey -algorithm Ed25519 >"$fn"
+        done
+    }
 
-  local tmux_name
-  tmux_name="${2:-many}"
+    [ -x $root_dir/ledger ] || {
+        TMHOME="$root_dir/ledger" tendermint init validator
+        TMHOME="$root_dir/kvstore" tendermint init validator
 
-  cargo build
-  [ -x ./target/bin/toml ] || cargo install --root ./target -- toml-cli
-  tmux kill-session -t "$tmux_name" || true
+        toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks "false"
+        toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks-interval "20s"
+        toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-commit "10s"
+        toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-precommit "10s"
 
-  local pem_root
-  pem_root="$root_dir/pem"
-  [ -x "$pem_root" ] || {
-      # Create 5 keys in the root.
-      mkdir -p "$pem_root"
-      for fn in "$pem_root"/id{1,2,3,4,5}.pem; do
-          openssl genpkey -algorithm Ed25519 > "$fn"
-      done
-  }
+        toml_set "$root_dir/ledger/config/config.toml" p2p.laddr "tcp://127.0.0.1:26656"
+        toml_set "$root_dir/ledger/config/config.toml" rpc.laddr "tcp://127.0.0.1:26657"
+        toml_set "$root_dir/ledger/config/config.toml" proxy-app "tcp://127.0.0.1:26658"
+        toml_set "$root_dir/kvstore/config/config.toml" p2p.laddr "tcp://127.0.0.1:16656"
+        toml_set "$root_dir/kvstore/config/config.toml" rpc.laddr "tcp://127.0.0.1:16657"
+        toml_set "$root_dir/kvstore/config/config.toml" proxy-app "tcp://127.0.0.1:16658"
+    }
 
-  [ -x $root_dir/ledger ] || {
-    TMHOME="$root_dir/ledger" tendermint init validator
-    TMHOME="$root_dir/kvstore" tendermint init validator
+    tmux new-session -s "$tmux_name" -n tendermint-ledger -d "TMHOME=\"$root_dir/ledger\" tendermint start 2>&1 | tee \"$root_dir/tendermint-ledger.log\""
+    tmux new-window -t "$tmux_name" -n tendermint-kvstore "TMHOME=\"$root_dir/kvstore\" tendermint start 2>&1 | tee \"$root_dir/tendermint-kvstore.log\""
 
-    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks "false"
-    toml_set "$root_dir/ledger/config/config.toml" consensus.create-empty-blocks-interval "20s"
-    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-commit "10s"
-    toml_set "$root_dir/ledger/config/config.toml" consensus.timeout-precommit "10s"
+    tmux new-window -t "$tmux_name" -n ledger -e SHELL=bash "./target/debug/many-ledger -v -v --abci --addr 127.0.0.1:8001 --pem \"$pem_root/id1.pem\" --state ./staging/ledger_state.json5 --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/many-ledger.log\""
+    tmux new-window -t "$tmux_name" -n ledger-abci "./target/debug/many-abci -v -v --many 127.0.0.1:8000 --many-app http://localhost:8001 --many-pem \"$pem_root/id2.pem\" --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee \"$root_dir/many-abci-ledger.log\""
 
-    toml_set "$root_dir/ledger/config/config.toml" p2p.laddr "tcp://127.0.0.1:26656"
-    toml_set "$root_dir/ledger/config/config.toml" rpc.laddr "tcp://127.0.0.1:26657"
-    toml_set "$root_dir/ledger/config/config.toml" proxy-app "tcp://127.0.0.1:26658"
-    toml_set "$root_dir/kvstore/config/config.toml" p2p.laddr "tcp://127.0.0.1:16656"
-    toml_set "$root_dir/kvstore/config/config.toml" rpc.laddr "tcp://127.0.0.1:16657"
-    toml_set "$root_dir/kvstore/config/config.toml" proxy-app "tcp://127.0.0.1:16658"
-  }
+    tmux new-window -t "$tmux_name" -n kvstore "./target/debug/many-kvstore --abci --port 8010 --pem \"$pem_root/id3.pem\" --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/many-kvstore.log\""
+    tmux new-window -t "$tmux_name" -n kvstore-abci "./target/debug/many-abci -v --many 127.0.0.1:8011 --many-app http://localhost:8010 --many-pem \"$pem_root/id4.pem\" --abci 127.0.0.1:16658 --tendermint http://localhost:16657/ 2>&1 | tee \"$root_dir/many-abci-kvstore.log\""
 
-  tmux new-session -s "$tmux_name" -n tendermint-ledger -d "TMHOME=\"$root_dir/ledger\" tendermint start 2>&1 | tee \"$root_dir/tendermint-ledger.log\""
-  tmux new-window -t "$tmux_name" -n tendermint-kvstore "TMHOME=\"$root_dir/kvstore\" tendermint start 2>&1 | tee \"$root_dir/tendermint-kvstore.log\""
-#  tmux setw remain-on-exit on
+    tmux new-window -t "$tmux_name" -n http "./target/debug/http_proxy -v http://localhost:8011 --pem \"$pem_root/id5.pem\" --addr 0.0.0.0:8888 2>&1 | tee \"$root_dir/http.log\""
 
-  tmux new-window -t "$tmux_name" -n ledger -e SHELL=bash "./target/debug/many-ledger -v -v --abci --addr 127.0.0.1:8001 --pem \"$pem_root/id1.pem\" --state ./staging/ledger_state.json5 --persistent \"$root_dir/ledger.db\" 2>&1 | tee \"$root_dir/many-ledger.log\""
-  tmux new-window -t "$tmux_name" -n ledger-abci "./target/debug/many-abci -v -v --many 127.0.0.1:8000 --many-app http://localhost:8001 --many-pem \"$pem_root/id2.pem\" --abci 127.0.0.1:26658 --tendermint http://localhost:26657/ 2>&1 | tee \"$root_dir/many-abci-ledger.log\""
+    tmux new-window -t "$tmux_name"
 
-  tmux new-window -t "$tmux_name" -n kvstore "./target/debug/many-kvstore --abci --port 8010 --pem \"$pem_root/id3.pem\" --state ./staging/kvstore_state.json 2>&1 --persistent \"$root_dir/kvstore.db\" | tee \"$root_dir/many-kvstore.log\""
-  tmux new-window -t "$tmux_name" -n kvstore-abci "./target/debug/many-abci -v --many 127.0.0.1:8011 --many-app http://localhost:8010 --many-pem \"$pem_root/id4.pem\" --abci 127.0.0.1:16658 --tendermint http://localhost:16657/ 2>&1 | tee \"$root_dir/many-abci-kvstore.log\""
-
-  tmux new-window -t "$tmux_name" -n http "./target/debug/http_proxy -v http://localhost:8011 --pem \"$pem_root/id5.pem\" --addr 0.0.0.0:8888 2>&1 | tee \"$root_dir/http.log\""
-
-  tmux new-window -t "$tmux_name"
-
-  tmux -2 attach-session -t "$tmux_name"
+    tmux -2 attach-session -t "$tmux_name"
 }
 
 check_deps
