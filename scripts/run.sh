@@ -31,6 +31,7 @@ verlt() {
 check_dep() {
     which "$1" >/dev/null || {
         echo You need the binary \""$1"\" installed and accessible to use this script.
+        echo
         false
     }
 }
@@ -39,6 +40,7 @@ check_deps() {
     local return_value
     return_value=0
     check_dep tmux || return_value=$((return_value + 1))
+    check_dep ssh-keygen || return_value=$((return_value + 1))
 
     # Check that tendermint is installed AND that it has the minimum version.
     if ! command -v tendermint >/dev/null; then
