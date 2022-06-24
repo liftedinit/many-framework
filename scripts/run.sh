@@ -56,20 +56,6 @@ check_deps() {
         }
     fi
 
-    # Check that openssl is installed and support the right algorithm.
-    if ! command -v openssl >/dev/null; then
-        echo OpenSSL is not installed or could not be found.
-        echo Please installed it using your platforms package manager.
-        return_value=$((return_value + 1))
-    else
-        if ! command -v openssl genpkey -algorithm Ed25519 >/dev/null; then
-            echo OpenSSL does not support generating Ed25519 keys.
-            echo You should have at least version 3.0.2.
-            echo This is a typical problem with MacOS. Install openssl using homebrew to fix.
-            return_value=$((return_value + 1))
-        fi
-    fi
-
     return $return_value
 }
 
@@ -101,7 +87,7 @@ main() {
         # Create 5 keys in the root.
         mkdir -p "$pem_root"
         for fn in "$pem_root"/id{1,2,3,4,5}.pem; do
-            openssl genpkey -algorithm Ed25519 >"$fn"
+            ssh-keygen -a 100 -q -P "" -m pkcs8 -t ecdsa -f "$fn"
         done
     }
 
