@@ -52,8 +52,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install sccache (ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
         env:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: 0.2.13
@@ -63,8 +63,8 @@ jobs:
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
+      - name: Install sccache (macos)
+        if: startsWith(matrix.os, 'macos')
         run: |
           brew update
           brew install sccache

@@ -25,22 +25,27 @@ coverage/index.html: target/bin/grcov generate-test-coverage coverage/report.lco
 .PHONY: code-coverage
 code-coverage: coverage/index.html
 
+.PHONY: single-node
 single-node:
 	bash scripts/run.sh
 
-.PHONY: check-clippy ch
+.PHONY: check-clippy check-fmt check-lint
 check-clippy:
 	cargo fmt --all -- --check
 check-fmt:
 	cargo clippy --all-targets --all-features -- -D clippy::all
 check-lint: check-clippy check-fmt
 
+.PHONY: build-all-test
 build-all-test:
 	cargo build --lib --tests --all-features --all-targets
 
+.PHONY: run-all-unit-test run-all-doc-test
 run-all-unit-test:
 	cargo test --lib --all-targets --all-features
 
 run-all-doc-test:
 	cargo test --all-features --doc
 
+.PHONY: ci
+ci: check-lint build-all-test run-all-unit-test run-all-doc-test
