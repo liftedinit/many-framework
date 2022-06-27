@@ -2,58 +2,122 @@ name: CI
 on:
   - push
   - pull_request
+
 jobs:
-  build_and_test:
-    name: many-framework build and tests
+  build:
+    name: ${{ matrix.make.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-latest]
+        rust: [nightly]
+        make:
+          - name: Lint
+            task: "check-lint"
+          - name: Unit tests
+            task: "build-all-test run-all-unit-test"
+          - name: Doc tests
+            task: "run-all-doc-test"
+          - name: Coverage
+            task: "coverage/report.lcov"
+        include:
+          - os: ubuntu-20.04
+            sccache-path: /home/runner/.cache/sccache
+          - os: ubuntu-22.04
+            sccache-path: /home/runner/.cache/sccache
+          - os: macos-latest
+            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+        exclude:
+          - os: macos-latest
+            make:
+              name: Lint
+          - os: macos-latest
+            make:
+              name: Coverage
+          - os: ubuntu-20.04
+            make:
+              name: Lint
+          - os: ubuntu-20.04
+            make:
+              name: Coverage
+
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WORKSPACE_WRAPPER: sccache
+      RUSTV: ${{ matrix.rust }}
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v2
+      - name: Install sccache (ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" --output $SCCACHE_FILE.tar.gz
+          SHA_LOCAL="$(sha256sum "$SCCACHE_FILE.tar.gz" | colrm 65)"
+          [ "$SHA_LOCAL" = "$(curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz.sha256")" ] || exit 1
+          tar xzf "$SCCACHE_FILE.tar.gz"
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install sccache (macos)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew update
+          brew install sccache
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: false
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - uses: actions-rs/toolchain@v1
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Save sccache
+        uses: actions/cache@v2
+        continue-on-error: false
         with:
-          toolchain: stable
-          components: clippy, rustfmt, llvm-tools-preview
-      - name: Check code formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Check lints
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --release --all-targets --all-features -- -D clippy::all
-      - name: Perform build (--release)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all-targets --all-features
-      - name: Run tests
-        uses: actions-rs/cargo@v1
-        env:
-          RUSTFLAGS: "-C instrument-coverage"
-          LLVM_PROFILE_FILE: "coverage/lcov-%p-%m.profraw"
-        with:
-          command: test
-          args: --all-targets --all-features
+          path: ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
+
+      - name: Start sccache server
+        run: sccache --start-server
+
       - name: Install grcov
+        if: matrix.make.name == 'Coverage'
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: grcov --root target/
-      - run: make coverage/report.lcov
+
+      - name: ${{ matrix.make.name }}
+        run: make ${{ matrix.make.task }}
+
+      - name: Print sccache stats
+        run: sccache --show-stats
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
       - name: Upload artifact
+        if: matrix.make.name == 'Coverage'
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage

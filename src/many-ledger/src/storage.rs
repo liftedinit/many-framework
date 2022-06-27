@@ -737,8 +737,8 @@ impl LedgerStorage {
 
         // Set the multisig threshold properly.
         if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
-            multisig.arg.threshold =
-                Some(multisig.arg.threshold.unwrap_or(
+            multisig.arg.threshold = Some(
+                multisig.arg.threshold.unwrap_or(
                     account
                         .roles
                         .iter()
@@ -750,7 +750,8 @@ impl LedgerStorage {
                         .count() as u64
                         - 1u64, // We need to subtract one because the account owns itself.
                                 // The account can approve but should not be included in the threshold.
-                ));
+                ),
+            );
             multisig.arg.timeout_in_secs = Some(
                 multisig
                     .arg
