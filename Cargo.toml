@@ -14,6 +14,10 @@ members = [
 strip = true  # Strip debug info from release build
 lto = true  # Perform "fat" LTO
 codegen-units = 1 # Improve the performance of the generated code at the cost of compile time
+incremental = false
+
+[profile.dev]
+incremental = false
 
 # [patch."https://github.com/liftedinit/many-rs.git"]
 # many = { path = "../many-rs/src/many" }
