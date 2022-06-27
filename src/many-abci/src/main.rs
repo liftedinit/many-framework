@@ -176,6 +176,7 @@ async fn main() {
     }
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
+    info!(many_address = key.identity.to_string().as_str());
     let server = ManyServer::new(
         format!("AbciModule({})", &status.name),
         key.clone(),
