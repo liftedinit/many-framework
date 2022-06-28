@@ -1,5 +1,5 @@
 use clap::Parser;
-use many::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturns};
+use many::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturn};
 use many::server::module::r#async;
 use many::types::identity::cose::CoseKeyIdentity;
 use many::{Identity, ManyError};
@@ -127,7 +127,7 @@ fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> 
             Err(ManyError::unexpected_empty_response())
         }
     } else {
-        let _: PutReturns = minicbor::decode(payload)
+        let _: PutReturn = minicbor::decode(payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
         Ok(())
     }

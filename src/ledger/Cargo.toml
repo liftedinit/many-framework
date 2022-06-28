@@ -24,8 +24,8 @@ indicatif = "0.16.2"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 num-bigint = "0.4.3"
-many = { git = "https://github.com/fmorency/many-rs.git", rev = "cfe52db5c58a52de9b9a19a5c468e075afcae998" }
-many-client = { git = "https://github.com/fmorency/many-rs.git", rev = "cfe52db5c58a52de9b9a19a5c468e075afcae998" }
+many = { git = "https://github.com/liftedinit/many-rs.git", rev = "da04366332b3041f8f0c4000f8ab40de45e898e2" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "da04366332b3041f8f0c4000f8ab40de45e898e2" }
 regex = "1.5.4"
 ring = "0.17.0-alpha.10"
 rpassword = "6.0"
