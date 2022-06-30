@@ -33,3 +33,6 @@ simple_asn1 = "0.5.4"
 tracing = "0.1.28"
 tracing-subscriber = "0.3"
 tracing-syslog = { git = "https://github.com/max-heller/tracing-syslog.git", rev = "6ff222831d7a78f1068d4c8af94dea215b07f114" }
+
+[dev-dependencies]
+tempfile = "3.3.0"
