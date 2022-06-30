@@ -5,7 +5,7 @@ use many::server::module::abci_backend::{
 };
 use many::server::module::kvstore::{
     DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArg, InfoReturns,
-    KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturns,
+    KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturn,
 };
 use many::{Identity, ManyError};
 use std::collections::BTreeMap;
@@ -109,9 +109,9 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
 }
 
 impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
-    fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturns, ManyError> {
+    fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturn, ManyError> {
         self.storage.put(sender, &args.key, args.value.into())?;
-        Ok(PutReturns {})
+        Ok(PutReturn {})
     }
 
     fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<DeleteReturn, ManyError> {

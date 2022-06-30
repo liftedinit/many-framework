@@ -800,20 +800,17 @@ impl<T: IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
         self.inner.info()
     }
 
-    fn validate(&self, message: &RequestMessage) -> Result<(), ManyError> {
-        self.inner.validate(message)
-    }
-
-    fn validate_envelope(
-        &self,
-        envelope: &CoseSign1,
-        message: &RequestMessage,
-    ) -> Result<(), ManyError> {
-        if self.check_webauthn {
-            self.inner.validate_envelope(envelope, message)
-        } else {
-            Ok(())
-        }
+    fn validate(&self, message: &RequestMessage, envelope: &CoseSign1) -> Result<(), ManyError> {
+        let result: Result<(), ManyError> = self.inner.validate(message, envelope);
+        if let Err(e) = result {
+            if e.code() == ManyError::non_webauthn_request_denied("").code() && !self.check_webauthn
+            {
+                return Ok(());
+            } else {
+                return Err(e);
+            }
+        };
+        Ok(())
     }
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, ManyError> {
