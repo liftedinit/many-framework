@@ -126,7 +126,7 @@ $ ./target/debug/many-ledger --pem id1.pem --state ./staging/ledger_state.json5 
 ```shell
 # Follow the instructions from the `Requirements` section above before running this example.
 
-# You will need to have a running ledger server before running this example.
+# You must have a running ledger server before running this example.
 # See section `Run a Ledger server` above.
 
 $ ./target/debug/ledger --pem id1.pem balance
@@ -137,7 +137,7 @@ $ ./target/debug/ledger --pem id1.pem balance
 ```shell
 # Follow the instructions from the `Requirements` section above before running this example.
 
-# You will need to have a running ledger server before running this example.
+# You must have a running ledger server before running this example.
 # See section `Run a Ledger server` above.
 
 # Generate a random key and get its MANY ID
