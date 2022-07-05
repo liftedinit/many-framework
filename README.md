@@ -47,15 +47,8 @@ $ brew update
 ```
 1. Install Rust using [rustup](https://rustup.rs/)
 ```shell
-# Ubuntu/CentOS
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 $ source $HOME/.cargo/env
-
-# Archlinux
-$ sudo pacman -S rustup
-
-# macOS
-$ brew install rustup-init
 ```
 2. Install build dependencies
 ```shell
