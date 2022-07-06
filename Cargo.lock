@@ -2003,6 +2003,7 @@ dependencies = [
  "serde_json",
  "sha3",
  "simple_asn1",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
  "tracing-syslog",
