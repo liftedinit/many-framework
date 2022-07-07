@@ -31,6 +31,11 @@ Features
 
 # Installation
 
+0. (macOS) Install `brew`
+```shell
+# Follow the instructions on screen
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 1. Update your package database
 ```shell
 # Ubuntu
@@ -53,13 +58,16 @@ $ source $HOME/.cargo/env
 2. Install build dependencies
 ```shell
 # Ubuntu
-$ sudo apt install build-essential pkg-config clang libssl-dev libsofthsm2
+$ sudo apt install build-essential pkg-config clang libssl-dev libsofthsm2 tmux
 
 # CentOS
-$ sudo yum install clang gcc softhsm git pkgconf
+$ sudo yum install clang gcc softhsm git pkgconf tmux
 
 # Archlinux
-$ sudo pacman -S clang gcc softhsm git pkgconf
+$ sudo pacman -S clang gcc softhsm git pkgconf tmux
+
+# macOS
+$ brew install tmux
 ```
 3. Build `many-framework`
 ```shell
@@ -76,13 +84,17 @@ $ cargo test
 Below are some examples of how to use the different CLI. 
 
 ## Requirements 
-1. Install the `many` CLI
+1. Install `tendermint`
+   1. Download `tendermint` **v0.35.4** from https://github.com/tendermint/tendermint/releases/tag/v0.35.4
+   2. Extract the archive
+   3. Put the path to the `tendermint` executable in your `$PATH`
+2. Install the `many` CLI
 
 ```shell 
 $ cargo install --git https://github.com/liftedinit/many-rs many-cli
 ```
 
-2. Generate a new key and get its MANY ID
+3. Generate a new key and get its MANY ID
 ```shell
 # Generate a new Ed25519 key
 $ openssl genpkey -algorithm Ed25519 -out id1.pem
@@ -92,19 +104,32 @@ $ many id id1.pem
 maeguvtgcrgXXXXXXXXXXXXXXXXXXXXXXXXwqg6ibizbmflicz
 ```
 
-3. Assign some tokens to your MANY ID by adding it to the `initial` section of the `staging/ledger_state.json5` file
+4. Assign some tokens to your MANY ID by adding it to the `initial` section of the `staging/ledger_state.json5` file
 ```json5
     "maeguvtgcrgXXXXXXXXXXXXXXXXXXXXXXXXwqg6ibizbmflicz": {
       "MFX": 123456789
     }
 ```
 
-4. (Dev) Comment the `hash` entry from the `staging/ledger_state.json5` file
+5. (Dev) Comment the `hash` entry from the `staging/ledger_state.json5` file
 ```json5
   // hash: "fc0041ca4f7d959fe9e5a337e175bd8a68942cad76745711a3daf820a159f7eb"
 ```
 
-## Run a Ledger server
+## Run a blockchain key-value store and ledger
+```shell
+# The script will start a `tmux` instance containing 7 panes
+#   0: Tendermint ledger
+#   1: Tendermint key-value store
+#   2: ledger server
+#   3: ledger application blockchain interface (port 8000)
+#   4: key-value store server
+#   5: key-value store application blockchain interface (port 8011)
+#   6: http proxy
+$ ./scripts/run.sh
+```
+
+## Run a non-blockchain ledger server
 ```shell
 # Follow the instructions from the `Requirements` section above before running this example.
 
@@ -120,8 +145,8 @@ $ ./target/debug/many-ledger --pem id1.pem --state ./staging/ledger_state.json5 
 # Follow the instructions from the `Requirements` section above before running this example.
 
 # You must have a running ledger server before running this example.
-# See section `Run a Ledger server` above.
-
+# See section `Run a non-blockchain ledger server` above.
+# See section `Run a blockchain key-value store and ledger` above.
 $ ./target/debug/ledger --pem id1.pem balance
    123456789 MFX (mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz)
 ```
@@ -131,7 +156,8 @@ $ ./target/debug/ledger --pem id1.pem balance
 # Follow the instructions from the `Requirements` section above before running this example.
 
 # You must have a running ledger server before running this example.
-# See section `Run a Ledger server` above.
+# See section `Run a non-blockchain ledger server` above.
+# See section `Run a blockchain key-value store and ledger` above.
 
 # Generate a random key and get its MANY ID
 $ openssl genpkey -algorithm Ed25519 -out tmp.pem
