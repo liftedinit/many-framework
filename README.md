@@ -97,7 +97,7 @@ $ cargo install --git https://github.com/liftedinit/many-rs many-cli
 3. Generate a new key and get its MANY ID
 ```shell
 # Generate a new Ed25519 key
-$ openssl genpkey -algorithm Ed25519 -out id1.pem
+$ ssh-keygen -a 100 -q -P "" -m pkcs8 -t ecdsa -f id1.pem
 
 # Get the MANY ID of the key
 $ many id id1.pem
