@@ -160,7 +160,7 @@ $ ./target/debug/ledger --pem id1.pem balance
 # See section `Run a blockchain key-value store and ledger` above.
 
 # Generate a random key and get its MANY ID
-$ openssl genpkey -algorithm Ed25519 -out tmp.pem
+$ ssh-keygen -a 100 -q -P "" -m pkcs8 -t ecdsa -f tmp.pem
 $ many id tmp.pem
 maf4byfbrz7dcc72tgb5zbof75cs52wg2fwbc2fdf467qj2qcx
 
