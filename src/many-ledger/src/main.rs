@@ -1,4 +1,5 @@
 use clap::Parser;
+use many::server::module::account::features::Feature;
 use many::server::module::{abci_backend, account, events, idstore, ledger};
 use many::server::{ManyServer, ManyUrl};
 use many::transport::http::HttpServer;
@@ -216,7 +217,11 @@ fn main() {
         #[cfg(not(feature = "webauthn_testing"))]
         s.add_module(idstore_module);
 
-        s.add_module(account::AccountModule::new(module_impl.clone()));
+        // s.add_module(account::AccountModule::new(module_impl.clone()));
+        s.add_module(AccountFeatureModule::new(
+            account::AccountModule::new(module_impl.clone()),
+            [Feature::with_id(0), Feature::with_id(1)],
+        ));
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),
         ));

@@ -1,14 +1,16 @@
 use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
+use many::cbor::CborAny;
 use many::message::error::ManyErrorCode;
 use many::message::{RequestMessage, ResponseMessage};
 use many::server::module;
 use many::server::module::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::account::features::multisig;
+use many::server::module::account::features::{multisig, Feature};
 use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
+use many::server::module::account::AccountModuleBackend;
 use many::server::module::idstore::{
     GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
     StoreReturns,
@@ -673,6 +675,50 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
         self.storage
             .withdraw_multisig(sender, args.token.as_slice())
             .map(|_| EmptyReturn)
+    }
+}
+
+/// A module for returning the features by this account.
+pub struct AccountFeatureModule<T: AccountModuleBackend> {
+    inner: module::account::AccountModule<T>,
+    info: ManyModuleInfo,
+}
+
+impl<T: AccountModuleBackend> AccountFeatureModule<T> {
+    pub fn new(
+        inner: module::account::AccountModule<T>,
+        features: impl IntoIterator<Item = Feature>,
+    ) -> Self {
+        let mut info: ManyModuleInfo = inner.info().clone();
+        info.attribute = info.attribute.map(|mut a| {
+            for f in features.into_iter() {
+                a.arguments.push(CborAny::Int(f.id() as i64));
+            }
+            return a;
+        });
+
+        Self { inner, info }
+    }
+}
+
+impl<T: AccountModuleBackend> Debug for AccountFeatureModule<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("AccountFeatureModule")
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: AccountModuleBackend> ManyModule for AccountFeatureModule<T> {
+    fn info(&self) -> &ManyModuleInfo {
+        &self.info
+    }
+
+    fn validate(&self, message: &RequestMessage, envelope: &CoseSign1) -> Result<(), ManyError> {
+        self.inner.validate(message, envelope)
+    }
+
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, ManyError> {
+        self.inner.execute(message).await
     }
 }
 
