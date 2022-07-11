@@ -217,7 +217,6 @@ fn main() {
         #[cfg(not(feature = "webauthn_testing"))]
         s.add_module(idstore_module);
 
-        // s.add_module(account::AccountModule::new(module_impl.clone()));
         s.add_module(AccountFeatureModule::new(
             account::AccountModule::new(module_impl.clone()),
             [Feature::with_id(0), Feature::with_id(1)],

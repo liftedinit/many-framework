@@ -694,7 +694,7 @@ impl<T: AccountModuleBackend> AccountFeatureModule<T> {
             for f in features.into_iter() {
                 a.arguments.push(CborAny::Int(f.id() as i64));
             }
-            return a;
+            a
         });
 
         Self { inner, info }
