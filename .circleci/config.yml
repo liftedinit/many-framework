@@ -78,8 +78,10 @@ jobs:
           version: nightly
       - rust/test:
           package: --lib --all-targets --all-features
+          with_cache: false
       - rust/test:
           package: --all-features --doc
+          with_cache: false
       - save_cache:
           key: v1-many-framework-test-{{ arch }}-{{ checksum "Cargo.lock" }}
           <<: *rust_cache_path
@@ -184,6 +186,24 @@ jobs:
           key: v1-ghjobs-audit-{{ arch }}-{{ checksum "Cargo.lock" }}
           <<: *rust_cache_path
 
+# Re-usable commands
+commands:
+  install-deps:
+    description: install << parameters.os>> dependencies
+    parameters:
+      os:
+        type: string
+    steps:
+      - when:
+          condition:
+            matches: { pattern: "^linux.*$", value: << parameters.os >> }
+          steps:
+            - run:
+                name: installing linux dependencies
+                command: |
+                  sudo apt -y update
+                  sudo apt -y install build-essential pkg-config clang libssl-dev
+
 workflows:
   ci:
     when:
@@ -191,23 +211,35 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - lint:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
           name: lint-v<< matrix.os >>
           matrix:
             parameters:
               os: [linux2004]
       - build:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
           name: build-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, linux2204, macos]
+              os: [linux2004, macos]
       - test:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
           name: test-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, linux2204, macos]
+              os: [linux2004, macos]
           requires:
             - build-v<< matrix.os >>
       - coverage:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
           name: coverage-v<< matrix.os >>
           matrix:
             parameters:
@@ -220,18 +252,22 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - create:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
           name: create-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, linux2204, macos]
+              os: [linux2004, macos]
           filters:
             branches:
               ignore: /.*/
             tags:
               only:
-                - /^\d+\.\d+\.\d+$/
-                - /^\d+\.\d+\.\d+-.*-rc.*$/
-                - /^\d+\.\d+\.\d+-pre.*$/
+                - /^\d+\.\d+\.\d+$/                 # e.g., 0.1.1, 1.0.0
+                - /^\d+\.\d+\.\d+-(alpha|beta)$/    # e.g., 0.1.1-alpha, 2.3.1-beta
+                - /^\d+\.\d+\.\d+-.*-rc.*$/         # e.g., 0.1.1-alpha-rc1, 1.3.4-beta-rc4
+                - /^\d+\.\d+\.\d+-pre.*$/           # e.g., 0.1.1-prealpha-3, 1.5.6-prealpha-8
       - publish:
           name: publish
           pre-release: false
@@ -243,7 +279,9 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^\d+\.\d+\.\d+$/
+              only:
+                - /^\d+\.\d+\.\d+$/                 # e.g., 0.1.1, 1.0.0
+                - /^\d+\.\d+\.\d+-(alpha|beta)$/    # e.g., 0.1.1-alpha, 2.3.1-beta
       - publish:
           name: publish-pre-release
           pre-release: true
@@ -256,8 +294,8 @@ workflows:
               ignore: /.*/
             tags:
               only:
-                - /^\d+\.\d+\.\d+-.*-rc.*$/
-                - /^\d+\.\d+\.\d+-pre.*$/
+                - /^\d+\.\d+\.\d+-.*-rc.*$/         # e.g., 0.1.1-alpha-rc1, 1.3.4-beta-rc4
+                - /^\d+\.\d+\.\d+-pre.*$/           # e.g., 0.1.1-prealpha-3, 1.5.6-prealpha-8
   security:
     when:
       and:
