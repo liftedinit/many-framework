@@ -110,10 +110,13 @@ jobs:
           command: cargo install grcov --root target/
       - run:
           name: generate test coverage
-          command: RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="coverage/lcov-%p-%m.profraw" cargo test --lib --all-targets --all-features
+          command: cargo test --all-targets --all-features
+          environment:
+            RUSTFLAGS: "-C instrument-coverage"
+            LLVM_PROFILE_FILE: "coverage/lcov-%p-%m.profraw"
       - run:
           name: generate coverage report
-          command: target/bin/grcov coverage --binary-path target/debug/ -s . --keep-only 'src/**' --prefix-dir $PWD -t lcov --branch --ignore-not-existing -o coverage/report.lcov
+          command: target/bin/grcov src -b target/debug/ -s . --keep-only 'src/**' --prefix-dir $PWD -t lcov --branch --ignore-not-existing -o coverage/report.lcov
       - codecov/upload:
           file: coverage/report.lcov
       - save_cache:
@@ -174,8 +177,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-ghjobs-audit-{{ arch }}-{{ checksum "Cargo.lock" }}
-            - v1-ghjobs-audit-{{ arch }}-
+            - v1-many-framework-audit-{{ arch }}-{{ checksum "Cargo.lock" }}
+            - v1-many-framework-audit-{{ arch }}-
       - run:
           name: install cargo-audit
           command: cargo install cargo-audit
@@ -183,7 +186,7 @@ jobs:
           name: cargo audit
           command: cargo audit
       - save_cache:
-          key: v1-ghjobs-audit-{{ arch }}-{{ checksum "Cargo.lock" }}
+          key: v1-many-framework-audit-{{ arch }}-{{ checksum "Cargo.lock" }}
           <<: *rust_cache_path
 
 # Re-usable commands
