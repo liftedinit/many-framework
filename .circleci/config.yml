@@ -96,10 +96,6 @@ jobs:
           keys:
             - v1-many-framework-coverage-{{ arch }}-{{ checksum "Cargo.lock" }}
             - v1-many-framework-coverage-{{ arch }}-
-            - v1-many-framework-test-{{ arch }}-{{ checksum "Cargo.lock" }}
-            - v1-many-framework-test-{{ arch }}-
-            - v1-many-framework-build-{{ arch }}-{{ checksum "Cargo.lock" }}
-            - v1-many-framework-build-{{ arch }}-
       - rust/install:
           version: nightly
       - run:
