@@ -1866,7 +1866,7 @@ dependencies = [
 [[package]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=7e3676714faab28365c94387166745549e0f4338#7e3676714faab28365c94387166745549e0f4338"
+source = "git+https://github.com/fmorency/many-rs.git?rev=8ed207def13799af2d75ac298b7365b3fb2e25f4#8ed207def13799af2d75ac298b7365b3fb2e25f4"
 dependencies = [
  "anyhow",
  "asn1",
@@ -1945,7 +1945,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=7e3676714faab28365c94387166745549e0f4338#7e3676714faab28365c94387166745549e0f4338"
+source = "git+https://github.com/fmorency/many-rs.git?rev=8ed207def13799af2d75ac298b7365b3fb2e25f4#8ed207def13799af2d75ac298b7365b3fb2e25f4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2051,7 +2051,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=7e3676714faab28365c94387166745549e0f4338#7e3676714faab28365c94387166745549e0f4338"
+source = "git+https://github.com/fmorency/many-rs.git?rev=8ed207def13799af2d75ac298b7365b3fb2e25f4#8ed207def13799af2d75ac298b7365b3fb2e25f4"
 dependencies = [
  "inflections",
  "proc-macro2",

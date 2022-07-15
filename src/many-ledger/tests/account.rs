@@ -1,7 +1,7 @@
 pub mod common;
 use crate::common::*;
-use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
-use many::server::module::account::{self, AccountModuleBackend};
+use many::server::module::account::features::{FeatureInfo, FeatureSet, TryCreateFeature};
+use many::server::module::account::{self, AccountModuleBackend, AddFeaturesArgs};
 use many::types::identity::testing::identity;
 use many::types::{Either, VecOrSingle};
 use many::Identity;
@@ -527,4 +527,43 @@ fn send_tx_on_behalf_as_owner() {
     // identity(2) is not an account owner
     let result = setup.send_as(identity(2), account_id, identity(4), 10u32, *MFX_SYMBOL);
     assert_many_err(result, many_ledger::error::unauthorized());
+}
+
+#[test]
+/// Issue #169 - account.create
+fn empty_feature_create() {
+    let SetupWithArgs {
+        mut module_impl,
+        id,
+        mut args,
+    } = setup_with_args(AccountType::Multisig);
+
+    // No role, no feature.
+    args.roles = None;
+    args.features = FeatureSet::empty();
+
+    let result = module_impl.create(&id, args);
+    assert!(result.is_err());
+    assert_many_err(result, account::errors::empty_feature());
+}
+
+#[test]
+/// Issue #169 - account.addFeatures
+fn empty_feature_add_features() {
+    let SetupWithAccount {
+        mut module_impl,
+        id,
+        account_id,
+    } = setup_with_account(AccountType::Multisig);
+
+    let result = module_impl.add_features(
+        &id,
+        AddFeaturesArgs {
+            account: account_id,
+            roles: None,
+            features: FeatureSet::empty(),
+        },
+    );
+    assert!(result.is_err());
+    assert_many_err(result, account::errors::empty_feature());
 }
