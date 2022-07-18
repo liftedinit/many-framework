@@ -103,8 +103,7 @@ jobs:
       - run:
           name: Install `many` CLI
           command: |
-            cargo install --git https://github.com/liftedinit/many-rs many-cli --root target/
-            echo 'export PATH=$(pwd)/target/bin:$PATH' >> $BASH_ENV
+            cargo install --git https://github.com/liftedinit/many-rs many-cli --root /usr/local
       - run:
           name: Running BATs tests
           command: bats ledger.bats
