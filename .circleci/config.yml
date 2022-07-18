@@ -101,12 +101,15 @@ jobs:
           version: nightly
       - bats/install
       - run:
-          name: Install `many` CLI
+          name: install `many` CLI
           command: |
             cargo install --git https://github.com/liftedinit/many-rs many-cli --root target/
             sudo cp target/bin/many /usr/local/bin
       - run:
-          name: Running BATs tests
+          name: install `cbor-diag`
+          command: sudo gem install cbor-diag
+      - run:
+          name: running BATs tests
           command: bats .
           working_directory: ./tests/e2e/
   coverage:
@@ -225,7 +228,7 @@ commands:
                 name: installing linux dependencies
                 command: |
                   sudo apt -y update
-                  sudo apt -y install build-essential pkg-config clang libssl-dev
+                  sudo apt -y install build-essential pkg-config clang libssl-dev ruby-dev
 
 workflows:
   ci:
