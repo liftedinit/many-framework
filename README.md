@@ -1,7 +1,8 @@
 # many-framework
 
-![ci](https://img.shields.io/github/workflow/status/liftedinit/many-framework/CI)
-![license](https://img.shields.io/github/license/liftedinit/many-framework)
+[![ci](https://img.shields.io/circleci/build/gh/liftedinit/many-framework)](https://app.circleci.com/pipelines/gh/liftedinit/many-framework)
+[![coverage](https://img.shields.io/codecov/c/gh/liftedinit/many-framework)](https://app.codecov.io/gh/liftedinit/many-framework)
+[![license](https://img.shields.io/github/license/liftedinit/many-framework)](https://github.com/liftedinit/many-framework/blob/main/LICENSE)
 
 A collection of applications based on the [MANY protocol](https://github.com/many-protocol) and [MANY libraries](https://github.com/liftedinit/many-rs/)
 
