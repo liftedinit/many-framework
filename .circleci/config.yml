@@ -104,7 +104,7 @@ jobs:
           name: Install `many` CLI
           command: |
             cargo install --git https://github.com/liftedinit/many-rs many-cli --root target/
-            echo 'export PATH=$HOME/target:$PATH' >> $BASH_ENV
+            echo 'export PATH=$HOME/target/bin:$PATH' >> $BASH_ENV
       - run:
           name: Running `many`
           command: many --help
