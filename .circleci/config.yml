@@ -107,7 +107,7 @@ jobs:
             sudo cp target/bin/many /usr/local/bin
       - run:
           name: Running BATs tests
-          command: bats ledger.bats
+          command: bats .
           working_directory: ./tests/e2e/
   coverage:
     parameters:
