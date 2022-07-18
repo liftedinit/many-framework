@@ -250,7 +250,7 @@ workflows:
           name: build-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2004] #, macos]
       - test:
           pre-steps:
             - install-deps:
@@ -258,7 +258,7 @@ workflows:
           name: test-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2004] #, macos]
           requires:
             - build-v<< matrix.os >>
       - bats:
@@ -268,7 +268,7 @@ workflows:
           name: bats-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2004] #, macos]
           requires:
             - build-v<< matrix.os >>
       - coverage:
