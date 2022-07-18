@@ -104,7 +104,7 @@ jobs:
           name: Install `many` CLI
           command: |
             cargo install --git https://github.com/liftedinit/many-rs many-cli --root target/
-            cp target/bin/many /usr/local/bin
+            sudo cp target/bin/many /usr/local/bin
       - run:
           name: Running BATs tests
           command: bats ledger.bats
