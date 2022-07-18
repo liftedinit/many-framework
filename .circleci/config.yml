@@ -4,6 +4,7 @@ orbs:
   codecov: codecov/codecov@3.2.3
   rust: circleci/rust@1.6.0
   detect: circleci/os-detect@0.3.0
+  bats: circleci/bats@1.0.0
 
 rust_cache_path: &rust_cache_path
   paths:
@@ -85,6 +86,23 @@ jobs:
       - save_cache:
           key: many-framework-{{ .Environment.CACHE_VERSION }}-test-{{ arch }}-{{ checksum "Cargo.lock" }}
           <<: *rust_cache_path
+  bats:
+    parameters:
+      os:
+        type: executor
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - many-framework-{{ .Environment.CACHE_VERSION }}-build-{{ arch }}-{{ checksum "Cargo.lock" }}
+            - many-framework-{{ .Environment.CACHE_VERSION }}-build-{{ arch }}-
+      - rust/install:
+          version: nightly
+      - bats/install
+      - run:
+          name: Running BATs tests
+          command: bats tests/e2e/ledger.bats
   coverage:
     parameters:
       os:
@@ -230,6 +248,16 @@ workflows:
             - install-deps:
                 os: << matrix.os >>
           name: test-v<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux2004, macos]
+          requires:
+            - build-v<< matrix.os >>
+      - bats:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
+          name: bats-v<< matrix.os >>
           matrix:
             parameters:
               os: [linux2004, macos]
