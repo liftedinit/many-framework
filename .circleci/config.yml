@@ -101,6 +101,11 @@ jobs:
           version: nightly
       - bats/install
       - run:
+          name: Install `many` CLI
+          command: |
+            cargo install --git https://github.com/liftedinit/many-rs many-cli --root target/
+            echo 'export PATH=$(pwd)/target:$PATH' >> $BASH_ENV
+      - run:
           name: Running BATs tests
           command: bats tests/e2e/ledger.bats
   coverage:
