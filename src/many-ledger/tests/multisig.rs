@@ -1,26 +1,25 @@
 pub mod common;
-use std::collections::{BTreeMap, BTreeSet};
 
 use common::*;
-use many::server::module::account::features::{multisig::*, TryCreateFeature};
-use many::server::module::ledger;
-use many::{
-    server::module::account::features::multisig::AccountMultisigModuleBackend,
-    server::module::account::{self, AccountModuleBackend},
-    types::{self, identity::testing::identity},
-    Identity,
-};
+use many_error::ManyError;
+use many_identity::testing::identity;
+use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::account::features::multisig::AccountMultisigModuleBackend;
+use many_modules::account::features::{multisig, TryCreateFeature};
+use many_modules::{account, events, ledger};
+use many_types::ledger::TokenAmount;
 use proptest::prelude::*;
 use proptest::test_runner::Config;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Returns informations about the given account
 fn account_info(
     module_impl: &mut LedgerModuleImpl,
-    id: &Identity,
-    account_id: Identity,
+    id: &Address,
+    account_id: Address,
 ) -> account::InfoReturn {
-    AccountModuleBackend::info(
+    account::AccountModuleBackend::info(
         module_impl,
         id,
         account::InfoArgs {
@@ -33,23 +32,23 @@ fn account_info(
 /// Returns the multisig account feature arguments
 fn account_arguments(
     module_impl: &mut LedgerModuleImpl,
-    id: &Identity,
-    account_id: Identity,
-) -> MultisigAccountFeatureArg {
+    id: &Address,
+    account_id: Address,
+) -> multisig::MultisigAccountFeatureArg {
     account_info(module_impl, id, account_id)
         .features
-        .get::<MultisigAccountFeature>()
+        .get::<multisig::MultisigAccountFeature>()
         .unwrap()
         .arg
 }
 
 /// Generate some SubmitTransactionArgs for testing
 fn submit_args(
-    account_id: Identity,
-    transaction: types::events::AccountMultisigTransaction,
+    account_id: Address,
+    transaction: events::AccountMultisigTransaction,
     execute_automatically: Option<bool>,
-) -> SubmitTransactionArgs {
-    SubmitTransactionArgs {
+) -> multisig::SubmitTransactionArgs {
+    multisig::SubmitTransactionArgs {
         account: account_id,
         memo: Some("Foo".to_string()),
         transaction: Box::new(transaction),
@@ -63,12 +62,12 @@ fn submit_args(
 /// Returns the multisig transaction info
 fn tx_info(
     module_impl: &mut LedgerModuleImpl,
-    id: Identity,
+    id: Address,
     token: &minicbor::bytes::ByteVec,
-) -> InfoReturn {
+) -> multisig::InfoReturn {
     let result = module_impl.multisig_info(
         &id,
-        InfoArgs {
+        multisig::InfoArgs {
             token: token.clone(),
         },
     );
@@ -77,7 +76,7 @@ fn tx_info(
 }
 
 /// Return the transaction approbation status for the given identity
-fn get_approbation(info: &InfoReturn, id: &Identity) -> bool {
+fn get_approbation(info: &multisig::InfoReturn, id: &Address) -> bool {
     if let Some(value) = info.approvers.get(id) {
         value.approved
     } else {
@@ -95,7 +94,7 @@ fn set_defaults() {
     } = setup_with_account(AccountType::Multisig);
     let result = module_impl.multisig_set_defaults(
         &id,
-        SetDefaultsArgs {
+        multisig::SetDefaultsArgs {
             account: account_id,
             threshold: Some(1),
             timeout_in_secs: Some(12),
@@ -197,7 +196,7 @@ proptest! {
 
         let result = module_impl.multisig_approve(
             &identity(2),
-            ApproveArgs {
+            multisig::ApproveArgs {
                 token: submit_return.clone().token,
             },
         );
@@ -209,7 +208,7 @@ proptest! {
 
         let result = module_impl.multisig_approve(
             &identity(3),
-            ApproveArgs {
+            multisig::ApproveArgs {
                 token: submit_return.clone().token,
             },
         );
@@ -232,14 +231,14 @@ proptest! {
 
         let result = module_impl.multisig_approve(
             &identity(6),
-            ApproveArgs {
+            multisig::ApproveArgs {
                 token: submit_return.clone().token,
             },
         );
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code(),
-            errors::user_cannot_approve_transaction().code()
+            multisig::errors::user_cannot_approve_transaction().code()
         );
     }
 
@@ -256,7 +255,7 @@ proptest! {
         for i in [id, identity(2), identity(3)] {
             let result = module_impl.multisig_approve(
                 &i,
-                ApproveArgs {
+                multisig::ApproveArgs {
                     token: token.clone(),
                 },
             );
@@ -265,7 +264,7 @@ proptest! {
 
             let result = module_impl.multisig_revoke(
                 &i,
-                RevokeArgs {
+                multisig::RevokeArgs {
                     token: token.clone(),
                 },
             );
@@ -282,11 +281,11 @@ proptest! {
         let token = result.unwrap().token;
         assert!(get_approbation(&tx_info(&mut module_impl, id, &token), &id));
 
-        let result = module_impl.multisig_revoke(&identity(6), RevokeArgs { token });
+        let result = module_impl.multisig_revoke(&identity(6), multisig::RevokeArgs { token });
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().code(),
-            errors::user_cannot_approve_transaction().code()
+            multisig::errors::user_cannot_approve_transaction().code()
         );
     }
 
@@ -374,13 +373,13 @@ proptest! {
 
             let result = module_impl.multisig_withdraw(
                 &i,
-                WithdrawArgs {
+                multisig::WithdrawArgs {
                     token: token.clone(),
                 },
             );
             assert!(result.is_ok());
-            let result = module_impl.multisig_info(&i, InfoArgs { token }).unwrap();
-            assert_eq!(result.state, MultisigTransactionState::Withdrawn);
+            let result = module_impl.multisig_info(&i, multisig::InfoArgs { token }).unwrap();
+            assert_eq!(result.state, multisig::MultisigTransactionState::Withdrawn);
         }
     }
 
@@ -393,14 +392,14 @@ proptest! {
         for i in [identity(2), identity(6)] {
             let result = module_impl.multisig_withdraw(
                 &i,
-                WithdrawArgs {
+                multisig::WithdrawArgs {
                     token: token.clone(),
                 },
             );
             assert!(result.is_err());
             assert_eq!(
                 result.unwrap_err().code(),
-                errors::cannot_execute_transaction().code()
+                multisig::errors::cannot_execute_transaction().code()
             );
         }
     }
@@ -423,7 +422,7 @@ fn expires() {
     setup.assert_multisig_info(&token, |i| {
         assert_eq!(
             i.state,
-            MultisigTransactionState::Pending,
+            multisig::MultisigTransactionState::Pending,
             "State: {:#?}",
             i
         );
@@ -434,14 +433,14 @@ fn expires() {
     assert_eq!(h, 3);
 
     setup.assert_multisig_info(&token, |i| {
-        assert_eq!(i.state, MultisigTransactionState::Expired);
+        assert_eq!(i.state, multisig::MultisigTransactionState::Expired);
     });
 
     // Can't approve.
     setup.block(|setup| {
         assert_eq!(
             setup.multisig_approve(owner_id, &token),
-            Err(errors::transaction_expired_or_withdrawn())
+            Err(multisig::errors::transaction_expired_or_withdrawn())
         );
     });
 }
@@ -451,7 +450,7 @@ fn expires() {
 fn multiple_multisig() {
     let mut setup = Setup::new(true);
     setup.set_balance(setup.id, 1_000_000, *MFX_SYMBOL);
-    let account_ids: Vec<Identity> = (0..5)
+    let account_ids: Vec<Address> = (0..5)
         .into_iter()
         .map(|_| setup.create_account_(AccountType::Multisig))
         .collect();
@@ -486,7 +485,7 @@ fn multiple_multisig() {
         setup.multisig_approve_(identity(2), &tokens[3]);
         assert_eq!(
             setup.multisig_execute(&tokens[2]).unwrap_err(),
-            errors::cannot_execute_transaction(),
+            multisig::errors::cannot_execute_transaction(),
         );
 
         setup.multisig_approve_(identity(3), &tokens[2]);
@@ -506,19 +505,25 @@ fn multiple_multisig() {
     assert_eq!(h, 3);
 
     setup.assert_multisig_info(&tokens[0], |i| {
-        assert_eq!(i.state, MultisigTransactionState::Pending);
+        assert_eq!(i.state, multisig::MultisigTransactionState::Pending);
     });
     setup.assert_multisig_info(&tokens[1], |i| {
-        assert_eq!(i.state, MultisigTransactionState::Pending);
+        assert_eq!(i.state, multisig::MultisigTransactionState::Pending);
     });
     setup.assert_multisig_info(&tokens[2], |i| {
-        assert_eq!(i.state, MultisigTransactionState::ExecutedManually);
+        assert_eq!(
+            i.state,
+            multisig::MultisigTransactionState::ExecutedManually
+        );
     });
     setup.assert_multisig_info(&tokens[3], |i| {
-        assert_eq!(i.state, MultisigTransactionState::ExecutedManually);
+        assert_eq!(
+            i.state,
+            multisig::MultisigTransactionState::ExecutedManually
+        );
     });
     setup.assert_multisig_info(&tokens[4], |i| {
-        assert_eq!(i.state, MultisigTransactionState::Pending);
+        assert_eq!(i.state, multisig::MultisigTransactionState::Pending);
     });
 
     assert_eq!(setup.balance_(account_ids[0]), 0u16);
@@ -541,15 +546,15 @@ fn multisig_send_from_another_identity_owner() {
 
     setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
 
-    // Prepare a Send transaction from acc2 to some Identity
-    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+    // Prepare a Send transaction from acc2 to some Address
+    let send_tx = events::AccountMultisigTransaction::Send(ledger::SendArgs {
         from: Some(acc2),
         to: identity(1234),
         symbol: *MFX_SYMBOL,
-        amount: many::types::ledger::TokenAmount::from(10u16),
+        amount: TokenAmount::from(10u16),
     });
 
-    // Create a multisig tx on acc1 which sends funds from acc2 to some Identity
+    // Create a multisig tx on acc1 which sends funds from acc2 to some Address
     let tx = setup.create_multisig_as(acc1, acc1, send_tx.clone());
     let token = tx.unwrap();
 
@@ -600,16 +605,16 @@ fn multisig_send_from_another_identity_with_perm() {
 
     setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
 
-    // Prepare a Send transaction from acc2 to some Identity.
+    // Prepare a Send transaction from acc2 to some Address.
     // acc2 doesn't have the Multisig feature
-    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+    let send_tx = events::AccountMultisigTransaction::Send(ledger::SendArgs {
         from: Some(acc2),
         to: identity(1234),
         symbol: *MFX_SYMBOL,
-        amount: many::types::ledger::TokenAmount::from(10u16),
+        amount: TokenAmount::from(10u16),
     });
 
-    // Create a multisig tx on acc1 which sends funds from acc2 to some Identity
+    // Create a multisig tx on acc1 which sends funds from acc2 to some Address
     let tx = setup.create_multisig_as(acc1, acc1, send_tx.clone());
     let token = tx.unwrap();
 
@@ -657,15 +662,15 @@ fn recursive_multisig() {
     setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
 
     // acc2 doesn't have the Multisig feature
-    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+    let send_tx = events::AccountMultisigTransaction::Send(ledger::SendArgs {
         from: Some(acc2),
         to: identity(1234),
         symbol: *MFX_SYMBOL,
-        amount: many::types::ledger::TokenAmount::from(10u16),
+        amount: TokenAmount::from(10u16),
     });
 
-    let multisig_tx = types::events::AccountMultisigTransaction::AccountMultisigSubmit(
-        account::features::multisig::SubmitTransactionArgs {
+    let multisig_tx = events::AccountMultisigTransaction::AccountMultisigSubmit(
+        multisig::SubmitTransactionArgs {
             account: acc2,
             memo: None,
             transaction: Box::new(send_tx),
@@ -676,7 +681,7 @@ fn recursive_multisig() {
         },
     );
 
-    // Create a multisig on acc1 which contains a multisig submit on acc2 which sends funds from acc2 to some Identity
+    // Create a multisig on acc1 which contains a multisig submit on acc2 which sends funds from acc2 to some Address
     let tx = setup.create_multisig_as(acc1, acc1, multisig_tx.clone());
     let token = tx.unwrap();
     setup.multisig_approve_(identity(2), &token);
@@ -708,9 +713,7 @@ fn recursive_multisig() {
     assert!(response.data.is_err());
     assert_many_err(
         response.data,
-        many::ManyError::attribute_not_found(
-            account::features::multisig::MultisigAccountFeature::ID,
-        ),
+        ManyError::attribute_not_found(account::features::multisig::MultisigAccountFeature::ID),
     );
 
     // Let's make acc2 a Multisig account
@@ -718,15 +721,15 @@ fn recursive_multisig() {
     setup.set_balance(acc2, 1_000_000, *MFX_SYMBOL);
 
     // Recreate the tx
-    let send_tx = types::events::AccountMultisigTransaction::Send(ledger::SendArgs {
+    let send_tx = events::AccountMultisigTransaction::Send(ledger::SendArgs {
         from: Some(acc2),
         to: identity(1234),
         symbol: *MFX_SYMBOL,
-        amount: many::types::ledger::TokenAmount::from(10u16),
+        amount: TokenAmount::from(10u16),
     });
 
-    let multisig_tx = types::events::AccountMultisigTransaction::AccountMultisigSubmit(
-        account::features::multisig::SubmitTransactionArgs {
+    let multisig_tx = events::AccountMultisigTransaction::AccountMultisigSubmit(
+        multisig::SubmitTransactionArgs {
             account: acc2,
             memo: None,
             transaction: Box::new(send_tx),
@@ -753,7 +756,7 @@ fn recursive_multisig() {
     let response = setup.multisig_execute_(&token);
     assert!(response.data.is_ok());
 
-    // At this point we submitted a new Multisig tx to send funds from acc2 to some Identity
+    // At this point we submitted a new Multisig tx to send funds from acc2 to some Address
     let result: account::features::multisig::SubmitTransactionReturn =
         minicbor::decode(&response.data.unwrap()).unwrap();
     let token = result.token;
@@ -767,4 +770,32 @@ fn recursive_multisig() {
     assert!(response.data.is_ok());
     assert_eq!(setup.balance_(identity(1234)), 10u16);
     assert_eq!(setup.balance_(acc2), 999_990u32);
+}
+
+#[test]
+// Issue #179
+fn approve_executed_tx() {
+    let mut setup = Setup::new(false);
+    let acc1 = setup.create_account(AccountType::Multisig).unwrap();
+    setup.set_balance(acc1, 1_000_000, *MFX_SYMBOL);
+
+    let token = setup.multisig_send_(acc1, identity(1234), 10u16);
+    setup.multisig_approve_(setup.id, &token);
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(acc1), 999_990u32);
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+
+    setup.add_roles(
+        acc1,
+        BTreeMap::from([(
+            identity(6),
+            BTreeSet::from([account::Role::CanMultisigSubmit]),
+        )]),
+    );
+    let result = setup.multisig_approve(identity(6), &token);
+    assert_many_err(result, multisig::errors::transaction_expired_or_withdrawn());
 }

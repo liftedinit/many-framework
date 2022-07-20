@@ -1,8 +1,8 @@
 use clap::Parser;
-use many::server::module::{abci_backend, kvstore};
-use many::server::ManyServer;
-use many::transport::http::HttpServer;
-use many::types::identity::cose::CoseKeyIdentity;
+use many_identity::CoseKeyIdentity;
+use many_modules::{abci_backend, kvstore};
+use many_server::transport::http::HttpServer;
+use many_server::ManyServer;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;

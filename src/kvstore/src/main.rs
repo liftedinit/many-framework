@@ -1,9 +1,8 @@
 use clap::Parser;
-use many::server::module::kvstore::{GetArgs, GetReturns, PutArgs, PutReturn};
-use many::server::module::r#async;
-use many::types::identity::cose::CoseKeyIdentity;
-use many::{Identity, ManyError};
 use many_client::ManyClient;
+use many_error::ManyError;
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::{kvstore, r#async};
 use std::io::Read;
 use std::path::PathBuf;
 use tracing::{error, trace};
@@ -22,7 +21,7 @@ struct Opts {
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Identity>,
+    server_id: Option<Address>,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -86,7 +85,7 @@ struct PutOpt {
 }
 
 fn get(client: ManyClient, key: &[u8], hex: bool) -> Result<(), ManyError> {
-    let arguments = GetArgs {
+    let arguments = kvstore::GetArgs {
         key: key.to_vec().into(),
     };
 
@@ -94,7 +93,7 @@ fn get(client: ManyClient, key: &[u8], hex: bool) -> Result<(), ManyError> {
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
     } else {
-        let result: GetReturns = minicbor::decode(&payload)
+        let result: kvstore::GetReturns = minicbor::decode(&payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
         let value = result.value.unwrap();
 
@@ -108,7 +107,7 @@ fn get(client: ManyClient, key: &[u8], hex: bool) -> Result<(), ManyError> {
 }
 
 fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
-    let arguments = PutArgs {
+    let arguments = kvstore::PutArgs {
         key: key.to_vec().into(),
         value: value.into(),
     };
@@ -127,7 +126,7 @@ fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> 
             Err(ManyError::unexpected_empty_response())
         }
     } else {
-        let _: PutReturn = minicbor::decode(payload)
+        let _: kvstore::PutReturn = minicbor::decode(payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
         Ok(())
     }

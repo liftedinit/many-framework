@@ -1,7 +1,8 @@
 pub mod common;
+
 use common::*;
-use many::server::module::ledger::LedgerModuleBackend;
-use many::server::module::{self};
+use many_modules::ledger;
+use many_modules::ledger::LedgerModuleBackend;
 use proptest::prelude::*;
 
 #[test]
@@ -9,7 +10,7 @@ fn info() {
     let Setup {
         module_impl, id, ..
     } = setup();
-    let result = module_impl.info(&id, module::ledger::InfoArgs {});
+    let result = module_impl.info(&id, ledger::InfoArgs {});
     assert!(result.is_ok());
 }
 

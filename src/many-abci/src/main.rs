@@ -1,9 +1,10 @@
 use clap::Parser;
-use many::server::module::{base, blockchain, r#async};
-use many::server::ManyUrl;
-use many::types::identity::cose::CoseKeyIdentity;
-use many::{Identity, ManyServer};
 use many_client::ManyClient;
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::{base, blockchain, r#async};
+use many_protocol::ManyUrl;
+use many_server::transport::http::HttpServer;
+use many_server::ManyServer;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
@@ -115,7 +116,7 @@ async fn main() {
     // Try to get the status of the backend MANY app.
     let many_client = ManyClient::new(
         &many_app,
-        Identity::anonymous(),
+        Address::anonymous(),
         CoseKeyIdentity::anonymous(),
     )
     .unwrap();
@@ -148,7 +149,7 @@ async fn main() {
     };
 
     let abci_app = tokio::task::spawn_blocking(move || {
-        AbciApp::create(many_app, Identity::anonymous()).unwrap()
+        AbciApp::create(many_app, Address::anonymous()).unwrap()
     })
     .await
     .unwrap();
@@ -193,7 +194,7 @@ async fn main() {
         s.set_fallback_module(backend);
     }
 
-    let mut many_server = many::transport::http::HttpServer::new(server);
+    let mut many_server = HttpServer::new(server);
 
     signal_hook::flag::register(signal_hook::consts::SIGTERM, many_server.term_signal())
         .expect("Could not register signal handler");

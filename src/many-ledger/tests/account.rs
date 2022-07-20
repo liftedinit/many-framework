@@ -1,19 +1,20 @@
 pub mod common;
 use crate::common::*;
-use many::server::module::account::features::{FeatureInfo, FeatureSet, TryCreateFeature};
-use many::server::module::account::{self, AccountModuleBackend, AddFeaturesArgs};
-use many::types::identity::testing::identity;
-use many::types::{Either, VecOrSingle};
-use many::Identity;
+use many_identity::testing::identity;
+use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::account;
+use many_modules::account::features::{FeatureInfo, TryCreateFeature};
+use many_modules::account::AccountModuleBackend;
+use many_types::{Either, VecOrSingle};
 use std::collections::{BTreeMap, BTreeSet};
 
 fn account_info(
     module_impl: &LedgerModuleImpl,
-    id: &Identity,
-    account_id: &Identity,
+    id: &Address,
+    account_id: &Address,
 ) -> account::InfoReturn {
-    let result = AccountModuleBackend::info(
+    let result = account::AccountModuleBackend::info(
         module_impl,
         id,
         account::InfoArgs {
@@ -540,7 +541,7 @@ fn empty_feature_create() {
 
     // No role, no feature.
     args.roles = None;
-    args.features = FeatureSet::empty();
+    args.features = account::features::FeatureSet::empty();
 
     let result = module_impl.create(&id, args);
     assert!(result.is_err());
@@ -558,10 +559,10 @@ fn empty_feature_add_features() {
 
     let result = module_impl.add_features(
         &id,
-        AddFeaturesArgs {
+        account::AddFeaturesArgs {
             account: account_id,
             roles: None,
-            features: FeatureSet::empty(),
+            features: account::features::FeatureSet::empty(),
         },
     );
     assert!(result.is_err());
