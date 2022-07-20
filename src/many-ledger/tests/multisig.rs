@@ -771,3 +771,31 @@ fn recursive_multisig() {
     assert_eq!(setup.balance_(identity(1234)), 10u16);
     assert_eq!(setup.balance_(acc2), 999_990u32);
 }
+
+#[test]
+// Issue #179
+fn approve_executed_tx() {
+    let mut setup = Setup::new(false);
+    let acc1 = setup.create_account(AccountType::Multisig).unwrap();
+    setup.set_balance(acc1, 1_000_000, *MFX_SYMBOL);
+
+    let token = setup.multisig_send_(acc1, identity(1234), 10u16);
+    setup.multisig_approve_(setup.id, &token);
+    setup.multisig_approve_(identity(2), &token);
+    setup.multisig_approve_(identity(3), &token);
+
+    let response = setup.multisig_execute_(&token);
+    assert!(response.data.is_ok());
+    assert_eq!(setup.balance_(acc1), 999_990u32);
+    assert_eq!(setup.balance_(identity(1234)), 10u16);
+
+    setup.add_roles(
+        acc1,
+        BTreeMap::from([(
+            identity(6),
+            BTreeSet::from([account::Role::CanMultisigSubmit]),
+        )]),
+    );
+    let result = setup.multisig_approve(identity(6), &token);
+    assert_many_err(result, errors::transaction_expired_or_withdrawn());
+}
