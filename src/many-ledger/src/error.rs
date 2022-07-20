@@ -1,4 +1,4 @@
-use many::define_attribute_many_error;
+use many_error::define_attribute_many_error;
 
 define_attribute_many_error!(
     attribute 2 => {
