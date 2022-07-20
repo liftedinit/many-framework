@@ -797,5 +797,5 @@ fn approve_executed_tx() {
         )]),
     );
     let result = setup.multisig_approve(identity(6), &token);
-    assert_many_err(result, errors::transaction_expired_or_withdrawn());
+    assert_many_err(result, multisig::errors::transaction_expired_or_withdrawn());
 }
