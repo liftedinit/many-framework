@@ -24,7 +24,7 @@ function setup() {
 
     # Give time to the servers to start.
     sleep 30
-    timeout 30s bash <<EOT
+    timeout 60s bash <<EOT
     while ! many message --server http://localhost:8000 status; do
       sleep 1
     done >/dev/null
@@ -114,42 +114,42 @@ EOT
     check_consistency "$(pem 2)" 1000 0 1 2
 
     # Send a message that's 5 seconds off of being time out.
-    check_consistency "$(pem 1)" 1000000 0 1 2
-    many message --timestamp $(($(date +%s) - (4 * 60 + 50))) --server http://localhost:8003 ledger.send '{
+    many message --timestamp $(($(date +%s) - (4 * 60 + 50))) --server http://localhost:8001 --pem "$(pem 1)" ledger.send '{
         0: "'"$(identity 1)"'",
         1: "'"$(identity 2)"'",
         2: 1000,
         3: "'"$MFX_ADDRESS"'",
     }'
     sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 999000 0 1 2
-    check_consistency "$(pem 2)" 1000 0 1 2
+    check_consistency "$(pem 1)" 998000 0 1 2
+    check_consistency "$(pem 2)" 2000 0 1 2
 
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
     sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 997000 0 1 2
-    check_consistency "$(pem 2)" 3000 0 1 2
+    check_consistency "$(pem 1)" 996000 0 1 2
+    check_consistency "$(pem 2)" 4000 0 1 2
 
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
     # Wait long enough to invalidate the first manual transaction.
-    sleep 10
+    sleep 3
 
     # At this point, start the 4th node and check it can catch up
-    make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000" NODE="3" || {
+    make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" NODE="3" || {
       echo Could not start nodes... >&3
       exit 1
     }
 
     # Give the 4th node some time to boot
     sleep 30
-    timeout 30s bash <<EOT
+    timeout 60s bash <<EOT
     while ! many message --server http://localhost:8003 status; do
       sleep 1
     done >/dev/null
 EOT
-    sleep 12  # Three consensus round.
-    check_consistency "$(pem 1)" 997000 0 1 2 3
-    check_consistency "$(pem 2)" 3000 0 1 2 3
+
+    sleep 10  # Three consensus round.
+    check_consistency "$(pem 1)" 996000 0 1 2 3
+    check_consistency "$(pem 2)" 4000 0 1 2 3
 }
