@@ -15,11 +15,11 @@ function setup() {
     ) > /dev/null
     (
       cd "$GIT_ROOT" || exit 1
-      cargo build
+      cargo build --all-features
     )
 
     # Give time to the servers to start.
-    sleep 1
+    sleep 30
     timeout 30s bash <<EOT
     while ! many message --server http://localhost:8000 status; do
       sleep 1
@@ -78,7 +78,7 @@ function check_consistency() {
 
 @test "$SUITE: Network is consistent with 1 node down" {
     # Bring down node 3.
-    docker stop e2e_tendermint-3_1
+    docker stop e2e-tendermint-3-1
 
     # Check consistency with all nodes up.
     check_consistency "$(pem 1)" 1000000 0 1 2
@@ -98,7 +98,7 @@ function check_consistency() {
     check_consistency "$(pem 2)" 6000 0 1 2
 
     # Bring it back.
-    docker start e2e_tendermint-3_1
+    docker start e2e-tendermint-3-1
     sleep 10
     check_consistency "$(pem 1)" 994000 0 1 2 3
     check_consistency "$(pem 2)" 6000 0 1 2 3
