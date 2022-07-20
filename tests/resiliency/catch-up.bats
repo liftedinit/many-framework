@@ -1,4 +1,5 @@
 GIT_ROOT="$BATS_TEST_DIRNAME/../../"
+MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
 
 load '../test_helper/load'
 
@@ -10,7 +11,7 @@ function setup() {
       make clean
       for i in {0..2}
       do
-          make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000" NODE="${i}" || {
+          make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" NODE="${i}" || {
             echo Could not start nodes... >&3
             exit 1
           }
@@ -112,6 +113,18 @@ EOT
     check_consistency "$(pem 1)" 999000 0 1 2
     check_consistency "$(pem 2)" 1000 0 1 2
 
+    # Send a message that's 5 seconds off of being time out.
+    check_consistency "$(pem 1)" 1000000 0 1 2
+    many message --timestamp $(($(date +%s) - (4 * 60 + 50))) --server http://localhost:8003 ledger.send '{
+        0: "'"$(identity 1)"'",
+        1: "'"$(identity 2)"'",
+        2: 1000,
+        3: "'"$MFX_ADDRESS"'",
+    }'
+    sleep 4  # One consensus round.
+    check_consistency "$(pem 1)" 999000 0 1 2
+    check_consistency "$(pem 2)" 1000 0 1 2
+
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
     sleep 4  # One consensus round.
@@ -120,8 +133,8 @@ EOT
 
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
-    # MANY timeout is 300
-    sleep 301
+    # Wait long enough to invalidate the first manual transaction.
+    sleep 10
 
     # At this point, start the 4th node and check it can catch up
     make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000" NODE="3" || {
