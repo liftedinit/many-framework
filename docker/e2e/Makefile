@@ -81,10 +81,15 @@ start-docker-compose: start-nodes
 start-nodes-background: genfiles/build-abci genfiles/build-ledger genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach
 
-start-node-background: genfiles/build-abci genfiles/build-ledger genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
+start-single-node-background: genfiles/build-abci genfiles/build-ledger genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach tendermint-$(NODE)
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach abci-$(NODE)
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach ledger-$(NODE)
+
+stop-single-node-background:
+	docker-compose -f genfiles/docker-compose.json -p e2e down tendermint-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e down abci-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e down ledger-$(NODE)
 
 chaos:
 	sh chaos.sh
