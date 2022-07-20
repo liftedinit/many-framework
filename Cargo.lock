@@ -1898,7 +1898,6 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1938,7 +1937,6 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1949,7 +1947,6 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "asn1",
  "base32",
@@ -2047,7 +2044,6 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2060,7 +2056,6 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "async-trait",
  "coset",
@@ -2080,7 +2075,6 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2105,7 +2099,6 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "anyhow",
  "asn1",
@@ -2154,7 +2147,6 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
 dependencies = [
  "coset",
  "fixed",
@@ -4249,3 +4241,7 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "many"
+version = "0.1.0"

@@ -1,4 +1,5 @@
 use clap::Parser;
+use many_error::ManyError;
 use many_identity::{Address, CoseKeyIdentity};
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, idstore, ledger};
@@ -225,13 +226,13 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
-            // In ABCI, timeouts will be validated by the ABCI bridge and we should
-            // ignore it. Sometimes blocks might take a while to execute (for example
-            // during a catch up), so it's important not to time out.
-            // TODO: this is wrong since there are other ways of adding transactions
-            //       than using the ABCI bridge. We should _always_ validate the time
-            //       relative to the current block time.
-            s.set_timeout(u64::MAX_VALUE);
+            let m = module_impl.clone();
+            s.set_time_fn(move || {
+                m.lock()
+                    .unwrap()
+                    .get_time()
+                    .ok_or_else(|| ManyError::unknown("Running transactions outside of blocks."))
+            });
 
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
