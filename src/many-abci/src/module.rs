@@ -1,12 +1,13 @@
-use many::message::ResponseMessage;
-use many::server::module::r#async::{StatusArgs, StatusReturn};
-use many::server::module::{abci_frontend, blockchain, r#async};
-use many::types::blockchain::{
+use many_error::ManyError;
+use many_identity::Address;
+use many_modules::r#async::{StatusArgs, StatusReturn};
+use many_modules::{abci_frontend, blockchain, r#async};
+use many_protocol::ResponseMessage;
+use many_types::blockchain::{
     Block, BlockIdentifier, SingleBlockQuery, SingleTransactionQuery, Transaction,
     TransactionIdentifier,
 };
-use many::types::Timestamp;
-use many::{Identity, ManyError};
+use many_types::Timestamp;
 use tendermint::Time;
 use tendermint_rpc::Client;
 
@@ -70,7 +71,7 @@ impl<C: Client> Drop for AbciBlockchainModuleImpl<C> {
 }
 
 impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModuleImpl<C> {
-    fn status(&self, _sender: &Identity, args: StatusArgs) -> Result<StatusReturn, ManyError> {
+    fn status(&self, _sender: &Address, args: StatusArgs) -> Result<StatusReturn, ManyError> {
         let hash = args.token.as_ref();
 
         if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {

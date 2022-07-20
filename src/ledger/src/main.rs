@@ -1,25 +1,23 @@
 use clap::{ArgGroup, Parser};
-use many::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
-use many::message::ResponseMessage;
-use many::server::module::ledger::{BalanceArgs, BalanceReturns, InfoReturns, SendArgs};
-use many::server::module::r#async::attributes::AsyncAttribute;
-use many::server::module::r#async::{StatusArgs, StatusReturn};
-use many::types::identity::cose::CoseKeyIdentity;
-use many::types::ledger::{Symbol, TokenAmount};
-use many::{Identity, ManyError};
 use many_client::ManyClient;
+use many_error::ManyError;
+use many_identity::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::r#async::{StatusArgs, StatusReturn};
+use many_modules::{ledger, r#async};
+use many_protocol::ResponseMessage;
+use many_types::ledger::{Symbol, TokenAmount};
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
-use tracing::{debug, error, info, trace};
-use tracing_subscriber::filter::LevelFilter;
-
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
+use tracing::{debug, error, info, trace};
+use tracing_subscriber::filter::LevelFilter;
 
 mod multisig;
 
@@ -70,7 +68,7 @@ struct Opts {
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Identity>,
+    server_id: Option<Address>,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -134,10 +132,10 @@ pub(crate) struct TargetCommandOpt {
     /// The from identity, if different than the one provided by the
     /// PEM argument.
     #[clap(long)]
-    account: Option<Identity>,
+    account: Option<Address>,
 
     /// The account or target identity.
-    identity: Identity,
+    identity: Address,
 
     /// The amount of tokens.
     amount: BigUint,
@@ -148,12 +146,13 @@ pub(crate) struct TargetCommandOpt {
     symbol: String,
 }
 
-pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, ManyError> {
-    if let Ok(symbol) = Identity::from_str(&symbol) {
+pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Address, ManyError> {
+    if let Ok(symbol) = Address::from_str(&symbol) {
         Ok(symbol)
     } else {
         // Get info.
-        let info: InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
+        let info: ledger::InfoReturns =
+            minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
         info.local_names
             .into_iter()
             .find(|(_, y)| y == &symbol)
@@ -164,18 +163,18 @@ pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Identity, M
 
 fn balance(
     client: ManyClient,
-    account: Option<Identity>,
+    account: Option<Address>,
     symbols: Vec<String>,
 ) -> Result<(), ManyError> {
     // Get info.
-    let info: InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
+    let info: ledger::InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
     let local_names: BTreeMap<String, Symbol> = info
         .local_names
         .iter()
         .map(|(x, y)| (y.clone(), *x))
         .collect();
 
-    let argument = BalanceArgs {
+    let argument = ledger::BalanceArgs {
         account,
         symbols: if symbols.is_empty() {
             None
@@ -184,7 +183,7 @@ fn balance(
                 symbols
                     .iter()
                     .map(|x| {
-                        if let Ok(i) = Identity::from_str(x) {
+                        if let Ok(i) = Address::from_str(x) {
                             Ok(i)
                         } else if let Some(i) = local_names.get(x.as_str()) {
                             Ok(*i)
@@ -205,7 +204,7 @@ fn balance(
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
     } else {
-        let balance: BalanceReturns = minicbor::decode(&payload).unwrap();
+        let balance: ledger::BalanceReturns = minicbor::decode(&payload).unwrap();
         for (symbol, amount) in balance.balances {
             if let Some(symbol_name) = info.local_names.get(&symbol) {
                 println!("{:>12} {} ({})", amount, symbol_name, symbol);
@@ -229,7 +228,7 @@ pub(crate) fn wait_response(
     let payload = data?;
     debug!("response: {}", hex::encode(&payload));
     if payload.is_empty() {
-        let attr = match attributes.get::<AsyncAttribute>() {
+        let attr = match attributes.get::<r#async::attributes::AsyncAttribute>() {
             Ok(attr) => attr,
             _ => {
                 info!("Empty payload.");
@@ -278,8 +277,8 @@ pub(crate) fn wait_response(
 
 fn send(
     client: ManyClient,
-    from: Identity,
-    to: Identity,
+    from: Address,
+    to: Address,
     amount: BigUint,
     symbol: String,
 ) -> Result<(), ManyError> {
@@ -288,7 +287,7 @@ fn send(
     if from.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let arguments = SendArgs {
+        let arguments = ledger::SendArgs {
             from: Some(from),
             to,
             symbol,
@@ -373,7 +372,7 @@ fn main() {
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
             let identity = identity.map(|identity| {
-                Identity::from_str(&identity)
+                Address::from_str(&identity)
                     .or_else(|_| {
                         let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 

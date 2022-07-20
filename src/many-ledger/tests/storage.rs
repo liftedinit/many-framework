@@ -1,21 +1,18 @@
-use std::collections::{BTreeMap, BTreeSet};
-
-use many::{
-    server::module::{
-        account::{self, features::FeatureInfo, AccountModuleBackend, CreateArgs},
-        ledger::{BalanceArgs, LedgerModuleBackend},
-    },
-    types::identity::testing::identity,
-    Identity,
-};
+use many_identity::testing::identity;
+use many_identity::Address;
 use many_ledger::{module::LedgerModuleImpl, storage::LedgerStorage};
+use many_modules::account::features::FeatureInfo;
+use many_modules::account::AccountModuleBackend;
+use many_modules::ledger::LedgerModuleBackend;
+use many_modules::{account, ledger};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Verify persistent storage can be re-loaded
 #[test]
 fn load() {
     let path = tempfile::tempdir().unwrap().into_path();
     #[allow(unused_assignments)]
-    let mut id = Identity::anonymous();
+    let mut id = Address::anonymous();
     // Storage needs to become out-of-scope so it can be re-opened
     {
         let _ = LedgerStorage::new(
@@ -35,7 +32,7 @@ fn load() {
         id = module_impl
             .create(
                 &identity(3),
-                CreateArgs {
+                account::CreateArgs {
                     description: None,
                     roles: Some(BTreeMap::from([(
                         identity(1),
@@ -54,7 +51,7 @@ fn load() {
     let balance = module_impl
         .balance(
             &identity(5),
-            BalanceArgs {
+            ledger::BalanceArgs {
                 account: Some(identity(5)),
                 symbols: Some(vec![identity(1000)].into()),
             },

@@ -1,10 +1,11 @@
 use crate::error;
 use crate::storage::LedgerStorage;
-use many::server::module::account;
-use many::server::module::account::features;
-use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
-use many::types::ledger::{Symbol, TokenAmount};
-use many::{Identity, ManyError};
+use many_error::ManyError;
+use many_identity::Address;
+use many_modules::account;
+use many_modules::account::features;
+use many_modules::account::features::{FeatureInfo, TryCreateFeature};
+use many_types::ledger::{Symbol, TokenAmount};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -71,10 +72,10 @@ impl Ord for FeatureJson {
 
 #[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct AccountJson {
-    pub id: Option<Identity>,
+    pub id: Option<Address>,
     pub subresource_id: Option<u32>,
     pub description: Option<String>,
-    pub roles: BTreeMap<Identity, BTreeSet<String>>,
+    pub roles: BTreeMap<Address, BTreeSet<String>>,
     pub features: BTreeSet<FeatureJson>,
 }
 
@@ -128,9 +129,9 @@ impl AccountJson {
 /// The initial state schema, loaded from JSON.
 #[derive(serde::Deserialize, Clone, Debug, Default)]
 pub struct InitialStateJson {
-    pub identity: Identity,
-    pub initial: BTreeMap<Identity, BTreeMap<String, TokenAmount>>,
-    pub symbols: BTreeMap<Identity, String>,
+    pub identity: Address,
+    pub initial: BTreeMap<Address, BTreeMap<String, TokenAmount>>,
+    pub symbols: BTreeMap<Address, String>,
     pub accounts: Option<Vec<AccountJson>>,
     pub id_store_seed: Option<u64>,
     pub id_store_keys: Option<BTreeMap<String, String>>,
@@ -144,11 +145,11 @@ impl InitialStateJson {
         Ok(s)
     }
 
-    pub fn symbols(&self) -> BTreeMap<Identity, String> {
+    pub fn symbols(&self) -> BTreeMap<Address, String> {
         self.symbols.clone()
     }
 
-    pub fn balances(&self) -> Result<BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>, ManyError> {
+    pub fn balances(&self) -> Result<BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>, ManyError> {
         self.initial
             .iter()
             .map(|(id, b)| {

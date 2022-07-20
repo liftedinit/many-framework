@@ -1,16 +1,17 @@
 use async_trait::async_trait;
 use coset::{CborSerializable, CoseSign1};
-use many::cbor::CborAny;
-use many::message::{
-    decode_response_from_cose_sign1, encode_cose_sign1_from_request, RequestMessageBuilder,
+use many_error::ManyError;
+use many_identity::CoseKeyIdentity;
+use many_modules::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
+use many_modules::base;
+use many_protocol::{
+    decode_request_from_cose_sign1, decode_response_from_cose_sign1,
+    encode_cose_sign1_from_request, encode_cose_sign1_from_response, RequestMessageBuilder,
     ResponseMessage,
 };
-use many::protocol::Attribute;
-use many::server::module::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
-use many::server::module::base;
-use many::transport::LowLevelManyRequestHandler;
-use many::types::identity::cose::CoseKeyIdentity;
-use many::ManyError;
+use many_server::transport::LowLevelManyRequestHandler;
+use many_types::attributes::Attribute;
+use many_types::cbor::CborAny;
 use std::collections::{BTreeMap, BTreeSet};
 use std::default::Default;
 use std::fmt::{Debug, Formatter};
@@ -49,7 +50,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
     }
 
     async fn execute_message(&self, envelope: CoseSign1) -> Result<CoseSign1, ManyError> {
-        let message = many::message::decode_request_from_cose_sign1(envelope.clone(), None)?;
+        let message = decode_request_from_cose_sign1(envelope.clone(), None)?;
         if let Some(info) = self.backend_endpoints.get(&message.method) {
             let is_command = info.is_command;
             let data = envelope
@@ -67,10 +68,10 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                 let response =
                     ResponseMessage::from_request(&message, &self.identity.identity, Ok(vec![]))
                         .with_attribute(
-                            many::server::module::r#async::attributes::ASYNC
+                            many_modules::r#async::attributes::ASYNC
                                 .with_argument(CborAny::Bytes(response.hash.as_bytes().to_vec())),
                         );
-                many::message::encode_cose_sign1_from_response(response, &self.identity)
+                encode_cose_sign1_from_response(response, &self.identity)
                     .map_err(ManyError::unexpected_transport_error)
             } else {
                 let response = self
@@ -103,13 +104,13 @@ impl<C: Client + Sync + Send> LowLevelManyRequestHandler for AbciModuleMany<C> {
             Ok(x) => Ok(x),
             Err(e) => {
                 let response = ResponseMessage::error(&self.identity.identity, None, e);
-                many::message::encode_cose_sign1_from_response(response, &self.identity)
+                encode_cose_sign1_from_response(response, &self.identity)
             }
         }
     }
 }
 
-impl<C: Client + Sync + Send> many::server::module::base::BaseModuleBackend for AbciModuleMany<C> {
+impl<C: Client + Sync + Send> base::BaseModuleBackend for AbciModuleMany<C> {
     fn endpoints(&self) -> Result<base::Endpoints, ManyError> {
         Ok(base::Endpoints(BTreeSet::from_iter(
             self.backend_endpoints.keys().cloned(),

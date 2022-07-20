@@ -1,27 +1,21 @@
 use coset::CborSerializable;
-use many::message::ResponseMessage;
-use many::server::module::abci_backend::{AbciBlock, ManyAbciModuleBackend};
-use many::server::module::account::features::multisig::{
-    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
-};
-use many::server::module::ledger::{BalanceArgs, LedgerCommandsModuleBackend};
-use many::server::module::{self};
-use many::types::events;
-use many::types::ledger::Symbol;
-use many::{
-    server::module::{
-        account::{self, features::FeatureInfo, AccountModuleBackend},
-        idstore::{CredentialId, PublicKey},
-        ledger::LedgerModuleBackend,
-    },
-    types::{
-        identity::{cose::testsutils::generate_random_eddsa_identity, testing::identity},
-        ledger::TokenAmount,
-    },
-    Identity, ManyError,
-};
+use many_error::ManyError;
+use many_identity::testing::identity;
+use many_identity::testsutils::generate_random_eddsa_identity;
+use many_identity::Address;
 use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
+use many_modules::account::features::multisig::{
+    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
+};
+use many_modules::account::features::FeatureInfo;
+use many_modules::account::AccountModuleBackend;
+use many_modules::idstore::{CredentialId, PublicKey};
+use many_modules::ledger::{BalanceArgs, LedgerCommandsModuleBackend, LedgerModuleBackend};
+use many_modules::{account, events, ledger};
+use many_protocol::ResponseMessage;
+use many_types::ledger::{Symbol, TokenAmount};
 use minicbor::bytes::ByteVec;
 use once_cell::sync::Lazy;
 use proptest::prelude::*;
@@ -30,8 +24,8 @@ use std::{
     str::FromStr,
 };
 
-pub static MFX_SYMBOL: Lazy<Identity> = Lazy::new(|| {
-    Identity::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
+pub static MFX_SYMBOL: Lazy<Address> = Lazy::new(|| {
+    Address::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
 });
 
 pub fn assert_many_err<I: std::fmt::Debug + PartialEq>(r: Result<I, ManyError>, err: ManyError) {
@@ -77,7 +71,7 @@ fn create_account_args(account_type: AccountType) -> account::CreateArgs {
 
 pub struct Setup {
     pub module_impl: LedgerModuleImpl,
-    pub id: Identity,
+    pub id: Address,
     pub cred_id: CredentialId,
     pub public_key: PublicKey,
 
@@ -112,12 +106,12 @@ impl Setup {
         }
     }
 
-    pub fn set_balance(&mut self, id: Identity, amount: u64, symbol: Symbol) {
+    pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {
         self.module_impl
             .set_balance_only_for_testing(id, amount, symbol);
     }
 
-    pub fn balance(&self, account: Identity, symbol: Symbol) -> Result<TokenAmount, ManyError> {
+    pub fn balance(&self, account: Address, symbol: Symbol) -> Result<TokenAmount, ManyError> {
         Ok(self
             .module_impl
             .balance(
@@ -133,14 +127,14 @@ impl Setup {
             .unwrap_or_default())
     }
 
-    pub fn balance_(&self, account: Identity) -> TokenAmount {
+    pub fn balance_(&self, account: Address) -> TokenAmount {
         self.balance(account, *MFX_SYMBOL).unwrap()
     }
 
     pub fn send(
         &mut self,
-        from: Identity,
-        to: Identity,
+        from: Address,
+        to: Address,
         amount: impl Into<TokenAmount>,
         symbol: Symbol,
     ) -> Result<(), ManyError> {
@@ -149,15 +143,15 @@ impl Setup {
 
     pub fn send_as(
         &mut self,
-        sender: Identity,
-        from: Identity,
-        to: Identity,
+        sender: Address,
+        from: Address,
+        to: Address,
         amount: impl Into<TokenAmount>,
         symbol: Symbol,
     ) -> Result<(), ManyError> {
         self.module_impl.send(
             &sender,
-            module::ledger::SendArgs {
+            ledger::SendArgs {
                 from: Some(from),
                 to,
                 amount: amount.into(),
@@ -167,29 +161,29 @@ impl Setup {
         Ok(())
     }
 
-    pub fn send_(&mut self, from: Identity, to: Identity, amount: impl Into<TokenAmount>) {
+    pub fn send_(&mut self, from: Address, to: Address, amount: impl Into<TokenAmount>) {
         self.send(from, to, amount, *MFX_SYMBOL)
             .expect("Could not send tokens")
     }
 
     pub fn create_account_as(
         &mut self,
-        id: Identity,
+        id: Address,
         account_type: AccountType,
-    ) -> Result<Identity, ManyError> {
+    ) -> Result<Address, ManyError> {
         let args = create_account_args(account_type);
         self.module_impl.create(&id, args).map(|x| x.id)
     }
 
-    pub fn create_account(&mut self, account_type: AccountType) -> Result<Identity, ManyError> {
+    pub fn create_account(&mut self, account_type: AccountType) -> Result<Address, ManyError> {
         self.create_account_as(self.id, account_type)
     }
 
-    pub fn create_account_(&mut self, account_type: AccountType) -> Identity {
+    pub fn create_account_(&mut self, account_type: AccountType) -> Address {
         self.create_account(account_type).unwrap()
     }
 
-    pub fn create_account_as_(&mut self, id: Identity, account_type: AccountType) -> Identity {
+    pub fn create_account_as_(&mut self, id: Address, account_type: AccountType) -> Address {
         self.create_account_as(id, account_type).unwrap()
     }
 
@@ -220,9 +214,9 @@ impl Setup {
 
     pub fn add_roles_as(
         &mut self,
-        id: Identity,
-        account_id: Identity,
-        roles: BTreeMap<Identity, BTreeSet<account::Role>>,
+        id: Address,
+        account_id: Address,
+        roles: BTreeMap<Address, BTreeSet<account::Role>>,
     ) {
         self.module_impl
             .add_roles(
@@ -237,8 +231,8 @@ impl Setup {
 
     pub fn add_roles(
         &mut self,
-        account_id: Identity,
-        roles: BTreeMap<Identity, BTreeSet<account::Role>>,
+        account_id: Address,
+        roles: BTreeMap<Address, BTreeSet<account::Role>>,
     ) {
         self.add_roles_as(self.id, account_id, roles);
     }
@@ -246,7 +240,7 @@ impl Setup {
     /// Create a multisig transaction using the owner ID.
     pub fn create_multisig(
         &mut self,
-        account_id: Identity,
+        account_id: Address,
         event: events::AccountMultisigTransaction,
     ) -> Result<ByteVec, ManyError> {
         self.create_multisig_as(self.id, account_id, event)
@@ -254,8 +248,8 @@ impl Setup {
 
     pub fn create_multisig_as(
         &mut self,
-        id: Identity,
-        account_id: Identity,
+        id: Address,
+        account_id: Address,
         event: events::AccountMultisigTransaction,
     ) -> Result<ByteVec, ManyError> {
         self.module_impl
@@ -276,7 +270,7 @@ impl Setup {
 
     pub fn create_multisig_(
         &mut self,
-        account_id: Identity,
+        account_id: Address,
         transaction: events::AccountMultisigTransaction,
     ) -> ByteVec {
         self.create_multisig(account_id, transaction).unwrap()
@@ -285,14 +279,14 @@ impl Setup {
     /// Send some tokens as a multisig transaction.
     pub fn multisig_send(
         &mut self,
-        account_id: Identity,
-        to: Identity,
+        account_id: Address,
+        to: Address,
         amount: impl Into<TokenAmount>,
-        symbol: Identity,
+        symbol: Address,
     ) -> Result<ByteVec, ManyError> {
         self.create_multisig(
             account_id,
-            events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+            events::AccountMultisigTransaction::Send(ledger::SendArgs {
                 from: Some(account_id),
                 to,
                 symbol,
@@ -303,8 +297,8 @@ impl Setup {
 
     pub fn multisig_send_(
         &mut self,
-        account_id: Identity,
-        to: Identity,
+        account_id: Address,
+        to: Address,
         amount: impl Into<TokenAmount>,
     ) -> ByteVec {
         self.multisig_send(account_id, to, amount, *MFX_SYMBOL)
@@ -312,21 +306,21 @@ impl Setup {
     }
 
     /// Approve a multisig transaction.
-    pub fn multisig_approve(&mut self, id: Identity, token: &ByteVec) -> Result<(), ManyError> {
+    pub fn multisig_approve(&mut self, id: Address, token: &ByteVec) -> Result<(), ManyError> {
         let token = token.clone();
         self.module_impl
             .multisig_approve(&id, account::features::multisig::ApproveArgs { token })?;
         Ok(())
     }
 
-    pub fn multisig_approve_(&mut self, id: Identity, token: &ByteVec) {
+    pub fn multisig_approve_(&mut self, id: Address, token: &ByteVec) {
         self.multisig_approve(id, token)
             .expect("Could not approve multisig")
     }
 
     pub fn multisig_execute_as(
         &mut self,
-        id: Identity,
+        id: Address,
         token: &ByteVec,
     ) -> Result<ResponseMessage, ManyError> {
         self.module_impl.multisig_execute(
@@ -342,7 +336,7 @@ impl Setup {
         self.multisig_execute_as(self.id, token)
     }
 
-    pub fn multisig_execute_as_(&mut self, id: Identity, token: &ByteVec) -> ResponseMessage {
+    pub fn multisig_execute_as_(&mut self, id: Address, token: &ByteVec) -> ResponseMessage {
         self.multisig_execute_as(id, token).unwrap()
     }
 
@@ -367,7 +361,7 @@ pub fn setup() -> Setup {
 
 pub struct SetupWithArgs {
     pub module_impl: LedgerModuleImpl,
-    pub id: Identity,
+    pub id: Address,
     pub args: account::CreateArgs,
 }
 
@@ -391,8 +385,8 @@ pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
 
 pub struct SetupWithAccount {
     pub module_impl: LedgerModuleImpl,
-    pub id: Identity,
-    pub account_id: Identity,
+    pub id: Address,
+    pub account_id: Address,
 }
 
 pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
@@ -412,23 +406,23 @@ pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
 #[derive(Debug)]
 pub struct SetupWithAccountAndTx {
     pub module_impl: LedgerModuleImpl,
-    pub id: Identity,
-    pub account_id: Identity,
+    pub id: Address,
+    pub account_id: Address,
     pub tx: events::AccountMultisigTransaction,
 }
 
 fn event_from_kind(
     event: events::EventKind,
     module_impl: &mut LedgerModuleImpl,
-    id: Identity,
-    account_id: Identity,
+    id: Address,
+    account_id: Address,
     account_type: AccountType,
 ) -> events::AccountMultisigTransaction {
-    let send_tx = events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+    let send_tx = events::AccountMultisigTransaction::Send(ledger::SendArgs {
         from: Some(account_id),
         to: identity(3),
         symbol: *MFX_SYMBOL,
-        amount: many::types::ledger::TokenAmount::from(10u16),
+        amount: TokenAmount::from(10u16),
     });
 
     match event {
@@ -556,9 +550,7 @@ fn event_from_kind(
                     },
                 );
             }
-            events::AccountMultisigTransaction::AccountMultisigExecute(
-                account::features::multisig::ExecuteArgs { token },
-            )
+            events::AccountMultisigTransaction::AccountMultisigExecute(ExecuteArgs { token })
         }
         events::EventKind::AccountMultisigWithdraw => {
             let token = module_impl
@@ -615,8 +607,8 @@ prop_compose! {
 
 pub fn verify_balance(
     module_impl: &LedgerModuleImpl,
-    id: Identity,
-    symbol: Identity,
+    id: Address,
+    symbol: Address,
     amount: TokenAmount,
 ) {
     let result = module_impl.balance(

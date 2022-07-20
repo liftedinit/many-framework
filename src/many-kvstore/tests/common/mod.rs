@@ -1,9 +1,10 @@
-use many::{types::identity::cose::testsutils::generate_random_eddsa_identity, Identity};
+use many_identity::testsutils::generate_random_eddsa_identity;
+use many_identity::Address;
 use many_kvstore::module::KvStoreModuleImpl;
 
 pub struct Setup {
     pub module_impl: KvStoreModuleImpl,
-    pub id: Identity,
+    pub id: Address,
 }
 
 impl Default for Setup {
