@@ -1898,7 +1898,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1938,7 +1938,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1949,7 +1949,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "asn1",
  "base32",
@@ -2047,7 +2047,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2060,7 +2060,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "async-trait",
  "coset",
@@ -2080,7 +2080,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2105,7 +2105,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "anyhow",
  "asn1",
@@ -2154,7 +2154,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=d53f460268d1b25112bc004fa00c8f61031ab0f7#d53f460268d1b25112bc004fa00c8f61031ab0f7"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=72b978ff9464207b5517dbe2fb3b01b5b56855ff#72b978ff9464207b5517dbe2fb3b01b5b56855ff"
 dependencies = [
  "coset",
  "fixed",
@@ -3131,9 +3131,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.139"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0171ebb889e45aa68b44aee0859b3eede84c6f5f5c228e6f140c0b2a0a46cad6"
+checksum = "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
 dependencies = [
  "serde_derive",
 ]
@@ -3149,9 +3149,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.139"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc1d3230c1de7932af58ad8ffbe1d784bd55efd5a9d84ac24f69c72d83543dfb"
+checksum = "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
 dependencies = [
  "proc-macro2",
  "quote",

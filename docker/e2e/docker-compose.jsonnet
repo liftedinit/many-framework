@@ -43,7 +43,7 @@ local ledger(i, user, id_with_balances) = {
     ] + generate_balance_flags(id_with_balances),
 };
 
-local tendermint(i, user, tendermint_tag="v0.35.1") = {
+local tendermint(i, user, tendermint_tag="v0.35.4") = {
     image: "tendermint/tendermint:" + tendermint_tag,
     command: [
         "--log-level", "info",

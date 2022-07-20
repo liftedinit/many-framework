@@ -8,6 +8,7 @@ use many_server::ManyServer;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
@@ -187,7 +188,7 @@ fn main() {
     let many = ManyServer::simple(
         "many-ledger",
         key,
-        Some(std::env!("CARGO_PKG_VERSION").to_string()),
+        Some(env!("CARGO_PKG_VERSION").to_string()),
         allow_origin,
     );
 
@@ -225,6 +226,9 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
+            let m = module_impl.clone();
+            s.set_time_fn(move || Ok(m.lock().unwrap().get_time().unwrap_or_else(SystemTime::now)));
+
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
     }
