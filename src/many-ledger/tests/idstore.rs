@@ -1,14 +1,15 @@
 pub mod common;
+
 use crate::common::{setup, Setup};
-use many::{
-    server::module::idstore::{self, CredentialId, IdStoreModuleBackend, PublicKey},
-    Identity, ManyError,
-};
+use many_error::ManyError;
+use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::idstore;
+use many_modules::idstore::{CredentialId, IdStoreModuleBackend, PublicKey};
 
 pub struct SetupWithArgs {
     pub module_impl: LedgerModuleImpl,
-    pub id: Identity,
+    pub id: Address,
     pub args: idstore::StoreArgs,
 }
 
@@ -33,7 +34,7 @@ fn setup_with_args() -> SetupWithArgs {
 
 pub struct SetupWithStore {
     pub module_impl: LedgerModuleImpl,
-    pub id: Identity,
+    pub id: Address,
     pub cred_id: CredentialId,
     pub public_key: PublicKey,
     pub recall_phrase: Vec<String>,
@@ -76,7 +77,7 @@ fn store_anon() {
         args,
         ..
     } = setup_with_args();
-    let result = module_impl.store(&Identity::anonymous(), args);
+    let result = module_impl.store(&Address::anonymous(), args);
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code(),
@@ -92,7 +93,7 @@ fn invalid_cred_id_too_small() {
         id,
         mut args,
     } = setup_with_args();
-    args.cred_id = idstore::CredentialId(vec![1; 15].into());
+    args.cred_id = CredentialId(vec![1; 15].into());
     let result = module_impl.store(&id, args);
     assert!(result.is_err());
     assert_eq!(
@@ -109,7 +110,7 @@ fn invalid_cred_id_too_long() {
         id,
         mut args,
     } = setup_with_args();
-    args.cred_id = idstore::CredentialId(vec![1; 1024].into());
+    args.cred_id = CredentialId(vec![1; 1024].into());
     let result = module_impl.store(&id, args);
     assert!(result.is_err());
     assert_eq!(
@@ -170,7 +171,7 @@ fn get_from_address() {
 /// Verify we can't fetch ID from an invalid address
 fn get_from_invalid_address() {
     let SetupWithStore { module_impl, .. } = setup_with_store();
-    let result = module_impl.get_from_address(idstore::GetFromAddressArgs(Identity::anonymous()));
+    let result = module_impl.get_from_address(idstore::GetFromAddressArgs(Address::anonymous()));
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().code(),

@@ -1,13 +1,14 @@
 use crate::storage::AclBTreeMap;
 use crate::{error, storage::KvStoreStorage};
-use many::server::module::abci_backend::{
+use many_error::ManyError;
+use many_identity::Address;
+use many_modules::abci_backend::{
     AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::kvstore::{
+use many_modules::kvstore::{
     DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArg, InfoReturns,
     KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturn,
 };
-use many::{Identity, ManyError};
 use std::collections::BTreeMap;
 use std::path::Path;
 use tracing::info;
@@ -93,14 +94,14 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
 }
 
 impl KvStoreModuleBackend for KvStoreModuleImpl {
-    fn info(&self, _sender: &Identity, _args: InfoArg) -> Result<InfoReturns, ManyError> {
+    fn info(&self, _sender: &Address, _args: InfoArg) -> Result<InfoReturns, ManyError> {
         // Hash the storage.
         let hash = self.storage.hash();
 
         Ok(InfoReturns { hash: hash.into() })
     }
 
-    fn get(&self, sender: &Identity, args: GetArgs) -> Result<GetReturns, ManyError> {
+    fn get(&self, sender: &Address, args: GetArgs) -> Result<GetReturns, ManyError> {
         let value = self.storage.get(sender, &args.key)?;
         Ok(GetReturns {
             value: value.map(|x| x.into()),
@@ -109,12 +110,12 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
 }
 
 impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
-    fn put(&mut self, sender: &Identity, args: PutArgs) -> Result<PutReturn, ManyError> {
+    fn put(&mut self, sender: &Address, args: PutArgs) -> Result<PutReturn, ManyError> {
         self.storage.put(sender, &args.key, args.value.into())?;
         Ok(PutReturn {})
     }
 
-    fn delete(&mut self, sender: &Identity, args: DeleteArgs) -> Result<DeleteReturn, ManyError> {
+    fn delete(&mut self, sender: &Address, args: DeleteArgs) -> Result<DeleteReturn, ManyError> {
         self.storage.delete(sender, &args.key)?;
         Ok(DeleteReturn {})
     }

@@ -1,9 +1,10 @@
 pub mod common;
+
 use common::*;
-use many::server::module::ledger::LedgerCommandsModuleBackend;
-use many::server::module::{self};
-use many::types::identity::testing::identity;
+use many_identity::testing::identity;
 use many_ledger::error;
+use many_modules::ledger;
+use many_modules::ledger::LedgerCommandsModuleBackend;
 use proptest::prelude::*;
 
 proptest! {
@@ -16,7 +17,7 @@ proptest! {
         } = setup();
         let half = amount / 2;
         module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL);
-        let result = module_impl.send(&id, module::ledger::SendArgs {
+        let result = module_impl.send(&id, ledger::SendArgs {
             from: Some(id),
             to: identity(1),
             amount: half.into(),
@@ -36,7 +37,7 @@ proptest! {
         } = setup_with_account(AccountType::Ledger);
         let half = amount / 2;
         module_impl.set_balance_only_for_testing(account_id, amount, *MFX_SYMBOL);
-        let result = module_impl.send(&id, module::ledger::SendArgs {
+        let result = module_impl.send(&id, ledger::SendArgs {
             from: Some(account_id),
             to: identity(1),
             amount: half.into(),
@@ -57,7 +58,7 @@ fn send_account_missing_feature() {
     } = setup_with_account(AccountType::Multisig);
     let result = module_impl.send(
         &identity(2),
-        module::ledger::SendArgs {
+        ledger::SendArgs {
             from: Some(account_id),
             to: identity(1),
             amount: 10u16.into(),
@@ -77,7 +78,7 @@ fn send_invalid_account() {
     } = setup_with_account(AccountType::Multisig);
     let result = module_impl.send(
         &id,
-        module::ledger::SendArgs {
+        ledger::SendArgs {
             from: Some(identity(6)),
             to: identity(1),
             amount: 10u16.into(),

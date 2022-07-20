@@ -1,25 +1,18 @@
 use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
-use many::cbor::CborAny;
-use many::message::error::ManyErrorCode;
-use many::message::{RequestMessage, ResponseMessage};
-use many::server::module;
-use many::server::module::abci_backend::{
+use many_error::{ManyError, ManyErrorCode};
+use many_identity::Address;
+use many_modules::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
 };
-use many::server::module::account::features::{multisig, Feature};
-use many::server::module::account::features::{FeatureInfo, TryCreateFeature};
-use many::server::module::account::AccountModuleBackend;
-use many::server::module::idstore::{
-    GetFromAddressArgs, GetFromRecallPhraseArgs, GetReturns, IdStoreModuleBackend, StoreArgs,
-    StoreReturns,
-};
-use many::server::module::{account, idstore, ledger, EmptyReturn, ManyModuleInfo};
-use many::types::events;
-use many::types::ledger::Symbol;
-use many::types::{CborRange, Timestamp, VecOrSingle};
-use many::{Identity, ManyError, ManyModule};
+use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
+use many_modules::account::AccountModuleBackend;
+use many_modules::{account, events, idstore, ledger, EmptyReturn, ManyModule, ManyModuleInfo};
+use many_protocol::{RequestMessage, ResponseMessage};
+use many_types::cbor::CborAny;
+use many_types::ledger::Symbol;
+use many_types::{CborRange, Timestamp, VecOrSingle};
 use minicbor::bytes::ByteVec;
 use minicbor::decode;
 use std::collections::{BTreeMap, BTreeSet};
@@ -107,10 +100,10 @@ type EventLogResult = Result<events::EventLog, ManyError>;
 
 fn filter_account<'a>(
     it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
-    account: Option<VecOrSingle<Identity>>,
+    account: Option<VecOrSingle<Address>>,
 ) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
     if let Some(account) = account {
-        let account: Vec<Identity> = account.into();
+        let account: Vec<Address> = account.into();
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
@@ -224,12 +217,7 @@ impl LedgerModuleImpl {
     }
 
     #[cfg(feature = "balance_testing")]
-    pub fn set_balance_only_for_testing(
-        &mut self,
-        account: Identity,
-        balance: u64,
-        symbol: Identity,
-    ) {
+    pub fn set_balance_only_for_testing(&mut self, account: Address, balance: u64, symbol: Symbol) {
         self.storage
             .set_balance_only_for_testing(account, balance, symbol);
     }
@@ -238,7 +226,7 @@ impl LedgerModuleImpl {
 impl ledger::LedgerModuleBackend for LedgerModuleImpl {
     fn info(
         &self,
-        _sender: &Identity,
+        _sender: &Address,
         _args: ledger::InfoArgs,
     ) -> Result<ledger::InfoReturns, ManyError> {
         let storage = &self.storage;
@@ -262,7 +250,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
 
     fn balance(
         &self,
-        sender: &Identity,
+        sender: &Address,
         args: ledger::BalanceArgs,
     ) -> Result<ledger::BalanceReturns, ManyError> {
         let ledger::BalanceArgs { account, symbols } = args;
@@ -282,11 +270,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
 }
 
 impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
-    fn send(
-        &mut self,
-        sender: &Identity,
-        args: ledger::SendArgs,
-    ) -> Result<EmptyReturn, ManyError> {
+    fn send(&mut self, sender: &Address, args: ledger::SendArgs) -> Result<EmptyReturn, ManyError> {
         let ledger::SendArgs {
             from,
             to,
@@ -317,23 +301,17 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
     }
 }
 
-impl module::events::EventsModuleBackend for LedgerModuleImpl {
-    fn info(
-        &self,
-        _args: module::events::InfoArgs,
-    ) -> Result<module::events::InfoReturn, ManyError> {
+impl events::EventsModuleBackend for LedgerModuleImpl {
+    fn info(&self, _args: events::InfoArgs) -> Result<events::InfoReturn, ManyError> {
         use strum::IntoEnumIterator;
-        Ok(module::events::InfoReturn {
+        Ok(events::InfoReturn {
             total: self.storage.nb_events(),
             event_types: events::EventKind::iter().collect(),
         })
     }
 
-    fn list(
-        &self,
-        args: module::events::ListArgs,
-    ) -> Result<module::events::ListReturns, ManyError> {
-        let module::events::ListArgs {
+    fn list(&self, args: events::ListArgs) -> Result<events::ListReturns, ManyError> {
+        let events::ListArgs {
             count,
             order,
             filter,
@@ -363,7 +341,7 @@ impl module::events::EventsModuleBackend for LedgerModuleImpl {
 
         let events: Vec<events::EventLog> = iter.take(count).collect::<Result<_, _>>()?;
 
-        Ok(module::events::ListReturns { nb_events, events })
+        Ok(events::ListReturns { nb_events, events })
     }
 }
 
@@ -453,10 +431,10 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
     }
 }
 
-impl account::AccountModuleBackend for LedgerModuleImpl {
+impl AccountModuleBackend for LedgerModuleImpl {
     fn create(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: account::CreateArgs,
     ) -> Result<account::CreateReturn, ManyError> {
         let account = account::Account::create(sender, args);
@@ -469,7 +447,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn set_description(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: account::SetDescriptionArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
@@ -487,7 +465,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn list_roles(
         &self,
-        _sender: &Identity,
+        _sender: &Address,
         args: account::ListRolesArgs,
     ) -> Result<account::ListRolesReturn, ManyError> {
         let account = self
@@ -501,7 +479,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn get_roles(
         &self,
-        _sender: &Identity,
+        _sender: &Address,
         args: account::GetRolesArgs,
     ) -> Result<account::GetRolesReturn, ManyError> {
         let account = self
@@ -519,7 +497,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn add_roles(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: account::AddRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
@@ -536,7 +514,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn remove_roles(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: account::RemoveRolesArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
@@ -553,7 +531,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn info(
         &self,
-        _sender: &Identity,
+        _sender: &Address,
         args: account::InfoArgs,
     ) -> Result<account::InfoReturn, ManyError> {
         let account::Account {
@@ -576,7 +554,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn disable(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: account::DisableArgs,
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
@@ -594,7 +572,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 
     fn add_features(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: account::AddFeaturesArgs,
     ) -> Result<account::AddFeaturesReturn, ManyError> {
         let account = self
@@ -611,7 +589,7 @@ impl account::AccountModuleBackend for LedgerModuleImpl {
 impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
     fn multisig_submit_transaction(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         arg: multisig::SubmitTransactionArgs,
     ) -> Result<multisig::SubmitTransactionReturn, ManyError> {
         let token = self.storage.create_multisig_transaction(sender, arg)?;
@@ -622,7 +600,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
     fn multisig_info(
         &self,
-        _sender: &Identity,
+        _sender: &Address,
         args: multisig::InfoArgs,
     ) -> Result<multisig::InfoReturn, ManyError> {
         let info = self.storage.get_multisig_info(&args.token)?;
@@ -631,7 +609,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
     fn multisig_set_defaults(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: multisig::SetDefaultsArgs,
     ) -> Result<multisig::SetDefaultsReturn, ManyError> {
         self.storage
@@ -641,7 +619,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
     fn multisig_approve(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: multisig::ApproveArgs,
     ) -> Result<EmptyReturn, ManyError> {
         self.storage
@@ -651,7 +629,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
     fn multisig_revoke(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: multisig::RevokeArgs,
     ) -> Result<EmptyReturn, ManyError> {
         self.storage
@@ -661,7 +639,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
     fn multisig_execute(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: multisig::ExecuteArgs,
     ) -> Result<ResponseMessage, ManyError> {
         self.storage.execute_multisig(sender, args.token.as_slice())
@@ -669,7 +647,7 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
     fn multisig_withdraw(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         args: multisig::WithdrawArgs,
     ) -> Result<EmptyReturn, ManyError> {
         self.storage
@@ -680,14 +658,14 @@ impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
 
 /// A module for returning the features by this account.
 pub struct AccountFeatureModule<T: AccountModuleBackend> {
-    inner: module::account::AccountModule<T>,
+    inner: account::AccountModule<T>,
     info: ManyModuleInfo,
 }
 
 impl<T: AccountModuleBackend> AccountFeatureModule<T> {
     pub fn new(
-        inner: module::account::AccountModule<T>,
-        features: impl IntoIterator<Item = Feature>,
+        inner: account::AccountModule<T>,
+        features: impl IntoIterator<Item = account::features::Feature>,
     ) -> Self {
         let mut info: ManyModuleInfo = inner.info().clone();
         info.attribute = info.attribute.map(|mut a| {
@@ -749,16 +727,16 @@ pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
     Ok(recall_phrase)
 }
 
-impl IdStoreModuleBackend for LedgerModuleImpl {
+impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
     fn store(
         &mut self,
-        sender: &Identity,
-        StoreArgs {
+        sender: &Address,
+        idstore::StoreArgs {
             address,
             cred_id,
             public_key,
-        }: StoreArgs,
-    ) -> Result<StoreReturns, ManyError> {
+        }: idstore::StoreArgs,
+    ) -> Result<idstore::StoreReturns, ManyError> {
         if sender.is_anonymous() {
             return Err(ManyError::invalid_identity());
         }
@@ -806,42 +784,45 @@ impl IdStoreModuleBackend for LedgerModuleImpl {
 
         self.storage
             .store(&recall_phrase, &address, cred_id, public_key)?;
-        Ok(StoreReturns(recall_phrase))
+        Ok(idstore::StoreReturns(recall_phrase))
     }
 
     fn get_from_recall_phrase(
         &self,
-        args: GetFromRecallPhraseArgs,
-    ) -> Result<GetReturns, ManyError> {
+        args: idstore::GetFromRecallPhraseArgs,
+    ) -> Result<idstore::GetReturns, ManyError> {
         let (cred_id, public_key) = self.storage.get_from_recall_phrase(&args.0)?;
-        Ok(GetReturns {
+        Ok(idstore::GetReturns {
             cred_id,
             public_key,
         })
     }
 
-    fn get_from_address(&self, args: GetFromAddressArgs) -> Result<GetReturns, ManyError> {
+    fn get_from_address(
+        &self,
+        args: idstore::GetFromAddressArgs,
+    ) -> Result<idstore::GetReturns, ManyError> {
         let (cred_id, public_key) = self.storage.get_from_address(&args.0)?;
-        Ok(GetReturns {
+        Ok(idstore::GetReturns {
             cred_id,
             public_key,
         })
     }
 }
 
-pub struct IdStoreWebAuthnModule<T: IdStoreModuleBackend> {
-    pub inner: module::idstore::IdStoreModule<T>,
+pub struct IdStoreWebAuthnModule<T: idstore::IdStoreModuleBackend> {
+    pub inner: idstore::IdStoreModule<T>,
     pub check_webauthn: bool,
 }
 
-impl<T: IdStoreModuleBackend> Debug for IdStoreWebAuthnModule<T> {
+impl<T: idstore::IdStoreModuleBackend> Debug for IdStoreWebAuthnModule<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("IdStoreWebAuthnModule")
     }
 }
 
 #[async_trait::async_trait]
-impl<T: IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
+impl<T: idstore::IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
     fn info(&self) -> &ManyModuleInfo {
         self.inner.info()
     }
@@ -869,10 +850,9 @@ mod tests {
     use crate::json::InitialStateJson;
     use crate::module::LedgerModuleImpl;
     use coset::CborSerializable;
-    use many::{
-        server::module::idstore::{self, CredentialId, IdStoreModuleBackend},
-        types::identity::cose::testsutils::generate_random_eddsa_identity,
-    };
+    use many_identity::testsutils::generate_random_eddsa_identity;
+    use many_modules::idstore;
+    use many_modules::idstore::IdStoreModuleBackend;
 
     #[test]
     /// Test every recall phrase generation codepath
@@ -889,7 +869,7 @@ mod tests {
             false,
         )
         .unwrap();
-        let cred_id = CredentialId(vec![1; 16].into());
+        let cred_id = idstore::CredentialId(vec![1; 16].into());
         let id = cose_key_id.identity;
 
         // Basic call

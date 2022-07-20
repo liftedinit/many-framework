@@ -1,17 +1,13 @@
 use crate::error;
 use crate::module::validate_account;
-use many::message::ResponseMessage;
-use many::server::module;
-use many::server::module::abci_backend::AbciCommitInfo;
-use many::server::module::account::features::multisig::MultisigTransactionState;
-use many::server::module::account::features::multisig::{self, SubmitTransactionReturn};
-use many::server::module::account::features::FeatureInfo;
-use many::server::module::idstore;
-use many::server::module::idstore::{CredentialId, PublicKey, RecallPhrase};
-use many::server::module::{account, EmptyReturn};
-use many::types::ledger::{Symbol, TokenAmount};
-use many::types::{events, CborRange, Either, SortOrder, Timestamp};
-use many::{Identity, ManyError};
+use many_error::ManyError;
+use many_identity::Address;
+use many_modules::abci_backend::AbciCommitInfo;
+use many_modules::account::features::FeatureInfo;
+use many_modules::{account, events, idstore, EmptyReturn};
+use many_protocol::ResponseMessage;
+use many_types::ledger::{Symbol, TokenAmount};
+use many_types::{CborRange, Either, SortOrder, Timestamp};
 use merk::tree::Tree;
 use merk::{rocksdb, BatchEntry, Op};
 use std::cmp::Ordering;
@@ -28,7 +24,7 @@ fn _execute_multisig_tx(
 ) -> Result<Vec<u8>, ManyError> {
     let sender = &storage.account;
     match &storage.info.transaction {
-        events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+        events::AccountMultisigTransaction::Send(many_modules::ledger::SendArgs {
             from,
             to,
             symbol,
@@ -108,7 +104,7 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountMultisigSubmit(arg) => {
             let token = ledger.create_multisig_transaction(sender, arg.clone())?;
-            minicbor::to_vec(SubmitTransactionReturn {
+            minicbor::to_vec(account::features::multisig::SubmitTransactionReturn {
                 token: token.into(),
             })
         }
@@ -138,7 +134,7 @@ fn _execute_multisig_tx(
             minicbor::to_vec(EmptyReturn)
         }
 
-        _ => return Err(multisig::errors::transaction_type_unsupported()),
+        _ => return Err(account::features::multisig::errors::transaction_type_unsupported()),
     }
     .map_err(|e| ManyError::serialization_error(e.to_string()))
 }
@@ -147,10 +143,10 @@ fn _execute_multisig_tx(
 #[cbor(map)]
 pub struct MultisigTransactionStorage {
     #[n(0)]
-    pub account: Identity,
+    pub account: Address,
 
     #[n(1)]
-    pub info: multisig::InfoReturn,
+    pub info: account::features::multisig::InfoReturn,
 
     #[n(2)]
     pub creation: SystemTime,
@@ -160,7 +156,7 @@ pub struct MultisigTransactionStorage {
 }
 
 impl MultisigTransactionStorage {
-    pub fn disable(&mut self, state: MultisigTransactionState) {
+    pub fn disable(&mut self, state: account::features::multisig::MultisigTransactionState) {
         self.disabled = true;
         self.info.state = state;
     }
@@ -179,10 +175,10 @@ pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 mont
 #[cbor(map)]
 struct CredentialStorage {
     #[n(0)]
-    cred_id: CredentialId,
+    cred_id: idstore::CredentialId,
 
     #[n(1)]
-    public_key: PublicKey,
+    public_key: idstore::PublicKey,
 }
 
 enum IdStoreRootSeparator {
@@ -212,7 +208,7 @@ const HEIGHT_EVENTID_SHIFT: u64 = 32;
 const EVENT_ID_KEY_SIZE_IN_BYTES: usize = 32;
 
 /// Returns the key for the persistent kv-store.
-pub(super) fn key_for_account_balance(id: &Identity, symbol: &Symbol) -> Vec<u8> {
+pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{}/{}", id, symbol).into_bytes()
 }
 
@@ -230,7 +226,7 @@ pub(super) fn key_for_event(id: events::EventId) -> Vec<u8> {
     vec![EVENTS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
-pub(super) fn key_for_account(id: &Identity) -> Vec<u8> {
+pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
     format!("/accounts/{}", id).into_bytes()
 }
 
@@ -265,16 +261,16 @@ pub struct LedgerStorage {
     current_hash: Option<Vec<u8>>,
 
     next_account_id: u32,
-    account_identity: Identity,
+    account_identity: Address,
 }
 
 impl LedgerStorage {
     #[cfg(feature = "balance_testing")]
     pub(crate) fn set_balance_only_for_testing(
         &mut self,
-        account: Identity,
+        account: Address,
         amount: u64,
-        symbol: Identity,
+        symbol: Address,
     ) {
         assert!(self.symbols.contains_key(&symbol));
         // Make sure we don't run this function when the store has started.
@@ -328,7 +324,7 @@ impl LedgerStorage {
                 u32::from_be_bytes(bytes)
             });
 
-        let account_identity: Identity = Identity::from_bytes(
+        let account_identity: Address = Address::from_bytes(
             &persistent_store
                 .get(b"/config/identity")
                 .expect("Could not open storage.")
@@ -358,9 +354,9 @@ impl LedgerStorage {
 
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeMap<Symbol, String>,
-        initial_balances: BTreeMap<Identity, BTreeMap<Symbol, TokenAmount>>,
+        initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
         persistent_path: P,
-        identity: Identity,
+        identity: Address,
         blockchain: bool,
         maybe_seed: Option<u64>,
         maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -449,7 +445,7 @@ impl LedgerStorage {
             })
     }
 
-    fn new_account_id(&mut self) -> Identity {
+    fn new_account_id(&mut self) -> Address {
         let current_id = self.next_account_id;
         self.next_account_id += 1;
         self.persistent_store
@@ -519,7 +515,7 @@ impl LedgerStorage {
 
             if now >= storage.info.timeout.0 {
                 if !storage.disabled {
-                    storage.disable(MultisigTransactionState::Expired);
+                    storage.disable(account::features::multisig::MultisigTransactionState::Expired);
 
                     if let Ok(v) = minicbor::to_vec(storage) {
                         batch.push((k.to_vec(), Op::Put(v)));
@@ -604,7 +600,7 @@ impl LedgerStorage {
         }
     }
 
-    pub fn get_balance(&self, identity: &Identity, symbol: &Symbol) -> TokenAmount {
+    pub fn get_balance(&self, identity: &Address, symbol: &Symbol) -> TokenAmount {
         if identity.is_anonymous() {
             TokenAmount::zero()
         } else {
@@ -616,7 +612,7 @@ impl LedgerStorage {
         }
     }
 
-    fn get_all_balances(&self, identity: &Identity) -> BTreeMap<&Symbol, TokenAmount> {
+    fn get_all_balances(&self, identity: &Address) -> BTreeMap<&Symbol, TokenAmount> {
         if identity.is_anonymous() {
             // Anonymous cannot hold funds.
             BTreeMap::new()
@@ -641,7 +637,7 @@ impl LedgerStorage {
 
     pub fn get_multiple_balances(
         &self,
-        identity: &Identity,
+        identity: &Address,
         symbols: &BTreeSet<Symbol>,
     ) -> BTreeMap<&Symbol, TokenAmount> {
         if symbols.is_empty() {
@@ -656,8 +652,8 @@ impl LedgerStorage {
 
     pub fn send(
         &mut self,
-        from: &Identity,
-        to: &Identity,
+        from: &Address,
+        to: &Address,
         symbol: &Symbol,
         amount: TokenAmount,
     ) -> Result<(), ManyError> {
@@ -729,14 +725,17 @@ impl LedgerStorage {
         &mut self,
         mut account: account::Account,
         add_event: bool,
-    ) -> Result<Identity, ManyError> {
+    ) -> Result<Address, ManyError> {
         let id = self.new_account_id();
 
         // The account MUST own itself.
         account.add_role(&id, account::Role::Owner);
 
         // Set the multisig threshold properly.
-        if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
+        if let Ok(mut multisig) = account
+            .features
+            .get::<account::features::multisig::MultisigAccountFeature>()
+        {
             multisig.arg.threshold = Some(
                 multisig.arg.threshold.unwrap_or(
                     account
@@ -783,15 +782,15 @@ impl LedgerStorage {
         Ok(id)
     }
 
-    pub fn add_account(&mut self, account: account::Account) -> Result<Identity, ManyError> {
+    pub fn add_account(&mut self, account: account::Account) -> Result<Address, ManyError> {
         let id = self._add_account(account, true)?;
         Ok(id)
     }
 
     pub fn set_multisig_defaults(
         &mut self,
-        sender: &Identity,
-        args: multisig::SetDefaultsArgs,
+        sender: &Address,
+        args: account::features::multisig::SetDefaultsArgs,
     ) -> Result<(), ManyError> {
         // Verify the sender has the rights to the account.
         let mut account = self
@@ -801,7 +800,10 @@ impl LedgerStorage {
         account.needs_role(sender, [account::Role::Owner])?;
 
         // Set the multisig threshold properly.
-        if let Ok(mut multisig) = account.features.get::<multisig::MultisigAccountFeature>() {
+        if let Ok(mut multisig) = account
+            .features
+            .get::<account::features::multisig::MultisigAccountFeature>()
+        {
             if let Some(threshold) = args.threshold {
                 multisig.arg.threshold = Some(threshold);
             }
@@ -828,7 +830,7 @@ impl LedgerStorage {
         Ok(())
     }
 
-    pub fn disable_account(&mut self, id: &Identity) -> Result<(), ManyError> {
+    pub fn disable_account(&mut self, id: &Address) -> Result<(), ManyError> {
         let mut account = self
             .get_account_even_disabled(id)
             .ok_or_else(|| account::errors::unknown_account(*id))?;
@@ -942,7 +944,7 @@ impl LedgerStorage {
         Ok(())
     }
 
-    pub fn get_account(&self, id: &Identity) -> Option<account::Account> {
+    pub fn get_account(&self, id: &Address) -> Option<account::Account> {
         self.get_account_even_disabled(id).and_then(|x| {
             if x.disabled.is_none() || x.disabled == Some(Either::Left(false)) {
                 Some(x)
@@ -952,7 +954,7 @@ impl LedgerStorage {
         })
     }
 
-    pub fn get_account_even_disabled(&self, id: &Identity) -> Option<account::Account> {
+    pub fn get_account_even_disabled(&self, id: &Address) -> Option<account::Account> {
         self.persistent_store
             .get(&key_for_account(id))
             .unwrap_or_default()
@@ -966,7 +968,7 @@ impl LedgerStorage {
 
     pub fn commit_account(
         &mut self,
-        id: &Identity,
+        id: &Address,
         account: account::Account,
     ) -> Result<(), ManyError> {
         tracing::debug!("commit({:?})", account);
@@ -1014,8 +1016,8 @@ impl LedgerStorage {
 
     pub fn create_multisig_transaction(
         &mut self,
-        sender: &Identity,
-        arg: multisig::SubmitTransactionArgs,
+        sender: &Address,
+        arg: account::features::multisig::SubmitTransactionArgs,
     ) -> Result<Vec<u8>, ManyError> {
         let event_id = self.new_event_id();
         let account_id = arg.account;
@@ -1030,7 +1032,9 @@ impl LedgerStorage {
             [account::Role::CanMultisigSubmit, account::Role::Owner],
         )?;
 
-        let multisig_f = account.features.get::<multisig::MultisigAccountFeature>()?;
+        let multisig_f = account
+            .features
+            .get::<account::features::multisig::MultisigAccountFeature>()?;
 
         let threshold = match arg.threshold {
             Some(t) if is_owner => t,
@@ -1060,12 +1064,15 @@ impl LedgerStorage {
         let time = self.now();
 
         // Set the approvers list to include the sender as true.
-        let approvers = BTreeMap::from_iter([(*sender, multisig::ApproverInfo { approved: true })]);
+        let approvers = BTreeMap::from_iter([(
+            *sender,
+            account::features::multisig::ApproverInfo { approved: true },
+        )]);
 
         let timeout = Timestamp::from(time + Duration::from_secs(timeout_in_secs));
         let storage = MultisigTransactionStorage {
             account: account_id,
-            info: multisig::InfoReturn {
+            info: account::features::multisig::InfoReturn {
                 memo: arg.memo.clone(),
                 transaction: arg.transaction.as_ref().clone(),
                 submitter: *sender,
@@ -1074,7 +1081,7 @@ impl LedgerStorage {
                 execute_automatically,
                 timeout,
                 data: arg.data.clone(),
-                state: MultisigTransactionState::Pending,
+                state: account::features::multisig::MultisigTransactionState::Pending,
             },
             creation: self.now(),
             disabled: false,
@@ -1101,15 +1108,15 @@ impl LedgerStorage {
             .persistent_store
             .get(&key_for_multisig_transaction(tx_id))
             .unwrap_or(None)
-            .ok_or_else(multisig::errors::transaction_cannot_be_found)?;
+            .ok_or_else(account::features::multisig::errors::transaction_cannot_be_found)?;
         minicbor::decode::<MultisigTransactionStorage>(&storage_bytes)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))
     }
 
-    pub fn approve_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<bool, ManyError> {
+    pub fn approve_multisig(&mut self, sender: &Address, tx_id: &[u8]) -> Result<bool, ManyError> {
         let mut storage = self.get_multisig_info(tx_id)?;
         if storage.disabled {
-            return Err(multisig::errors::transaction_expired_or_withdrawn());
+            return Err(account::features::multisig::errors::transaction_expired_or_withdrawn());
         }
 
         let account = self
@@ -1121,7 +1128,7 @@ impl LedgerStorage {
             && !account.has_role(sender, account::Role::CanMultisigSubmit)
             && !account.has_role(sender, account::Role::Owner)
         {
-            return Err(multisig::errors::user_cannot_approve_transaction());
+            return Err(account::features::multisig::errors::user_cannot_approve_transaction());
         }
 
         // Update the entry.
@@ -1149,10 +1156,10 @@ impl LedgerStorage {
         Ok(false)
     }
 
-    pub fn revoke_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<bool, ManyError> {
+    pub fn revoke_multisig(&mut self, sender: &Address, tx_id: &[u8]) -> Result<bool, ManyError> {
         let mut storage = self.get_multisig_info(tx_id)?;
         if storage.disabled {
-            return Err(multisig::errors::transaction_expired_or_withdrawn());
+            return Err(account::features::multisig::errors::transaction_expired_or_withdrawn());
         }
 
         let account = self
@@ -1168,7 +1175,7 @@ impl LedgerStorage {
         {
             storage.info.approvers.entry(*sender).or_default().approved = false;
         } else {
-            return Err(multisig::errors::user_cannot_approve_transaction());
+            return Err(account::features::multisig::errors::user_cannot_approve_transaction());
         }
 
         self.commit_multisig_transaction(tx_id, &storage)?;
@@ -1182,12 +1189,12 @@ impl LedgerStorage {
 
     pub fn execute_multisig(
         &mut self,
-        sender: &Identity,
+        sender: &Address,
         tx_id: &[u8],
     ) -> Result<ResponseMessage, ManyError> {
         let storage = self.get_multisig_info(tx_id)?;
         if storage.disabled {
-            return Err(multisig::errors::transaction_expired_or_withdrawn());
+            return Err(account::features::multisig::errors::transaction_expired_or_withdrawn());
         }
 
         // Verify the sender has the rights to the account.
@@ -1197,7 +1204,7 @@ impl LedgerStorage {
 
         // TODO: Better error message
         if !(account.has_role(sender, account::Role::Owner) || storage.info.submitter == *sender) {
-            return Err(multisig::errors::cannot_execute_transaction());
+            return Err(account::features::multisig::errors::cannot_execute_transaction());
         }
 
         if storage.should_execute() {
@@ -1210,14 +1217,14 @@ impl LedgerStorage {
             });
             Ok(response)
         } else {
-            Err(multisig::errors::cannot_execute_transaction())
+            Err(account::features::multisig::errors::cannot_execute_transaction())
         }
     }
 
-    pub fn withdraw_multisig(&mut self, sender: &Identity, tx_id: &[u8]) -> Result<(), ManyError> {
+    pub fn withdraw_multisig(&mut self, sender: &Address, tx_id: &[u8]) -> Result<(), ManyError> {
         let storage = self.get_multisig_info(tx_id)?;
         if storage.disabled {
-            return Err(multisig::errors::transaction_expired_or_withdrawn());
+            return Err(account::features::multisig::errors::transaction_expired_or_withdrawn());
         }
 
         // Verify the sender has the rights to the account.
@@ -1226,10 +1233,13 @@ impl LedgerStorage {
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         if !(account.has_role(sender, "owner") || storage.info.submitter == *sender) {
-            return Err(multisig::errors::cannot_execute_transaction());
+            return Err(account::features::multisig::errors::cannot_execute_transaction());
         }
 
-        self.disable_multisig_transaction(tx_id, MultisigTransactionState::Withdrawn)?;
+        self.disable_multisig_transaction(
+            tx_id,
+            account::features::multisig::MultisigTransactionState::Withdrawn,
+        )?;
         self.log_event(events::EventInfo::AccountMultisigWithdraw {
             account: storage.account,
             token: tx_id.to_vec().into(),
@@ -1241,7 +1251,7 @@ impl LedgerStorage {
     fn disable_multisig_transaction(
         &mut self,
         tx_id: &[u8],
-        state: MultisigTransactionState,
+        state: account::features::multisig::MultisigTransactionState,
     ) -> Result<(), ManyError> {
         let mut storage = self.get_multisig_info(tx_id)?;
         if storage.disabled {
@@ -1274,9 +1284,9 @@ impl LedgerStorage {
         self.disable_multisig_transaction(
             tx_id,
             if automatic {
-                MultisigTransactionState::ExecutedAutomatically
+                account::features::multisig::MultisigTransactionState::ExecutedAutomatically
             } else {
-                MultisigTransactionState::ExecutedManually
+                account::features::multisig::MultisigTransactionState::ExecutedManually
             },
         )?;
 
@@ -1291,10 +1301,10 @@ impl LedgerStorage {
     // IdStore
     pub fn store(
         &mut self,
-        recall_phrase: &RecallPhrase,
-        address: &Identity,
-        cred_id: CredentialId,
-        public_key: PublicKey,
+        recall_phrase: &idstore::RecallPhrase,
+        address: &Address,
+        cred_id: idstore::CredentialId,
+        public_key: idstore::PublicKey,
     ) -> Result<(), ManyError> {
         let recall_phrase_cbor = minicbor::to_vec(recall_phrase)
             .map_err(|e| ManyError::serialization_error(e.to_string()))?;
@@ -1356,8 +1366,8 @@ impl LedgerStorage {
 
     pub fn get_from_recall_phrase(
         &self,
-        recall_phrase: &RecallPhrase,
-    ) -> Result<(CredentialId, PublicKey), ManyError> {
+        recall_phrase: &idstore::RecallPhrase,
+    ) -> Result<(idstore::CredentialId, idstore::PublicKey), ManyError> {
         let recall_phrase_cbor = minicbor::to_vec(&recall_phrase)
             .map_err(|e| ManyError::serialization_error(e.to_string()))?;
         if let Some(value) =
@@ -1373,8 +1383,8 @@ impl LedgerStorage {
 
     pub fn get_from_address(
         &self,
-        address: &Identity,
-    ) -> Result<(CredentialId, PublicKey), ManyError> {
+        address: &Address,
+    ) -> Result<(idstore::CredentialId, idstore::PublicKey), ManyError> {
         if let Some(value) =
             self.get_from_storage(&address.to_vec(), IdStoreRootSeparator::Address)?
         {
@@ -1441,7 +1451,7 @@ impl<'a> Iterator for LedgerIterator<'a> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use many::types::events::EventId;
+    use many_modules::events::EventId;
 
     impl LedgerStorage {
         pub fn set_idstore_seed(&mut self, seed: u64) {
@@ -1458,7 +1468,7 @@ pub mod tests {
 
     #[test]
     fn event_key_size() {
-        let golden_size = key_for_event(EventId::from(0)).len();
+        let golden_size = key_for_event(events::EventId::from(0)).len();
 
         assert_eq!(golden_size, key_for_event(EventId::from(u64::MAX)).len());
 

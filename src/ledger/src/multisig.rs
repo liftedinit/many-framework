@@ -1,13 +1,12 @@
 use crate::TargetCommandOpt;
 use clap::Parser;
-use many::message::ResponseMessage;
-use many::server::module;
-use many::server::module::account;
-use many::server::module::account::features::multisig;
-use many::types::events;
-use many::types::ledger;
-use many::{Identity, ManyError};
 use many_client::ManyClient;
+use many_error::ManyError;
+use many_identity::Address;
+use many_modules::account::features::multisig;
+use many_modules::{events, ledger};
+use many_protocol::ResponseMessage;
+use many_types::ledger::TokenAmount;
 use minicbor::bytes::ByteVec;
 use tracing::info;
 
@@ -21,7 +20,7 @@ pub struct CommandOpt {
 #[derive(Parser)]
 struct SetDefaultsOpt {
     /// The account to set defaults of.
-    target_account: Identity,
+    target_account: Address,
 
     #[clap(flatten)]
     opts: MultisigArgOpt,
@@ -32,7 +31,7 @@ enum SubcommandOpt {
     /// Submit a new transaction to be approved.
     Submit {
         /// The account to use as the source of the multisig command.
-        account: Identity,
+        account: Address,
 
         #[clap(flatten)]
         multisig_arg: MultisigArgOpt,
@@ -95,7 +94,7 @@ struct MultisigArgOpt {
 
 fn submit_send(
     client: ManyClient,
-    account: Identity,
+    account: Address,
     multisig_arg: MultisigArgOpt,
     opts: TargetCommandOpt,
 ) -> Result<(), ManyError> {
@@ -115,11 +114,11 @@ fn submit_send(
     if client.id.identity.is_anonymous() {
         Err(ManyError::invalid_identity())
     } else {
-        let transaction = events::AccountMultisigTransaction::Send(module::ledger::SendArgs {
+        let transaction = events::AccountMultisigTransaction::Send(ledger::SendArgs {
             from: from.or(Some(account)),
             to: identity,
             symbol,
-            amount: ledger::TokenAmount::from(amount),
+            amount: TokenAmount::from(amount),
         });
         let arguments = multisig::SubmitTransactionArgs {
             account,
@@ -146,9 +145,9 @@ fn submit_send(
 
 fn submit_set_defaults(
     client: ManyClient,
-    account: Identity,
+    account: Address,
     multisig_arg: MultisigArgOpt,
-    target: Identity,
+    target: Address,
     opts: MultisigArgOpt,
 ) -> Result<(), ManyError> {
     let MultisigArgOpt {
@@ -180,9 +179,8 @@ fn submit_set_defaults(
         let response = client.call("account.multisigSubmitTransaction", arguments)?;
 
         let payload = crate::wait_response(client, response)?;
-        let result: account::features::multisig::SubmitTransactionReturn =
-            minicbor::decode(&payload)
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let result: multisig::SubmitTransactionReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
         info!(
             "Transaction Token: {}",
@@ -194,7 +192,7 @@ fn submit_set_defaults(
 
 fn submit(
     client: ManyClient,
-    account: Identity,
+    account: Address,
     multisig_arg: MultisigArgOpt,
     opts: SubmitOpt,
 ) -> Result<(), ManyError> {
@@ -215,7 +213,7 @@ fn approve(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
         let response = client.call("account.multisigApprove", arguments)?;
 
         let payload = crate::wait_response(client, response)?;
-        let _result: account::features::multisig::ApproveReturn = minicbor::decode(&payload)
+        let _result: multisig::ApproveReturn = minicbor::decode(&payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
         info!("Approved.");
@@ -232,7 +230,7 @@ fn revoke(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
         let response = client.call("account.multisigRevoke", arguments)?;
 
         let payload = crate::wait_response(client, response)?;
-        let _result: account::features::multisig::RevokeReturn = minicbor::decode(&payload)
+        let _result: multisig::RevokeReturn = minicbor::decode(&payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
         info!("Revoked.");
@@ -276,7 +274,7 @@ fn info(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
 
 fn set_defaults(
     client: ManyClient,
-    account: Identity,
+    account: Address,
     opts: MultisigArgOpt,
 ) -> Result<(), ManyError> {
     if client.id.identity.is_anonymous() {

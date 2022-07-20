@@ -1,16 +1,16 @@
-use many::types::events::{EventId, EventLog};
-use many::types::ledger::TokenAmount;
-use many::types::{CborRange, SortOrder};
-use many::Identity;
+use many_identity::Address;
 use many_ledger::storage::LedgerStorage;
+use many_modules::events::{EventId, EventLog};
+use many_types::ledger::TokenAmount;
+use many_types::{CborRange, SortOrder};
 use std::collections::BTreeMap;
 use std::ops::Bound;
 
 fn setup() -> LedgerStorage {
-    let symbol0 = Identity::anonymous();
-    let id0 = Identity::public_key_raw([0; 28]);
-    let id1 = Identity::public_key_raw([1; 28]);
-    let id2 = Identity::public_key_raw([2; 28]);
+    let symbol0 = Address::anonymous();
+    let id0 = Address::public_key_raw([0; 28]);
+    let id1 = Address::public_key_raw([1; 28]);
+    let id2 = Address::public_key_raw([2; 28]);
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "MFX".to_string())].into_iter());
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);

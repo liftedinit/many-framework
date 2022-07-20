@@ -1,9 +1,10 @@
 use clap::Parser;
-use many::server::module::account::features::Feature;
-use many::server::module::{abci_backend, account, events, idstore, ledger};
-use many::server::{ManyServer, ManyUrl};
-use many::transport::http::HttpServer;
-use many::types::identity::cose::CoseKeyIdentity;
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::account::features::Feature;
+use many_modules::{abci_backend, account, events, idstore, ledger};
+use many_protocol::ManyUrl;
+use many_server::transport::http::HttpServer;
+use many_server::ManyServer;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -159,7 +160,6 @@ fn main() {
 
     #[cfg(feature = "balance_testing")]
     {
-        use many::Identity;
         use std::str::FromStr;
 
         let mut module_impl = module_impl.lock().unwrap();
@@ -177,9 +177,9 @@ fn main() {
             );
 
             module_impl.set_balance_only_for_testing(
-                Identity::from_str(identity).expect("Invalid identity."),
+                Address::from_str(identity).expect("Invalid identity."),
                 amount.parse::<u64>().expect("Invalid amount."),
-                Identity::from_str(symbol).expect("Invalid symbol."),
+                Address::from_str(symbol).expect("Invalid symbol."),
             )
         }
     }
