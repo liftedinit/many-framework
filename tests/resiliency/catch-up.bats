@@ -113,7 +113,7 @@ EOT
     check_consistency "$(pem 1)" 999000 0 1 2
     check_consistency "$(pem 2)" 1000 0 1 2
 
-    # Send a message that's 5 seconds off of being time out.
+    # Send a message that's 10 seconds off of being time out.
     many message --timestamp $(($(date +%s) - (4 * 60 + 50))) --server http://localhost:8001 --pem "$(pem 1)" ledger.send '{
         0: "'"$(identity 1)"'",
         1: "'"$(identity 2)"'",
@@ -133,6 +133,7 @@ EOT
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
     # Wait long enough to invalidate the first manual transaction.
+    # Since we already waited 4 seconds twice above, we really just need to wait a few more.
     sleep 3
 
     # At this point, start the 4th node and check it can catch up
@@ -149,7 +150,7 @@ EOT
     done >/dev/null
 EOT
 
-    sleep 10  # Three consensus round.
+    sleep 10  # Give some time to catch up.
     check_consistency "$(pem 1)" 996000 0 1 2 3
     check_consistency "$(pem 2)" 4000 0 1 2 3
 }
