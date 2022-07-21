@@ -94,7 +94,7 @@ function check_consistency() {
     }
 
     # Give the 4th node some time to boot
-    sleep 30
+    sleep 300
     timeout 30s bash <<EOT
     while ! many message --server http://localhost:8003 status; do
       sleep 1
@@ -143,7 +143,7 @@ EOT
     }
 
     # Give the 4th node some time to boot
-    sleep 30
+    sleep 300
     timeout 60s bash <<EOT
     while ! many message --server http://localhost:8003 status; do
       sleep 1
