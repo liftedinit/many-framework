@@ -117,7 +117,9 @@ jobs:
             gem install cbor-diag                                     # Install cbor-diag
       - run:
           name: running BATs tests
-          command: bats .
+          command: |
+            rvm use ruby-3
+            bats .
           working_directory: ./tests/e2e/
   coverage:
     parameters:
