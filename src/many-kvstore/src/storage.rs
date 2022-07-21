@@ -1,11 +1,12 @@
 use crate::error::unauthorized;
-use many::server::module::abci_backend::AbciCommitInfo;
-use many::{Identity, ManyError};
+use many_error::ManyError;
+use many_identity::Address;
+use many_modules::abci_backend::AbciCommitInfo;
 use merk::Op;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-pub type AclBTreeMap = BTreeMap<Vec<u8>, Vec<Identity>>;
+pub type AclBTreeMap = BTreeMap<Vec<u8>, Vec<Address>>;
 
 pub struct KvStoreStorage {
     /// Simple ACL scheme. Any prefix that matches the key
@@ -49,7 +50,7 @@ impl KvStoreStorage {
         persistent_store
             .apply(&[(
                 b"/config/acls".to_vec(),
-                merk::Op::Put(minicbor::to_vec(&acls).unwrap()),
+                Op::Put(minicbor::to_vec(&acls).unwrap()),
             )])
             .map_err(|e| e.to_string())?;
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
@@ -92,7 +93,7 @@ impl KvStoreStorage {
         self.persistent_store.root_hash().to_vec()
     }
 
-    fn can_write(&self, id: &Identity, key: &[u8]) -> bool {
+    fn can_write(&self, id: &Address, key: &[u8]) -> bool {
         // TODO: remove this.
         if self.acls.is_empty() {
             return true;
@@ -127,13 +128,13 @@ impl KvStoreStorage {
         }
     }
 
-    pub fn get(&self, _id: &Identity, key: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
+    pub fn get(&self, _id: &Address, key: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
         self.persistent_store
             .get(&vec![b"/store/".to_vec(), key.to_vec()].concat())
             .map_err(|e| ManyError::unknown(e.to_string()))
     }
 
-    pub fn put(&mut self, id: &Identity, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
+    pub fn put(&mut self, id: &Address, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
         if !self.can_write(id, key) {
             return Err(unauthorized());
         }
@@ -151,7 +152,7 @@ impl KvStoreStorage {
         Ok(())
     }
 
-    pub fn delete(&mut self, id: &Identity, key: &[u8]) -> Result<(), ManyError> {
+    pub fn delete(&mut self, id: &Address, key: &[u8]) -> Result<(), ManyError> {
         if !self.can_write(id, key) {
             return Err(unauthorized());
         }

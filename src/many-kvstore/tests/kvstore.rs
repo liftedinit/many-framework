@@ -1,10 +1,10 @@
 pub mod common;
-use crate::common::{setup, Setup};
-use minicbor::bytes::ByteVec;
 
-use many::server::module::kvstore::{
+use crate::common::{setup, Setup};
+use many_modules::kvstore::{
     DeleteArgs, GetArgs, InfoArg, KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs,
 };
+use minicbor::bytes::ByteVec;
 
 #[test]
 fn kvstore_info() {

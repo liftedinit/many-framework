@@ -1,8 +1,7 @@
 use clap::Parser;
-use many::server::module::kvstore::{GetArgs, GetReturns};
-use many::types::identity::cose::CoseKeyIdentity;
-use many::Identity;
 use many_client::ManyClient;
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::kvstore::{GetArgs, GetReturns};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tiny_http::{Header, Method, Response, StatusCode};
@@ -26,7 +25,7 @@ struct Opts {
     addr: SocketAddr,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Identity>,
+    server_id: Option<Address>,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]

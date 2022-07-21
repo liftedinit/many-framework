@@ -2,7 +2,7 @@
 pub mod common;
 
 use common::*;
-use many::types::identity::testing::identity;
+use many_identity::testing::identity;
 
 /// Test that out of order keys at commit in a blockchain don't cause a problem.
 #[test]

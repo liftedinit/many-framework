@@ -227,8 +227,8 @@ commands:
             - run:
                 name: installing << parameters.os >> dependencies
                 command: |
-                  sudo apt -y update
-                  sudo apt -y install build-essential pkg-config clang libssl-dev ruby
+                  sudo DEBIAN_FRONTEND=noninteractive apt -y update
+                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev ruby
       - when:
           condition:
             equal:
@@ -287,7 +287,7 @@ workflows:
           name: coverage-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2204]
+              os: [linux2004]
           requires:
             - test-v<< matrix.os >>
   release:

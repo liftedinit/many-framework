@@ -1,9 +1,9 @@
 use coset::{CborSerializable, CoseSign1};
-use many::message::ResponseMessage;
-use many::server::module::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
-use many::types::identity::cose::CoseKeyIdentity;
-use many::{Identity, ManyError};
 use many_client::ManyClient;
+use many_error::ManyError;
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
+use many_protocol::ResponseMessage;
 use reqwest::{IntoUrl, Url};
 use std::time::SystemTime;
 use tendermint_abci::Application;
@@ -19,7 +19,7 @@ pub struct AbciApp {
 
 impl AbciApp {
     /// Constructor.
-    pub fn create<U>(many_url: U, server_id: Identity) -> Result<Self, String>
+    pub fn create<U>(many_url: U, server_id: Address) -> Result<Self, String>
     where
         U: IntoUrl,
     {
@@ -141,7 +141,7 @@ impl Application for AbciApp {
                 let mut response = ResponseMessage::from_bytes(&payload).unwrap_or_default();
 
                 // Consensus will sign the result, so the `from` field is unnecessary.
-                response.from = Identity::anonymous();
+                response.from = Address::anonymous();
                 // The version is ignored and removed.
                 response.version = None;
                 // The timestamp MIGHT differ between two nodes so we just force it to be 0.

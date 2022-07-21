@@ -1,12 +1,14 @@
 use clap::Parser;
-use many::server::module::account::features::Feature;
-use many::server::module::{abci_backend, account, events, idstore, ledger};
-use many::server::{ManyServer, ManyUrl};
-use many::transport::http::HttpServer;
-use many::types::identity::cose::CoseKeyIdentity;
+use many_identity::{Address, CoseKeyIdentity};
+use many_modules::account::features::Feature;
+use many_modules::{abci_backend, account, events, idstore, ledger};
+use many_protocol::ManyUrl;
+use many_server::transport::http::HttpServer;
+use many_server::ManyServer;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
@@ -159,7 +161,6 @@ fn main() {
 
     #[cfg(feature = "balance_testing")]
     {
-        use many::Identity;
         use std::str::FromStr;
 
         let mut module_impl = module_impl.lock().unwrap();
@@ -177,9 +178,9 @@ fn main() {
             );
 
             module_impl.set_balance_only_for_testing(
-                Identity::from_str(identity).expect("Invalid identity."),
+                Address::from_str(identity).expect("Invalid identity."),
                 amount.parse::<u64>().expect("Invalid amount."),
-                Identity::from_str(symbol).expect("Invalid symbol."),
+                Address::from_str(symbol).expect("Invalid symbol."),
             )
         }
     }
@@ -187,7 +188,7 @@ fn main() {
     let many = ManyServer::simple(
         "many-ledger",
         key,
-        Some(std::env!("CARGO_PKG_VERSION").to_string()),
+        Some(env!("CARGO_PKG_VERSION").to_string()),
         allow_origin,
     );
 
@@ -225,6 +226,9 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
+            let m = module_impl.clone();
+            s.set_time_fn(move || Ok(m.lock().unwrap().get_time().unwrap_or_else(SystemTime::now)));
+
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
     }

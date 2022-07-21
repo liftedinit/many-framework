@@ -54,7 +54,7 @@ genfiles/node%: genfiles/openssl-docker
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
 	mkdir -p "$@/persistent-ledger"
-	cp ledger_state.json5 $@/ledger_state.json5
+	cp ledger_state.json $@/ledger_state.json5
 
 
 genfiles/generate-tendermint-e2e-config:
@@ -80,6 +80,16 @@ start-docker-compose: start-nodes
 
 start-nodes-background: genfiles/build-abci genfiles/build-ledger genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach
+
+start-single-node-background: genfiles/build-abci genfiles/build-ledger genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
+	docker-compose -f genfiles/docker-compose.json -p e2e up --detach tendermint-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e up --detach abci-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e up --detach ledger-$(NODE)
+
+stop-single-node-background:
+	docker-compose -f genfiles/docker-compose.json -p e2e down tendermint-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e down abci-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e down ledger-$(NODE)
 
 chaos:
 	sh chaos.sh
