@@ -245,14 +245,14 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-#      - lint:
-#          pre-steps:
-#            - install-deps:
-#                os: << matrix.os >>
-#          name: lint-v<< matrix.os >>
-#          matrix:
-#            parameters:
-#              os: [linux2004]
+      - lint:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
+          name: lint-v<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux2004]
       - build:
           pre-steps:
             - install-deps:
@@ -260,7 +260,7 @@ workflows:
           name: build-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004] #, macos]
+              os: [linux2004, macos]
       - test:
           pre-steps:
             - install-deps:
@@ -268,7 +268,7 @@ workflows:
           name: test-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004] #, macos]
+              os: [linux2004, macos]
           requires:
             - build-v<< matrix.os >>
       - bats:
@@ -278,19 +278,19 @@ workflows:
           name: bats-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004] #, macos]
+              os: [linux2004, macos]
           requires:
             - build-v<< matrix.os >>
-#      - coverage:
-#          pre-steps:
-#            - install-deps:
-#                os: << matrix.os >>
-#          name: coverage-v<< matrix.os >>
-#          matrix:
-#            parameters:
-#              os: [linux2004]
-#          requires:
-#            - test-v<< matrix.os >>
+      - coverage:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
+          name: coverage-v<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux2004]
+          requires:
+            - test-v<< matrix.os >>
   release:
     when:
       not:
