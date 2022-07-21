@@ -287,7 +287,7 @@ workflows:
           name: coverage-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004]
+              os: [linux2204]
           requires:
             - test-v<< matrix.os >>
   release:
