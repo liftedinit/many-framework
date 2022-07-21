@@ -44,6 +44,7 @@ impl AbciApp {
             app_name,
             many_url,
             many_client,
+            timestamp: RefCell::new(None),
         })
     }
 
