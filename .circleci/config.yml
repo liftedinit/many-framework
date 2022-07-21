@@ -12,9 +12,6 @@ rust_cache_path: &rust_cache_path
     - target/
 
 executors:
-  linux2004:
-    machine:
-      image: ubuntu-2004:current
   linux2204:
     machine:
       image: ubuntu-2204:current
@@ -106,15 +103,9 @@ jobs:
             cargo install --git https://github.com/liftedinit/many-rs many --root target/
             sudo cp target/bin/many /usr/local/bin
       - run:
-          name: install ruby and cbor-diag
+          name: install cbor-diag
           command: |
-            # Ruby Version Manager (RVM) key
-            sudo gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
-            sudo curl -sSL https://get.rvm.io | sudo bash -s stable   # Install RVM
-            source /etc/profile.d/rvm.sh                              # Setup RVM environment
-            rvm install ruby-3                                        # Install Ruby 3
-            rvm use ruby-3                                            # Use Ruby 3
-            gem install cbor-diag                                     # Install cbor-diag
+            gem install cbor-diag
       - run:
           name: running BATs tests
           command: |
@@ -234,10 +225,18 @@ commands:
             matches: { pattern: "^linux.*$", value: << parameters.os >> }
           steps:
             - run:
-                name: installing linux dependencies
+                name: installing << parameters.os >> dependencies
                 command: |
                   sudo apt -y update
-                    sudo apt -y install build-essential pkg-config clang libssl-dev gnupg2
+                  sudo apt -y install build-essential pkg-config clang libssl-dev ruby
+      - when:
+          condition:
+            equal:
+              [ "macos", << parameters.os >> ]
+          steps:
+            - run:
+                name: installing << parameters.os >> dependencies
+                command: brew install ruby
 
 workflows:
   ci:
@@ -252,7 +251,7 @@ workflows:
           name: lint-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004]
+              os: [linux2204]
       - build:
           pre-steps:
             - install-deps:
@@ -260,7 +259,7 @@ workflows:
           name: build-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2204, macos]
       - test:
           pre-steps:
             - install-deps:
@@ -268,7 +267,7 @@ workflows:
           name: test-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2204, macos]
           requires:
             - build-v<< matrix.os >>
       - bats:
@@ -278,7 +277,7 @@ workflows:
           name: bats-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2204, macos]
           requires:
             - build-v<< matrix.os >>
       - coverage:
@@ -288,7 +287,7 @@ workflows:
           name: coverage-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004]
+              os: [linux2204]
           requires:
             - test-v<< matrix.os >>
   release:
@@ -303,7 +302,7 @@ workflows:
           name: create-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos]
+              os: [linux2204, macos]
           filters:
             branches:
               ignore: /.*/
