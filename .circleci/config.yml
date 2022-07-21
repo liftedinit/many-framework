@@ -103,7 +103,7 @@ jobs:
       - run:
           name: install `many` CLI
           command: |
-            cargo install --git https://github.com/liftedinit/many-rs many-cli --root target/
+            cargo install --git https://github.com/liftedinit/many-rs many --root target/
             sudo cp target/bin/many /usr/local/bin
       - run:
           name: install rubygems
