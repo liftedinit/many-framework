@@ -87,6 +87,7 @@ function check_consistency() {
 
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
+    sleep 300
     # At this point, start the 4th node and check it can catch up
     make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000" NODE="3" || {
       echo Could not start nodes... >&3
@@ -94,7 +95,7 @@ function check_consistency() {
     }
 
     # Give the 4th node some time to boot
-    sleep 300
+    sleep 30
     timeout 30s bash <<EOT
     while ! many message --server http://localhost:8003 status; do
       sleep 1
@@ -143,7 +144,7 @@ EOT
     }
 
     # Give the 4th node some time to boot
-    sleep 300
+    sleep 30
     timeout 60s bash <<EOT
     while ! many message --server http://localhost:8003 status; do
       sleep 1
