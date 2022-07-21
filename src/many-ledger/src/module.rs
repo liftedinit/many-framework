@@ -446,6 +446,9 @@ impl AccountModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: account::CreateArgs,
     ) -> Result<account::CreateReturn, ManyError> {
+        if args.features.is_empty() {
+            return Err(account::errors::empty_feature());
+        }
         let account = account::Account::create(sender, args);
 
         validate_account(&account)?;
@@ -584,6 +587,9 @@ impl AccountModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: account::AddFeaturesArgs,
     ) -> Result<account::AddFeaturesReturn, ManyError> {
+        if args.features.is_empty() {
+            return Err(account::errors::empty_feature());
+        }
         let account = self
             .storage
             .get_account(&args.account)
