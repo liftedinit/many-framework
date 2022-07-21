@@ -9,8 +9,8 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
-use tracing::debug;
 use tracing::level_filters::LevelFilter;
+use tracing::{debug, info};
 
 mod error;
 mod json;
@@ -133,6 +133,10 @@ fn main() {
     };
 
     debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     if clean {
         // Delete the persistent storage.

@@ -134,7 +134,7 @@ EOT
 
     # Wait long enough to invalidate the first manual transaction.
     # Since we already waited 4 seconds twice above, we really just need to wait a few more.
-    sleep 3
+    sleep 303
 
     # At this point, start the 4th node and check it can catch up
     make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" NODE="3" || {

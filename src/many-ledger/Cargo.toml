@@ -10,6 +10,7 @@ homepage = "https://liftedinit.org"
 repository = "https://github.com/liftedinit/many-framework"
 keywords = ["cli", "web3", "blockchain", "tendermint", "proto", "crypto", "liftedinit"]
 categories = ["command-line-utilities"]
+build = "build.rs"
 
 [[bin]]
 name = "many-ledger"
@@ -56,6 +57,9 @@ many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "72b9
 many-ledger = { path = ".", features = ["balance_testing"]}
 proptest = "1"
 tempfile = "3.3.0"
+
+[build-dependencies]
+vergen = "6"
 
 [features]
 balance_testing=[]
