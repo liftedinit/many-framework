@@ -109,6 +109,7 @@ jobs:
           name: install rubygems
           command: |
             wget https://rubygems.org/rubygems/rubygems-3.3.18.tgz
+            tar zxf rubygems-3.3.18.tgz
             cd rubygems-3.3.18
             sudo ruby setup.rb
       - run:
