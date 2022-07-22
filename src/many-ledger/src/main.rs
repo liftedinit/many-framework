@@ -9,8 +9,8 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
-use tracing::debug;
 use tracing::level_filters::LevelFilter;
+use tracing::{debug, info};
 
 mod error;
 mod json;
@@ -133,6 +133,10 @@ fn main() {
     };
 
     debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     if clean {
         // Delete the persistent storage.
@@ -226,9 +230,7 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
-            let m = module_impl.clone();
-            s.set_time_fn(move || Ok(m.lock().unwrap().get_time().unwrap_or_else(SystemTime::now)));
-
+            s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
     }

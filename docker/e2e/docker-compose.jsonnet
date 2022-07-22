@@ -20,6 +20,7 @@ local abci(i, user) = {
     volumes: [ "./node" + i + ":/genfiles:ro" ],
     user: "" + user,
     command: [
+        "--verbose", "--verbose",
         "--many", "0.0.0.0:8000",
         "--many-app", "http://ledger-" + i + ":8000",
         "--many-pem", "/genfiles/abci.pem",
@@ -37,6 +38,7 @@ local ledger(i, user, id_with_balances) = {
         "./node" + i + ":/genfiles:ro",
     ],
     command: [
+        "--verbose", "--verbose",
         "--abci",
         "--state=/genfiles/ledger_state.json5",
         "--pem=/genfiles/ledger.pem",
