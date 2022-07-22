@@ -225,10 +225,6 @@ impl LedgerModuleImpl {
         self.storage
             .set_balance_only_for_testing(account, balance, symbol);
     }
-
-    pub fn get_time(&self) -> Option<SystemTime> {
-        self.time
-    }
 }
 
 impl ledger::LedgerModuleBackend for LedgerModuleImpl {
