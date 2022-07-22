@@ -552,9 +552,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.13"
+version = "3.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac2bd7a1eb07da9ac757c923f69373deb7bc2ba5efc951b873bcb5e693992dca"
+checksum = "54635806b078b7925d6e36810b1755f2a4b5b4d57560432c1ecf60bcbe10602b"
 dependencies = [
  "atty",
  "bitflags",
@@ -1536,7 +1536,7 @@ dependencies = [
 name = "http_proxy"
 version = "0.1.0"
 dependencies = [
- "clap 3.2.13",
+ "clap 3.2.14",
  "hex",
  "many-client",
  "many-identity",
@@ -1665,7 +1665,7 @@ name = "idstore-export"
 version = "0.1.0"
 dependencies = [
  "base64 0.20.0-alpha.1",
- "clap 3.2.13",
+ "clap 3.2.14",
  "merk",
  "serde",
  "serde_derive",
@@ -1796,7 +1796,7 @@ checksum = "f9b7d56ba4a8344d6be9729995e6b06f928af29998cdf79fe390cbf6b1fee838"
 name = "kvstore"
 version = "0.1.0"
 dependencies = [
- "clap 3.2.13",
+ "clap 3.2.14",
  "hex",
  "many-client",
  "many-error",
@@ -1826,7 +1826,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 name = "ledger"
 version = "0.1.0"
 dependencies = [
- "clap 3.2.13",
+ "clap 3.2.14",
  "crc-any",
  "hex",
  "humantime",
@@ -1928,7 +1928,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "ciborium 0.2.0 (git+https://github.com/enarx/ciborium)",
- "clap 3.2.13",
+ "clap 3.2.14",
  "coset",
  "hex",
  "lazy_static",
@@ -2037,7 +2037,7 @@ name = "many-kvstore"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "clap 3.2.13",
+ "clap 3.2.14",
  "hex",
  "itertools",
  "lazy_static",
@@ -2067,7 +2067,7 @@ dependencies = [
  "async-trait",
  "base64 0.20.0-alpha.1",
  "bip39-dict",
- "clap 3.2.13",
+ "clap 3.2.14",
  "coset",
  "fixed",
  "hex",
@@ -3597,7 +3597,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#42a57672fb1f520160457644a2ccc2e6c9988fa2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3625,7 +3625,7 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#42a57672fb1f520160457644a2ccc2e6c9988fa2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3637,7 +3637,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#42a57672fb1f520160457644a2ccc2e6c9988fa2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "flex-error",
  "serde",
@@ -3650,7 +3650,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#42a57672fb1f520160457644a2ccc2e6c9988fa2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3667,7 +3667,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#42a57672fb1f520160457644a2ccc2e6c9988fa2"
+source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3944,9 +3944,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.3.14"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a713421342a5a666b7577783721d3117f1b69a393df803ee17bb73b1e122a59"
+checksum = "60db860322da191b40952ad9affe65ea23e7dd6a5c442c2c42865810c6ab8e6b"
 dependencies = [
  "ansi_term",
  "sharded-slab",
