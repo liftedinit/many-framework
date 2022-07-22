@@ -193,7 +193,7 @@ workflows:
             parameters:
               os: [linux2204]
           requires:
-            - test-v<< matrix.os >>
+            - lint-test-build-v<< matrix.os >>
   release:
     when:
       not:
