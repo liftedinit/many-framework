@@ -208,7 +208,7 @@ workflows:
           name: create-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2204, macos, linux2204]
+              os: [linux2204]
           filters:
             branches:
               ignore: /.*/
