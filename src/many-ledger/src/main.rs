@@ -230,9 +230,7 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
-            let m = module_impl.clone();
-            s.set_time_fn(move || Ok(m.lock().unwrap().get_time().unwrap_or_else(SystemTime::now)));
-
+            s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
     }

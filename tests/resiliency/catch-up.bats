@@ -60,20 +60,17 @@ function check_consistency() {
     # Check consistency with nodes [0, 2] up
     check_consistency "$(pem 1)" 1000000 0 1 2
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 999000 0 1 2
     check_consistency "$(pem 2)" 1000 0 1 2
 
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 997000 0 1 2
     check_consistency "$(pem 2)" 3000 0 1 2
 
     ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 994000 0 1 2
     check_consistency "$(pem 2)" 6000 0 1 2
 
@@ -81,7 +78,6 @@ function check_consistency() {
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 990000 0 1 2
     check_consistency "$(pem 2)" 10000 0 1 2
 
