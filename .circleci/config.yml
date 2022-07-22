@@ -191,7 +191,7 @@ workflows:
             - CACHE
           matrix:
             parameters:
-              os: [linux2004]
+              os: [linux2204]
           requires:
             - test-v<< matrix.os >>
   release:
@@ -206,7 +206,7 @@ workflows:
           name: create-v<< matrix.os >>
           matrix:
             parameters:
-              os: [linux2004, macos, linux2204]
+              os: [linux2204, macos, linux2204]
           filters:
             branches:
               ignore: /.*/
