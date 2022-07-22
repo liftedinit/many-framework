@@ -4,10 +4,8 @@ use many_error::ManyError;
 use many_identity::{Address, CoseKeyIdentity};
 use many_modules::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use many_protocol::ResponseMessage;
-use minicbor::Encode;
 use reqwest::{IntoUrl, Url};
-use std::cell::RefCell;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use tendermint_abci::Application;
 use tendermint_proto::abci::*;
 use tracing::debug;
@@ -17,7 +15,6 @@ pub struct AbciApp {
     app_name: String,
     many_client: ManyClient,
     many_url: Url,
-    timestamp: RefCell<Option<u64>>,
 }
 
 impl AbciApp {
@@ -44,36 +41,7 @@ impl AbciApp {
             app_name,
             many_url,
             many_client,
-            timestamp: RefCell::new(None),
         })
-    }
-
-    /// Send an ABCI request to the MANY backend, but use the current block time as the
-    /// timestamp for the request.
-    fn call<M, I>(&self, method: M, argument: I) -> Result<Vec<u8>, ManyError>
-    where
-        M: Into<String>,
-        I: Encode<()>,
-    {
-        let bytes: Vec<u8> = minicbor::to_vec(argument)
-            .map_err(|e| ManyError::serialization_error(e.to_string()))?;
-
-        let message: many_protocol::RequestMessage =
-            many_protocol::RequestMessageBuilder::default()
-                .version(1)
-                .from(self.many_client.id.identity)
-                .to(self.many_client.to)
-                .method(method.into())
-                .data(bytes.to_vec())
-                .timestamp(self.timestamp.borrow().map_or_else(SystemTime::now, |ts| {
-                    SystemTime::UNIX_EPOCH
-                        .checked_add(Duration::from_secs(ts))
-                        .unwrap()
-                }))
-                .build()
-                .map_err(|_| ManyError::internal_server_error())?;
-
-        self.many_client.send_message(message)?.data
     }
 }
 
@@ -84,17 +52,19 @@ impl Application for AbciApp {
             request.version, request.block_version, request.p2p_version
         );
 
-        let AbciInfo { height, hash } = match self.call("abci.info", ()).and_then(|payload| {
-            minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))
-        }) {
-            Ok(x) => x,
-            Err(err) => {
-                return ResponseInfo {
-                    data: format!("An error occurred during call to abci.info:\n{}", err),
-                    ..Default::default()
+        let AbciInfo { height, hash } =
+            match self.many_client.call_("abci.info", ()).and_then(|payload| {
+                minicbor::decode(&payload)
+                    .map_err(|e| ManyError::deserialization_error(e.to_string()))
+            }) {
+                Ok(x) => x,
+                Err(err) => {
+                    return ResponseInfo {
+                        data: format!("An error occurred during call to abci.info:\n{}", err),
+                        ..Default::default()
+                    }
                 }
-            }
-        };
+            };
 
         ResponseInfo {
             data: format!("many-abci-bridge({})", self.app_name),
@@ -150,9 +120,7 @@ impl Application for AbciApp {
             .and_then(|x| x.time.map(|x| x.seconds as u64));
 
         let block = AbciBlock { time };
-        self.timestamp.replace(time);
-
-        let _ = self.call("abci.beginBlock", block);
+        let _ = self.many_client.call_("abci.beginBlock", block);
         ResponseBeginBlock { events: vec![] }
     }
 
@@ -202,7 +170,7 @@ impl Application for AbciApp {
     }
 
     fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
-        let _ = self.call("abci.endBlock", ());
+        let _ = self.many_client.call_("abci.endBlock", ());
         Default::default()
     }
 
@@ -211,7 +179,7 @@ impl Application for AbciApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        self.call("abci.commit", ()).map_or_else(
+        self.many_client.call_("abci.commit", ()).map_or_else(
             |err| ResponseCommit {
                 data: err.to_string().into_bytes().into(),
                 retain_height: 0,
