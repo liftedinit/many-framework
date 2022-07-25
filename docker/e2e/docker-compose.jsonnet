@@ -45,8 +45,8 @@ local ledger(i, user, id_with_balances) = {
     ] + generate_balance_flags(id_with_balances),
 };
 
-local tendermint(i, user, tendermint_tag="v0.35.4") = {
-    image: "tendermint/tendermint:" + tendermint_tag,
+local tendermint(i, user, tendermint_tag) = {
+    image: "tendermint/tendermint:v" + tendermint_tag,
     command: [
         "--log-level", "info",
         "start",
@@ -60,13 +60,13 @@ local tendermint(i, user, tendermint_tag="v0.35.4") = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
-function(nb_nodes=4, user=1000, id_with_balances="") {
+function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4") {
     version: '3',
     services: {
         ["abci-" + i]: abci(i, user) for i in std.range(0, nb_nodes - 1)
     } + {
         ["ledger-" + i]: ledger(i, user, id_with_balances) for i in std.range(0, nb_nodes - 1)
     } + {
-        ["tendermint-" + i]: tendermint(i, user) for i in std.range(0, nb_nodes - 1)
+        ["tendermint-" + i]: tendermint(i, user, tendermint_tag) for i in std.range(0, nb_nodes - 1)
     }
 }
