@@ -1,5 +1,6 @@
 NB_NODES ?= 4
 ID_WITH_BALANCES ?=
+TENDERMINT_VERSION ?= 0.35.4
 
 .PHONY: clean
 clean:
@@ -29,7 +30,7 @@ genfiles/build-abci: genfiles/build-repo
 	@mkdir -p $(dir $@) && touch $@
 
 genfiles/tendermint-docker:
-	docker pull tendermint/tendermint:v0.35.1
+	docker pull tendermint/tendermint:v$(TENDERMINT_VERSION)
 	@mkdir -p $(dir $@) && touch $@
 
 genfiles/openssl-docker:
@@ -46,11 +47,12 @@ genfiles/docker-compose.json: genfiles/jsonnet-docker
 		--tla-code nb_nodes=$(NB_NODES) \
 		--tla-code user=$$(id -u) \
 		--tla-code id_with_balances=\"$(ID_WITH_BALANCES)\" \
+		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
 		-o /$@
 
 genfiles/node%: genfiles/openssl-docker
 	mkdir -p "$@/tendermint"
-	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v0.35.1 init validator
+	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v$(TENDERMINT_VERSION) init validator
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
 	mkdir -p "$@/persistent-ledger"
