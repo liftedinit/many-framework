@@ -394,7 +394,11 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 
     fn begin_block(&mut self, info: AbciBlock) -> Result<(), ManyError> {
         let time = info.time;
-        info!("abci.block_begin(): time={:?}", time);
+        info!(
+            "abci.block_begin(): time={:?} curr_height={}",
+            time,
+            self.storage.get_height()
+        );
 
         if let Some(time) = time {
             let time = Timestamp::new(time)?;

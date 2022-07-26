@@ -14,7 +14,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
-use tracing::info;
+use tracing::{debug, info};
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
@@ -138,7 +138,7 @@ fn _execute_multisig_tx(
     .map_err(|e| ManyError::serialization_error(e.to_string()))
 }
 
-#[derive(minicbor::Encode, minicbor::Decode)]
+#[derive(minicbor::Encode, minicbor::Decode, Debug)]
 #[cbor(map)]
 pub struct MultisigTransactionStorage {
     #[n(0)]
@@ -997,6 +997,7 @@ impl LedgerStorage {
         tx_id: &[u8],
         tx: &MultisigTransactionStorage,
     ) -> Result<(), ManyError> {
+        debug!("{:?}", tx);
         self.persistent_store
             .apply(&[(
                 key_for_multisig_transaction(tx_id),
