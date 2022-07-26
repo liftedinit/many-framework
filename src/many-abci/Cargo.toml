@@ -17,7 +17,7 @@ doc = false
 
 [dependencies]
 async-trait = "0.1.51"
-ciborium = { git = "https://github.com/enarx/ciborium" }
+ciborium = "0.2.0"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"
 hex = "0.4.3"
