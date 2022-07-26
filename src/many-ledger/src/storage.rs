@@ -579,7 +579,7 @@ impl LedgerStorage {
         let current_nb_events = self.nb_events();
         let event = events::EventLog {
             id: self.new_event_id(),
-            time: self.now().into(),
+            time: self.now(),
             content,
         };
 
