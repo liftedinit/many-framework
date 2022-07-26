@@ -89,9 +89,9 @@ start-single-node-background: genfiles/build-abci genfiles/build-ledger genfiles
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach ledger-$(NODE)
 
 stop-single-node-background:
-	docker-compose -f genfiles/docker-compose.json -p e2e down tendermint-$(NODE)
-	docker-compose -f genfiles/docker-compose.json -p e2e down abci-$(NODE)
-	docker-compose -f genfiles/docker-compose.json -p e2e down ledger-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e stop tendermint-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e stop abci-$(NODE)
+	docker-compose -f genfiles/docker-compose.json -p e2e stop ledger-$(NODE)
 
 chaos:
 	sh chaos.sh

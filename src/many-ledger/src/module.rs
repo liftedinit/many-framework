@@ -18,7 +18,6 @@ use minicbor::decode;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Debug, Formatter};
 use std::path::Path;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 const MAXIMUM_EVENT_COUNT: usize = 100;
@@ -159,7 +158,6 @@ fn filter_date<'a>(
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
     storage: LedgerStorage,
-    time: Option<SystemTime>,
 }
 
 impl LedgerModuleImpl {
@@ -214,10 +212,7 @@ impl LedgerModuleImpl {
             hash = hex::encode(storage.hash()).as_str()
         );
 
-        Ok(Self {
-            storage,
-            time: None,
-        })
+        Ok(Self { storage })
     }
 
     #[cfg(feature = "balance_testing")]
@@ -406,9 +401,8 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
         );
 
         if let Some(time) = time {
-            let time = UNIX_EPOCH.checked_add(Duration::from_secs(time)).unwrap();
+            let time = Timestamp::new(time)?;
             self.storage.set_time(time);
-            self.time = Some(time);
         }
 
         Ok(())

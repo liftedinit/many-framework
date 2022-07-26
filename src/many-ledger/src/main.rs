@@ -154,7 +154,7 @@ fn main() {
 
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
     let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
-    tracing::info!(address = key.identity.to_string().as_str());
+    info!(address = key.identity.to_string().as_str());
 
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));

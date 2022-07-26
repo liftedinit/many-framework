@@ -5,10 +5,13 @@ use many_identity::{Address, CoseKeyIdentity};
 use many_modules::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use many_protocol::ResponseMessage;
 use reqwest::{IntoUrl, Url};
-use std::time::SystemTime;
 use tendermint_abci::Application;
 use tendermint_proto::abci::*;
 use tracing::debug;
+
+lazy_static::lazy_static!(
+    static ref EPOCH: many_types::Timestamp = many_types::Timestamp::new(0).unwrap();
+);
 
 #[derive(Debug, Clone)]
 pub struct AbciApp {
@@ -145,7 +148,7 @@ impl Application for AbciApp {
                 // The version is ignored and removed.
                 response.version = None;
                 // The timestamp MIGHT differ between two nodes so we just force it to be 0.
-                response.timestamp = Some(SystemTime::UNIX_EPOCH);
+                response.timestamp = Some(*EPOCH);
 
                 if let Ok(data) = response.to_bytes() {
                     ResponseDeliverTx {

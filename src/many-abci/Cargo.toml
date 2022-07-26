@@ -23,13 +23,13 @@ coset = "0.3"
 hex = "0.4.3"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
-many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "b18de2f5e4eff7039d43de41d8a82caec15d715f" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
+many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "20541988a8722a9bd10e2bcf3cb84dc17e1775e4" }
 reqwest = "0.11.6"
 sha2 = "0.10.1"
 signal-hook = "0.3.13"
