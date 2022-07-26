@@ -522,7 +522,7 @@ impl LedgerStorage {
                         batch.push((k.to_vec(), Op::Put(v)));
                     }
                 }
-            } else if let Ok(d) = now.as_system_time().duration_since(storage.creation) {
+            } else if let Ok(d) = now.as_system_time()?.duration_since(storage.creation) {
                 // Since the DB is ordered by event ID (keys), at this point we don't need
                 // to continue since we know that the rest is all timed out anyway.
                 if d.as_secs() > MULTISIG_MAXIMUM_TIMEOUT_IN_SECS {
@@ -1071,10 +1071,10 @@ impl LedgerStorage {
         )]);
 
         let timeout = Timestamp::from_system_time(
-            time.as_system_time()
+            time.as_system_time()?
                 .checked_add(std::time::Duration::from_secs(timeout_in_secs))
                 .ok_or_else(|| ManyError::unknown("Invalid time.".to_string()))?,
-        );
+        )?;
 
         let storage = MultisigTransactionStorage {
             account: account_id,
@@ -1089,7 +1089,7 @@ impl LedgerStorage {
                 data: arg.data.clone(),
                 state: account::features::multisig::MultisigTransactionState::Pending,
             },
-            creation: self.now().as_system_time(),
+            creation: self.now().as_system_time()?,
             disabled: false,
         };
 
