@@ -106,5 +106,4 @@ dist
 .DS_Store
 .idea/
 target/
-
 result*

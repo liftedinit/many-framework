@@ -26,5 +26,5 @@ incremental = false
 # many-macros = { path = "../many-rs/src/many-macros" }
 
 [patch.crates-io]
-ciborium = { git = "https://github.com/enarx/ciborium" }
-ciborium-io = { git = "https://github.com/enarx/ciborium" }
+ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
+ciborium-io = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
