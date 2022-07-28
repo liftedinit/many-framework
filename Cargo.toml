@@ -24,3 +24,7 @@ incremental = false
 # many-cli = { path = "../many-rs/src/many-cli" }
 # many-client = { path = "../many-rs/src/many-client" }
 # many-macros = { path = "../many-rs/src/many-macros" }
+
+[patch.crates-io]
+ciborium = { git = "https://github.com/enarx/ciborium" }
+ciborium-io = { git = "https://github.com/enarx/ciborium" }
