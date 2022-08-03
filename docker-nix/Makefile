@@ -1,6 +1,7 @@
 WORKDIR = $(abspath $(dir $(abspath $(dir $$PWD))))
 UINFO = "$(shell id -u $(USER)):$(shell id -g $(USER))"
-BUILDER_COMMAND = docker run --rm -v $(WORKDIR):/workdir -v nix-store:/nix -w /workdir/docker-nix nixpkgs/nix-flakes bash build-image.sh $(UINFO) $@
+CPUCORES = $(shell nproc)
+BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(WORKDIR):/workdir -v nix-store:/nix -w /workdir/docker-nix nixpkgs/nix-flakes bash build-image.sh $@
 
 .PHONY: clean
 clean:
