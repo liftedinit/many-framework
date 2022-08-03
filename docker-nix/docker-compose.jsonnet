@@ -44,7 +44,8 @@ local ledger(i, user, id_with_balances) = {
         "--abci",
         "--state=/genfiles/ledger_state.json5",
         "--pem=/genfiles/ledger.pem",
-        "--persistent=/persistent",
+        "--persistent=/persistent/ledger.db",
+        "--addr=0.0.0.0:8000",
     ] + generate_balance_flags(id_with_balances),
 };
 
@@ -71,5 +72,5 @@ function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4") {
         ["ledger-" + i]: ledger(i, user, id_with_balances) for i in std.range(0, nb_nodes - 1)
     } + {
         ["tendermint-" + i]: tendermint(i, user, tendermint_tag) for i in std.range(0, nb_nodes - 1)
-    }
+    },
 }
