@@ -16,7 +16,17 @@
       overlays = [
         cargo2nix.overlays.default
         (final: prev: {
-          dockerImageFromPkg = pkg: name: final.dockerTools.buildImage {
+          baseImage = final.dockerTools.buildLayeredImage {
+            name = "many-base";
+            contents = [
+              final.bash
+              final.curl
+              final.iputils
+            ];
+          };
+
+          dockerImageFromPkg = pkg: name: final.dockerTools.buildLayeredImage {
+            fromImage = final.baseImage;
             name = "many/${name}";
             tag = "latest";
             contents = [
@@ -77,6 +87,6 @@
   in {
     packages = pkgs.manyPackages // (if pkgs.stdenv.isLinux then pkgs.manyImages else {});
 
-    inherit self;
+    inherit self pkgs;
   });
 }
