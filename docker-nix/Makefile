@@ -22,7 +22,7 @@ genfiles:
 Cargo.nix: ../Cargo.lock
 	docker run --rm -v $(WORKDIR):/workdir -v nix-store:/nix -w /workdir nixpkgs/nix-flakes bash generate-cargo-nix.sh $(UINFO)
 
-genfiles/many-ledger.tar.gz: ../src ./Cargo.nix ./flake.nix ./flake.lock genfiles
+genfiles/many-ledger.tar.gz: ../src Cargo.nix flake.nix flake.lock genfiles
 	$(BUILDER_COMMAND) .#docker-many-ledger
 
 .PHONY: many/many-ledger
