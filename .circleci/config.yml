@@ -100,7 +100,7 @@ jobs:
       - rust/build:
           release: true
           # TODO: Remove this feature for general public releases
-          crate: --feature migrate-blocks
+          crate: --features migrate-blocks
           with_cache: false
       - run: mkdir -p artifacts
       - run:
