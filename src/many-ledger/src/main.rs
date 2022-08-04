@@ -13,6 +13,7 @@ use tracing::{debug, info};
 
 mod error;
 mod json;
+mod migration;
 mod module;
 mod storage;
 

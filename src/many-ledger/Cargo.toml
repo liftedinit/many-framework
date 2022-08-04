@@ -63,4 +63,6 @@ vergen = "6"
 
 [features]
 balance_testing=[]
+block_9400=[]
+migrate_blocks=["block_9400"]
 webauthn_testing=[]

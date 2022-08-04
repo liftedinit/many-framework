@@ -1,4 +1,6 @@
 use crate::error;
+#[cfg(feature = "migrate_blocks")]
+use crate::migration;
 use crate::module::validate_account;
 use many_error::ManyError;
 use many_identity::Address;
@@ -1297,13 +1299,18 @@ impl LedgerStorage {
             },
         )?;
 
-        Ok(ResponseMessage {
+        let response = ResponseMessage {
             from: storage.account,
             to: None,
             data: result,
             timestamp: Some(self.now()),
             ..Default::default()
-        })
+        };
+
+        #[cfg(feature = "migrate_blocks")]
+        let response = migration::migrate(tx_id, response);
+
+        Ok(response)
     }
 
     // IdStore
