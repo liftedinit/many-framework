@@ -5,9 +5,9 @@ CPUCORES ?= $$(nproc)
 TENDERMINT_VERSION ?= 0.35.4
 
 # Constants
-WORKDIR = $(abspath $(dir $(abspath $(dir $$PWD))))
+VOLUME = $(abspath $(dir $(abspath $(dir $(abspath $(dir $$PWD))))))
 UINFO = $$(id -u):$$(id -g)
-BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(WORKDIR):/workdir -v nix-store:/nix -w /workdir/docker-nix nixpkgs/nix-flakes bash build-image.sh $@
+BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(VOLUME):/volume -v nix-store:/nix -w /volume/many-framework/docker-nix nixpkgs/nix-flakes bash build-image.sh $@
 
 .PHONY: clean
 clean:
@@ -19,8 +19,11 @@ clean:
 genfiles:
 	@mkdir -p $@
 
+../Cargo.lock: ../Cargo.toml
+	cd ..; cargo fetch
+
 Cargo.nix: ../Cargo.lock
-	docker run --rm -v $(WORKDIR):/workdir -v nix-store:/nix -w /workdir nixpkgs/nix-flakes bash generate-cargo-nix.sh $(UINFO)
+	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker-nix/generate-cargo-nix.sh
 
 genfiles/many-ledger.tar.gz: $(shell find ../src -type f) Cargo.nix flake.nix flake.lock
 	@mkdir -p genfiles
