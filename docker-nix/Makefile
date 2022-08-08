@@ -83,9 +83,49 @@ genfiles/generate-tendermint-e2e-config:
 start-nodes: many/many-ledger many/many-abci genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up
 
-.PHONY: stop-nodes
-stop-nodes:
+.PHONE: start-abci-%
+start-abci-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e up abci-$*
+
+.PHONE: start-ledger-%
+start-ledger-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e up ledger-$*
+
+.PHONE: start-tendermint-%
+start-tendermint-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e up tendermint-$*
+
+.PHONY: down-nodes
+down-nodes:
 	docker-compose -f genfiles/docker-compose.json -p e2e down
+
+.PHONE: down-abci-%
+down-abci-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e down abci-$*
+
+.PHONE: down-ledger-%
+down-ledger-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e down ledger-$*
+
+.PHONE: down-tendermint-%
+down-tendermint-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e down tendermint-$*
+
+.PHONE: stop-nodes
+stop-nodes:
+	docker-compose -f genfiles/docker-compose.json -p e2e stop
+
+.PHONE: stop-abci-%
+stop-abci-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e stop abci-$*
+
+.PHONE: stop-ledger-%
+start-ledger-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e stop ledger-$*
+
+.PHONE: stop-tendermint-%
+stop-tendermint-%:
+	docker-compose -f genfiles/docker-compose.json -p e2e stop tendermint-$*
 
 .PHONY: start-nodes-dettached
 start-nodes-dettached: many/many-ledger many/many-abci genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
