@@ -16,9 +16,6 @@ clean:
 	fi
 	rm -rf genfiles
 
-genfiles:
-	@mkdir -p $@
-
 ../Cargo.lock: ../Cargo.toml
 	cd ..; cargo fetch
 
@@ -41,15 +38,18 @@ genfiles/many-abci.tar.gz: $(shell find ../src -type f) Cargo.nix flake.nix flak
 many/many-abci: genfiles/many-abci.tar.gz
 	docker load < genfiles/many-abci.tar.gz
 
-genfiles/tendermint-docker: genfiles
+genfiles/tendermint-docker:
+	@mkdir -p genfiles
 	docker pull tendermint/tendermint:v$(TENDERMINT_VERSION)
 	touch $@
 
-genfiles/openssl-docker: genfiles
+genfiles/openssl-docker:
+	@mkdir -p genfiles
 	docker pull alpine/openssl
 	touch $@
 
-genfiles/jsonnet-docker: genfiles
+genfiles/jsonnet-docker:
+	@mkdir -p genfiles
 	docker pull bitnami/jsonnet
 	touch $@
 
