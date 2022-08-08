@@ -10,7 +10,7 @@
   outputs = { self, cargo2nix, nixpkgs, flake-utils, rust-overlay, ... }:
   flake-utils.lib.eachDefaultSystem (system:
   let
-    rustToolchain = builtins.fromTOML (builtins.readFile ../rust-toolchain.toml);
+    rustToolchain = builtins.fromTOML (builtins.readFile ../../rust-toolchain.toml);
     pkgs = import nixpkgs {
       inherit system;
       overlays = [
@@ -43,7 +43,7 @@
               "rust-src"
             ];
             packageFun = import ./Cargo.nix;
-            workspaceSrc = ../.;
+            workspaceSrc = ../../.;
             packageOverrides = pkgs: pkgs.rustBuilder.overrides.all ++ [
 
               (pkgs.rustBuilder.rustLib.makeOverride {
