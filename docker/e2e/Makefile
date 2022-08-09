@@ -18,6 +18,7 @@ clean:
 
 ../../Cargo.lock: $(shell find ../../ -name Cargo.toml)
 	cd ../..; cargo fetch
+	touch $@
 
 Cargo.nix: ../../Cargo.lock
 	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker/e2e/generate-cargo-nix.sh
