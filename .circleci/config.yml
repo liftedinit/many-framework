@@ -99,6 +99,8 @@ jobs:
           version: nightly
       - rust/build:
           release: true
+          # TODO: Remove this feature for general public releases
+          crate: --features migrate_blocks
           with_cache: false
       - run: mkdir -p artifacts
       - run:
