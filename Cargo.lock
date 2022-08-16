@@ -3570,7 +3570,8 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c321f411bdfb772bca0c5d9c94d8f45e3a992fae44baa60d17b99d8aaae58d04"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3586,7 +3587,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_repr",
- "sha2 0.10.2",
+ "sha2 0.9.9",
  "signature",
  "subtle",
  "subtle-encoding",
@@ -3598,7 +3599,8 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f53ac0f0d3c1e479c35db7fe815257be95a1c9b37630b0a58292766ecf1a65e9"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3610,7 +3612,8 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac3eac1b63f911a7524ab44a67dcf4370dd44a3ee8f9e6524bd7be426dcfdc55"
 dependencies = [
  "flex-error",
  "serde",
@@ -3623,7 +3626,8 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5820a81dfb85011220d2b24323870ad30a56ae446f92b170911574c79d385bc5"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3640,7 +3644,8 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f2a9433b4385bf54dbda310fa6df993b6777123d77caa08119361ce6fb7d628"
 dependencies = [
  "async-trait",
  "bytes",
