@@ -2840,6 +2840,8 @@ in
     src = fetchCrateLocal (workspaceSrc + "/src/many-ledger");
     features = builtins.concatLists [
       [ "balance_testing" ]
+      (lib.optional (rootFeatures' ? "many-ledger/block_9400" || rootFeatures' ? "many-ledger/migrate_blocks") "block_9400")
+      (lib.optional (rootFeatures' ? "many-ledger/migrate_blocks") "migrate_blocks")
       (lib.optional (rootFeatures' ? "many-ledger/webauthn_testing") "webauthn_testing")
     ];
     dependencies = {
