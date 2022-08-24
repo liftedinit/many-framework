@@ -208,8 +208,7 @@ commands:
             - run:
                 name: installing << parameters.os >> dependencies
                 command: | 
-                  echo "$CIRCLE_JOB"
-                  if [[ "$CIRCLE_JOB" = "bats" ]]; then
+                  if [[ "$CIRCLE_JOB" = "bats-vmacos" ]]; then
                     brew install gpg2
                   fi
 
