@@ -74,7 +74,7 @@ jobs:
             cargo install --git https://github.com/liftedinit/many-rs many --root target/
             sudo cp target/bin/many /usr/local/bin
       - ruby/install:
-          version: 3.0.0
+          version: 3.1.2
       - run:
           name: install cbor-diag
           command: gem install cbor-diag
@@ -208,6 +208,7 @@ commands:
             - run:
                 name: installing << parameters.os >> dependencies
                 command: | 
+                  echo "$CIRCLE_JOB"
                   if [[ "$CIRCLE_JOB" = "bats" ]]; then
                     brew install gpg2
                   fi
