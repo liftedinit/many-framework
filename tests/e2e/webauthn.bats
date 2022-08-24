@@ -23,10 +23,12 @@ function setup() {
 
     skip_if_missing_background_utilities
 
-#    (
-#      cd "$GIT_ROOT"
-#      cargo build --all-features
-#    )
+    if ! [ $CI ]; then
+      (
+        cd "$GIT_ROOT"
+        cargo build --all-features
+      )
+    fi
 }
 
 function teardown() {
