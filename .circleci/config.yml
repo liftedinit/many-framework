@@ -7,7 +7,6 @@ orbs:
   rust: circleci/rust@1.6.0
   detect: circleci/os-detect@0.3.0
   bats: circleci/bats@1.0.0
-  ruby: circleci/ruby@1.8.0
 
 executors:
   linux2204:
@@ -73,16 +72,12 @@ jobs:
           command: |
             cargo install --git https://github.com/liftedinit/many-rs many --root target/
             sudo cp target/bin/many /usr/local/bin
-      - ruby/install:
-          version: 3.1.2
       - run:
           name: install cbor-diag
-          command: gem install cbor-diag
+          command: cargo install cbor-diag-cli
       - run:
           name: running BATs tests
           command: bats .
-          environment:
-            PATH: "/usr/local/opt/openssl@3/bin:$PATH"
           working_directory: ./tests/e2e/
   coverage:
     parameters:
@@ -200,17 +195,6 @@ commands:
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
-      - when:
-          condition:
-            and:
-              - equal: [ "macos", << parameters.os >> ]
-          steps:
-            - run:
-                name: installing << parameters.os >> dependencies
-                command: | 
-                  if [[ "$CIRCLE_JOB" = "bats-vmacos" ]]; then
-                    brew install gpg2
-                  fi
 
 workflows:
   ci:
