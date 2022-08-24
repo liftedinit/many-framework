@@ -77,11 +77,12 @@ jobs:
           version: 3.0.0
       - run:
           name: install cbor-diag
-          command: |
-            gem install cbor-diag
+          command: gem install cbor-diag
       - run:
           name: running BATs tests
           command: bats .
+          environment:
+            PATH: "/usr/local/opt/openssl@3/bin:$PATH"
           working_directory: ./tests/e2e/
   coverage:
     parameters:
@@ -199,21 +200,17 @@ commands:
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
-  install-bats-deps:
-    description: install bats << parameters.os >> dependencies
-    parameters:
-      os:
-        type: string
-    steps:
       - when:
           condition:
-            equal: [ "macos", << parameters.os >> ]
+            and:
+              - equal: [ "macos", << parameters.os >> ]
           steps:
             - run:
-                name: installing bats << parameters.os >> dependencies
+                name: installing << parameters.os >> dependencies
                 command: | 
-                  brew install gpg2
-                  alias openssl=/usr/local/opt/openssl@3/bin/openssl  # The openssl version provided by macos doesn't support Ed25519
+                  if [[ "$CIRCLE_JOB" = "bats" ]]; then
+                    brew install gpg2
+                  fi
 
 workflows:
   ci:
@@ -233,7 +230,7 @@ workflows:
               os: [linux2204, macos]
       - bats:
           pre-steps:
-            - install-bats-deps:
+            - install-deps:
                 os: << matrix.os >>
           name: bats-v<< matrix.os >>
           context:
