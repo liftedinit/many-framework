@@ -183,9 +183,7 @@ commands:
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
             - run:
                 name: install `many` CLI
-                command: |
-                  cargo install --git https://github.com/liftedinit/many-rs many --root target/
-                  sudo cp target/bin/many /usr/local/bin
+                command: cargo install --git https://github.com/liftedinit/many-rs many --root ~/.cargo/bin/
             - run:
                 name: install cbor-diag
                 command: cargo install cbor-diag-cli
