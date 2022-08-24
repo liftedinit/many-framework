@@ -196,11 +196,6 @@ commands:
                 command: |
                   sudo DEBIAN_FRONTEND=noninteractive apt -y update
                   sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev
-      - when:
-          condition:
-            equal:
-              [ "macos", << parameters.os >> ]
-          steps:
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
@@ -231,6 +226,8 @@ workflows:
           matrix:
             parameters:
               os: [linux2204, macos]
+          requires:
+            - lint-test-build-v<< matrix.os >>
       - coverage:
           pre-steps:
             - install-deps:
