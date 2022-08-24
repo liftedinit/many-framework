@@ -60,20 +60,17 @@ function check_consistency() {
     # Check consistency with nodes [0, 2] up
     check_consistency "$(pem 1)" 1000000 0 1 2
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 999000 0 1 2
     check_consistency "$(pem 2)" 1000 0 1 2
 
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 997000 0 1 2
     check_consistency "$(pem 2)" 3000 0 1 2
 
     ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 994000 0 1 2
     check_consistency "$(pem 2)" 6000 0 1 2
 
@@ -81,12 +78,12 @@ function check_consistency() {
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
     ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
     check_consistency "$(pem 1)" 990000 0 1 2
     check_consistency "$(pem 2)" 10000 0 1 2
 
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
+    sleep 300
     # At this point, start the 4th node and check it can catch up
     make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000" NODE="3" || {
       echo Could not start nodes... >&3
@@ -134,7 +131,7 @@ EOT
 
     # Wait long enough to invalidate the first manual transaction.
     # Since we already waited 4 seconds twice above, we really just need to wait a few more.
-    sleep 3
+    sleep 303
 
     # At this point, start the 4th node and check it can catch up
     make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" NODE="3" || {

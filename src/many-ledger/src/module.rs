@@ -18,7 +18,6 @@ use minicbor::decode;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Debug, Formatter};
 use std::path::Path;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 const MAXIMUM_EVENT_COUNT: usize = 100;
@@ -159,7 +158,6 @@ fn filter_date<'a>(
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
     storage: LedgerStorage,
-    time: Option<SystemTime>,
 }
 
 impl LedgerModuleImpl {
@@ -214,20 +212,13 @@ impl LedgerModuleImpl {
             hash = hex::encode(storage.hash()).as_str()
         );
 
-        Ok(Self {
-            storage,
-            time: None,
-        })
+        Ok(Self { storage })
     }
 
     #[cfg(feature = "balance_testing")]
     pub fn set_balance_only_for_testing(&mut self, account: Address, balance: u64, symbol: Symbol) {
         self.storage
             .set_balance_only_for_testing(account, balance, symbol);
-    }
-
-    pub fn get_time(&self) -> Option<SystemTime> {
-        self.time
     }
 }
 
@@ -403,12 +394,15 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 
     fn begin_block(&mut self, info: AbciBlock) -> Result<(), ManyError> {
         let time = info.time;
-        info!("abci.block_begin(): time={:?}", time);
+        info!(
+            "abci.block_begin(): time={:?} curr_height={}",
+            time,
+            self.storage.get_height()
+        );
 
         if let Some(time) = time {
-            let time = UNIX_EPOCH.checked_add(Duration::from_secs(time)).unwrap();
+            let time = Timestamp::new(time)?;
             self.storage.set_time(time);
-            self.time = Some(time);
         }
 
         Ok(())
@@ -446,6 +440,9 @@ impl AccountModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: account::CreateArgs,
     ) -> Result<account::CreateReturn, ManyError> {
+        if args.features.is_empty() {
+            return Err(account::errors::empty_feature());
+        }
         let account = account::Account::create(sender, args);
 
         validate_account(&account)?;
@@ -584,6 +581,9 @@ impl AccountModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: account::AddFeaturesArgs,
     ) -> Result<account::AddFeaturesReturn, ManyError> {
+        if args.features.is_empty() {
+            return Err(account::errors::empty_feature());
+        }
         let account = self
             .storage
             .get_account(&args.account)

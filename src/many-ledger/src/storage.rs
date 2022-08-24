@@ -1,4 +1,6 @@
 use crate::error;
+#[cfg(feature = "migrate_blocks")]
+use crate::migration;
 use crate::module::validate_account;
 use many_error::ManyError;
 use many_identity::Address;
@@ -14,8 +16,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
-use std::time::{Duration, SystemTime};
-use tracing::info;
+use tracing::{debug, info};
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
@@ -139,7 +140,7 @@ fn _execute_multisig_tx(
     .map_err(|e| ManyError::serialization_error(e.to_string()))
 }
 
-#[derive(minicbor::Encode, minicbor::Decode)]
+#[derive(minicbor::Encode, minicbor::Decode, Debug)]
 #[cbor(map)]
 pub struct MultisigTransactionStorage {
     #[n(0)]
@@ -148,8 +149,10 @@ pub struct MultisigTransactionStorage {
     #[n(1)]
     pub info: account::features::multisig::InfoReturn,
 
+    /// TODO: update this to use timestamp, but this will be a breaking change
+    ///       and will require a migration.
     #[n(2)]
-    pub creation: SystemTime,
+    pub creation: std::time::SystemTime,
 
     #[n(3)]
     pub disabled: bool,
@@ -257,7 +260,7 @@ pub struct LedgerStorage {
 
     latest_tid: events::EventId,
 
-    current_time: Option<SystemTime>,
+    current_time: Option<Timestamp>,
     current_hash: Option<Vec<u8>>,
 
     next_account_id: u32,
@@ -298,12 +301,12 @@ impl std::fmt::Debug for LedgerStorage {
 
 impl LedgerStorage {
     #[inline]
-    pub fn set_time(&mut self, time: SystemTime) {
+    pub fn set_time(&mut self, time: Timestamp) {
         self.current_time = Some(time);
     }
     #[inline]
-    pub fn now(&self) -> SystemTime {
-        self.current_time.unwrap_or_else(SystemTime::now)
+    pub fn now(&self) -> Timestamp {
+        self.current_time.unwrap_or_else(Timestamp::now)
     }
 
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
@@ -513,7 +516,7 @@ impl LedgerStorage {
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             let now = self.now();
 
-            if now >= storage.info.timeout.0 {
+            if now >= storage.info.timeout {
                 if !storage.disabled {
                     storage.disable(account::features::multisig::MultisigTransactionState::Expired);
 
@@ -521,7 +524,7 @@ impl LedgerStorage {
                         batch.push((k.to_vec(), Op::Put(v)));
                     }
                 }
-            } else if let Ok(d) = now.duration_since(storage.creation) {
+            } else if let Ok(d) = now.as_system_time()?.duration_since(storage.creation) {
                 // Since the DB is ordered by event ID (keys), at this point we don't need
                 // to continue since we know that the rest is all timed out anyway.
                 if d.as_secs() > MULTISIG_MAXIMUM_TIMEOUT_IN_SECS {
@@ -578,7 +581,7 @@ impl LedgerStorage {
         let current_nb_events = self.nb_events();
         let event = events::EventLog {
             id: self.new_event_id(),
-            time: self.now().into(),
+            time: self.now(),
             content,
         };
 
@@ -996,6 +999,7 @@ impl LedgerStorage {
         tx_id: &[u8],
         tx: &MultisigTransactionStorage,
     ) -> Result<(), ManyError> {
+        debug!("{:?}", tx);
         self.persistent_store
             .apply(&[(
                 key_for_multisig_transaction(tx_id),
@@ -1069,7 +1073,12 @@ impl LedgerStorage {
             account::features::multisig::ApproverInfo { approved: true },
         )]);
 
-        let timeout = Timestamp::from(time + Duration::from_secs(timeout_in_secs));
+        let timeout = Timestamp::from_system_time(
+            time.as_system_time()?
+                .checked_add(std::time::Duration::from_secs(timeout_in_secs))
+                .ok_or_else(|| ManyError::unknown("Invalid time.".to_string()))?,
+        )?;
+
         let storage = MultisigTransactionStorage {
             account: account_id,
             info: account::features::multisig::InfoReturn {
@@ -1083,7 +1092,7 @@ impl LedgerStorage {
                 data: arg.data.clone(),
                 state: account::features::multisig::MultisigTransactionState::Pending,
             },
-            creation: self.now(),
+            creation: self.now().as_system_time()?,
             disabled: false,
         };
 
@@ -1290,12 +1299,18 @@ impl LedgerStorage {
             },
         )?;
 
-        Ok(ResponseMessage {
+        let response = ResponseMessage {
             from: storage.account,
             to: None,
             data: result,
+            timestamp: Some(self.now()),
             ..Default::default()
-        })
+        };
+
+        #[cfg(feature = "migrate_blocks")]
+        let response = migration::migrate(tx_id, response);
+
+        Ok(response)
     }
 
     // IdStore

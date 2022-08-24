@@ -8,12 +8,12 @@ use many_server::ManyServer;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
-use tracing::debug;
 use tracing::level_filters::LevelFilter;
+use tracing::{debug, info};
 
 mod error;
 mod json;
+mod migration;
 mod module;
 mod storage;
 
@@ -127,12 +127,16 @@ fn main() {
             let (options, facility) = Default::default();
             let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
 
-            let subscriber = subscriber.with_writer(syslog);
+            let subscriber = subscriber.with_ansi(false).with_writer(syslog);
             subscriber.init();
         }
     };
 
     debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     if clean {
         // Delete the persistent storage.
@@ -151,7 +155,7 @@ fn main() {
 
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
     let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
-    tracing::info!(address = key.identity.to_string().as_str());
+    info!(address = key.identity.to_string().as_str());
 
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
@@ -226,9 +230,7 @@ fn main() {
             module_impl.clone(),
         ));
         if abci {
-            let m = module_impl.clone();
-            s.set_time_fn(move || Ok(m.lock().unwrap().get_time().unwrap_or_else(SystemTime::now)));
-
+            s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module_impl));
         }
     }

@@ -15,11 +15,13 @@ local generate_balance_flags(id_with_balances="", token="mqbfbahksdwaqeenayy2gxk
 
 
 local abci(i, user) = {
-    image: "many/abci",
+    image: "many/many-abci",
     ports: [ (8000 + i) + ":8000" ],
     volumes: [ "./node" + i + ":/genfiles:ro" ],
     user: "" + user,
     command: [
+        "many-abci",
+        "--verbose", "--verbose",
         "--many", "0.0.0.0:8000",
         "--many-app", "http://ledger-" + i + ":8000",
         "--many-pem", "/genfiles/abci.pem",
@@ -30,21 +32,25 @@ local abci(i, user) = {
 };
 
 local ledger(i, user, id_with_balances) = {
-    image: "many/ledger",
+    image: "many/many-ledger",
     user: "" + user,
     volumes: [
         "./node" + i + "/persistent-ledger:/persistent",
         "./node" + i + ":/genfiles:ro",
     ],
     command: [
+        "many-ledger",
+        "--verbose", "--verbose",
         "--abci",
         "--state=/genfiles/ledger_state.json5",
         "--pem=/genfiles/ledger.pem",
+        "--persistent=/persistent/ledger.db",
+        "--addr=0.0.0.0:8000",
     ] + generate_balance_flags(id_with_balances),
 };
 
-local tendermint(i, user, tendermint_tag="v0.35.4") = {
-    image: "tendermint/tendermint:" + tendermint_tag,
+local tendermint(i, user, tendermint_tag) = {
+    image: "tendermint/tendermint:v" + tendermint_tag,
     command: [
         "--log-level", "info",
         "start",
@@ -58,13 +64,13 @@ local tendermint(i, user, tendermint_tag="v0.35.4") = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
-function(nb_nodes=4, user=1000, id_with_balances="") {
+function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4") {
     version: '3',
     services: {
         ["abci-" + i]: abci(i, user) for i in std.range(0, nb_nodes - 1)
     } + {
         ["ledger-" + i]: ledger(i, user, id_with_balances) for i in std.range(0, nb_nodes - 1)
     } + {
-        ["tendermint-" + i]: tendermint(i, user) for i in std.range(0, nb_nodes - 1)
-    }
+        ["tendermint-" + i]: tendermint(i, user, tendermint_tag) for i in std.range(0, nb_nodes - 1)
+    },
 }
