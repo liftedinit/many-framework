@@ -35,9 +35,7 @@ jobs:
       # TODO: Make a release with `many` CLI and install the release instead
       - run:
           name: install `many` CLI
-          command: |
-            cargo install --git https://github.com/liftedinit/many-rs many
-            many --help
+          command: cargo install --git https://github.com/liftedinit/many-rs many
       - run:
           name: install cbor-diag
           command: cargo install cbor-diag-cli
