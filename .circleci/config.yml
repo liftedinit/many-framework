@@ -7,6 +7,7 @@ orbs:
   rust: circleci/rust@1.6.0
   detect: circleci/os-detect@0.3.0
   bats: circleci/bats@1.0.0
+  ruby: circleci/ruby@1.8.0
 
 executors:
   linux2204:
@@ -57,14 +58,13 @@ jobs:
   bats:
     parameters:
       os:
-        type: executor
+        type: string
     executor: << parameters.os >>
     steps:
       - checkout
       - restore_cache:
           keys:
-            - many-framework-{{ .Environment.CACHE_VERSION }}-build-{{ arch }}-{{ checksum "Cargo.lock" }}
-            - many-framework-{{ .Environment.CACHE_VERSION }}-build-{{ arch }}-
+            - cargo-build-{{ .Environment.MANY_FRAMEWORK_CACHE_VERSION }}-{{ arch }}-{{ checksum "Cargo.lock" }}
       - rust/install:
           version: nightly
       - bats/install
@@ -73,15 +73,15 @@ jobs:
           command: |
             cargo install --git https://github.com/liftedinit/many-rs many --root target/
             sudo cp target/bin/many /usr/local/bin
+      - ruby/install:
+          version: 3.1.2
       - run:
           name: install cbor-diag
           command: |
             gem install cbor-diag
       - run:
           name: running BATs tests
-          command: |
-            rvm use ruby-3
-            bats .
+          command: bats .
           working_directory: ./tests/e2e/
   coverage:
     parameters:
@@ -195,15 +195,12 @@ commands:
                 name: installing << parameters.os >> dependencies
                 command: |
                   sudo DEBIAN_FRONTEND=noninteractive apt -y update
-                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev ruby
+                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev
       - when:
           condition:
             equal:
               [ "macos", << parameters.os >> ]
           steps:
-            - run:
-                name: installing << parameters.os >> dependencies
-                command: brew install ruby
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
@@ -219,6 +216,16 @@ workflows:
             - install-deps:
                 os: << matrix.os >>
           name: lint-test-build-v<< matrix.os >>
+          context:
+            - CACHE
+          matrix:
+            parameters:
+              os: [linux2204, macos]
+      - bats:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
+          name: bats-v<< matrix.os >>
           context:
             - CACHE
           matrix:
