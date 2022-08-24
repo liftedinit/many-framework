@@ -30,8 +30,6 @@ jobs:
       - restore_cache:
           keys:
             - cargo-build-{{ .Environment.MANY_FRAMEWORK_CACHE_VERSION }}-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - rust/install:
-          version: nightly
       - rust/format:
           with_cache: false
       - rust/clippy:
@@ -64,17 +62,7 @@ jobs:
       - restore_cache:
           keys:
             - cargo-build-{{ .Environment.MANY_FRAMEWORK_CACHE_VERSION }}-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - rust/install:
-          version: nightly
       - bats/install
-      - run:
-          name: install `many` CLI
-          command: |
-            cargo install --git https://github.com/liftedinit/many-rs many --root target/
-            sudo cp target/bin/many /usr/local/bin
-      - run:
-          name: install cbor-diag
-          command: cargo install cbor-diag-cli
       - run:
           name: running BATs tests
           command: bats .
@@ -89,11 +77,6 @@ jobs:
       - restore_cache:
           keys:
             - cargo-coverage-{{ .Environment.MANY_FRAMEWORK_CACHE_VERSION }}-{{ arch }}-{{ checksum "Cargo.lock" }}
-      - rust/install:
-          version: nightly
-      - run:
-          name: install llvm-tools-preview
-          command: rustup component add llvm-tools-preview
       - run:
           name: generate test coverage
           command: cargo test --all-targets --all-features
@@ -121,8 +104,6 @@ jobs:
     steps:
       - checkout
       - detect/init
-      - rust/install:
-          version: nightly
       - rust/build:
           release: true
           # TODO: Remove this feature for general public releases
@@ -183,6 +164,8 @@ commands:
       os:
         type: string
     steps:
+      - rust/install:
+          version: nightly
       - when:
           condition:
             matches: { pattern: "^linux.*$", value: << parameters.os >> }
@@ -193,8 +176,19 @@ commands:
                   sudo DEBIAN_FRONTEND=noninteractive apt -y update
                   sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev
             - run:
+                name: install llvm-tools-preview
+                command: rustup component add llvm-tools-preview
+            - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
+            - run:
+                name: install `many` CLI
+                command: |
+                  cargo install --git https://github.com/liftedinit/many-rs many --root target/
+                  sudo cp target/bin/many /usr/local/bin
+            - run:
+                name: install cbor-diag
+                command: cargo install cbor-diag-cli
 
 workflows:
   ci:
