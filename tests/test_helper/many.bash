@@ -26,7 +26,7 @@ function start_ledger() {
 }
 
 function pem() {
-    [ -f "$PEM_ROOT/id-$1.pem" ] || openssl genpkey -algorithm Ed25519 -out "$PEM_ROOT/id-$1.pem" >/dev/null
+    [ -f "$PEM_ROOT/id-$1.pem" ] || ssh-keygen -a 100 -q -P "" -m pkcs8 -t ecdsa -f "$PEM_ROOT/id-$1.pem" >/dev/null
     echo "$PEM_ROOT/id-$1.pem"
 }
 
@@ -35,10 +35,10 @@ function ed25519_x_coord() {
     openssl pkey -in "$(pem "$1")" -text_pub -noout | grep "    " | awk '{printf("%s ",$0)} END { printf "\n" }' | tr -d ' ' | tr -d ':'
 }
 
-# Return a CBOR encoded CoseKey created from a Ed25519 key.
-# Requires https://github.com/cabo/cbor-diag in your $PATH
+# Requires `cbor-diag` from https://github.com/Nemo157/cbor-diag-rs
+# $ cargo install cbor-diag-cli
 function key2cose() {
-  echo "{1: 1, 2: h'"$(identity_hex "$1")"', 3: -8, 4: [2], -1: 6, -2: h'"$(ed25519_x_coord "$1")"'}" | diag2cbor.rb | xxd -p -c 10000
+  echo "{1: 1, 2: h'"$(identity_hex "$1")"', 3: -8, 4: [2], -1: 6, -2: h'"$(ed25519_x_coord "$1")"'}" | cbor-diag --to bytes | xxd -p -c 10000
 }
 
 # Return 16 bytes of random data
