@@ -202,7 +202,7 @@ impl<'a> StorageIterator<'a> {
 }
 
 impl<'a> Iterator for StorageIterator<'a> {
-    type Item = (Box<[u8]>, Box<[u8]>);
+    type Item = Result<(Box<[u8]>, Box<[u8]>), merk::rocksdb::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()

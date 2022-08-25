@@ -33,7 +33,8 @@ fn main() {
     let it = merk.iter_opt(IteratorMode::From(IDSTORE_ROOT, Direction::Forward), opts);
 
     let mut idstore = BTreeMap::new();
-    for (key, value) in it {
+    for item in it {
+        let (key, value) = item.expect("Error while reading the DB");
         let new_v = Tree::decode(key.to_vec(), value.as_ref());
         let value = new_v.value().to_vec();
 

@@ -509,7 +509,8 @@ impl LedgerStorage {
 
         let mut batch = vec![];
 
-        for (k, v) in it {
+        for item in it {
+            let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
             let v = Tree::decode(k.to_vec(), v.as_ref());
 
             let mut storage: MultisigTransactionStorage = minicbor::decode(v.value())
@@ -1452,13 +1453,15 @@ impl<'a> LedgerIterator<'a> {
 }
 
 impl<'a> Iterator for LedgerIterator<'a> {
-    type Item = (Box<[u8]>, Vec<u8>);
+    type Item = Result<(Box<[u8]>, Vec<u8>), merk::rocksdb::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|(k, v)| {
-            let new_v = Tree::decode(k.to_vec(), v.as_ref());
+        self.inner.next().map(|item| {
+            item.map(|(k, v)| {
+                let new_v = Tree::decode(k.to_vec(), v.as_ref());
 
-            (k, new_v.value().to_vec())
+                (k, new_v.value().to_vec())
+            })
         })
     }
 }

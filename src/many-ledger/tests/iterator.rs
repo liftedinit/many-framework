@@ -47,7 +47,10 @@ fn iter_asc(
     storage
         .iter(CborRange { start, end }, SortOrder::Ascending)
         .into_iter()
-        .map(|(_, v)| minicbor::decode(&v).expect("Iterator item not an event."))
+        .map(|item| {
+            let (_, v) = item.expect("Error while reading DB");
+            minicbor::decode(&v).expect("Iterator item not an event.")
+        })
 }
 
 #[test]

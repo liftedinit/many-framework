@@ -329,7 +329,8 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
             order.unwrap_or_default(),
         );
 
-        let iter = Box::new(iter.map(|(_k, v)| {
+        let iter = Box::new(iter.map(|item| {
+            let (_k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
             decode::<events::EventLog>(v.as_slice())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))
         }));
