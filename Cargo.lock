@@ -58,9 +58,9 @@ checksum = "bbf56136a5198c7b01a49e3afcbef6cf84597273d298f54432926024107b0109"
 
 [[package]]
 name = "asn1"
-version = "0.8.7"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfffb35195feaeffb071af0f7a643405667813dd8629c27cb0c310fb76654ab1"
+checksum = "4a0959d3f3489cab2f24b15d637451fe3e8a6b3bfe6bd5ebbc8080fa931a77d3"
 dependencies = [
  "chrono",
 ]
@@ -447,15 +447,12 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.19"
+version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
+checksum = "bfd4d1b31faaa3a89d7934dbded3111da0d2ef28e3ebccdb4f0179f5929d1ef1"
 dependencies = [
- "libc",
  "num-integer",
  "num-traits",
- "time 0.1.44",
- "winapi",
 ]
 
 [[package]]
@@ -1067,18 +1064,18 @@ dependencies = [
 
 [[package]]
 name = "enum-iterator"
-version = "0.8.1"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2953d1df47ac0eb70086ccabf0275aa8da8591a28bd358ee2b52bd9f9e3ff9e9"
+checksum = "91a4ec26efacf4aeff80887a175a419493cb6f8b5480d26387eb0bd038976187"
 dependencies = [
  "enum-iterator-derive",
 ]
 
 [[package]]
 name = "enum-iterator-derive"
-version = "0.8.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8958699f9359f0b04e691a13850d48b7de329138023876d07cbd024c2c820598"
+checksum = "828de45d0ca18782232dfb8f3ea9cc428e8ced380eb26a520baaacfc70de39ce"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1930,7 +1927,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1970,7 +1967,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1981,7 +1978,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "asn1",
  "base32",
@@ -2080,7 +2077,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2093,7 +2090,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "async-trait",
  "coset",
@@ -2113,7 +2110,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2138,7 +2135,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "anyhow",
  "asn1",
@@ -2187,7 +2184,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=20541988a8722a9bd10e2bcf3cb84dc17e1775e4#20541988a8722a9bd10e2bcf3cb84dc17e1775e4"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "coset",
  "fixed",
@@ -3374,14 +3371,14 @@ dependencies = [
 
 [[package]]
 name = "simple_asn1"
-version = "0.5.4"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eb4ea60fb301dc81dfc113df680571045d375ab7345d171c5dc7d7e13107a80"
+checksum = "adc4e5204eb1910f40f9cfa375f6f05b68c3abac4b6fd879c8ff5e7ae8a0a085"
 dependencies = [
- "chrono",
  "num-bigint",
  "num-traits",
  "thiserror",
+ "time",
 ]
 
 [[package]]
@@ -3535,9 +3532,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.23.13"
+version = "0.24.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3977ec2e0520829be45c8a2df70db2bf364714d8a748316a10c3c35d4d2b01c9"
+checksum = "54cb4ebf3d49308b99e6e9dc95e989e2fdbdc210e4f67c39db0bb89ba927001c"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",
@@ -3592,7 +3589,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.11",
+ "time",
  "zeroize",
 ]
 
@@ -3638,7 +3635,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.11",
+ "time",
 ]
 
 [[package]]
@@ -3667,7 +3664,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.11",
+ "time",
  "tokio",
  "tracing",
  "url",
@@ -3740,21 +3737,11 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.1.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
-dependencies = [
- "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
- "winapi",
-]
-
-[[package]]
-name = "time"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
 dependencies = [
+ "itoa",
  "libc",
  "num_threads",
  "time-macros",
@@ -3768,14 +3755,14 @@ checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
 
 [[package]]
 name = "tiny_http"
-version = "0.9.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96155b5f7149ba7a99ea5d516c538250b26eab60b4485c0f5344432573e7a450"
+checksum = "e0d6ef4e10d23c1efb862eecad25c5054429a71958b4eeef85eb5e7170b477ca"
 dependencies = [
  "ascii",
- "chrono",
  "chunked_transfer",
  "log",
+ "time",
  "url",
 ]
 
@@ -4048,13 +4035,12 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "vergen"
-version = "6.0.2"
+version = "7.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3893329bee75c101278e0234b646fa72221547d63f97fb66ac112a0569acd110"
+checksum = "3bbc4fafd30514504c7593cfa52eaf4d6c4ef660386e2ec54edc17f14aa08e8d"
 dependencies = [
  "anyhow",
  "cfg-if 1.0.0",
- "chrono",
  "enum-iterator",
  "getset",
  "git2",
@@ -4062,6 +4048,7 @@ dependencies = [
  "rustversion",
  "sysinfo",
  "thiserror",
+ "time",
 ]
 
 [[package]]
@@ -4111,12 +4098,6 @@ name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
-
-[[package]]
-name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
 
 [[package]]
 name = "wasi"

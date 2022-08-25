@@ -4,7 +4,8 @@ use coset::{CborSerializable, CoseKey, CoseSign1};
 use many_error::{ManyError, ManyErrorCode};
 use many_identity::Address;
 use many_modules::abci_backend::{
-    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, BeginBlockReturn, EndpointInfo, InitChainReturn,
+    ManyAbciModuleBackend,
 };
 use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
 use many_modules::account::AccountModuleBackend;
@@ -387,12 +388,12 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
         })
     }
 
-    fn init_chain(&mut self) -> Result<(), ManyError> {
+    fn init_chain(&mut self) -> Result<InitChainReturn, ManyError> {
         info!("abci.init_chain()",);
-        Ok(())
+        Ok(InitChainReturn {})
     }
 
-    fn begin_block(&mut self, info: AbciBlock) -> Result<(), ManyError> {
+    fn begin_block(&mut self, info: AbciBlock) -> Result<BeginBlockReturn, ManyError> {
         let time = info.time;
         info!(
             "abci.block_begin(): time={:?} curr_height={}",
@@ -405,7 +406,7 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
             self.storage.set_time(time);
         }
 
-        Ok(())
+        Ok(BeginBlockReturn {})
     }
 
     fn info(&self) -> Result<AbciInfo, ManyError> {

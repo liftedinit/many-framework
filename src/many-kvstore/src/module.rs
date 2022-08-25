@@ -3,7 +3,7 @@ use crate::{error, storage::KvStoreStorage};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::abci_backend::{
-    AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
+    AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, InitChainReturn, ManyAbciModuleBackend,
 };
 use many_modules::kvstore::{
     DeleteArgs, DeleteReturn, GetArgs, GetReturns, InfoArg, InfoReturns,
@@ -76,8 +76,8 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
         })
     }
 
-    fn init_chain(&mut self) -> Result<(), ManyError> {
-        Ok(())
+    fn init_chain(&mut self) -> Result<InitChainReturn, ManyError> {
+        Ok(InitChainReturn {})
     }
 
     fn info(&self) -> Result<AbciInfo, ManyError> {
