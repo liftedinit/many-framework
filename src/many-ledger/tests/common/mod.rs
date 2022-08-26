@@ -7,7 +7,7 @@ use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many_modules::account::features::multisig::{
-    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
+    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn, Memo,
 };
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
@@ -257,7 +257,7 @@ impl Setup {
                 &id,
                 account::features::multisig::SubmitTransactionArgs {
                     account: account_id,
-                    memo: Some("Foo".to_string()),
+                    memo: Some(Memo::try_from("Foo".to_string()).unwrap()),
                     transaction: Box::new(event),
                     threshold: None,
                     timeout_in_secs: None,
@@ -475,7 +475,7 @@ fn event_from_kind(
             events::AccountMultisigTransaction::AccountMultisigSubmit(
                 account::features::multisig::SubmitTransactionArgs {
                     account: account_id,
-                    memo: Some("A memo".to_string()),
+                    memo: Some(Memo::try_from("A memo".to_string()).unwrap()),
                     transaction: Box::new(send_tx),
                     threshold: None,
                     timeout_in_secs: None,
@@ -490,7 +490,7 @@ fn event_from_kind(
                     &id,
                     account::features::multisig::SubmitTransactionArgs {
                         account: account_id,
-                        memo: Some("A memo".to_string()),
+                        memo: Some(Memo::try_from("A memo".to_string()).unwrap()),
                         transaction: Box::new(send_tx),
                         threshold: None,
                         timeout_in_secs: None,
@@ -510,7 +510,7 @@ fn event_from_kind(
                     &id,
                     account::features::multisig::SubmitTransactionArgs {
                         account: account_id,
-                        memo: Some("A memo".to_string()),
+                        memo: Some(Memo::try_from("A memo".to_string()).unwrap()),
                         transaction: Box::new(send_tx),
                         threshold: None,
                         timeout_in_secs: None,
@@ -531,7 +531,7 @@ fn event_from_kind(
                     &id,
                     account::features::multisig::SubmitTransactionArgs {
                         account: account_id,
-                        memo: Some("A memo".to_string()),
+                        memo: Some(Memo::try_from("A memo".to_string()).unwrap()),
                         transaction: Box::new(send_tx),
                         threshold: None,
                         timeout_in_secs: None,
@@ -558,7 +558,7 @@ fn event_from_kind(
                     &id,
                     account::features::multisig::SubmitTransactionArgs {
                         account: account_id,
-                        memo: Some("A memo".to_string()),
+                        memo: Some(Memo::try_from("A memo".to_string()).unwrap()),
                         transaction: Box::new(send_tx),
                         threshold: None,
                         timeout_in_secs: None,

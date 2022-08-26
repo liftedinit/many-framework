@@ -5,7 +5,7 @@ use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
-use many_modules::account::features::multisig::AccountMultisigModuleBackend;
+use many_modules::account::features::multisig::{AccountMultisigModuleBackend, Memo};
 use many_modules::account::features::{multisig, TryCreateFeature};
 use many_modules::{account, events, ledger};
 use many_types::ledger::TokenAmount;
@@ -50,7 +50,7 @@ fn submit_args(
 ) -> multisig::SubmitTransactionArgs {
     multisig::SubmitTransactionArgs {
         account: account_id,
-        memo: Some("Foo".to_string()),
+        memo: Some(Memo::try_from("Foo".to_string()).unwrap()),
         transaction: Box::new(transaction),
         threshold: None,
         timeout_in_secs: None,

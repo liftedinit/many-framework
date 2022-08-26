@@ -4,7 +4,8 @@ use coset::{CborSerializable, CoseKey, CoseSign1};
 use many_error::{ManyError, ManyErrorCode};
 use many_identity::Address;
 use many_modules::abci_backend::{
-    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, EndpointInfo, ManyAbciModuleBackend,
+    AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, BeginBlockReturn, EndpointInfo, InitChainReturn,
+    ManyAbciModuleBackend,
 };
 use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
 use many_modules::account::AccountModuleBackend;
@@ -328,7 +329,8 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
             order.unwrap_or_default(),
         );
 
-        let iter = Box::new(iter.map(|(_k, v)| {
+        let iter = Box::new(iter.map(|item| {
+            let (_k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
             decode::<events::EventLog>(v.as_slice())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))
         }));
@@ -387,12 +389,12 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
         })
     }
 
-    fn init_chain(&mut self) -> Result<(), ManyError> {
+    fn init_chain(&mut self) -> Result<InitChainReturn, ManyError> {
         info!("abci.init_chain()",);
-        Ok(())
+        Ok(InitChainReturn {})
     }
 
-    fn begin_block(&mut self, info: AbciBlock) -> Result<(), ManyError> {
+    fn begin_block(&mut self, info: AbciBlock) -> Result<BeginBlockReturn, ManyError> {
         let time = info.time;
         info!(
             "abci.block_begin(): time={:?} curr_height={}",
@@ -405,7 +407,7 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
             self.storage.set_time(time);
         }
 
-        Ok(())
+        Ok(BeginBlockReturn {})
     }
 
     fn info(&self) -> Result<AbciInfo, ManyError> {
