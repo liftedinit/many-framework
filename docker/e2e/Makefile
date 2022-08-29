@@ -20,7 +20,7 @@ clean:
 	cd ../..; cargo fetch
 	touch $@
 
-Cargo.nix: ../../Cargo.lock
+Cargo.nix:
 	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker/e2e/generate-cargo-nix.sh
 
 genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
