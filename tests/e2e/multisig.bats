@@ -33,81 +33,69 @@ function teardown() {
 }
 
 @test "$SUITE: Ledger shows a balance and can send tokens" {
-    ledger --id=1 balance
-    assert_output --partial "$START_BALANCE MFX"
+    check_consistency "$(pem 1)" $START_BALANCE "$(pem 1)" 0
 
-    ledger --id=1 send "$(identity 3)" 1000 MFX
+    call_ledger "$(pem 1)" 0 send "$(identity 3)" 1000 MFX
+    check_consistency "$(pem 3)" 1000 "$(pem 3)" 0
+    check_consistency "$(pem 1)" $((START_BALANCE - 1000)) "$(pem 1)" 0
 
-    ledger --id=3 balance
-    assert_output --partial "1000 MFX"
-
-    ledger --id=1 balance
-    assert_output --partial "$((START_BALANCE - 1000)) MFX"
-
-    ledger --id=2 balance
-    assert_output --partial "$START_BALANCE MFX"
+    check_consistency "$(pem 2)" $START_BALANCE "$(pem 2)" 0
 }
 
 @test "$SUITE: Ledger can do account creation and multisig transactions" {
     local account_id
     local tx_id
 
-    ledger --id=1 balance
-    assert_output --partial "$START_BALANCE MFX"
+    check_consistency "$(pem 1)" $START_BALANCE "$(pem 1)" 0
+    account_id=$(account_create "$(pem 1)" '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')
 
-    account_id=$(account_create --id=1 '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')
+    call_ledger "$(pem 1)" 0 send "$account_id" 1000000 MFX
+    check_consistency "$(pem 1)" 1000000 "$account_id" 0
 
-    ledger --id=1 send "$account_id" 1000000 MFX
-    ledger --id=1 balance "$account_id"
-    assert_output --partial "1000000 MFX"
-
-    ledger --id=1 multisig submit "$account_id" send "$(identity 3)" 100 MFX
+    call_ledger "$(pem 1)" 0 multisig submit "$account_id" send "$(identity 3)" 100 MFX
     tx_id=$(echo "$output" | grep -oE "[0-9a-f]+$")
     # Cannot execute if not approved.
-    ledger --error --id=1 multisig execute "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig execute "$tx_id"
+    assert_output --partial "This transaction cannot be executed yet."
 
-    ledger --id=2 multisig approve "$tx_id"
+    call_ledger "$(pem 2)" 0 multisig approve "$tx_id"
 
     # Cannot execute if not submitted.
-    ledger --error --id=2 multisig execute "$tx_id"
+    call_ledger "$(pem 2)" 0 multisig execute "$tx_id"
+    assert_output --partial "This transaction cannot be executed yet."
 
-    ledger --id=1 multisig execute "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig execute "$tx_id"
 
-    ledger --id=1 balance "$account_id"
-    assert_output --partial "999900 MFX"
-
-    ledger --id=3 balance
-    assert_output --partial "100 MFX"
+    check_consistency "$(pem 1)" 999900 "$account_id" 0
+    check_consistency "$(pem 3)" 100 "$(pem 3)" 0
 }
 
 @test "$SUITE: can revoke" {
     local account_id
     local tx_id
 
-    ledger --id=1 balance
-    assert_output --partial "$START_BALANCE MFX"
+    check_consistency "$(pem 1)" $START_BALANCE "$(pem 1)" 0
+    account_id=$(account_create "$(pem 1)" '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')
 
-    account_id=$(account_create --id=1 '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')
+    call_ledger "$(pem 1)" 0 send "$account_id" 1000000 MFX
+    check_consistency "$(pem 1)" 1000000 "$account_id" 0
 
-    ledger --id=1 send "$account_id" 1000000 MFX
-    ledger --id=1 balance "$account_id"
-    assert_output --partial "1000000 MFX"
-
-    ledger --id=1 multisig submit "$account_id" send "$(identity 3)" 100 MFX
+    call_ledger "$(pem 1)" 0 multisig submit "$account_id" send "$(identity 3)" 100 MFX
     tx_id=$(echo "$output" | grep -oE "[0-9a-f]+$")
 
-    ledger --id=2 multisig approve "$tx_id"
-    ledger --id=1 multisig revoke "$tx_id"
+    call_ledger "$(pem 2)" 0 multisig approve "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig revoke "$tx_id"
 
-    ledger --error --id=1 multisig execute "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig execute "$tx_id"
+    assert_output --partial "This transaction cannot be executed yet."
 
-    ledger --id=1 multisig approve "$tx_id"
-    ledger --id=2 multisig revoke "$tx_id"
-    ledger --error --id=1 multisig execute "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig approve "$tx_id"
+    call_ledger "$(pem 2)" 0 multisig revoke "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig execute "$tx_id"
+    assert_output --partial "This transaction cannot be executed yet."
 
-    ledger --id=2 multisig approve "$tx_id"
-    ledger --id=1 multisig execute "$tx_id"
+    call_ledger "$(pem 2)" 0 multisig approve "$tx_id"
+    call_ledger "$(pem 1)" 0 multisig execute "$tx_id"
 
-    ledger --id=3 balance
-    assert_output --partial "100 MFX"
+    check_consistency "$(pem 3)" 100 "$(pem 3)" 0
 }

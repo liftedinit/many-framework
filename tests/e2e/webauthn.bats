@@ -9,11 +9,11 @@ function assert_idstore() {
     local cred_id="$3"
     local key2cose="$4"
 
-    many_message --id=0 idstore.getFromRecallPhrase "$recall"
+    run many_message "$(pem 0)" idstore.getFromRecallPhrase "$recall"
     assert_output --partial "0: h'$(echo "$cred_id" | tr A-Z a-z)'"
     assert_output --partial "1: h'${key2cose}'"
 
-    many_message --id=0 idstore.getFromAddress '{0: "'"$identity"'"}'
+    run many_message "$(pem 0)" idstore.getFromAddress '{0: "'"$identity"'"}'
     assert_output --partial "0: h'$(echo "$cred_id" | tr A-Z a-z)'"
     assert_output --partial "1: h'${key2cose}'"
 }
@@ -43,7 +43,7 @@ function teardown() {
     cred_id=$(cred_id)
     key2cose=$(key2cose 1)
 
-    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex}'), 1: h'${cred_id}', 2: h'${key2cose}'}"
+    run many_message "$(pem 0)" idstore.store "{0: 10000_1(h'${identity_hex}'), 1: h'${cred_id}', 2: h'${key2cose}'}"
     assert_output '{0: ["abandon", "again"]}'
 
     assert_idstore "$output" "$(identity 1)" "$cred_id" "$key2cose"
@@ -52,7 +52,7 @@ function teardown() {
 @test "$SUITE: IdStore store deny non-webauthn" {
     start_ledger --pem "$(pem 0)"
 
-    many_message --error --id=0 idstore.store "{0: 10000_1(h'$(identity_hex 1)'), 1: h'$(cred_id)', 2: h'$(key2cose 1)'}"
+    run many_message "$(pem 0)" idstore.store "{0: 10000_1(h'$(identity_hex 1)'), 1: h'$(cred_id)', 2: h'$(key2cose 1)'}"
     assert_output --partial "Non-WebAuthn request denied for endpoint"
 }
 
@@ -76,7 +76,7 @@ function teardown() {
     cred_id_1=$(cred_id)
     key2cose_1=$(key2cose 1)
 
-    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex_1}'), 1: h'${cred_id_1}', 2: h'${key2cose_1}'}"
+    run many_message "$(pem 0)" idstore.store "{0: 10000_1(h'${identity_hex_1}'), 1: h'${cred_id_1}', 2: h'${key2cose_1}'}"
     assert_output '{0: ["abandon", "again"]}'
     local recall_1
     recall_1="$output"
@@ -108,7 +108,7 @@ function teardown() {
     key2cose_2=$(key2cose 2)
 
     # Continue the test.
-    many_message --id=0 idstore.store "{0: 10000_1(h'${identity_hex_2}'), 1: h'${cred_id_2}', 2: h'${key2cose_2}'}"
+    run many_message "$(pem 0)" idstore.store "{0: 10000_1(h'${identity_hex_2}'), 1: h'${cred_id_2}', 2: h'${key2cose_2}'}"
     assert_output '{0: ["abandon", "asset"]}'
     local recall_2
     recall_2="$output"

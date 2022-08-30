@@ -3,11 +3,14 @@ NB_NODES ?= 4
 ID_WITH_BALANCES ?=
 CPUCORES ?= $$(nproc)
 TENDERMINT_VERSION ?= 0.35.4
+ABCI_TAG ?= "latest"
+LEDGER_TAG ?= "latest"
 
 # Constants
 VOLUME = $(abspath $(dir $(abspath $(dir $(abspath $(dir $(abspath $(dir $$PWD))))))))
 UINFO = $$(id -u):$$(id -g)
 BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(VOLUME):/volume -v nix-store:/nix -w /volume/many-framework/docker/e2e/ nixpkgs/nix-flakes bash build-image.sh $@
+SHELL = bash
 
 .PHONY: clean
 clean:
@@ -20,7 +23,7 @@ clean:
 	cd ../..; cargo fetch
 	touch $@
 
-Cargo.nix:
+Cargo.nix: ../../Cargo.lock
 	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker/e2e/generate-cargo-nix.sh
 
 genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
@@ -60,6 +63,8 @@ genfiles/docker-compose.json: genfiles/jsonnet-docker docker-compose.jsonnet
 		--tla-code nb_nodes=$(NB_NODES) \
 		--tla-code user=$$(id -u) \
 		--tla-code id_with_balances=\"$(ID_WITH_BALANCES)\" \
+		--tla-code abci_tag=\"$(ABCI_TAG)\" \
+		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
 		-o /$@
 
@@ -77,22 +82,22 @@ genfiles/generate-tendermint-e2e-config:
 		make genfiles/node$$I; \
 		(( I = I + 1 )); \
 	done
-	sh update_config.sh -c "genfiles/node%/tendermint/config" -i tendermint-% $(NB_NODES)
+	bash update_config.sh -c "genfiles/node%/tendermint/config" -i tendermint-% $(NB_NODES)
 	mkdir -p $(dir $@) && touch $@
 
 .PHONY: start-nodes
 start-nodes: many/many-ledger many/many-abci genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up
 
-.PHONE: start-abci-%
+.PHONY: start-abci-%
 start-abci-%: genfiles/docker-compose.json many/many-abci
 	docker-compose -f genfiles/docker-compose.json -p e2e up abci-$*
 
-.PHONE: start-ledger-%
+.PHONY: start-ledger-%
 start-ledger-%: genfiles/docker-compose.json many/many-ledger genfiles/generate-tendermint-e2e-config
 	docker-compose -f genfiles/docker-compose.json -p e2e up ledger-$*
 
-.PHONE: start-tendermint-%
+.PHONY: start-tendermint-%
 start-tendermint-%: genfiles/docker-compose.json genfiles/generate-tendermint-e2e-config
 	docker-compose -f genfiles/docker-compose.json -p e2e up tendermint-$*
 
@@ -100,34 +105,56 @@ start-tendermint-%: genfiles/docker-compose.json genfiles/generate-tendermint-e2
 down-nodes: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e down
 
-.PHONE: down-abci-%
+.PHONY: down-abci-%
 down-abci-%: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e down abci-$*
 
-.PHONE: down-ledger-%
+.PHONY: down-ledger-%
 down-ledger-%: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e down ledger-$*
 
-.PHONE: down-tendermint-%
+.PHONY: down-tendermint-%
 down-tendermint-%: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e down tendermint-$*
 
-.PHONE: stop-nodes
+.PHONY: stop-nodes
 stop-nodes: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e stop
 
-.PHONE: stop-abci-%
+.PHONY: stop-single-node-%
+stop-single-node-%: genfiles/docker-compose.json
+	docker-compose -f genfiles/docker-compose.json -p e2e stop abci-$*
+	docker-compose -f genfiles/docker-compose.json -p e2e stop ledger-$*
+	docker-compose -f genfiles/docker-compose.json -p e2e stop tendermint-$*
+
+.PHONY: stop-abci-%
 stop-abci-%: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e stop abci-$*
 
-.PHONE: stop-ledger-%
+.PHONY: stop-ledger-%
 start-ledger-%: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e stop ledger-$*
 
-.PHONE: stop-tendermint-%
+.PHONY: stop-tendermint-%
 stop-tendermint-%: genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e stop tendermint-$*
 
 .PHONY: start-nodes-dettached
 start-nodes-dettached: many/many-ledger many/many-abci genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
 	docker-compose -f genfiles/docker-compose.json -p e2e up --detach
+
+.PHONY: start-nodes-dettached-no-img-regen
+start-nodes-dettached-no-img-regen: genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
+	docker-compose -f genfiles/docker-compose.json -p e2e up --detach
+
+.PHONY: start-single-node-dettached-%
+start-single-node-dettached-%: many/many-ledger many/many-abci genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
+	docker-compose -f genfiles/docker-compose.json -p e2e up abci-$* --detach
+	docker-compose -f genfiles/docker-compose.json -p e2e up ledger-$* --detach
+	docker-compose -f genfiles/docker-compose.json -p e2e up tendermint-$* --detach
+
+.PHONY: start-single-node-dettached-no-img-regen-%
+start-single-node-dettached-no-img-regen-%: genfiles/generate-tendermint-e2e-config genfiles/docker-compose.json
+	docker-compose -f genfiles/docker-compose.json -p e2e up abci-$* --detach
+	docker-compose -f genfiles/docker-compose.json -p e2e up ledger-$* --detach
+	docker-compose -f genfiles/docker-compose.json -p e2e up tendermint-$* --detach

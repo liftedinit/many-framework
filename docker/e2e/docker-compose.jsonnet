@@ -14,8 +14,8 @@ local generate_balance_flags(id_with_balances="", token="mqbfbahksdwaqeenayy2gxk
     );
 
 
-local abci(i, user) = {
-    image: "many/many-abci",
+local abci(i, user, abci_tag) = {
+    image: "lifted/many-abci:" + abci_tag,
     ports: [ (8000 + i) + ":8000" ],
     volumes: [ "./node" + i + ":/genfiles:ro" ],
     user: "" + user,
@@ -31,8 +31,8 @@ local abci(i, user) = {
     depends_on: [ "ledger-" + i ],
 };
 
-local ledger(i, user, id_with_balances) = {
-    image: "many/many-ledger",
+local ledger(i, user, id_with_balances, ledger_tag) = {
+    image: "lifted/many-ledger:" + ledger_tag,
     user: "" + user,
     volumes: [
         "./node" + i + "/persistent-ledger:/persistent",
@@ -64,12 +64,12 @@ local tendermint(i, user, tendermint_tag) = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
-function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4") {
+function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4", abci_tag="latest", ledger_tag="latest") {
     version: '3',
     services: {
-        ["abci-" + i]: abci(i, user) for i in std.range(0, nb_nodes - 1)
+        ["abci-" + i]: abci(i, user, abci_tag) for i in std.range(0, nb_nodes - 1)
     } + {
-        ["ledger-" + i]: ledger(i, user, id_with_balances) for i in std.range(0, nb_nodes - 1)
+        ["ledger-" + i]: ledger(i, user, id_with_balances, ledger_tag) for i in std.range(0, nb_nodes - 1)
     } + {
         ["tendermint-" + i]: tendermint(i, user, tendermint_tag) for i in std.range(0, nb_nodes - 1)
     },
