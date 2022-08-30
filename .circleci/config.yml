@@ -74,6 +74,9 @@ jobs:
           name: install `many` CLI
           command: cargo install --force --git https://github.com/liftedinit/many-rs many
       - run:
+          name: install `ledger` CLI
+          command: cargo install --force --path src/ledger ledger
+      - run:
           name: install cbor-diag
           command: cargo install --force cbor-diag-cli
       - bats/install
