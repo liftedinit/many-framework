@@ -39,28 +39,28 @@ function teardown() {
 
 @test "$SUITE: Node can catch up" {
     # Check consistency with nodes [0, 2] up
-    check_consistency "$(pem 1)" 1000000 "$(pem 1)" 0 1 2
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 999000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 1000 "$(pem 2)" 0 1 2
+    check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002
 
-    call_ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    call_ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 997000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 3000 "$(pem 2)" 0 1 2
+    call_ledger --pem=1 --port=8001 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8001 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=997000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=3000 --id="$(identity 2)" 8000 8001 8002
 
-    call_ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    call_ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    call_ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 994000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 6000 "$(pem 2)" 0 1 2
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=994000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002
 
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 990000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 10000 "$(pem 2)" 0 1 2
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=990000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=10000 --id="$(identity 2)" 8000 8001 8002
 
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
@@ -80,6 +80,6 @@ function teardown() {
     done >/dev/null
 EOT
     sleep 12  # Three consensus round.
-    check_consistency "$(pem 1)" 990000 "$(pem 1)" 0 1 2 3
-    check_consistency "$(pem 2)" 10000 "$(pem 2)" 0 1 2 3
+    check_consistency --pem=1 --balance=990000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=10000 --id="$(identity 2)" 8000 8001 8002 8003
 }

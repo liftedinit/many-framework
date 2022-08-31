@@ -35,26 +35,26 @@ function teardown() {
 
 @test "$SUITE: Network is consistent" {
     # Check consistency with all nodes up.
-    check_consistency "$(pem 1)" 1000000 "$(pem 1)" 0 1 2 3
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
     sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 999000 "$(pem 1)" 0 1 2 3
-    check_consistency "$(pem 2)" 1000 "$(pem 2)" 0 1 2 3
+    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002 8003
 
-    call_ledger "$(pem 1)" 1 send "$(identity 2)" 2000 MFX
+    call_ledger --pem=1 --port=8001 send "$(identity 2)" 2000 MFX
     sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 997000 "$(pem 1)" 0 1 2 3
-    check_consistency "$(pem 2)" 3000 "$(pem 2)" 0 1 2 3
+    check_consistency --pem=1 --balance=997000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=3000 --id="$(identity 2)" 8000 8001 8002 8003
 
-    call_ledger "$(pem 1)" 2 send "$(identity 2)" 3000 MFX
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 3000 MFX
     sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 994000 "$(pem 1)" 0 1 2 3
-    check_consistency "$(pem 2)" 6000 "$(pem 2)" 0 1 2 3
+    check_consistency --pem=1 --balance=994000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002 8003
 
-    call_ledger "$(pem 1)" 3 send "$(identity 2)" 4000 MFX
+    call_ledger --pem=1 --port=8003 send "$(identity 2)" 4000 MFX
     sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 990000 "$(pem 1)" 0 1 2 3
-    check_consistency "$(pem 2)" 10000 "$(pem 2)" 0 1 2 3
+    check_consistency --pem=1 --balance=990000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=10000 --id="$(identity 2)" 8000 8001 8002 8003
 }
 
 @test "$SUITE: Network is consistent with 1 node down" {
@@ -64,21 +64,21 @@ function teardown() {
     make stop-single-node-3
 
     # Check consistency with all nodes up.
-    check_consistency "$(pem 1)" 1000000 "$(pem 1)" 0 1 2
-    call_ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
     sleep 10  # One consensus round.
-    check_consistency "$(pem 1)" 999000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 1000 "$(pem 2)" 0 1 2
+    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002
 
-    call_ledger "$(pem 1)" 1 send "$(identity 2)" 2000 MFX
+    call_ledger --pem=1 --port=8001 send "$(identity 2)" 2000 MFX
     sleep 10  # One consensus round.
-    check_consistency "$(pem 1)" 997000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 3000 "$(pem 2)" 0 1 2
+    check_consistency --pem=1 --balance=997000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=3000 --id="$(identity 2)" 8000 8001 8002
 
-    call_ledger "$(pem 1)" 2 send "$(identity 2)" 3000 MFX
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 3000 MFX
     sleep 10  # One consensus round.
-    check_consistency "$(pem 1)" 994000 "$(pem 1)" 0 1 2
-    check_consistency "$(pem 2)" 6000 "$(pem 2)" 0 1 2
+    check_consistency --pem=1 --balance=994000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002
 
     # Bring it back.
     make $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) || {
@@ -93,6 +93,6 @@ function teardown() {
     done >/dev/null
 EOT
     sleep 10
-    check_consistency "$(pem 1)" 994000 "$(pem 1)" 0 1 2 3
-    check_consistency "$(pem 2)" 6000 "$(pem 2)" 0 1 2 3
+    check_consistency --pem=1 --balance=994000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002 8003
 }
