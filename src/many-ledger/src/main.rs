@@ -1,5 +1,8 @@
 use clap::Parser;
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::verifiers::AnonymousVerifier;
+use many_identity::{Address, Identity};
+use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity_webauthn::WebAuthnVerifier;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -155,7 +158,7 @@ fn main() {
 
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
     let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
-    info!(address = key.identity.to_string().as_str());
+    info!(address = key.address().to_string().as_str());
 
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
@@ -192,8 +195,12 @@ fn main() {
     let many = ManyServer::simple(
         "many-ledger",
         key,
+        (
+            AnonymousVerifier,
+            CoseKeyVerifier,
+            WebAuthnVerifier::new(allow_origin),
+        ),
         Some(env!("CARGO_PKG_VERSION").to_string()),
-        allow_origin,
     );
 
     {
