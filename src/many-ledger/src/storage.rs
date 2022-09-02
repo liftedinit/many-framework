@@ -1384,7 +1384,7 @@ impl LedgerStorage {
         &self,
         recall_phrase: &idstore::RecallPhrase,
     ) -> Result<(idstore::CredentialId, idstore::PublicKey), ManyError> {
-        let recall_phrase_cbor = minicbor::to_vec(&recall_phrase)
+        let recall_phrase_cbor = minicbor::to_vec(recall_phrase)
             .map_err(|e| ManyError::serialization_error(e.to_string()))?;
         if let Some(value) =
             self.get_from_storage(&recall_phrase_cbor, IdStoreRootSeparator::RecallPhrase)?
