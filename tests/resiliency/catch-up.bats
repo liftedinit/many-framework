@@ -11,16 +11,12 @@ function setup() {
       make clean
       for i in {0..2}
       do
-          make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" NODE="${i}" || {
+          make $(ciopt start-single-node-dettached)-${i} ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" || {
             echo Could not start nodes... >&3
             exit 1
           }
       done
     ) > /dev/null
-    (
-      cd "$GIT_ROOT" || exit 1
-      cargo build --all-features
-    )
 
     # Give time to the servers to start.
     sleep 30
@@ -36,56 +32,42 @@ function teardown() {
       cd "$GIT_ROOT/docker/e2e/" || exit 1
       make stop-nodes
     ) 2> /dev/null
-}
 
-function ledger() {
-    local pem="$1"
-    local port="$2"
-    shift 2
-    run "$GIT_ROOT/target/debug/ledger" --pem "$pem" "http://localhost:$((port + 8000))/" "$@"
-}
-
-function check_consistency() {
-    local pem="$1"
-    local expected_balance="$2"
-    shift 2
-
-    for port in "$@"; do
-        ledger "$pem" "$port" balance
-        assert_output --partial " $expected_balance MFX "
-    done
+    # Fix for BATS verbose run/test output gathering
+    cd "$GIT_ROOT/tests/resiliency/" || exit 1
 }
 
 @test "$SUITE: Node can catch up" {
     # Check consistency with nodes [0, 2] up
-    check_consistency "$(pem 1)" 1000000 0 1 2
-    ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 999000 0 1 2
-    check_consistency "$(pem 2)" 1000 0 1 2
+    check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002
 
-    ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 997000 0 1 2
-    check_consistency "$(pem 2)" 3000 0 1 2
+    call_ledger --pem=1 --port=8001 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8001 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=997000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=3000 --id="$(identity 2)" 8000 8001 8002
 
-    ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 2 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 994000 0 1 2
-    check_consistency "$(pem 2)" 6000 0 1 2
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8002 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=994000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002
 
-    ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    check_consistency "$(pem 1)" 990000 0 1 2
-    check_consistency "$(pem 2)" 10000 0 1 2
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
+    check_consistency --pem=1 --balance=990000 --id="$(identity 1)" 8000 8001 8002
+    check_consistency --pem=2 --balance=10000 --id="$(identity 2)" 8000 8001 8002
 
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
     sleep 300
+
     # At this point, start the 4th node and check it can catch up
-    make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000" NODE="3" || {
+    make $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" || {
       echo Could not start nodes... >&3
       exit 1
     }
@@ -98,56 +80,6 @@ function check_consistency() {
     done >/dev/null
 EOT
     sleep 12  # Three consensus round.
-    check_consistency "$(pem 1)" 990000 0 1 2 3
-    check_consistency "$(pem 2)" 10000 0 1 2 3
-}
-
-@test "$SUITE: Node can catch up messages older than MANY timeout" {
-    # Check consistency with nodes [0, 2] up
-    check_consistency "$(pem 1)" 1000000 0 1 2
-    ledger "$(pem 1)" 0 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 999000 0 1 2
-    check_consistency "$(pem 2)" 1000 0 1 2
-
-    # Send a message that's 10 seconds off of being time out.
-    many message --timestamp $(($(date +%s) - (4 * 60 + 50))) --server http://localhost:8001 --pem "$(pem 1)" ledger.send '{
-        0: "'"$(identity 1)"'",
-        1: "'"$(identity 2)"'",
-        2: 1000,
-        3: "'"$MFX_ADDRESS"'",
-    }'
-    sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 998000 0 1 2
-    check_consistency "$(pem 2)" 2000 0 1 2
-
-    ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    ledger "$(pem 1)" 1 send "$(identity 2)" 1000 MFX
-    sleep 4  # One consensus round.
-    check_consistency "$(pem 1)" 996000 0 1 2
-    check_consistency "$(pem 2)" 4000 0 1 2
-
-    cd "$GIT_ROOT/docker/e2e/" || exit 1
-
-    # Wait long enough to invalidate the first manual transaction.
-    # Since we already waited 4 seconds twice above, we really just need to wait a few more.
-    sleep 303
-
-    # At this point, start the 4th node and check it can catch up
-    make start-single-node-background ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" NODE="3" || {
-      echo Could not start nodes... >&3
-      exit 1
-    }
-
-    # Give the 4th node some time to boot
-    sleep 30
-    timeout 60s bash <<EOT
-    while ! many message --server http://localhost:8003 status; do
-      sleep 1
-    done >/dev/null
-EOT
-
-    sleep 10  # Give some time to catch up.
-    check_consistency "$(pem 1)" 996000 0 1 2 3
-    check_consistency "$(pem 2)" 4000 0 1 2 3
+    check_consistency --pem=1 --balance=990000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=10000 --id="$(identity 2)" 8000 8001 8002 8003
 }

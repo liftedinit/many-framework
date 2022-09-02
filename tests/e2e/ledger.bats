@@ -32,18 +32,19 @@ function teardown() {
     stop_background_run
 }
 
-@test "$SUITE: Ledger can send tokens on behalf of an account" {
-    account_id=$(account_create --id=1 '{ 1: { "'"$(identity 2)"'": ["canLedgerTransact"] }, 2: [0] }')
-    ledger --id=1 send "$account_id" 1000000 MFX
-    ledger --balance=1000000 --id=1 balance "$account_id"
+@test "$SUITE: ledger can send tokens on behalf of an account" {
+    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canLedgerTransact"] }, 2: [0] }')
+    call_ledger --pem=1 --port=8000 send "$account_id" 1000000 MFX
+    check_consistency --pem=1 --balance=1000000 --id="$account_id" 8000
 
-    ledger --id=1 send --account="$account_id" "$(identity 4)" 2000 MFX
-    ledger --id=4 --balance=2000 balance
-    ledger --id=1 --balance=998000 balance "$account_id"
+    call_ledger --pem=1 --port=8000 send --account="$account_id" "$(identity 4)" 2000 MFX
+    check_consistency --pem=4 --balance=2000 --id="$(identity 4)" 8000
+    check_consistency --pem=1 --balance=998000 --id="$account_id" 8000
 
-    ledger --id=2 send --account="$account_id" "$(identity 4)" 2000 MFX
-    ledger --id=4 --balance=4000 balance
-    ledger --id=1 --balance=996000 balance "$account_id"
+    call_ledger --pem=2 --port=8000 send --account="$account_id" "$(identity 4)" 2000 MFX
+    check_consistency --pem=4 --balance=4000 --id="$(identity 4)" 8000
+    check_consistency --pem=1 --balance=996000 --id="$account_id" 8000
 
-    ledger --error --id=4 send --account="$account_id" "$(identity 4)" 2000 MFX
+    call_ledger --pem=4 --port=8000 send --account="$account_id" "$(identity 4)" 2000 MFX
+    assert_output --partial "Sender needs role 'canLedgerTransact' to perform this operation."
 }

@@ -27,7 +27,7 @@
 
           dockerImageFromPkg = pkg: name: final.dockerTools.buildLayeredImage {
             fromImage = final.baseImage;
-            name = "many/${name}";
+            name = "lifted/${name}";
             tag = "latest";
             contents = [
               (pkg {}).bin

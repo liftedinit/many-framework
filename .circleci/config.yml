@@ -7,6 +7,7 @@ orbs:
   rust: circleci/rust@1.6.0
   detect: circleci/os-detect@0.3.0
   bats: circleci/bats@1.0.0
+  docker: circleci/docker@2.1.3
 
 executors:
   linux2204:
@@ -72,6 +73,9 @@ jobs:
       - run:
           name: install `many` CLI
           command: cargo install --force --git https://github.com/liftedinit/many-rs many
+      - run:
+          name: install `ledger` CLI
+          command: cargo install --force --path src/ledger ledger
       - run:
           name: install cbor-diag
           command: cargo install --force cbor-diag-cli
@@ -177,6 +181,77 @@ jobs:
       - run:
           name: cargo audit
           command: cargo audit
+  publish_nightly_docker:
+    executor: linux2204
+    resource_class: large
+    steps:
+      - docker/check
+      - checkout:
+          path: many-framework
+      - restore_cache:
+          keys:
+            - nightly-docker-{{ .Environment.MANY_FRAMEWORK_CACHE_VERSION }}-{{ arch }}-{{ checksum "many-framework/Cargo.lock" }}
+      - run:
+          name: restoring `nix-store`
+          command: |
+            if [[ -f "backup.tar" ]]; then
+              docker run --rm -v nix-store:/nix -v $(pwd):/backup ubuntu tar xf /backup/backup.tar -C /
+            else
+              echo "nix-store backup unavailable; skipping."
+            fi
+      - rust/install:
+          version: nightly
+      - run:
+          name: build docker images
+          command: |
+            cd many-framework/docker/e2e
+            make many/many-ledger
+            make many/many-abci
+            docker tag lifted/many-ledger:latest lifted/many-ledger:nightly
+            docker tag lifted/many-abci:latest lifted/many-abci:nightly
+            docker tag lifted/many-ledger:latest lifted/many-ledger:$CIRCLE_SHA1
+            docker tag lifted/many-abci:latest lifted/many-abci:$CIRCLE_SHA1
+      - docker/push:
+          image: many-abci
+          registry: lifted
+          tag: "nightly,$CIRCLE_SHA1"
+          step-name: "docker push lifted/many-abci"
+      - docker/push:
+          image: many-ledger
+          registry: lifted
+          tag: "nightly,$CIRCLE_SHA1"
+          step-name: "docker push lifted/many-ledger"
+      - run:
+          name: exporting `nix-store` docker volume
+          command: |
+            docker run --rm -v nix-store:/nix -v $(pwd):/backup ubuntu tar cf /backup/backup.tar /nix
+      - save_cache:
+          key: nightly-docker-{{ .Environment.MANY_FRAMEWORK_CACHE_VERSION }}-{{ arch }}-{{ checksum "many-framework/Cargo.lock" }}
+          paths:
+            - backup.tar
+  resiliency_tests:
+    executor: linux2204
+    resource_class: large
+    steps:
+      - checkout
+      # TODO: Make a release with `many` CLI and install the release instead
+      - rust/install:
+          version: nightly
+      - run:
+          name: install `many` CLI
+          command: cargo install --git https://github.com/liftedinit/many-rs many
+      - run:
+          name: install `ledger` CLI
+          command: cargo install --path src/ledger ledger
+      - bats/install
+      - docker/pull:
+          images: "lifted/many-ledger:nightly,lifted/many-abci:nightly"
+      - run:
+          name: running BATs tests
+          # https://support.circleci.com/hc/en-us/articles/360046544433-Makefile-Command-Inconsistencies
+          shell: /bin/bash
+          command: bats .
+          working_directory: ./tests/resiliency
 
 # Re-usable commands
 commands:
@@ -296,3 +371,27 @@ workflows:
         - equal: [ "Audit", << pipeline.schedule.name >> ]
     jobs:
       - audit
+  nightly_docker_and_resiliency_tests:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "Nightly Docker and Resiliency Tests", << pipeline.schedule.name >> ]
+    jobs:
+      - publish_nightly_docker:
+          context:
+            - DOCKER_CREDS
+          filters:
+            branches:
+              only:
+                - main
+      - resiliency_tests:
+          pre-steps:
+            - install-deps:
+                os: linux2204
+          filters:
+            branches:
+              only:
+                - main
+          requires:
+            - publish_nightly_docker
+
