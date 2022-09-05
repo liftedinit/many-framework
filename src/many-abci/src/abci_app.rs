@@ -1,7 +1,7 @@
 use coset::{CborSerializable, CoseSign1};
 use many_client::ManyClient;
 use many_error::ManyError;
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::{Address, AnonymousIdentity};
 use many_modules::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use many_protocol::ResponseMessage;
 use reqwest::{IntoUrl, Url};
@@ -16,13 +16,13 @@ lazy_static::lazy_static!(
 #[derive(Debug, Clone)]
 pub struct AbciApp {
     app_name: String,
-    many_client: ManyClient,
+    many_client: ManyClient<AnonymousIdentity>,
     many_url: Url,
 }
 
 impl AbciApp {
     /// Constructor.
-    pub fn create<U>(many_url: U, server_id: Address) -> Result<Self, String>
+    pub async fn create<U>(many_url: U, server_id: Address) -> Result<Self, String>
     where
         U: IntoUrl,
     {
@@ -35,9 +35,8 @@ impl AbciApp {
         //     server_id
         // };
 
-        let many_client =
-            ManyClient::new(many_url.clone(), server_id, CoseKeyIdentity::anonymous())?;
-        let status = many_client.status().map_err(|x| x.to_string())?;
+        let many_client = ManyClient::new(many_url.clone(), server_id, AnonymousIdentity)?;
+        let status = many_client.status().await.map_err(|x| x.to_string())?;
         let app_name = status.name;
 
         Ok(Self {
@@ -56,7 +55,7 @@ impl Application for AbciApp {
         );
 
         let AbciInfo { height, hash } =
-            match self.many_client.call_("abci.info", ()).and_then(|payload| {
+            match smol::block_on(self.many_client.call_("abci.info", ())).and_then(|payload| {
                 minicbor::decode(&payload)
                     .map_err(|e| ManyError::deserialization_error(e.to_string()))
             }) {
@@ -91,7 +90,10 @@ impl Application for AbciApp {
                 }
             }
         };
-        let value = match ManyClient::send_envelope(self.many_url.clone(), cose) {
+        let value = match smol::block_on(many_client::client::send_envelope(
+            self.many_url.clone(),
+            cose,
+        )) {
             Ok(cose_sign) => cose_sign,
 
             Err(err) => {
@@ -138,7 +140,10 @@ impl Application for AbciApp {
                 }
             }
         };
-        match ManyClient::send_envelope(self.many_url.clone(), cose) {
+        match smol::block_on(many_client::client::send_envelope(
+            self.many_url.clone(),
+            cose,
+        )) {
             Ok(cose_sign) => {
                 let payload = cose_sign.payload.unwrap_or_default();
                 let mut response = ResponseMessage::from_bytes(&payload).unwrap_or_default();
@@ -182,7 +187,7 @@ impl Application for AbciApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        self.many_client.call_("abci.commit", ()).map_or_else(
+        smol::block_on(self.many_client.call_("abci.commit", ())).map_or_else(
             |err| ResponseCommit {
                 data: err.to_string().into_bytes().into(),
                 retain_height: 0,
