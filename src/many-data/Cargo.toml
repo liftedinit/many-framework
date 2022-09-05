@@ -17,3 +17,4 @@ categories = ["command-line-utilities"]
 many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "647b729969d358198e80464b95a42ee58a203891" }
 many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "647b729969d358198e80464b95a42ee58a203891" }
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "647b729969d358198e80464b95a42ee58a203891" }
+merk = { git = "https://github.com/liftedinit/merk.git", rev = "da0b660abbfd58abd4a942773f205d2c079f3b27" }

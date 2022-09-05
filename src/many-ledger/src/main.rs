@@ -1,4 +1,5 @@
 use clap::Parser;
+use data_migration::Migration;
 use many_identity::verifiers::AnonymousVerifier;
 #[cfg(feature = "balance_testing")]
 use many_identity::{Address, Identity};
@@ -8,12 +9,14 @@ use many_modules::{abci_backend, account, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
 use tracing::{debug, info};
 
+mod data_migration;
 mod error;
 mod json;
 #[cfg(feature = "migrate_blocks")]
@@ -92,6 +95,9 @@ struct Opts {
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
+
+    #[clap(long, short)]
+    migrations_config: Option<PathBuf>,
 }
 
 fn main() {
@@ -105,6 +111,7 @@ fn main() {
         persistent,
         clean,
         logmode,
+        migrations_config,
         ..
     } = Opts::parse();
 
@@ -163,7 +170,15 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
+    let migrations: BTreeMap<String, Migration> = migrations_config
+        .map(|file| {
+            let contents =
+                std::fs::read(file).expect("Could not read file passed to --migrations_config");
+            toml::from_slice(&contents).expect("Could not parse file passed to --migrations_config")
+        })
+        .unwrap_or_default();
+
+    let module_impl = LedgerModuleImpl::new(state, persistent, abci, migrations).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]

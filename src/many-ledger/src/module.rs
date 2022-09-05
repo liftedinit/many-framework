@@ -1,3 +1,4 @@
+use crate::data_migration::Migration;
 use crate::json::InitialStateJson;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
@@ -166,6 +167,7 @@ impl LedgerModuleImpl {
         initial_state: Option<InitialStateJson>,
         persistence_store_path: P,
         blockchain: bool,
+        migrations: BTreeMap<String, Migration>,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
             let mut storage = LedgerStorage::new(
@@ -184,6 +186,7 @@ impl LedgerModuleImpl {
                         })
                         .collect()
                 }),
+                migrations,
             )
             .map_err(ManyError::unknown)?;
 
@@ -205,7 +208,7 @@ impl LedgerModuleImpl {
 
             storage
         } else {
-            LedgerStorage::load(persistence_store_path, blockchain).unwrap()
+            LedgerStorage::load(persistence_store_path, blockchain, migrations).unwrap()
         };
 
         info!(

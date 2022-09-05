@@ -1,3 +1,4 @@
+use crate::data_migration::Migration;
 use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
@@ -265,6 +266,9 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Address,
+
+    migrations: BTreeSet<String>,
+    all_migrations: BTreeMap<String, Migration>,
 }
 
 impl LedgerStorage {
@@ -295,6 +299,7 @@ impl std::fmt::Debug for LedgerStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
             .field("symbols", &self.symbols)
+            .field("migrations", &self.migrations)
             .finish()
     }
 }
@@ -309,7 +314,11 @@ impl LedgerStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
+    pub fn load<P: AsRef<Path>>(
+        persistent_path: P,
+        blockchain: bool,
+        all_migrations: BTreeMap<String, Migration>,
+    ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -343,6 +352,12 @@ impl LedgerStorage {
 
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
+        let migrations: BTreeSet<String> = persistent_store
+            .get(b"/config/migrations")
+            .expect("Could not open storage.")
+            .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
+            .unwrap_or_default();
+
         Ok(Self {
             symbols,
             persistent_store,
@@ -352,6 +367,8 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
+            migrations,
+            all_migrations,
         })
     }
 
@@ -363,6 +380,7 @@ impl LedgerStorage {
         blockchain: bool,
         maybe_seed: Option<u64>,
         maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
+        all_migrations: BTreeMap<String, Migration>,
     ) -> Result<Self, String> {
         let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
@@ -415,6 +433,8 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
+            migrations: BTreeSet::new(),
+            all_migrations,
         })
     }
 
@@ -554,6 +574,14 @@ impl LedgerStorage {
 
         let height = self.inc_height();
         let retain_height = 0;
+
+        for (migration_name, migration) in self.all_migrations.iter() {
+            if height >= migration.block_height && self.migrations.insert(migration_name.clone()) {
+                Self::migration_init(migration_name, &mut self.persistent_store, &self.migrations)
+                    .unwrap();
+            }
+        }
+
         self.persistent_store.commit(&[]).unwrap();
 
         let hash = self.persistent_store.root_hash().to_vec();
@@ -565,6 +593,19 @@ impl LedgerStorage {
             retain_height,
             hash: hash.into(),
         }
+    }
+
+    pub fn migration_init(
+        name: &str,
+        persistent_store: &mut merk::Merk,
+        migrations: &BTreeSet<String>,
+    ) -> merk::Result<()> {
+        persistent_store.apply(&[(
+            b"/config/migrations".to_vec(),
+            Op::Put(minicbor::to_vec(migrations).expect("Could not encode migrations to cbor")),
+        )])?;
+        if name == "account_count_data" {}
+        Ok(())
     }
 
     pub fn nb_events(&self) -> u64 {
