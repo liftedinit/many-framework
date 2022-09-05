@@ -6,6 +6,7 @@ members = [
     "src/ledger",
     "src/kvstore",
     "src/many-abci",
+    "src/many-data",
     "src/many-kvstore",
     "src/many-ledger",
 ]

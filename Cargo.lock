@@ -2006,6 +2006,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "many-data"
+version = "0.1.0"
+dependencies = [
+ "many-error",
+ "many-identity",
+ "many-modules",
+]
+
+[[package]]
 name = "many-error"
 version = "0.1.0"
 source = "git+https://github.com/liftedinit/many-rs.git?rev=cda2c4bf2081f1aa1f6a87d4057b174e6c688f53#cda2c4bf2081f1aa1f6a87d4057b174e6c688f53"
