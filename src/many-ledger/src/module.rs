@@ -178,8 +178,8 @@ impl LedgerModuleImpl {
                 state.id_store_keys.map(|keys| {
                     keys.iter()
                         .map(|(k, v)| {
-                            let k = base64::decode(&k).expect("Invalid base64 for key");
-                            let v = base64::decode(&v).expect("Invalid base64 for value");
+                            let k = base64::decode(k).expect("Invalid base64 for key");
+                            let v = base64::decode(v).expect("Invalid base64 for value");
                             (k, v)
                         })
                         .collect()

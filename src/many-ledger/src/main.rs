@@ -16,6 +16,7 @@ use tracing::{debug, info};
 
 mod error;
 mod json;
+#[cfg(feature = "migrate_blocks")]
 mod migration;
 mod module;
 mod storage;
