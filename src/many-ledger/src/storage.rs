@@ -11,6 +11,7 @@ use many_modules::{account, events, idstore, EmptyReturn};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::{CborRange, Either, SortOrder, Timestamp};
+use merk::rocksdb::ReadOptions;
 use merk::tree::Tree;
 use merk::{rocksdb, BatchEntry, Op};
 use std::cmp::Ordering;
@@ -575,12 +576,15 @@ impl LedgerStorage {
         let height = self.inc_height();
         let retain_height = 0;
 
+        let mut operations = vec![];
+
         for (migration_name, migration) in self.all_migrations.iter() {
             if height >= migration.block_height && self.migrations.insert(migration_name.clone()) {
-                Self::migration_init(migration_name, &mut self.persistent_store, &self.migrations)
-                    .unwrap();
+                operations.append(&mut self.migration_init(&migration_name));
             }
         }
+        operations.sort_by(|(a, _), (b, _)| a.cmp(b));
+        self.persistent_store.apply(&operations).unwrap();
 
         self.persistent_store.commit(&[]).unwrap();
 
@@ -595,31 +599,47 @@ impl LedgerStorage {
         }
     }
 
-    pub fn migration_init(
-        name: &str,
-        persistent_store: &mut merk::Merk,
-        migrations: &BTreeSet<String>,
-    ) -> merk::Result<()> {
+    fn migration_init(&self, name: &str) -> Vec<(Vec<u8>, Op)> {
         let mut operations = vec![];
         operations.push((
             b"/config/migrations".to_vec(),
-            Op::Put(minicbor::to_vec(migrations).expect("Could not encode migrations to cbor")),
+            Op::Put(
+                minicbor::to_vec(&self.migrations).expect("Could not encode migrations to cbor"),
+            ),
         ));
         if name == "account_count_data" {
-            let account_count_data: u64 = 0;
-            let non_zero_account_total_count: u64 = 0;
+            let (account_total_count, non_zero_account_total_count) = self.initial_metrics_data();
             operations.push((
-                b"/data/account_count_data".to_vec(),
-                Op::Put(account_count_data.to_be_bytes().to_vec()),
+                b"/data/account_total_count".to_vec(),
+                Op::Put(account_total_count.to_be_bytes().to_vec()),
             ));
             operations.push((
                 b"/data/non_zero_account_total_count".to_vec(),
                 Op::Put(non_zero_account_total_count.to_be_bytes().to_vec()),
             ));
         }
-        operations.sort_by(|(a, _), (b, _)| a.cmp(b));
-        persistent_store.apply(&operations)?;
-        Ok(())
+        operations
+    }
+
+    fn initial_metrics_data(&self) -> (u64, u64) {
+        let mut total = 0;
+        let mut non_zero = 0;
+        let mut upper_bound = b"/balances".to_vec();
+        *upper_bound.last_mut().unwrap() += 1;
+        let mut opts = ReadOptions::default();
+        opts.set_iterate_upper_bound(upper_bound);
+        let iterator = self.persistent_store.iter_opt(
+            rocksdb::IteratorMode::From(b"/balances", rocksdb::Direction::Forward),
+            opts,
+        );
+        for item in iterator {
+            let (_, value) = item.expect("Error while reading the DB");
+            total += 1;
+            if TokenAmount::from(value.to_vec()) != 0u16 {
+                non_zero += 1
+            }
+        }
+        (total, non_zero)
     }
 
     pub fn nb_events(&self) -> u64 {
