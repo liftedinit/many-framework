@@ -18,6 +18,7 @@ pub struct AbciApp {
     app_name: String,
     many_client: ManyClient<AnonymousIdentity>,
     many_url: Url,
+    runtime: std::sync::Arc<tokio::runtime::Runtime>,
 }
 
 impl AbciApp {
@@ -43,6 +44,12 @@ impl AbciApp {
             app_name,
             many_url,
             many_client,
+            runtime: std::sync::Arc::new(
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap(),
+            ),
         })
     }
 }
@@ -54,9 +61,8 @@ impl Application for AbciApp {
             request.version, request.block_version, request.p2p_version
         );
 
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-
-        let AbciInfo { height, hash } = match runtime
+        let AbciInfo { height, hash } = match self
+            .runtime
             .block_on(self.many_client.call_("abci.info", ()))
             .and_then(|payload| {
                 minicbor::decode(&payload)
@@ -94,9 +100,7 @@ impl Application for AbciApp {
             }
         };
 
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-
-        let value = match runtime.block_on(many_client::client::send_envelope(
+        let value = match self.runtime.block_on(many_client::client::send_envelope(
             self.many_url.clone(),
             cose,
         )) {
@@ -147,9 +151,7 @@ impl Application for AbciApp {
             }
         };
 
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-
-        match runtime.block_on(many_client::client::send_envelope(
+        match self.runtime.block_on(many_client::client::send_envelope(
             self.many_url.clone(),
             cose,
         )) {
@@ -196,9 +198,7 @@ impl Application for AbciApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-
-        runtime
+        self.runtime
             .block_on(self.many_client.call_("abci.commit", ()))
             .map_or_else(
                 |err| ResponseCommit {
