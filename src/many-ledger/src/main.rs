@@ -1,5 +1,7 @@
 use clap::Parser;
-use many_identity::{Address, CoseKeyIdentity};
+#[cfg(feature = "balance_testing")]
+use many_identity::Address;
+use many_identity::CoseKeyIdentity;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, idstore, ledger};
 use many_protocol::ManyUrl;

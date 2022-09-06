@@ -31,7 +31,7 @@ many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "c8d0c
 many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1" }
 many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1" }
 regex = "1.5.4"
-ring = "0.17.0-alpha.10"
+ring = "0.16.20"
 rpassword = "6.0"
 tracing = "0.1.29"
 tracing-subscriber = "0.3"
