@@ -75,7 +75,8 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
         let hash = args.token.as_ref();
 
         if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
-            smol::block_on(async {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            runtime.block_on(async {
                 match self
                     .client
                     .tx(tendermint_rpc::abci::transaction::Hash::new(hash), false)
@@ -102,10 +103,13 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
 
 impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockchainModuleImpl<C> {
     fn info(&self) -> Result<blockchain::InfoReturns, ManyError> {
-        let status = smol::block_on(async { self.client.status().await }).map_err(|e| {
-            tracing::error!("abci transport: {}", e.to_string());
-            abci_frontend::abci_transport_error(e.to_string())
-        })?;
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let status = runtime
+            .block_on(async { self.client.status().await })
+            .map_err(|e| {
+                tracing::error!("abci transport: {}", e.to_string());
+                abci_frontend::abci_transport_error(e.to_string())
+            })?;
 
         Ok(blockchain::InfoReturns {
             latest_block: BlockIdentifier {
@@ -121,7 +125,8 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         &self,
         args: blockchain::TransactionArgs,
     ) -> Result<blockchain::TransactionReturns, ManyError> {
-        let block = smol::block_on(async {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let block = runtime.block_on(async {
             match args.query {
                 SingleTransactionQuery::Hash(hash) => {
                     if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
@@ -149,7 +154,8 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
     }
 
     fn block(&self, args: blockchain::BlockArgs) -> Result<blockchain::BlockReturns, ManyError> {
-        let block = smol::block_on(async {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let block = runtime.block_on(async {
             match args.query {
                 SingleBlockQuery::Hash(hash) => {
                     if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {

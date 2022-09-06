@@ -54,19 +54,22 @@ impl Application for AbciApp {
             request.version, request.block_version, request.p2p_version
         );
 
-        let AbciInfo { height, hash } =
-            match smol::block_on(self.many_client.call_("abci.info", ())).and_then(|payload| {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let AbciInfo { height, hash } = match runtime
+            .block_on(self.many_client.call_("abci.info", ()))
+            .and_then(|payload| {
                 minicbor::decode(&payload)
                     .map_err(|e| ManyError::deserialization_error(e.to_string()))
             }) {
-                Ok(x) => x,
-                Err(err) => {
-                    return ResponseInfo {
-                        data: format!("An error occurred during call to abci.info:\n{}", err),
-                        ..Default::default()
-                    }
+            Ok(x) => x,
+            Err(err) => {
+                return ResponseInfo {
+                    data: format!("An error occurred during call to abci.info:\n{}", err),
+                    ..Default::default()
                 }
-            };
+            }
+        };
 
         ResponseInfo {
             data: format!("many-abci-bridge({})", self.app_name),
@@ -90,7 +93,10 @@ impl Application for AbciApp {
                 }
             }
         };
-        let value = match smol::block_on(many_client::client::send_envelope(
+
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let value = match runtime.block_on(many_client::client::send_envelope(
             self.many_url.clone(),
             cose,
         )) {
@@ -140,7 +146,10 @@ impl Application for AbciApp {
                 }
             }
         };
-        match smol::block_on(many_client::client::send_envelope(
+
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        match runtime.block_on(many_client::client::send_envelope(
             self.many_url.clone(),
             cose,
         )) {
@@ -187,18 +196,22 @@ impl Application for AbciApp {
     }
 
     fn commit(&self) -> ResponseCommit {
-        smol::block_on(self.many_client.call_("abci.commit", ())).map_or_else(
-            |err| ResponseCommit {
-                data: err.to_string().into_bytes().into(),
-                retain_height: 0,
-            },
-            |msg| {
-                let info: AbciCommitInfo = minicbor::decode(&msg).unwrap();
-                ResponseCommit {
-                    data: info.hash.to_vec().into(),
-                    retain_height: info.retain_height as i64,
-                }
-            },
-        )
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        runtime
+            .block_on(self.many_client.call_("abci.commit", ()))
+            .map_or_else(
+                |err| ResponseCommit {
+                    data: err.to_string().into_bytes().into(),
+                    retain_height: 0,
+                },
+                |msg| {
+                    let info: AbciCommitInfo = minicbor::decode(&msg).unwrap();
+                    ResponseCommit {
+                        data: info.hash.to_vec().into(),
+                        retain_height: info.retain_height as i64,
+                    }
+                },
+            )
     }
 }
