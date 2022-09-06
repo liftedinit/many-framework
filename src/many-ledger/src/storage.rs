@@ -600,11 +600,25 @@ impl LedgerStorage {
         persistent_store: &mut merk::Merk,
         migrations: &BTreeSet<String>,
     ) -> merk::Result<()> {
-        persistent_store.apply(&[(
+        let mut operations = vec![];
+        operations.push((
             b"/config/migrations".to_vec(),
             Op::Put(minicbor::to_vec(migrations).expect("Could not encode migrations to cbor")),
-        )])?;
-        if name == "account_count_data" {}
+        ));
+        if name == "account_count_data" {
+            let account_count_data: u64 = 0;
+            let non_zero_account_total_count: u64 = 0;
+            operations.push((
+                b"/data/account_count_data".to_vec(),
+                Op::Put(account_count_data.to_be_bytes().to_vec()),
+            ));
+            operations.push((
+                b"/data/non_zero_account_total_count".to_vec(),
+                Op::Put(non_zero_account_total_count.to_be_bytes().to_vec()),
+            ));
+        }
+        operations.sort_by(|(a, _), (b, _)| a.cmp(b));
+        persistent_store.apply(&operations)?;
         Ok(())
     }
 
