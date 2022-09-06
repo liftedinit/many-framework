@@ -2,7 +2,7 @@ use crate::TargetCommandOpt;
 use clap::Parser;
 use many_client::ManyClient;
 use many_error::ManyError;
-use many_identity::{Address, Identity};
+use many_identity::Address;
 use many_modules::account::features::multisig;
 use many_modules::{events, ledger};
 use many_protocol::ResponseMessage;
@@ -92,8 +92,8 @@ struct MultisigArgOpt {
     execute_automatically: Option<bool>,
 }
 
-async fn submit_send(
-    client: ManyClient<impl Identity + 'static>,
+fn submit_send(
+    client: ManyClient,
     account: Address,
     multisig_arg: MultisigArgOpt,
     opts: TargetCommandOpt,
@@ -109,40 +109,42 @@ async fn submit_send(
         timeout,
         execute_automatically,
     } = multisig_arg;
-    let symbol = crate::resolve_symbol(&client, symbol).await?;
+    let symbol = crate::resolve_symbol(&client, symbol)?;
 
-    let transaction = events::AccountMultisigTransaction::Send(ledger::SendArgs {
-        from: from.or(Some(account)),
-        to: identity,
-        symbol,
-        amount: TokenAmount::from(amount),
-    });
-    let arguments = multisig::SubmitTransactionArgs {
-        account,
-        memo: None,
-        transaction: Box::new(transaction),
-        threshold,
-        timeout_in_secs: timeout.map(|d| d.as_secs()),
-        execute_automatically,
-        data: None,
-    };
-    let response = client
-        .call("account.multisigSubmitTransaction", arguments)
-        .await?;
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let transaction = events::AccountMultisigTransaction::Send(ledger::SendArgs {
+            from: from.or(Some(account)),
+            to: identity,
+            symbol,
+            amount: TokenAmount::from(amount),
+        });
+        let arguments = multisig::SubmitTransactionArgs {
+            account,
+            memo: None,
+            transaction: Box::new(transaction),
+            threshold,
+            timeout_in_secs: timeout.map(|d| d.as_secs()),
+            execute_automatically,
+            data: None,
+        };
+        let response = client.call("account.multisigSubmitTransaction", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let result: multisig::SubmitTransactionReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let result: multisig::SubmitTransactionReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    info!(
-        "Transaction Token: {}",
-        hex::encode(result.token.as_slice())
-    );
-    Ok(())
+        info!(
+            "Transaction Token: {}",
+            hex::encode(result.token.as_slice())
+        );
+        Ok(())
+    }
 }
 
-async fn submit_set_defaults(
-    client: ManyClient<impl Identity + 'static>,
+fn submit_set_defaults(
+    client: ManyClient,
     account: Address,
     multisig_arg: MultisigArgOpt,
     target: Address,
@@ -154,155 +156,161 @@ async fn submit_set_defaults(
         execute_automatically,
     } = multisig_arg;
 
-    let transaction =
-        events::AccountMultisigTransaction::AccountMultisigSetDefaults(multisig::SetDefaultsArgs {
-            account: target,
-            threshold: opts.threshold,
-            timeout_in_secs: opts.timeout.map(|d| d.as_secs()),
-            execute_automatically: opts.execute_automatically,
-        });
-    let arguments = multisig::SubmitTransactionArgs {
-        account,
-        memo: None,
-        transaction: Box::new(transaction),
-        threshold,
-        timeout_in_secs: timeout.map(|d| d.as_secs()),
-        execute_automatically,
-        data: None,
-    };
-    let response = client
-        .call("account.multisigSubmitTransaction", arguments)
-        .await?;
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let transaction = events::AccountMultisigTransaction::AccountMultisigSetDefaults(
+            multisig::SetDefaultsArgs {
+                account: target,
+                threshold: opts.threshold,
+                timeout_in_secs: opts.timeout.map(|d| d.as_secs()),
+                execute_automatically: opts.execute_automatically,
+            },
+        );
+        let arguments = multisig::SubmitTransactionArgs {
+            account,
+            memo: None,
+            transaction: Box::new(transaction),
+            threshold,
+            timeout_in_secs: timeout.map(|d| d.as_secs()),
+            execute_automatically,
+            data: None,
+        };
+        let response = client.call("account.multisigSubmitTransaction", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let result: multisig::SubmitTransactionReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let result: multisig::SubmitTransactionReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    info!(
-        "Transaction Token: {}",
-        hex::encode(result.token.as_slice())
-    );
-    Ok(())
+        info!(
+            "Transaction Token: {}",
+            hex::encode(result.token.as_slice())
+        );
+        Ok(())
+    }
 }
 
-async fn submit(
-    client: ManyClient<impl Identity + 'static>,
+fn submit(
+    client: ManyClient,
     account: Address,
     multisig_arg: MultisigArgOpt,
     opts: SubmitOpt,
 ) -> Result<(), ManyError> {
     match opts {
-        SubmitOpt::Send(target) => submit_send(client, account, multisig_arg, target).await,
+        SubmitOpt::Send(target) => submit_send(client, account, multisig_arg, target),
         SubmitOpt::SetDefaults(SetDefaultsOpt {
             target_account,
             opts,
-        }) => submit_set_defaults(client, account, multisig_arg, target_account, opts).await,
+        }) => submit_set_defaults(client, account, multisig_arg, target_account, opts),
     }
 }
 
-async fn approve(
-    client: ManyClient<impl Identity + 'static>,
-    opts: TransactionOpt,
-) -> Result<(), ManyError> {
-    let arguments = multisig::ApproveArgs { token: opts.token };
-    let response = client.call("account.multisigApprove", arguments).await?;
+fn approve(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let arguments = multisig::ApproveArgs { token: opts.token };
+        let response = client.call("account.multisigApprove", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let _result: multisig::ApproveReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let _result: multisig::ApproveReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    info!("Approved.");
+        info!("Approved.");
 
-    Ok(())
+        Ok(())
+    }
 }
 
-async fn revoke(
-    client: ManyClient<impl Identity + 'static>,
-    opts: TransactionOpt,
-) -> Result<(), ManyError> {
-    let arguments = multisig::RevokeArgs { token: opts.token };
-    let response = client.call("account.multisigRevoke", arguments).await?;
+fn revoke(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let arguments = multisig::RevokeArgs { token: opts.token };
+        let response = client.call("account.multisigRevoke", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let _result: multisig::RevokeReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let _result: multisig::RevokeReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    info!("Revoked.");
+        info!("Revoked.");
 
-    Ok(())
+        Ok(())
+    }
 }
 
-async fn execute(
-    client: ManyClient<impl Identity + 'static>,
-    opts: TransactionOpt,
-) -> Result<(), ManyError> {
-    let arguments = multisig::ExecuteArgs { token: opts.token };
-    let response = client.call("account.multisigExecute", arguments).await?;
+fn execute(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let arguments = multisig::ExecuteArgs { token: opts.token };
+        let response = client.call("account.multisigExecute", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let result: ResponseMessage =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let result: ResponseMessage = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    info!("Executed:");
-    println!("{}", minicbor::display(&result.data?));
-    Ok(())
+        info!("Executed:");
+        println!("{}", minicbor::display(&result.data?));
+        Ok(())
+    }
 }
 
-async fn info(
-    client: ManyClient<impl Identity + 'static>,
-    opts: TransactionOpt,
-) -> Result<(), ManyError> {
-    let arguments = multisig::InfoArgs { token: opts.token };
-    let response = client.call("account.multisigInfo", arguments).await?;
+fn info(client: ManyClient, opts: TransactionOpt) -> Result<(), ManyError> {
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let arguments = multisig::InfoArgs { token: opts.token };
+        let response = client.call("account.multisigInfo", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let result: multisig::InfoReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let result: multisig::InfoReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    println!("{:#?}", result);
-    Ok(())
+        println!("{:#?}", result);
+        Ok(())
+    }
 }
 
-async fn set_defaults(
-    client: ManyClient<impl Identity + 'static>,
+fn set_defaults(
+    client: ManyClient,
     account: Address,
     opts: MultisigArgOpt,
 ) -> Result<(), ManyError> {
-    let arguments = multisig::SetDefaultsArgs {
-        account,
-        threshold: opts.threshold,
-        timeout_in_secs: opts.timeout.map(|d| d.as_secs()),
-        execute_automatically: opts.execute_automatically,
-    };
-    let response = client
-        .call("account.multisigSetDefaults", arguments)
-        .await?;
+    if client.id.identity.is_anonymous() {
+        Err(ManyError::invalid_identity())
+    } else {
+        let arguments = multisig::SetDefaultsArgs {
+            account,
+            threshold: opts.threshold,
+            timeout_in_secs: opts.timeout.map(|d| d.as_secs()),
+            execute_automatically: opts.execute_automatically,
+        };
+        let response = client.call("account.multisigSetDefaults", arguments)?;
 
-    let payload = crate::wait_response(client, response).await?;
-    let _result: multisig::SetDefaultsReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let payload = crate::wait_response(client, response)?;
+        let _result: multisig::SetDefaultsReturn = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    info!("Defaults set.");
-    Ok(())
+        info!("Defaults set.");
+        Ok(())
+    }
 }
 
-pub async fn multisig(
-    client: ManyClient<impl Identity + 'static>,
-    opts: CommandOpt,
-) -> Result<(), ManyError> {
+pub fn multisig(client: ManyClient, opts: CommandOpt) -> Result<(), ManyError> {
     match opts.subcommand {
         SubcommandOpt::Submit {
             account,
             multisig_arg,
             subcommand,
-        } => submit(client, account, multisig_arg, subcommand).await,
-        SubcommandOpt::Approve(sub_opts) => approve(client, sub_opts).await,
-        SubcommandOpt::Revoke(sub_opts) => revoke(client, sub_opts).await,
-        SubcommandOpt::Execute(sub_opts) => execute(client, sub_opts).await,
-        SubcommandOpt::Info(sub_opts) => info(client, sub_opts).await,
+        } => submit(client, account, multisig_arg, subcommand),
+        SubcommandOpt::Approve(sub_opts) => approve(client, sub_opts),
+        SubcommandOpt::Revoke(sub_opts) => revoke(client, sub_opts),
+        SubcommandOpt::Execute(sub_opts) => execute(client, sub_opts),
+        SubcommandOpt::Info(sub_opts) => info(client, sub_opts),
         SubcommandOpt::SetDefaults(SetDefaultsOpt {
             target_account,
             opts,
-        }) => set_defaults(client, target_account, opts).await,
+        }) => set_defaults(client, target_account, opts),
     }
 }

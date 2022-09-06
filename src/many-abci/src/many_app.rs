@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 use coset::{CborSerializable, CoseSign1};
 use many_error::ManyError;
-use many_identity::verifiers::AnonymousVerifier;
-use many_identity::Identity;
-use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity::CoseKeyIdentity;
 use many_modules::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
 use many_modules::base;
 use many_protocol::{
@@ -29,7 +27,7 @@ pub struct AbciModuleMany<C: Client> {
 impl<C: Client + Sync> AbciModuleMany<C> {
     pub async fn new(client: C, backend_status: base::Status, identity: CoseKeyIdentity) -> Self {
         let init_message = RequestMessageBuilder::default()
-            .from(identity.address())
+            .from(identity.identity)
             .method("abci.init".to_string())
             .build()
             .unwrap();
@@ -40,9 +38,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
 
         let response = client.abci_query(None, data, None, false).await.unwrap();
         let response = CoseSign1::from_slice(&response.value).unwrap();
-        let response =
-            decode_response_from_cose_sign1(&response, None, &(AnonymousVerifier, CoseKeyVerifier))
-                .unwrap();
+        let response = decode_response_from_cose_sign1(response, None).unwrap();
         let init_message: AbciInit = minicbor::decode(&response.data.unwrap()).unwrap();
 
         Self {
@@ -54,8 +50,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
     }
 
     async fn execute_message(&self, envelope: CoseSign1) -> Result<CoseSign1, ManyError> {
-        let message =
-            decode_request_from_cose_sign1(&envelope, &(AnonymousVerifier, CoseKeyVerifier))?;
+        let message = decode_request_from_cose_sign1(envelope.clone(), None)?;
         if let Some(info) = self.backend_endpoints.get(&message.method) {
             let is_command = info.is_command;
             let data = envelope
@@ -71,7 +66,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
 
                 // A command will always return an empty payload with an ASYNC attribute.
                 let response =
-                    ResponseMessage::from_request(&message, &self.identity.address(), Ok(vec![]))
+                    ResponseMessage::from_request(&message, &self.identity.identity, Ok(vec![]))
                         .with_attribute(
                             many_modules::r#async::attributes::ASYNC
                                 .with_argument(CborAny::Bytes(response.hash.as_bytes().to_vec())),
@@ -108,8 +103,8 @@ impl<C: Client + Sync + Send> LowLevelManyRequestHandler for AbciModuleMany<C> {
         match result {
             Ok(x) => Ok(x),
             Err(e) => {
-                let response = ResponseMessage::error(self.identity.address(), None, e);
-                encode_cose_sign1_from_response(response, &self.identity).map_err(|e| e.to_string())
+                let response = ResponseMessage::error(&self.identity.identity, None, e);
+                encode_cose_sign1_from_response(response, &self.identity)
             }
         }
     }
@@ -136,7 +131,7 @@ impl<C: Client + Sync + Send> base::BaseModuleBackend for AbciModuleMany<C> {
         builder
             .name(format!("AbciModule({})", self.backend_status.name))
             .version(1)
-            .identity(self.identity.address())
+            .identity(self.identity.identity)
             .attributes(attributes.into_iter().collect())
             .server_version(std::env!("CARGO_PKG_VERSION").to_string());
 

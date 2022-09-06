@@ -1,8 +1,7 @@
 use clap::Parser;
 use many_client::ManyClient;
 use many_error::ManyError;
-use many_identity::{Address, AnonymousIdentity, Identity};
-use many_identity_dsa::CoseKeyIdentity;
+use many_identity::{Address, CoseKeyIdentity};
 use many_modules::{kvstore, r#async};
 use std::io::Read;
 use std::path::PathBuf;
@@ -85,12 +84,12 @@ struct PutOpt {
     stdin: bool,
 }
 
-async fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), ManyError> {
+fn get(client: ManyClient, key: &[u8], hex: bool) -> Result<(), ManyError> {
     let arguments = kvstore::GetArgs {
         key: key.to_vec().into(),
     };
 
-    let payload = client.call_("kvstore.get", arguments).await?;
+    let payload = client.call_("kvstore.get", arguments)?;
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
     } else {
@@ -107,17 +106,13 @@ async fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result
     }
 }
 
-async fn put(
-    client: ManyClient<impl Identity>,
-    key: &[u8],
-    value: Vec<u8>,
-) -> Result<(), ManyError> {
+fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
     let arguments = kvstore::PutArgs {
         key: key.to_vec().into(),
         value: value.into(),
     };
 
-    let response = client.call("kvstore.put", arguments).await?;
+    let response = client.call("kvstore.put", arguments)?;
     let payload = &response.data?;
     if payload.is_empty() {
         if response
@@ -137,8 +132,7 @@ async fn put(
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let Opts {
         pem,
         server,
@@ -177,10 +171,9 @@ async fn main() {
     };
 
     let server_id = server_id.unwrap_or_default();
-    let key = pem.map_or_else(
-        || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-        |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
-    );
+    let key = pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
+        CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
+    });
 
     let client = ManyClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
@@ -190,7 +183,7 @@ async fn main() {
             } else {
                 key.into_bytes()
             };
-            get(client, &key, hex).await
+            get(client, &key, hex)
         }
         SubCommand::Put(PutOpt {
             key,
@@ -210,7 +203,7 @@ async fn main() {
             } else {
                 value.expect("Must pass a value").into_bytes()
             };
-            put(client, &key, value).await
+            put(client, &key, value)
         }
     };
 
