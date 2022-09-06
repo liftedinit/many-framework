@@ -11,19 +11,17 @@ use many_types::ledger::{Symbol, TokenAmount};
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
+use multisig::SyncClient;
 use num_bigint::BigUint;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
-use std::future::Future;
 use std::path::PathBuf;
-use std::pin::Pin;
 use std::str::FromStr;
 use std::time::Duration;
 use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 mod multisig;
-
 #[derive(clap::ArgEnum, Clone, Debug)]
 enum LogStrategy {
     Terminal,
@@ -149,8 +147,8 @@ pub(crate) struct TargetCommandOpt {
     symbol: String,
 }
 
-pub async fn resolve_symbol(
-    client: &ManyClient<impl Identity>,
+pub fn resolve_symbol(
+    client: &SyncClient<impl Identity>,
     symbol: String,
 ) -> Result<Address, ManyError> {
     if let Ok(symbol) = Address::from_str(&symbol) {
@@ -158,7 +156,7 @@ pub async fn resolve_symbol(
     } else {
         // Get info.
         let info: ledger::InfoReturns =
-            minicbor::decode(&client.call_("ledger.info", ()).await?).unwrap();
+            minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
         info.local_names
             .into_iter()
             .find(|(_, y)| y == &symbol)
@@ -167,14 +165,13 @@ pub async fn resolve_symbol(
     }
 }
 
-async fn balance(
-    client: ManyClient<impl Identity>,
+fn balance(
+    client: SyncClient<impl Identity>,
     account: Option<Address>,
     symbols: Vec<String>,
 ) -> Result<(), ManyError> {
     // Get info.
-    let info: ledger::InfoReturns =
-        minicbor::decode(&client.call_("ledger.info", ()).await?).unwrap();
+    let info: ledger::InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
     let local_names: BTreeMap<String, Symbol> = info
         .local_names
         .iter()
@@ -206,7 +203,7 @@ async fn balance(
             )
         },
     };
-    let payload = client.call_("ledger.balance", argument).await?;
+    let payload = client.call_("ledger.balance", argument)?;
 
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
@@ -224,8 +221,8 @@ async fn balance(
     }
 }
 
-pub(crate) async fn wait_response(
-    client: ManyClient<impl Identity + 'static>,
+pub(crate) fn wait_response(
+    client: SyncClient<impl Identity + 'static>,
     response: ResponseMessage,
 ) -> Result<Vec<u8>, ManyError> {
     let ResponseMessage {
@@ -251,28 +248,18 @@ pub(crate) async fn wait_response(
         // TODO: improve on this by using duration and thread and watchdog.
         // Wait for the server for ~60 seconds by pinging it every second.
         for _ in 0..60 {
-            let response = client
-                .call(
-                    "async.status",
-                    StatusArgs {
-                        token: attr.token.clone(),
-                    },
-                )
-                .await?;
+            let response = client.call(
+                "async.status",
+                StatusArgs {
+                    token: attr.token.clone(),
+                },
+            )?;
             let status: StatusReturn = minicbor::decode(&response.data?)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();
-                    fn run(
-                        client: ManyClient<impl Identity + 'static>,
-                        response: ResponseMessage,
-                    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, ManyError>>>>
-                    {
-                        Box::pin(async move { wait_response(client, response).await })
-                    }
-
-                    return run(client, *response).await;
+                    return wait_response(client, *response);
                 }
                 StatusReturn::Expired => {
                     progress.finish();
@@ -292,14 +279,14 @@ pub(crate) async fn wait_response(
     }
 }
 
-async fn send(
-    client: ManyClient<impl Identity + 'static>,
+fn send(
+    client: SyncClient<impl Identity + 'static>,
     from: Address,
     to: Address,
     amount: BigUint,
     symbol: String,
 ) -> Result<(), ManyError> {
-    let symbol = resolve_symbol(&client, symbol).await?;
+    let symbol = resolve_symbol(&client, symbol)?;
 
     if from.is_anonymous() {
         Err(ManyError::invalid_identity())
@@ -310,15 +297,14 @@ async fn send(
             symbol,
             amount: TokenAmount::from(amount),
         };
-        let response = client.call("ledger.send", arguments).await?;
-        let payload = wait_response(client, response).await?;
+        let response = client.call("ledger.send", arguments)?;
+        let payload = wait_response(client, response)?;
         println!("{}", minicbor::display(&payload));
         Ok(())
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let Opts {
         pem,
         module,
@@ -392,7 +378,7 @@ async fn main() {
     };
 
     let client_address = key.address();
-    let client = ManyClient::new(&server, server_id, key).unwrap();
+    let client = SyncClient::new(ManyClient::new(&server, server_id, key).unwrap());
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
             let identity = identity.map(|identity| {
@@ -406,7 +392,7 @@ async fn main() {
                     .expect("Unable to decode identity command-line argument")
             });
 
-            balance(client, identity, symbols).await
+            balance(client, identity, symbols)
         }
         SubCommand::Send(TargetCommandOpt {
             account,
@@ -415,9 +401,9 @@ async fn main() {
             symbol,
         }) => {
             let from = account.unwrap_or(client_address);
-            send(client, from, identity, amount, symbol).await
+            send(client, from, identity, amount, symbol)
         }
-        SubCommand::Multisig(opts) => multisig::multisig(client, opts).await,
+        SubCommand::Multisig(opts) => multisig::multisig(client, opts),
     };
 
     if let Err(err) = result {
