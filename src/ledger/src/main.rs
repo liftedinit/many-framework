@@ -1,9 +1,8 @@
 use clap::{ArgGroup, Parser};
 use many_client::ManyClient;
 use many_error::ManyError;
-use many_identity::{Address, AnonymousIdentity, Identity};
-use many_identity_dsa::CoseKeyIdentity;
-use many_identity_hsm::{Hsm, HsmIdentity, HsmMechanismType, HsmSessionType, HsmUserType};
+use many_identity::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
+use many_identity::{Address, CoseKeyIdentity};
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{ledger, r#async};
 use many_protocol::ResponseMessage;
@@ -14,9 +13,7 @@ use minicbor::{Decoder, Encoder};
 use num_bigint::BigUint;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
-use std::future::Future;
 use std::path::PathBuf;
-use std::pin::Pin;
 use std::str::FromStr;
 use std::time::Duration;
 use tracing::{debug, error, info, trace};
@@ -149,16 +146,13 @@ pub(crate) struct TargetCommandOpt {
     symbol: String,
 }
 
-pub async fn resolve_symbol(
-    client: &ManyClient<impl Identity>,
-    symbol: String,
-) -> Result<Address, ManyError> {
+pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Address, ManyError> {
     if let Ok(symbol) = Address::from_str(&symbol) {
         Ok(symbol)
     } else {
         // Get info.
         let info: ledger::InfoReturns =
-            minicbor::decode(&client.call_("ledger.info", ()).await?).unwrap();
+            minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
         info.local_names
             .into_iter()
             .find(|(_, y)| y == &symbol)
@@ -167,14 +161,13 @@ pub async fn resolve_symbol(
     }
 }
 
-async fn balance(
-    client: ManyClient<impl Identity>,
+fn balance(
+    client: ManyClient,
     account: Option<Address>,
     symbols: Vec<String>,
 ) -> Result<(), ManyError> {
     // Get info.
-    let info: ledger::InfoReturns =
-        minicbor::decode(&client.call_("ledger.info", ()).await?).unwrap();
+    let info: ledger::InfoReturns = minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
     let local_names: BTreeMap<String, Symbol> = info
         .local_names
         .iter()
@@ -206,7 +199,7 @@ async fn balance(
             )
         },
     };
-    let payload = client.call_("ledger.balance", argument).await?;
+    let payload = client.call_("ledger.balance", argument)?;
 
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
@@ -224,8 +217,8 @@ async fn balance(
     }
 }
 
-pub(crate) async fn wait_response(
-    client: ManyClient<impl Identity + 'static>,
+pub(crate) fn wait_response(
+    client: ManyClient,
     response: ResponseMessage,
 ) -> Result<Vec<u8>, ManyError> {
     let ResponseMessage {
@@ -251,28 +244,18 @@ pub(crate) async fn wait_response(
         // TODO: improve on this by using duration and thread and watchdog.
         // Wait for the server for ~60 seconds by pinging it every second.
         for _ in 0..60 {
-            let response = client
-                .call(
-                    "async.status",
-                    StatusArgs {
-                        token: attr.token.clone(),
-                    },
-                )
-                .await?;
+            let response = client.call(
+                "async.status",
+                StatusArgs {
+                    token: attr.token.clone(),
+                },
+            )?;
             let status: StatusReturn = minicbor::decode(&response.data?)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();
-                    fn run(
-                        client: ManyClient<impl Identity + 'static>,
-                        response: ResponseMessage,
-                    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, ManyError>>>>
-                    {
-                        Box::pin(async move { wait_response(client, response).await })
-                    }
-
-                    return run(client, *response).await;
+                    return wait_response(client, *response);
                 }
                 StatusReturn::Expired => {
                     progress.finish();
@@ -292,14 +275,14 @@ pub(crate) async fn wait_response(
     }
 }
 
-async fn send(
-    client: ManyClient<impl Identity + 'static>,
+fn send(
+    client: ManyClient,
     from: Address,
     to: Address,
     amount: BigUint,
     symbol: String,
 ) -> Result<(), ManyError> {
-    let symbol = resolve_symbol(&client, symbol).await?;
+    let symbol = resolve_symbol(&client, symbol)?;
 
     if from.is_anonymous() {
         Err(ManyError::invalid_identity())
@@ -310,15 +293,14 @@ async fn send(
             symbol,
             amount: TokenAmount::from(amount),
         };
-        let response = client.call("ledger.send", arguments).await?;
-        let payload = wait_response(client, response).await?;
+        let response = client.call("ledger.send", arguments)?;
+        let payload = wait_response(client, response)?;
         println!("{}", minicbor::display(&payload));
         Ok(())
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let Opts {
         pem,
         module,
@@ -360,9 +342,7 @@ async fn main() {
     };
 
     let server_id = server_id.unwrap_or_default();
-    let key: Box<dyn Identity> = if let (Some(module), Some(slot), Some(keyid)) =
-        (module, slot, keyid)
-    {
+    let key = if let (Some(module), Some(slot), Some(keyid)) = (module, slot, keyid) {
         trace!("Getting user PIN");
         let pin = rpassword::prompt_password("Please enter the HSM user PIN: ")
             .expect("I/O error when reading HSM PIN");
@@ -380,18 +360,14 @@ async fn main() {
 
         trace!("Creating CoseKeyIdentity");
         // Only ECDSA is supported at the moment. It should be easy to add support for new EC mechanisms
-        Box::new(
-            HsmIdentity::new(HsmMechanismType::ECDSA)
-                .expect("Unable to create CoseKeyIdentity from HSM"),
-        )
+        CoseKeyIdentity::from_hsm(HsmMechanismType::ECDSA)
+            .expect("Unable to create CoseKeyIdentity from HSM")
     } else {
-        pem.map_or_else(
-            || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-            |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
-        )
+        pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
+            CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
+        })
     };
 
-    let client_address = key.address();
     let client = ManyClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
@@ -400,13 +376,13 @@ async fn main() {
                     .or_else(|_| {
                         let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 
-                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().address())
+                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().identity)
                     })
                     .map_err(|_: std::io::Error| ())
                     .expect("Unable to decode identity command-line argument")
             });
 
-            balance(client, identity, symbols).await
+            balance(client, identity, symbols)
         }
         SubCommand::Send(TargetCommandOpt {
             account,
@@ -414,10 +390,10 @@ async fn main() {
             amount,
             symbol,
         }) => {
-            let from = account.unwrap_or(client_address);
-            send(client, from, identity, amount, symbol).await
+            let from = account.unwrap_or(client.id.identity);
+            send(client, from, identity, amount, symbol)
         }
-        SubCommand::Multisig(opts) => multisig::multisig(client, opts).await,
+        SubCommand::Multisig(opts) => multisig::multisig(client, opts),
     };
 
     if let Err(err) = result {
