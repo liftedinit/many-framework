@@ -1,5 +1,6 @@
 use clap::Parser;
-use many_identity::CoseKeyIdentity;
+use many_identity::verifiers::AnonymousVerifier;
+use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::{abci_backend, kvstore};
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
@@ -125,8 +126,8 @@ fn main() {
     let many = ManyServer::simple(
         "many-kvstore",
         key,
-        Some(std::env!("CARGO_PKG_VERSION").to_string()),
-        None,
+        (AnonymousVerifier, CoseKeyVerifier),
+        Some(env!("CARGO_PKG_VERSION").to_string()),
     );
 
     {

@@ -1,6 +1,9 @@
 use clap::Parser;
 use many_client::ManyClient;
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::verifiers::AnonymousVerifier;
+use many_identity::{Address, AnonymousIdentity, Identity};
+use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity_webauthn::WebAuthnVerifier;
 use many_modules::{base, blockchain, r#async};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
@@ -114,21 +117,14 @@ async fn main() {
     };
 
     // Try to get the status of the backend MANY app.
-    let many_client = ManyClient::new(
-        &many_app,
-        Address::anonymous(),
-        CoseKeyIdentity::anonymous(),
-    )
-    .unwrap();
+    let many_client = ManyClient::new(&many_app, Address::anonymous(), AnonymousIdentity).unwrap();
 
     let start = std::time::SystemTime::now();
     trace!("Connecting to the backend app...");
 
     let status = loop {
         let many_client = many_client.clone();
-        let result = tokio::task::spawn_blocking(move || many_client.status())
-            .await
-            .unwrap();
+        let result = many_client.status().await;
 
         match result {
             Err(e) => {
@@ -148,11 +144,9 @@ async fn main() {
         std::thread::sleep(std::time::Duration::from_secs(1));
     };
 
-    let abci_app = tokio::task::spawn_blocking(move || {
-        AbciApp::create(many_app, Address::anonymous()).unwrap()
-    })
-    .await
-    .unwrap();
+    let abci_app = AbciApp::create(many_app, Address::anonymous())
+        .await
+        .unwrap();
 
     let abci_server = ServerBuilder::new(abci_read_buf_size)
         .bind(abci, abci_app)
@@ -177,11 +171,16 @@ async fn main() {
     }
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
-    info!(many_address = key.identity.to_string().as_str());
+    info!(many_address = key.address().to_string().as_str());
     let server = ManyServer::new(
         format!("AbciModule({})", &status.name),
         key.clone(),
-        allow_origin,
+        (
+            AnonymousVerifier,
+            CoseKeyVerifier,
+            WebAuthnVerifier::new(allow_origin),
+        ),
+        key.public_key(),
     );
     let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
