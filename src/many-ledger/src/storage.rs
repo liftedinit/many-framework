@@ -314,11 +314,7 @@ impl LedgerStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub fn load<P: AsRef<Path>>(
-        persistent_path: P,
-        blockchain: bool,
-        all_migrations: BTreeMap<String, Migration>,
-    ) -> Result<Self, String> {
+    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -368,7 +364,7 @@ impl LedgerStorage {
             next_account_id,
             account_identity,
             migrations,
-            all_migrations,
+            all_migrations: BTreeMap::new(),
         })
     }
 
@@ -380,7 +376,6 @@ impl LedgerStorage {
         blockchain: bool,
         maybe_seed: Option<u64>,
         maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
-        all_migrations: BTreeMap<String, Migration>,
     ) -> Result<Self, String> {
         let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
@@ -434,8 +429,13 @@ impl LedgerStorage {
             next_account_id: 0,
             account_identity: identity,
             migrations: BTreeSet::new(),
-            all_migrations,
+            all_migrations: BTreeMap::new(),
         })
+    }
+
+    pub fn with_migrations(mut self, all_migrations: BTreeMap<String, Migration>) -> Self {
+        self.all_migrations = all_migrations;
+        self
     }
 
     pub fn commit_persistent_store(&mut self) -> Result<(), String> {

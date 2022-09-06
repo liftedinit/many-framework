@@ -178,7 +178,9 @@ fn main() {
         })
         .unwrap_or_default();
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci, migrations).unwrap();
+    let module_impl = LedgerModuleImpl::new(state, persistent, abci)
+        .unwrap()
+        .with_migrations(migrations);
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]

@@ -167,7 +167,6 @@ impl LedgerModuleImpl {
         initial_state: Option<InitialStateJson>,
         persistence_store_path: P,
         blockchain: bool,
-        migrations: BTreeMap<String, Migration>,
     ) -> Result<Self, ManyError> {
         let storage = if let Some(state) = initial_state {
             let mut storage = LedgerStorage::new(
@@ -186,7 +185,6 @@ impl LedgerModuleImpl {
                         })
                         .collect()
                 }),
-                migrations,
             )
             .map_err(ManyError::unknown)?;
 
@@ -208,7 +206,7 @@ impl LedgerModuleImpl {
 
             storage
         } else {
-            LedgerStorage::load(persistence_store_path, blockchain, migrations).unwrap()
+            LedgerStorage::load(persistence_store_path, blockchain).unwrap()
         };
 
         info!(
@@ -217,6 +215,11 @@ impl LedgerModuleImpl {
         );
 
         Ok(Self { storage })
+    }
+
+    pub fn with_migrations(mut self, migrations: BTreeMap<String, Migration>) -> Self {
+        self.storage = self.storage.with_migrations(migrations);
+        self
     }
 
     #[cfg(feature = "balance_testing")]
