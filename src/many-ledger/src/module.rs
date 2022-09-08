@@ -861,16 +861,17 @@ mod tests {
     use crate::json::InitialStateJson;
     use crate::module::LedgerModuleImpl;
     use coset::CborSerializable;
-    use many_identity::testsutils::generate_random_eddsa_identity;
+    use many_identity::Identity;
+    use many_identity_dsa::ed25519::generate_random_ed25519_identity;
     use many_modules::idstore;
     use many_modules::idstore::IdStoreModuleBackend;
 
     #[test]
     /// Test every recall phrase generation codepath
     fn idstore_generate_recall_phrase_all_codepaths() {
-        let cose_key_id = generate_random_eddsa_identity();
+        let cose_key_id = generate_random_ed25519_identity();
         let public_key: idstore::PublicKey =
-            idstore::PublicKey(cose_key_id.key.unwrap().to_vec().unwrap().into());
+            idstore::PublicKey(cose_key_id.public_key().to_vec().unwrap().into());
         let mut module_impl = LedgerModuleImpl::new(
             Some(
                 InitialStateJson::read("../../staging/ledger_state.json5")
@@ -882,7 +883,7 @@ mod tests {
         )
         .unwrap();
         let cred_id = idstore::CredentialId(vec![1; 16].into());
-        let id = cose_key_id.identity;
+        let id = cose_key_id.address();
 
         // Basic call
         let result = module_impl.store(

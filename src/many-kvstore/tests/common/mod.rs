@@ -1,5 +1,5 @@
-use many_identity::testsutils::generate_random_eddsa_identity;
-use many_identity::Address;
+use many_identity::{Address, Identity};
+use many_identity_dsa::ecdsa::generate_random_ecdsa_identity;
 use many_kvstore::module::KvStoreModuleImpl;
 
 pub struct Setup {
@@ -15,7 +15,7 @@ impl Default for Setup {
 
 impl Setup {
     pub fn new(blockchain: bool) -> Self {
-        let id = generate_random_eddsa_identity();
+        let id = generate_random_ecdsa_identity();
         let content = std::fs::read_to_string("../../staging/kvstore_state.json")
             .or_else(|_| std::fs::read_to_string("staging/kvstore_state.json"))
             .unwrap();
@@ -23,7 +23,7 @@ impl Setup {
         Self {
             module_impl: KvStoreModuleImpl::new(state, tempfile::tempdir().unwrap(), blockchain)
                 .unwrap(),
-            id: id.identity,
+            id: id.address(),
         }
     }
 }

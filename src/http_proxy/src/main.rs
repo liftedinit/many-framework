@@ -1,6 +1,7 @@
 use clap::Parser;
-use many_client::ManyClient;
-use many_identity::{Address, CoseKeyIdentity};
+use many_client::client::blocking::ManyClient;
+use many_identity::{Address, AnonymousIdentity, Identity};
+use many_identity_dsa::CoseKeyIdentity;
 use many_modules::kvstore::{GetArgs, GetReturns};
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -84,9 +85,10 @@ fn main() {
     };
 
     let server_id = server_id.unwrap_or_default();
-    let key = pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
-        CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
-    });
+    let key: Box<dyn Identity> = pem.map_or_else(
+        || Box::new(AnonymousIdentity) as Box<dyn Identity>,
+        |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+    );
 
     let client = ManyClient::new(server, server_id, key).unwrap();
     let http = tiny_http::Server::http(addr).unwrap();

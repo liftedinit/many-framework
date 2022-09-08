@@ -19,11 +19,17 @@ incremental = false
 [profile.dev]
 incremental = false
 
-# [patch."https://github.com/liftedinit/many-rs.git"]
-# many = { path = "../many-rs/src/many" }
-# many-cli = { path = "../many-rs/src/many-cli" }
-# many-client = { path = "../many-rs/src/many-client" }
-# many-macros = { path = "../many-rs/src/many-macros" }
+[patch."https://github.com/liftedinit/many-rs.git"]
+# many-client            = { path = "../many-rs/src/many-client" }
+# many-modules           = { path = "../many-rs/src/many-modules" }
+# many-protocol          = { path = "../many-rs/src/many-protocol" }
+# many-error             = { path = "../many-rs/src/many-error" }
+# many-identity          = { path = "../many-rs/src/many-identity" }
+# many-server            = { path = "../many-rs/src/many-server" }
+# many-types             = { path = "../many-rs/src/many-types" }
+# many-identity-dsa      = { path = "../many-rs/src/many-identity-dsa" }
+# many-identity-hsm      = { path = "../many-rs/src/many-identity-hsm" }
+# many-identity-webauthn = { path = "../many-rs/src/many-identity-webauthn" }
 
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
