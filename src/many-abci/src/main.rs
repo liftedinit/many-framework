@@ -203,7 +203,7 @@ async fn main() {
         .expect("Could not register signal handler");
 
     info!("Starting MANY server on addr {}", many.clone());
-    let _j_many = tokio::task::spawn_blocking(move || {
+    let j_many = tokio::task::spawn_blocking(move || {
         match many_server.bind(many, &tokio::runtime::Handle::current()) {
             Ok(_) => {}
             Err(error) => {
@@ -212,6 +212,7 @@ async fn main() {
             }
         }
     });
+    j_many.await.unwrap();
 
     // It seems that ABCI does not have a graceful way to shutdown. If we make it here
     // though we already gracefully shutdown the MANY part of the server, so lets just
