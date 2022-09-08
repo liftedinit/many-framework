@@ -18,7 +18,7 @@ pub struct AbciApp {
     app_name: String,
     many_client: ManyClient<AnonymousIdentity>,
     many_url: Url,
-    runtime: std::sync::Arc<tokio::runtime::Runtime>,
+    runtime: tokio::runtime::Handle,
 }
 
 impl AbciApp {
@@ -44,12 +44,7 @@ impl AbciApp {
             app_name,
             many_url,
             many_client,
-            runtime: std::sync::Arc::new(
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .unwrap(),
-            ),
+            runtime: tokio::runtime::Handle::current(),
         })
     }
 }

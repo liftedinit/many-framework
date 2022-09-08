@@ -140,7 +140,8 @@ fn main() {
         }
     }
 
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
     HttpServer::new(many)
-        .bind(format!("127.0.0.1:{}", port))
+        .bind(format!("127.0.0.1:{}", port), tokio_runtime.handle())
         .unwrap();
 }

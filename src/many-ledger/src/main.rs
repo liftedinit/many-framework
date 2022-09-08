@@ -252,5 +252,6 @@ fn main() {
     signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
         .expect("Could not register signal handler");
 
-    many_server.bind(addr).unwrap();
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    many_server.bind(addr, tokio_runtime.handle()).unwrap();
 }
