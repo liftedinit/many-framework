@@ -268,7 +268,7 @@ pub struct LedgerStorage {
     next_account_id: u32,
     account_identity: Address,
 
-    migrations: BTreeSet<String>,
+    active_migrations: BTreeSet<String>,
     all_migrations: BTreeMap<String, Migration>,
 }
 
@@ -300,7 +300,7 @@ impl std::fmt::Debug for LedgerStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
             .field("symbols", &self.symbols)
-            .field("migrations", &self.migrations)
+            .field("active_migrations", &self.active_migrations)
             .finish()
     }
 }
@@ -349,7 +349,7 @@ impl LedgerStorage {
 
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let migrations: BTreeSet<String> = persistent_store
+        let active_migrations: BTreeSet<String> = persistent_store
             .get(b"/config/migrations")
             .expect("Could not open storage.")
             .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
@@ -364,7 +364,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
-            migrations,
+            active_migrations,
             all_migrations: BTreeMap::new(),
         })
     }
@@ -429,7 +429,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            migrations: BTreeSet::new(),
+            active_migrations: BTreeSet::new(),
             all_migrations: BTreeMap::new(),
         })
     }
@@ -579,7 +579,9 @@ impl LedgerStorage {
         let mut operations = vec![];
 
         for (migration_name, migration) in self.all_migrations.iter() {
-            if height >= migration.block_height && self.migrations.insert(migration_name.clone()) {
+            if height >= migration.block_height
+                && self.active_migrations.insert(migration_name.clone())
+            {
                 operations.append(&mut self.migration_init(&migration_name));
             }
         }
@@ -604,7 +606,8 @@ impl LedgerStorage {
         operations.push((
             b"/config/migrations".to_vec(),
             Op::Put(
-                minicbor::to_vec(&self.migrations).expect("Could not encode migrations to cbor"),
+                minicbor::to_vec(&self.active_migrations)
+                    .expect("Could not encode migrations to cbor"),
             ),
         ));
         if name == "account_count_data" {
