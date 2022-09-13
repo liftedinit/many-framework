@@ -93,6 +93,7 @@ impl Setup {
             module_impl: LedgerModuleImpl::new(
                 Some(
                     InitialStateJson::read("../../staging/ledger_state.json5")
+                        .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                         .expect("Could not read initial state."),
                 ),
                 tempfile::tempdir().unwrap(),

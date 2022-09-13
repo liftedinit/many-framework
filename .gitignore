@@ -107,3 +107,6 @@ dist
 .idea/
 target/
 result*
+bazel-*
+rust-project.json
+genhtml/

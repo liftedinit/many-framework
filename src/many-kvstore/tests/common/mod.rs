@@ -16,7 +16,9 @@ impl Default for Setup {
 impl Setup {
     pub fn new(blockchain: bool) -> Self {
         let id = generate_random_eddsa_identity();
-        let content = std::fs::read_to_string("../../staging/kvstore_state.json").unwrap();
+        let content = std::fs::read_to_string("../../staging/kvstore_state.json")
+            .or_else(|_| std::fs::read_to_string("staging/kvstore_state.json"))
+            .unwrap();
         let state = serde_json::from_str(&content).unwrap();
         Self {
             module_impl: KvStoreModuleImpl::new(state, tempfile::tempdir().unwrap(), blockchain)
