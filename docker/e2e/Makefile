@@ -19,9 +19,11 @@ clean:
 	fi
 	rm -rf genfiles
 
-../../Cargo.lock: $(shell find ../../ -name Cargo.toml)
+.PHONY: lockfile
+lockfile:
 	cd ../..; cargo fetch
-	touch $@
+
+../../Cargo.lock: lockfile
 
 Cargo.nix: ../../Cargo.lock
 	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker/e2e/generate-cargo-nix.sh
