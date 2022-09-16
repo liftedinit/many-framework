@@ -515,7 +515,7 @@ impl LedgerStorage {
     }
 
     pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
-        use rocksdb::{Direction, IteratorMode, ReadOptions};
+        use rocksdb::{Direction, IteratorMode};
 
         // Set the iterator bounds to iterate all multisig transactions.
         // We will break the loop later if we can.
@@ -582,7 +582,7 @@ impl LedgerStorage {
             if height >= migration.block_height
                 && self.active_migrations.insert(migration_name.clone())
             {
-                operations.append(&mut self.migration_init(&migration_name));
+                operations.append(&mut self.migration_init(migration_name));
             }
         }
         operations.sort_by(|(a, _), (b, _)| a.cmp(b));
@@ -1501,7 +1501,7 @@ impl<'a> LedgerIterator<'a> {
         range: CborRange<events::EventId>,
         order: SortOrder,
     ) -> Self {
-        use rocksdb::{IteratorMode, ReadOptions};
+        use rocksdb::IteratorMode;
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {
