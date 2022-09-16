@@ -1,7 +1,7 @@
 use coset::{CborSerializable, CoseSign1};
-use many_client::ManyClient;
+use many_client::client::blocking::{block_on, ManyClient};
 use many_error::ManyError;
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::{Address, AnonymousIdentity};
 use many_modules::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
 use many_protocol::ResponseMessage;
 use reqwest::{IntoUrl, Url};
@@ -16,7 +16,7 @@ lazy_static::lazy_static!(
 #[derive(Debug, Clone)]
 pub struct AbciApp {
     app_name: String,
-    many_client: ManyClient,
+    many_client: ManyClient<AnonymousIdentity>,
     many_url: Url,
 }
 
@@ -35,8 +35,7 @@ impl AbciApp {
         //     server_id
         // };
 
-        let many_client =
-            ManyClient::new(many_url.clone(), server_id, CoseKeyIdentity::anonymous())?;
+        let many_client = ManyClient::new(many_url.clone(), server_id, AnonymousIdentity)?;
         let status = many_client.status().map_err(|x| x.to_string())?;
         let app_name = status.name;
 
@@ -91,7 +90,10 @@ impl Application for AbciApp {
                 }
             }
         };
-        let value = match ManyClient::send_envelope(self.many_url.clone(), cose) {
+        let value = match block_on(many_client::client::send_envelope(
+            self.many_url.clone(),
+            cose,
+        )) {
             Ok(cose_sign) => cose_sign,
 
             Err(err) => {
@@ -138,7 +140,10 @@ impl Application for AbciApp {
                 }
             }
         };
-        match ManyClient::send_envelope(self.many_url.clone(), cose) {
+        match block_on(many_client::client::send_envelope(
+            self.many_url.clone(),
+            cose,
+        )) {
             Ok(cose_sign) => {
                 let payload = cose_sign.payload.unwrap_or_default();
                 let mut response = ResponseMessage::from_bytes(&payload).unwrap_or_default();

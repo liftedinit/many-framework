@@ -1,3 +1,4 @@
+use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::storage::LedgerStorage;
 use many_modules::events::{EventId, EventLog};
@@ -8,9 +9,9 @@ use std::ops::Bound;
 
 fn setup() -> LedgerStorage {
     let symbol0 = Address::anonymous();
-    let id0 = Address::public_key_raw([0; 28]);
-    let id1 = Address::public_key_raw([1; 28]);
-    let id2 = Address::public_key_raw([2; 28]);
+    let id0 = identity(0);
+    let id1 = identity(1);
+    let id2 = identity(2);
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "MFX".to_string())].into_iter());
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
