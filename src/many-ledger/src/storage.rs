@@ -3,6 +3,7 @@ use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
 use crate::module::validate_account;
+use many_data::migrations::initial_metrics_data;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::abci_backend::AbciCommitInfo;
@@ -611,38 +612,9 @@ impl LedgerStorage {
             ),
         ));
         if name == "account_count_data" {
-            let (account_total_count, non_zero_account_total_count) = self.initial_metrics_data();
-            operations.push((
-                b"/data/account_total_count".to_vec(),
-                Op::Put(account_total_count.to_be_bytes().to_vec()),
-            ));
-            operations.push((
-                b"/data/non_zero_account_total_count".to_vec(),
-                Op::Put(non_zero_account_total_count.to_be_bytes().to_vec()),
-            ));
+            operations.append(&mut initial_metrics_data(&self.persistent_store));
         }
         operations
-    }
-
-    fn initial_metrics_data(&self) -> (u64, u64) {
-        let mut total = 0;
-        let mut non_zero = 0;
-        let mut upper_bound = b"/balances".to_vec();
-        *upper_bound.last_mut().unwrap() += 1;
-        let mut opts = ReadOptions::default();
-        opts.set_iterate_upper_bound(upper_bound);
-        let iterator = self.persistent_store.iter_opt(
-            rocksdb::IteratorMode::From(b"/balances", rocksdb::Direction::Forward),
-            opts,
-        );
-        for item in iterator {
-            let (_, value) = item.expect("Error while reading the DB");
-            total += 1;
-            if TokenAmount::from(value.to_vec()) != 0u16 {
-                non_zero += 1
-            }
-        }
-        (total, non_zero)
     }
 
     pub fn nb_events(&self) -> u64 {

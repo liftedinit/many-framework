@@ -1978,6 +1978,7 @@ dependencies = [
  "many-error",
  "many-identity",
  "many-modules",
+ "many-types",
  "merk",
 ]
 
@@ -2132,6 +2133,7 @@ dependencies = [
  "lazy_static",
  "many-abci",
  "many-client",
+ "many-data",
  "many-error",
  "many-identity",
  "many-identity-dsa",

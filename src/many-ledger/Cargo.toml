@@ -32,6 +32,7 @@ num-bigint = "0.4.3"
 num-traits = "0.2.14"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 many-abci = { path = "../many-abci" }
+many-data = { path = "../many-data" }
 many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
 many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a", features = ["default", "serde"] }
 many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
