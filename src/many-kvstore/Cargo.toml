@@ -25,12 +25,12 @@ lazy_static = "1.4.0"
 num-bigint = "0.4.3"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 many-abci = { path = "../many-abci" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53", features = ["default", "serde"] }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a", features = ["default", "serde"] }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
 serde = "1.0.130"
 serde_json = "1.0.72"
 sha3 = "0.9.1"
@@ -41,6 +41,6 @@ tracing-subscriber = "0.3"
 tracing-syslog = { git = "https://github.com/max-heller/tracing-syslog.git", rev = "6ff222831d7a78f1068d4c8af94dea215b07f114" }
 
 [dev-dependencies]
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53", features = ["default", "serde", "testing"] }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53", features = [ "ed25519", "testing" ] }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a", features = ["default", "serde", "testing"] }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a", features = [ "ed25519", "testing" ] }
 tempfile = "3.3.0"

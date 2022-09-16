@@ -24,14 +24,14 @@ indicatif = "0.16.2"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 num-bigint = "0.4.3"
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-identity-hsm = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-identity-hsm = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "843336d86ef8b8ee4cb5b68659c630f58b9d7b4a" }
 regex = "1.5.4"
 ring = "0.16.20"
 rpassword = "6.0"
