@@ -28,10 +28,14 @@ fn migration() {
     )]));
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
-    let (_height, _a1) = harness.block(|h| {
+    let (_height, a1) = harness.block(|h| {
         h.send_(h.id, identity(2), 250_000u32);
-        h.create_account_(AccountType::Multisig)
+        identity(2)
     });
+
+    let balance = harness.balance(a1, *MFX_SYMBOL).unwrap();
+
+    assert_eq!(balance, 250_000u32);
 
     assert_eq!(
         harness
@@ -43,10 +47,14 @@ fn migration() {
         0
     );
 
-    let (_height, _a2) = harness.block(|h| {
+    let (_height, a2) = harness.block(|h| {
         h.send_(h.id, identity(3), 250_000u32);
-        h.create_account_(AccountType::Multisig)
+        identity(3)
     });
+
+    let balance = harness.balance(a2, *MFX_SYMBOL).unwrap();
+
+    assert_eq!(balance, 250_000u32);
 
     assert_eq!(
         harness
@@ -101,10 +109,14 @@ fn migration() {
         TokenAmount::from(500_000u64),
     );
 
-    let (_height, _a4) = harness.block(|h| {
+    let (_height, a3) = harness.block(|h| {
         h.send_(h.id, identity(4), 500_000u32);
-        h.create_account_(AccountType::Multisig)
+        identity(4)
     });
+
+    let balance = harness.balance(a3, *MFX_SYMBOL).unwrap();
+
+    assert_eq!(balance, 500_000u32);
 
     assert_eq!(
         harness
@@ -152,7 +164,7 @@ fn migration() {
         .try_into()
         .unwrap();
 
-    assert_eq!(total, BigInt::from(5));
+    assert_eq!(total, BigInt::from(4));
     assert_eq!(non_zero, BigInt::from(4));
     assert_eq!(
         harness.balance(harness.id, *MFX_SYMBOL).unwrap(),

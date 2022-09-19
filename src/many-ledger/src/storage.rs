@@ -731,10 +731,11 @@ impl LedgerStorage {
             for address in event.content.addresses() {
                 for symbol in self.symbols.keys() {
                     let key = key_for_account_balance(address, symbol);
-                    if let None = self
+                    if self
                         .persistent_store
                         .get(&key)
                         .expect("Error communicating with the DB")
+                        .is_none()
                     {
                         attributes
                             .entry(*ACCOUNT_TOTAL_COUNT_INDEX)
