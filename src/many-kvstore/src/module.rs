@@ -179,12 +179,11 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
     }
 
     fn query(&self, _sender: &Address, args: QueryArgs) -> Result<QueryReturns, ManyError> {
-        // TODO: Custom error type
         minicbor::decode(
             &self
                 .storage
                 .get_metadata(&args.key)?
-                .ok_or_else(|| ManyError::unknown("TODO: Fix me"))?,
+                .ok_or_else(error::key_not_found)?,
         )
         .map_err(|e| ManyError::deserialization_error(e.to_string()))
     }
