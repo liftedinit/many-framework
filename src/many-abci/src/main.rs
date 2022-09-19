@@ -1,6 +1,9 @@
 use clap::Parser;
 use many_client::ManyClient;
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::verifiers::AnonymousVerifier;
+use many_identity::{Address, AnonymousIdentity, Identity};
+use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity_webauthn::WebAuthnVerifier;
 use many_modules::{base, blockchain, r#async};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
@@ -114,21 +117,14 @@ async fn main() {
     };
 
     // Try to get the status of the backend MANY app.
-    let many_client = ManyClient::new(
-        &many_app,
-        Address::anonymous(),
-        CoseKeyIdentity::anonymous(),
-    )
-    .unwrap();
+    let many_client = ManyClient::new(&many_app, Address::anonymous(), AnonymousIdentity).unwrap();
 
     let start = std::time::SystemTime::now();
     trace!("Connecting to the backend app...");
 
     let status = loop {
         let many_client = many_client.clone();
-        let result = tokio::task::spawn_blocking(move || many_client.status())
-            .await
-            .unwrap();
+        let result = many_client.status().await;
 
         match result {
             Err(e) => {
@@ -157,7 +153,7 @@ async fn main() {
     let abci_server = ServerBuilder::new(abci_read_buf_size)
         .bind(abci, abci_app)
         .unwrap();
-    let _j_abci = std::thread::spawn(move || abci_server.listen().unwrap());
+    let _j_abci = tokio::task::spawn_blocking(move || abci_server.listen().unwrap());
 
     let abci_client = tendermint_rpc::HttpClient::new(tendermint.as_str()).unwrap();
 
@@ -177,11 +173,16 @@ async fn main() {
     }
 
     let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
-    info!(many_address = key.identity.to_string().as_str());
+    info!(many_address = key.address().to_string().as_str());
     let server = ManyServer::new(
         format!("AbciModule({})", &status.name),
         key.clone(),
-        allow_origin,
+        (
+            AnonymousVerifier,
+            CoseKeyVerifier,
+            WebAuthnVerifier::new(allow_origin),
+        ),
+        key.public_key(),
     );
     let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
@@ -204,15 +205,14 @@ async fn main() {
         .expect("Could not register signal handler");
 
     info!("Starting MANY server on addr {}", many.clone());
-    let j_many = std::thread::spawn(move || match many_server.bind(many) {
+    match many_server.bind(many).await {
         Ok(_) => {}
         Err(error) => {
             error!("{}", error);
             panic!("Error happened in many: {:?}", error);
         }
-    });
+    }
 
-    j_many.join().unwrap();
     // It seems that ABCI does not have a graceful way to shutdown. If we make it here
     // though we already gracefully shutdown the MANY part of the server, so lets just
     // get on with it, shall we?

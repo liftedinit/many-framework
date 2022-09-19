@@ -1,8 +1,9 @@
 use clap::{ArgGroup, Parser};
-use many_client::ManyClient;
+use many_client::client::blocking::ManyClient;
 use many_error::ManyError;
-use many_identity::hsm::{Hsm, HsmMechanismType, HsmSessionType, HsmUserType};
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::{Address, AnonymousIdentity, Identity};
+use many_identity_dsa::CoseKeyIdentity;
+use many_identity_hsm::{Hsm, HsmIdentity, HsmMechanismType, HsmSessionType, HsmUserType};
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{ledger, r#async};
 use many_protocol::ResponseMessage;
@@ -146,7 +147,10 @@ pub(crate) struct TargetCommandOpt {
     symbol: String,
 }
 
-pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Address, ManyError> {
+pub fn resolve_symbol(
+    client: &ManyClient<impl Identity>,
+    symbol: String,
+) -> Result<Address, ManyError> {
     if let Ok(symbol) = Address::from_str(&symbol) {
         Ok(symbol)
     } else {
@@ -162,7 +166,7 @@ pub fn resolve_symbol(client: &ManyClient, symbol: String) -> Result<Address, Ma
 }
 
 fn balance(
-    client: ManyClient,
+    client: ManyClient<impl Identity>,
     account: Option<Address>,
     symbols: Vec<String>,
 ) -> Result<(), ManyError> {
@@ -218,7 +222,7 @@ fn balance(
 }
 
 pub(crate) fn wait_response(
-    client: ManyClient,
+    client: ManyClient<impl Identity>,
     response: ResponseMessage,
 ) -> Result<Vec<u8>, ManyError> {
     let ResponseMessage {
@@ -276,7 +280,7 @@ pub(crate) fn wait_response(
 }
 
 fn send(
-    client: ManyClient,
+    client: ManyClient<impl Identity>,
     from: Address,
     to: Address,
     amount: BigUint,
@@ -342,7 +346,9 @@ fn main() {
     };
 
     let server_id = server_id.unwrap_or_default();
-    let key = if let (Some(module), Some(slot), Some(keyid)) = (module, slot, keyid) {
+    let key: Box<dyn Identity> = if let (Some(module), Some(slot), Some(keyid)) =
+        (module, slot, keyid)
+    {
         trace!("Getting user PIN");
         let pin = rpassword::prompt_password("Please enter the HSM user PIN: ")
             .expect("I/O error when reading HSM PIN");
@@ -360,14 +366,18 @@ fn main() {
 
         trace!("Creating CoseKeyIdentity");
         // Only ECDSA is supported at the moment. It should be easy to add support for new EC mechanisms
-        CoseKeyIdentity::from_hsm(HsmMechanismType::ECDSA)
-            .expect("Unable to create CoseKeyIdentity from HSM")
+        Box::new(
+            HsmIdentity::new(HsmMechanismType::ECDSA)
+                .expect("Unable to create CoseKeyIdentity from HSM"),
+        )
     } else {
-        pem.map_or_else(CoseKeyIdentity::anonymous, |p| {
-            CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()
-        })
+        pem.map_or_else(
+            || Box::new(AnonymousIdentity) as Box<dyn Identity>,
+            |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+        )
     };
 
+    let client_address = key.address();
     let client = ManyClient::new(&server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
@@ -376,7 +386,7 @@ fn main() {
                     .or_else(|_| {
                         let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 
-                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().identity)
+                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().address())
                     })
                     .map_err(|_: std::io::Error| ())
                     .expect("Unable to decode identity command-line argument")
@@ -390,7 +400,7 @@ fn main() {
             amount,
             symbol,
         }) => {
-            let from = account.unwrap_or(client.id.identity);
+            let from = account.unwrap_or(client_address);
             send(client, from, identity, amount, symbol)
         }
         SubCommand::Multisig(opts) => multisig::multisig(client, opts),

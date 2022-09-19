@@ -1,8 +1,8 @@
 use coset::CborSerializable;
 use many_error::ManyError;
 use many_identity::testing::identity;
-use many_identity::testsutils::generate_random_eddsa_identity;
-use many_identity::Address;
+use many_identity::{Address, Identity};
+use many_identity_dsa::ed25519::generate_random_ed25519_identity;
 use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
@@ -86,20 +86,21 @@ impl Default for Setup {
 
 impl Setup {
     pub fn new(blockchain: bool) -> Self {
-        let id = generate_random_eddsa_identity();
-        let public_key = PublicKey(id.clone().key.unwrap().to_vec().unwrap().into());
+        let id = generate_random_ed25519_identity();
+        let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         Self {
             module_impl: LedgerModuleImpl::new(
                 Some(
                     InitialStateJson::read("../../staging/ledger_state.json5")
+                        .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                         .expect("Could not read initial state."),
                 ),
                 tempfile::tempdir().unwrap(),
                 blockchain,
             )
             .unwrap(),
-            id: id.identity,
+            id: id.address(),
             cred_id: CredentialId(vec![1; 16].into()),
             public_key,
             time: Some(1_000_000),

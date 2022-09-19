@@ -1,6 +1,7 @@
 use crate::module::account::AccountFeatureModule;
 use clap::Parser;
-use many_identity::CoseKeyIdentity;
+use many_identity::verifiers::AnonymousVerifier;
+use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, kvstore};
 use many_server::transport::http::HttpServer;
@@ -127,8 +128,8 @@ fn main() {
     let many = ManyServer::simple(
         "many-kvstore",
         key,
-        Some(std::env!("CARGO_PKG_VERSION").to_string()),
-        None,
+        (AnonymousVerifier, CoseKeyVerifier),
+        Some(env!("CARGO_PKG_VERSION").to_string()),
     );
 
     {
@@ -147,7 +148,9 @@ fn main() {
         }
     }
 
-    HttpServer::new(many)
-        .bind(format!("127.0.0.1:{}", port))
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+
+    runtime
+        .block_on(HttpServer::new(many).bind(format!("127.0.0.1:{}", port)))
         .unwrap();
 }

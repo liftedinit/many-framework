@@ -1,5 +1,7 @@
 use clap::Parser;
-use many_identity::{Address, CoseKeyIdentity};
+use many_identity::verifiers::AnonymousVerifier;
+use many_identity::{Address, Identity};
+use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -101,7 +103,6 @@ fn main() {
         mut state,
         persistent,
         clean,
-        allow_origin,
         logmode,
         ..
     } = Opts::parse();
@@ -156,7 +157,7 @@ fn main() {
 
     let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
     let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
-    info!(address = key.identity.to_string().as_str());
+    info!(address = key.address().to_string().as_str());
 
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
@@ -193,8 +194,8 @@ fn main() {
     let many = ManyServer::simple(
         "many-ledger",
         key,
+        (AnonymousVerifier, CoseKeyVerifier),
         Some(env!("CARGO_PKG_VERSION").to_string()),
-        allow_origin,
     );
 
     {
@@ -245,5 +246,6 @@ fn main() {
     signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
         .expect("Could not register signal handler");
 
-    many_server.bind(addr).unwrap();
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    runtime.block_on(many_server.bind(addr)).unwrap();
 }
