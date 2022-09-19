@@ -1,6 +1,8 @@
 use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
-use many_identity::{Address, Identity};
+#[cfg(feature = "balance_testing")]
+use many_identity::Address;
+use many_identity::Identity;
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, idstore, ledger};

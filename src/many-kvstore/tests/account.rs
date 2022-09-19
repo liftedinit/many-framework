@@ -35,7 +35,7 @@ fn put_as_acc() {
         },
     );
     assert!(get.is_ok());
-    assert_eq!(get.unwrap().value.unwrap(), put_data.value.into());
+    assert_eq!(get.unwrap().value.unwrap(), put_data.value);
 
     let query = module_impl.query(&Address::anonymous(), QueryArgs { key: put_data.key });
     assert!(query.is_ok());
@@ -56,7 +56,7 @@ fn put_as_alt_invalid_addr() {
         .alternative_owner(Some(identity(666)))
         .build()
         .unwrap();
-    let put = module_impl.put(&id, put_data.clone());
+    let put = module_impl.put(&id, put_data);
     assert!(put.is_err());
     assert_eq!(put.unwrap_err().code(), error::permission_denied().code());
 }
@@ -75,7 +75,7 @@ fn put_as_alt_anon() {
         .alternative_owner(Some(Address::anonymous()))
         .build()
         .unwrap();
-    let put = module_impl.put(&id, put_data.clone());
+    let put = module_impl.put(&id, put_data);
     assert!(put.is_err());
     assert_eq!(put.unwrap_err().code(), error::anon_alt_denied().code());
 }
@@ -94,7 +94,7 @@ fn put_as_alt_subres() {
         .alternative_owner(Some(id.with_subresource_id(2).unwrap()))
         .build()
         .unwrap();
-    let put = module_impl.put(&id, put_data.clone());
+    let put = module_impl.put(&id, put_data);
     assert!(put.is_err());
     assert_eq!(
         put.unwrap_err().code(),
@@ -116,7 +116,7 @@ fn put_as_sender_not_in_acc() {
         .alternative_owner(Some(account_id))
         .build()
         .unwrap();
-    let put = module_impl.put(&identity(666), put_data.clone());
+    let put = module_impl.put(&identity(666), put_data);
     assert!(put.is_err());
     assert_eq!(
         put.unwrap_err().code(),
@@ -139,7 +139,7 @@ fn put_as_sender_invalid_role() {
         .build()
         .unwrap();
     // This user has `canKvStoreDisable` but not `canKvStoreWrite`
-    let put = module_impl.put(&identity(3), put_data.clone());
+    let put = module_impl.put(&identity(3), put_data);
     assert!(put.is_err());
     assert_eq!(
         put.unwrap_err().code(),
@@ -172,7 +172,7 @@ fn put_as_alt_user_in_acc_with_perm() {
         },
     );
     assert!(get.is_ok());
-    assert_eq!(get.unwrap().value.unwrap(), put_data.value.into());
+    assert_eq!(get.unwrap().value.unwrap(), put_data.value);
 
     let query = module_impl.query(&Address::anonymous(), QueryArgs { key: put_data.key });
     assert!(query.is_ok());
