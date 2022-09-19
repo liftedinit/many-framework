@@ -1,7 +1,7 @@
 # Options
 NB_NODES ?= 4
 ID_WITH_BALANCES ?=
-CPUCORES ?= $$(nproc)
+CPUCORES ?= $$(docker run --rm nixpkgs/nix-flakes nproc)
 TENDERMINT_VERSION ?= 0.35.4
 ABCI_TAG ?= "latest"
 LEDGER_TAG ?= "latest"
