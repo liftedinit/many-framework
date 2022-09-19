@@ -1921,6 +1921,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1963,6 +1964,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1972,6 +1974,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1982,6 +1985,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "asn1 0.11.0",
  "base32",
@@ -2008,6 +2012,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2035,6 +2040,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2054,6 +2060,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2150,6 +2157,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2162,6 +2170,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "async-trait",
  "coset",
@@ -2181,6 +2190,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2205,6 +2215,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2253,6 +2264,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=843336d86ef8b8ee4cb5b68659c630f58b9d7b4a#843336d86ef8b8ee4cb5b68659c630f58b9d7b4a"
 dependencies = [
  "coset",
  "fixed",

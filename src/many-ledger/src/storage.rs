@@ -9,6 +9,7 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_modules::abci_backend::AbciCommitInfo;
 use many_modules::account::features::FeatureInfo;
+use many_modules::data::{DataIndex, DataInfo, DataValue};
 use many_modules::{account, events, idstore, EmptyReturn};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
@@ -177,6 +178,8 @@ pub const MULTISIG_DEFAULT_THRESHOLD: u64 = 1;
 pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
 pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
+
+pub const DATA_ATTRIBUTES_KEY: &[u8] = b"/data/attributes";
 
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
@@ -632,17 +635,64 @@ impl LedgerStorage {
             opts,
         );
         for item in iterator {
-            let (_, value) = item.expect("Error while reading the DB");
+            let (key, value) = item.expect("Error while reading the DB");
+            let value = merk::tree::Tree::decode(key.to_vec(), value.as_ref());
+            let amount = TokenAmount::from(value.value().to_vec());
             total_accounts += 1;
-            if TokenAmount::from(value.to_vec()) != 0u16 {
+            if !amount.is_zero() {
                 non_zero += 1
             }
         }
         let data = BTreeMap::from([
-            (*ACCOUNT_TOTAL_COUNT_INDEX, total_accounts),
-            (*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX, non_zero),
+            (
+                *ACCOUNT_TOTAL_COUNT_INDEX,
+                DataValue::Counter(total_accounts),
+            ),
+            (
+                *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+                DataValue::Counter(non_zero),
+            ),
         ]);
-        vec![(b"/data".to_vec(), Op::Put(minicbor::to_vec(data).unwrap()))]
+        let data_info = BTreeMap::from([
+            (
+                *ACCOUNT_TOTAL_COUNT_INDEX,
+                DataInfo {
+                    r#type: many_modules::data::DataType::Counter,
+                    shortname: "accountTotalCount".to_string(),
+                },
+            ),
+            (
+                *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+                DataInfo {
+                    r#type: many_modules::data::DataType::Counter,
+                    shortname: "nonZeroAccountTotalCount".to_string(),
+                },
+            ),
+        ]);
+        vec![
+            (
+                DATA_ATTRIBUTES_KEY.to_vec(),
+                Op::Put(minicbor::to_vec(data).unwrap()),
+            ),
+            (
+                b"/data/info".to_vec(),
+                Op::Put(minicbor::to_vec(data_info).unwrap()),
+            ),
+        ]
+    }
+
+    pub fn data_attributes(&self) -> Option<BTreeMap<DataIndex, DataValue>> {
+        self.persistent_store
+            .get(DATA_ATTRIBUTES_KEY)
+            .expect("Error while reading the DB")
+            .map(|x| minicbor::decode(&x).unwrap())
+    }
+
+    pub fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>> {
+        self.persistent_store
+            .get(b"/data/info")
+            .expect("Error while reading the DB")
+            .map(|x| minicbor::decode(&x).unwrap())
     }
 
     pub fn nb_events(&self) -> u64 {

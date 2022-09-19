@@ -5,7 +5,7 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::account::features::Feature;
-use many_modules::{abci_backend, account, events, idstore, ledger};
+use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
@@ -249,6 +249,7 @@ fn main() {
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),
         ));
+        s.add_module(data::DataModule::new(module_impl.clone()));
         if abci {
             s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module_impl));
