@@ -1,6 +1,8 @@
+use crate::module::account::AccountFeatureModule;
 use clap::Parser;
 use many_identity::CoseKeyIdentity;
-use many_modules::{abci_backend, kvstore};
+use many_modules::account::features::Feature;
+use many_modules::{abci_backend, account, events, kvstore};
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
 use std::path::PathBuf;
@@ -111,7 +113,7 @@ fn main() {
 
     let state = state.map(|state| {
         let content = std::fs::read_to_string(&state).unwrap();
-        serde_json::from_str(&content).unwrap()
+        json5::from_str(&content).unwrap()
     });
 
     let module = if let Some(state) = state {
@@ -133,8 +135,14 @@ fn main() {
         let mut s = many.lock().unwrap();
         s.add_module(kvstore::KvStoreModule::new(module.clone()));
         s.add_module(kvstore::KvStoreCommandsModule::new(module.clone()));
+        s.add_module(events::EventsModule::new(module.clone()));
 
+        s.add_module(AccountFeatureModule::new(
+            account::AccountModule::new(module.clone()),
+            [Feature::with_id(2)],
+        ));
         if abci {
+            s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module));
         }
     }

@@ -110,6 +110,8 @@ fn put(client: ManyClient, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> 
     let arguments = kvstore::PutArgs {
         key: key.to_vec().into(),
         value: value.into(),
+        // TODO: Add alternative owner support
+        alternative_owner: None,
     };
 
     let response = client.call("kvstore.put", arguments)?;

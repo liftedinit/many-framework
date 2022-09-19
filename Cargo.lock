@@ -1473,6 +1473,9 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "hmac"
@@ -1919,7 +1922,6 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1959,7 +1961,6 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1970,7 +1971,6 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "asn1",
  "base32",
@@ -1988,7 +1988,7 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "sha2 0.10.2",
- "sha3 0.10.1",
+ "sha3 0.10.4",
  "signature",
  "static_assertions",
  "tracing",
@@ -2000,8 +2000,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "clap 3.2.15",
+ "coset",
  "hex",
  "itertools",
+ "json5",
  "lazy_static",
  "many-abci",
  "many-error",
@@ -2009,13 +2011,15 @@ dependencies = [
  "many-modules",
  "many-protocol",
  "many-server",
+ "many-types",
  "merk",
  "minicbor",
  "num-bigint",
  "serde",
  "serde_json",
- "sha3 0.9.1",
+ "sha3 0.10.4",
  "simple_asn1",
+ "strum",
  "tempfile",
  "tracing",
  "tracing-subscriber",
@@ -2069,7 +2073,6 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2082,7 +2085,6 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "async-trait",
  "coset",
@@ -2102,7 +2104,6 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2127,7 +2128,6 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "anyhow",
  "asn1",
@@ -2176,7 +2176,6 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1#c8d0cf59eb68e4112dae71823b5e1ba0d2c25ab1"
 dependencies = [
  "coset",
  "fixed",
@@ -3308,9 +3307,9 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.10.1"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "881bf8156c87b6301fc5ca6b27f11eeb2761224c7081e69b409d5a1951a70c86"
+checksum = "eaedf34ed289ea47c2b741bb72e5357a209512d67bcd4bda44359e5bf0470f56"
 dependencies = [
  "digest 0.10.3",
  "keccak",
@@ -4314,3 +4313,11 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "many"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "many-mock"
+version = "0.1.0"
