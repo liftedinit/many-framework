@@ -81,7 +81,7 @@ fn put_as_alt_anon() {
 }
 
 #[test]
-fn put_as_subres() {
+fn put_as_alt_subres() {
     let SetupWithAccount {
         mut module_impl,
         id,
