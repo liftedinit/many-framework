@@ -2,8 +2,9 @@ use crate::data_migration::Migration;
 use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
-use crate::module::validate_account;
-use many_data::migrations::initial_metrics_data;
+use crate::module::{
+    validate_account, ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::abci_backend::AbciCommitInfo;
@@ -580,7 +581,7 @@ impl LedgerStorage {
         let mut operations = vec![];
 
         for (migration_name, migration) in self.all_migrations.iter() {
-            if height >= migration.block_height
+            if (height + 1) >= migration.block_height
                 && self.active_migrations.insert(migration_name.clone())
             {
                 operations.append(&mut self.migration_init(migration_name));
@@ -612,9 +613,36 @@ impl LedgerStorage {
             ),
         ));
         if name == "account_count_data" {
-            operations.append(&mut initial_metrics_data(&self.persistent_store));
+            operations.append(&mut self.initial_metrics_data());
         }
         operations
+    }
+
+    fn initial_metrics_data(&self) -> Vec<(Vec<u8>, Op)> {
+        let mut total_accounts: u64 = 0;
+        let mut non_zero: u64 = 0;
+
+        let mut upper_bound = b"/balances".to_vec();
+        *upper_bound.last_mut().unwrap() += 1;
+        let mut opts = ReadOptions::default();
+        opts.set_iterate_upper_bound(upper_bound);
+
+        let iterator = self.persistent_store.iter_opt(
+            rocksdb::IteratorMode::From(b"/balances", rocksdb::Direction::Forward),
+            opts,
+        );
+        for item in iterator {
+            let (_, value) = item.expect("Error while reading the DB");
+            total_accounts += 1;
+            if TokenAmount::from(value.to_vec()) != 0u16 {
+                non_zero += 1
+            }
+        }
+        let data = BTreeMap::from([
+            (*ACCOUNT_TOTAL_COUNT_INDEX, total_accounts),
+            (*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX, non_zero),
+        ]);
+        vec![(b"/data".to_vec(), Op::Put(minicbor::to_vec(data).unwrap()))]
     }
 
     pub fn nb_events(&self) -> u64 {
