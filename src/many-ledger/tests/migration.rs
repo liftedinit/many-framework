@@ -29,7 +29,7 @@ fn migration() {
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, _a1) = harness.block(|h| {
-        h.send_(h.id, identity(2), 500_000u32);
+        h.send_(h.id, identity(2), 250_000u32);
         h.create_account_(AccountType::Multisig)
     });
 
@@ -43,12 +43,11 @@ fn migration() {
         0
     );
 
-    let (height, _a2) = harness.block(|h| {
-        h.send_(h.id, identity(3), 500_000u32);
+    let (_height, _a2) = harness.block(|h| {
+        h.send_(h.id, identity(3), 250_000u32);
         h.create_account_(AccountType::Multisig)
     });
 
-    assert_eq!(height, 2);
     assert_eq!(
         harness
             .module_impl
@@ -96,6 +95,64 @@ fn migration() {
         .unwrap();
 
     assert_eq!(total, BigInt::from(4));
+    assert_eq!(non_zero, BigInt::from(4));
+    assert_eq!(
+        harness.balance(harness.id, *MFX_SYMBOL).unwrap(),
+        TokenAmount::from(500_000u64),
+    );
+
+    let (_height, _a4) = harness.block(|h| {
+        h.send_(h.id, identity(4), 500_000u32);
+        h.create_account_(AccountType::Multisig)
+    });
+
+    assert_eq!(
+        harness
+            .module_impl
+            .info(&harness.id, EmptyArg)
+            .unwrap()
+            .indices
+            .len(),
+        2
+    );
+    assert_eq!(
+        harness
+            .module_impl
+            .get_info(
+                &harness.id,
+                DataGetInfoArgs {
+                    indices: VecOrSingle(vec![
+                        *ACCOUNT_TOTAL_COUNT_INDEX,
+                        *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX
+                    ])
+                }
+            )
+            .unwrap()
+            .len(),
+        2
+    );
+    let query = harness
+        .module_impl
+        .query(
+            &harness.id,
+            DataQueryArgs {
+                indices: VecOrSingle(vec![
+                    *ACCOUNT_TOTAL_COUNT_INDEX,
+                    *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+                ]),
+            },
+        )
+        .unwrap();
+    let total: BigInt = query[&*ACCOUNT_TOTAL_COUNT_INDEX]
+        .clone()
+        .try_into()
+        .unwrap();
+    let non_zero: BigInt = query[&*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX]
+        .clone()
+        .try_into()
+        .unwrap();
+
+    assert_eq!(total, BigInt::from(5));
     assert_eq!(non_zero, BigInt::from(4));
     assert_eq!(
         harness.balance(harness.id, *MFX_SYMBOL).unwrap(),

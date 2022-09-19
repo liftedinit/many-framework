@@ -727,6 +727,36 @@ impl LedgerStorage {
             ])
             .unwrap();
 
+        if let Some(mut attributes) = self.data_attributes() {
+            for address in event.content.addresses() {
+                for symbol in self.symbols.keys() {
+                    let key = key_for_account_balance(address, symbol);
+                    if let None = self
+                        .persistent_store
+                        .get(&key)
+                        .expect("Error communicating with the DB")
+                    {
+                        attributes
+                            .entry(*ACCOUNT_TOTAL_COUNT_INDEX)
+                            .and_modify(|x| {
+                                if let DataValue::Counter(count) = x {
+                                    *count += 1;
+                                }
+                            });
+                        self.persistent_store
+                            .apply(&[(key, Op::Put(TokenAmount::zero().to_vec()))])
+                            .unwrap();
+                    }
+                }
+            }
+            self.persistent_store
+                .apply(&[(
+                    DATA_ATTRIBUTES_KEY.to_vec(),
+                    Op::Put(minicbor::to_vec(attributes).unwrap()),
+                )])
+                .unwrap();
+        }
+
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
         }
