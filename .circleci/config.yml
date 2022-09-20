@@ -77,6 +77,9 @@ jobs:
           name: install `ledger` CLI
           command: cargo install --force --path src/ledger ledger
       - run:
+          name: install `kvstore` CLI
+          command: cargo install --force --path src/kvstore kvstore
+      - run:
           name: install cbor-diag
           command: cargo install --force cbor-diag-cli
       - bats/install
