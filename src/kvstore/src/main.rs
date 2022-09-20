@@ -1,9 +1,11 @@
 use clap::Parser;
 use many_client::client::blocking::ManyClient;
-use many_error::ManyError;
+use many_error::{ManyError, Reason};
 use many_identity::{Address, AnonymousIdentity, Identity};
 use many_identity_dsa::CoseKeyIdentity;
 use many_modules::{kvstore, r#async};
+use many_types::Either;
+use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::PathBuf;
 use tracing::{error, trace};
@@ -28,6 +30,10 @@ struct Opts {
     #[clap(long)]
     pem: Option<PathBuf>,
 
+    /// An alternative owner Address
+    #[clap(long)]
+    alt_owner: Option<Address>,
+
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
     verbose: i8,
@@ -49,8 +55,14 @@ enum SubCommand {
     /// Get a value from the key-value store.
     Get(GetOpt),
 
+    /// Query a key from the key-value store.
+    Query(QueryOpt),
+
     /// Put a value in the store.
     Put(PutOpt),
+
+    /// Disable a value from the store.
+    Disable(DisableOpt),
 }
 
 #[derive(Parser)]
@@ -65,6 +77,16 @@ struct GetOpt {
     /// Whether to output using hexadecimal, or regular value.
     #[clap(long)]
     hex: bool,
+}
+
+#[derive(Parser)]
+struct QueryOpt {
+    /// The key to get.
+    key: String,
+
+    /// If the key is passed as an hexadecimal string, pass this key.
+    #[clap(long)]
+    hex_key: bool,
 }
 
 #[derive(Parser)]
@@ -85,6 +107,20 @@ struct PutOpt {
     stdin: bool,
 }
 
+#[derive(Parser)]
+struct DisableOpt {
+    /// The key to disable.
+    key: String,
+
+    /// If the key is a hexadecimal string, pass this flag.
+    #[clap(long)]
+    hex_key: bool,
+
+    /// Reason for disabling the key
+    #[clap(long)]
+    reason: Option<String>,
+}
+
 fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), ManyError> {
     let arguments = kvstore::GetArgs {
         key: key.to_vec().into(),
@@ -96,23 +132,61 @@ fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), M
     } else {
         let result: kvstore::GetReturns = minicbor::decode(&payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-        let value = result.value.unwrap();
+        let value = result.value;
 
-        if hex {
-            println!("{}", hex::encode(value.as_slice()));
+        if let Some(value) = value {
+            if hex {
+                println!("{}", hex::encode(value.as_slice()));
+            } else {
+                std::io::Write::write_all(&mut std::io::stdout(), &value).unwrap();
+            }
         } else {
-            std::io::Write::write_all(&mut std::io::stdout(), &value).unwrap();
+            println!("{:?}", value);
         }
+
         Ok(())
     }
 }
 
-fn put(client: ManyClient<impl Identity>, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
+fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError> {
+    let arguments = kvstore::QueryArgs {
+        key: key.to_vec().into(),
+    };
+
+    let payload = client.call_("kvstore.query", arguments)?;
+    if payload.is_empty() {
+        Err(ManyError::unexpected_empty_response())
+    } else {
+        let result: kvstore::QueryReturns = minicbor::decode(&payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+        if let Some(disabled) = result.disabled {
+            match disabled {
+                Either::Left(b) => {
+                    println!("{} ({})", result.owner, b)
+                }
+                Either::Right(reason) => {
+                    println!("{}, ({})", result.owner, reason)
+                }
+            }
+        } else {
+            println!("{}", result.owner);
+        }
+
+        Ok(())
+    }
+}
+
+fn put(
+    client: ManyClient<impl Identity>,
+    alt_owner: Option<Address>,
+    key: &[u8],
+    value: Vec<u8>,
+) -> Result<(), ManyError> {
     let arguments = kvstore::PutArgs {
         key: key.to_vec().into(),
         value: value.into(),
-        // TODO: Add alternative owner support
-        alternative_owner: None,
+        alternative_owner: alt_owner,
     };
 
     let response = client.call("kvstore.put", arguments)?;
@@ -135,9 +209,42 @@ fn put(client: ManyClient<impl Identity>, key: &[u8], value: Vec<u8>) -> Result<
     }
 }
 
+fn disable(
+    client: ManyClient<impl Identity>,
+    alt_owner: Option<Address>,
+    key: &[u8],
+    reason: Option<Reason<u64>>,
+) -> Result<(), ManyError> {
+    let arguments = kvstore::DisableArgs {
+        key: key.to_vec().into(),
+        alternative_owner: alt_owner,
+        reason,
+    };
+
+    let response = client.call("kvstore.disable", arguments)?;
+    let payload = &response.data?;
+    if payload.is_empty() {
+        if response
+            .attributes
+            .get::<r#async::attributes::AsyncAttribute>()
+            .is_ok()
+        {
+            trace!("Async response received...");
+            Ok(())
+        } else {
+            Err(ManyError::unexpected_empty_response())
+        }
+    } else {
+        let _: kvstore::DisableReturn = minicbor::decode(payload)
+            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        Ok(())
+    }
+}
+
 fn main() {
     let Opts {
         pem,
+        alt_owner,
         server,
         server_id,
         subcommand,
@@ -189,6 +296,14 @@ fn main() {
             };
             get(client, &key, hex)
         }
+        SubCommand::Query(QueryOpt { key, hex_key }) => {
+            let key = if hex_key {
+                hex::decode(&key).unwrap()
+            } else {
+                key.into_bytes()
+            };
+            query(client, &key)
+        }
         SubCommand::Put(PutOpt {
             key,
             hex_key,
@@ -207,7 +322,20 @@ fn main() {
             } else {
                 value.expect("Must pass a value").into_bytes()
             };
-            put(client, &key, value)
+            put(client, alt_owner, &key, value)
+        }
+        SubCommand::Disable(DisableOpt {
+            key,
+            hex_key,
+            reason,
+        }) => {
+            let key = if hex_key {
+                hex::decode(&key).unwrap()
+            } else {
+                key.into_bytes()
+            };
+            let reason = reason.map(|reason| Reason::new(123456, Some(reason), BTreeMap::new()));
+            disable(client, alt_owner, &key, reason)
         }
     };
 

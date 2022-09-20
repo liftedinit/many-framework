@@ -176,8 +176,11 @@ impl KvStoreStorage {
             let meta: KvStoreMetadata = minicbor::decode(&cbor)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-            if meta.disabled == Some(Either::Left(true)) {
-                return Err(error::key_disabled());
+            if let Some(either) = meta.disabled {
+                match either {
+                    Either::Left(false) => {}
+                    _ => return Err(error::key_disabled()),
+                }
             }
         }
         self._get(key, KVSTORE_ROOT)
@@ -232,9 +235,19 @@ impl KvStoreStorage {
             )])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 
+        let reason = if let Some(disabled) = &meta.disabled {
+            match disabled {
+                Either::Right(reason) => Some(reason),
+                _ => None,
+            }
+        } else {
+            None
+        };
+
         self.log_event(EventInfo::KvStoreDisable {
             key: key.to_vec().into(),
             owner: meta.owner,
+            reason: reason.cloned(),
         });
 
         if !self.blockchain {

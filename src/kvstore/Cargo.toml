@@ -24,6 +24,7 @@ many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4b
 many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-kvstore = { path = "../many-kvstore" }
 tracing = "0.1.29"
 tracing-subscriber = "0.3"

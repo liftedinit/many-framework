@@ -196,7 +196,7 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
             self.validate_alternative_owner(
                 sender,
                 alternative_owner,
-                [Role::CanKvStoreWrite, Role::Owner],
+                [Role::CanKvStorePut, Role::Owner],
             )?;
             alternative_owner
         } else {
@@ -214,6 +214,9 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
     }
 
     fn disable(&mut self, sender: &Address, args: DisableArgs) -> Result<DisableReturn, ManyError> {
+        if self.storage.get(&args.key)?.is_none() {
+            return Err(error::cannot_disable_empty_key());
+        }
         let key: Vec<u8> = args.key.into();
         let owner = if let Some(ref alternative_owner) = args.alternative_owner {
             self.validate_alternative_owner(
@@ -228,9 +231,15 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
 
         self.can_disable(owner, key.clone())?;
 
+        let maybe_reason = if let Some(reason) = args.reason {
+            Either::Right(reason)
+        } else {
+            Either::Left(true)
+        };
+
         let meta = KvStoreMetadata {
             owner: *owner,
-            disabled: Some(Either::Left(true)),
+            disabled: Some(maybe_reason),
         };
 
         self.storage.disable(&meta, &key)?;

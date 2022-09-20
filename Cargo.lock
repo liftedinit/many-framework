@@ -1800,6 +1800,7 @@ dependencies = [
  "many-identity-dsa",
  "many-kvstore",
  "many-modules",
+ "many-types",
  "minicbor",
  "tokio",
  "tracing",
@@ -1958,7 +1959,6 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2001,7 +2001,6 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2011,7 +2010,6 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2022,7 +2020,6 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "asn1 0.11.0",
  "base32",
@@ -2049,7 +2046,6 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2077,7 +2073,6 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2097,7 +2092,6 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2135,6 +2129,7 @@ dependencies = [
  "merk",
  "minicbor",
  "num-bigint",
+ "once_cell",
  "serde",
  "serde_json",
  "sha3 0.10.4",
@@ -2197,7 +2192,6 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2210,7 +2204,6 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "async-trait",
  "coset",
@@ -2230,7 +2223,6 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2255,7 +2247,6 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2304,7 +2295,6 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 dependencies = [
  "coset",
  "fixed",
@@ -2512,9 +2502,9 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "once_cell"
-version = "1.13.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
+checksum = "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
 
 [[package]]
 name = "opaque-debug"
@@ -4431,9 +4421,7 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"

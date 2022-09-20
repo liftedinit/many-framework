@@ -26,4 +26,6 @@ remove_bats_test_dirs
 source "$(dirname "${BASH_SOURCE[0]}")/bats-utils/background-process"
 
 source "$(dirname "${BASH_SOURCE[0]}")/many.bash"
+source "$(dirname "${BASH_SOURCE[0]}")/account.bash"
 source "$(dirname "${BASH_SOURCE[0]}")/ledger.bash"
+source "$(dirname "${BASH_SOURCE[0]}")/kvstore.bash"
