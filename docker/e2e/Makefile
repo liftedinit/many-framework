@@ -1,7 +1,7 @@
 # Options
 NB_NODES ?= 4
 ID_WITH_BALANCES ?=
-CPUCORES ?= $$(docker run --rm nixpkgs/nix-flakes nproc)
+CPUCORES ?= $$(docker run --rm nixos/nix nproc)
 TENDERMINT_VERSION ?= 0.35.4
 ABCI_TAG ?= "latest"
 LEDGER_TAG ?= "latest"
@@ -9,7 +9,7 @@ LEDGER_TAG ?= "latest"
 # Constants
 VOLUME = $(abspath $(dir $(abspath $(dir $(abspath $(dir $(abspath $(dir $$PWD))))))))
 UINFO = $$(id -u):$$(id -g)
-BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(VOLUME):/volume -v nix-store:/nix -w /volume/many-framework/docker/e2e/ nixpkgs/nix-flakes bash build-image.sh $@
+BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(VOLUME):/volume -v nix-store:/nix -w /volume/many-framework/docker/e2e/ nixos/nix bash build-image.sh $@
 SHELL = bash
 
 .PHONY: clean
@@ -26,7 +26,7 @@ lockfile:
 ../../Cargo.lock: lockfile
 
 Cargo.nix: lockfile
-	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker/e2e/generate-cargo-nix.sh
+	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixos/nix bash docker/e2e/generate-cargo-nix.sh
 
 genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
 	@mkdir -p genfiles
