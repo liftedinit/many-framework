@@ -3,12 +3,15 @@ use many_client::client::blocking::ManyClient;
 use many_error::{ManyError, Reason};
 use many_identity::{Address, AnonymousIdentity, Identity};
 use many_identity_dsa::CoseKeyIdentity;
+use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{kvstore, r#async};
+use many_protocol::ResponseMessage;
 use many_types::Either;
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::PathBuf;
-use tracing::{error, trace};
+use std::time::Duration;
+use tracing::{debug, error, info};
 use tracing_subscriber::filter::LevelFilter;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
@@ -190,23 +193,26 @@ fn put(
     };
 
     let response = client.call("kvstore.put", arguments)?;
-    let payload = &response.data?;
-    if payload.is_empty() {
-        if response
-            .attributes
-            .get::<r#async::attributes::AsyncAttribute>()
-            .is_ok()
-        {
-            trace!("Async response received...");
-            Ok(())
-        } else {
-            Err(ManyError::unexpected_empty_response())
-        }
-    } else {
-        let _: kvstore::PutReturn = minicbor::decode(payload)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-        Ok(())
-    }
+    // let payload = &response.data?;
+    let payload = wait_response(client, response)?;
+    println!("{}", minicbor::display(&payload));
+    Ok(())
+    // if payload.is_empty() {
+    //     if response
+    //         .attributes
+    //         .get::<r#async::attributes::AsyncAttribute>()
+    //         .is_ok()
+    //     {
+    //         trace!("Async response received...");
+    //         Ok(())
+    //     } else {
+    //         Err(ManyError::unexpected_empty_response())
+    //     }
+    // } else {
+    //     let _: kvstore::PutReturn = minicbor::decode(payload)
+    //         .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+    //     Ok(())
+    // }
 }
 
 fn disable(
@@ -222,22 +228,83 @@ fn disable(
     };
 
     let response = client.call("kvstore.disable", arguments)?;
-    let payload = &response.data?;
+    // let payload = &response.data?;
+    let payload = wait_response(client, response)?;
+    println!("{}", minicbor::display(&payload));
+    Ok(())
+    // if payload.is_empty() {
+    //     if response
+    //         .attributes
+    //         .get::<r#async::attributes::AsyncAttribute>()
+    //         .is_ok()
+    //     {
+    //         trace!("Async response received...");
+    //         Ok(())
+    //     } else {
+    //         Err(ManyError::unexpected_empty_response())
+    //     }
+    // } else {
+    //     let _: kvstore::DisableReturn = minicbor::decode(payload)
+    //         .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+    //     Ok(())
+    // }
+}
+
+pub(crate) fn wait_response(
+    client: ManyClient<impl Identity>,
+    response: ResponseMessage,
+) -> Result<Vec<u8>, ManyError> {
+    let ResponseMessage {
+        data, attributes, ..
+    } = response;
+
+    let payload = data?;
+    debug!("response: {}", hex::encode(&payload));
     if payload.is_empty() {
-        if response
-            .attributes
-            .get::<r#async::attributes::AsyncAttribute>()
-            .is_ok()
-        {
-            trace!("Async response received...");
-            Ok(())
-        } else {
-            Err(ManyError::unexpected_empty_response())
+        let attr = match attributes.get::<r#async::attributes::AsyncAttribute>() {
+            Ok(attr) => attr,
+            _ => {
+                info!("Empty payload.");
+                return Ok(Vec::new());
+            }
+        };
+        info!("Async token: {}", hex::encode(&attr.token));
+
+        let progress =
+            indicatif::ProgressBar::new_spinner().with_message("Waiting for async response");
+        progress.enable_steady_tick(100);
+
+        // TODO: improve on this by using duration and thread and watchdog.
+        // Wait for the server for ~60 seconds by pinging it every second.
+        for _ in 0..60 {
+            let response = client.call(
+                "async.status",
+                StatusArgs {
+                    token: attr.token.clone(),
+                },
+            )?;
+            let status: StatusReturn = minicbor::decode(&response.data?)
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            match status {
+                StatusReturn::Done { response } => {
+                    progress.finish();
+                    return wait_response(client, *response);
+                }
+                StatusReturn::Expired => {
+                    progress.finish();
+                    info!("Async token expired before we could check it.");
+                    return Ok(Vec::new());
+                }
+                _ => {
+                    std::thread::sleep(Duration::from_secs(1));
+                }
+            }
         }
+        Err(ManyError::unknown(
+            "Transport timed out waiting for async result.",
+        ))
     } else {
-        let _: kvstore::DisableReturn = minicbor::decode(payload)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-        Ok(())
+        Ok(payload)
     }
 }
 
