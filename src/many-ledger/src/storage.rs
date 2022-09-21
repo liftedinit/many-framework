@@ -727,37 +727,6 @@ impl LedgerStorage {
             ])
             .unwrap();
 
-        if let Some(mut attributes) = self.data_attributes() {
-            for address in event.content.addresses() {
-                for symbol in self.symbols.keys() {
-                    let key = key_for_account_balance(address, symbol);
-                    if self
-                        .persistent_store
-                        .get(&key)
-                        .expect("Error communicating with the DB")
-                        .is_none()
-                    {
-                        attributes
-                            .entry(*ACCOUNT_TOTAL_COUNT_INDEX)
-                            .and_modify(|x| {
-                                if let DataValue::Counter(count) = x {
-                                    *count += 1;
-                                }
-                            });
-                        self.persistent_store
-                            .apply(&[(key, Op::Put(TokenAmount::zero().to_vec()))])
-                            .unwrap();
-                    }
-                }
-            }
-            self.persistent_store
-                .apply(&[(
-                    DATA_ATTRIBUTES_KEY.to_vec(),
-                    Op::Put(minicbor::to_vec(attributes).unwrap()),
-                )])
-                .unwrap();
-        }
-
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
         }
@@ -858,6 +827,8 @@ impl LedgerStorage {
             ],
         };
 
+        self.count_addresses(from, to, amount.clone(), symbol);
+
         self.persistent_store.apply(&batch).unwrap();
 
         self.log_event(events::EventInfo::Send {
@@ -872,6 +843,55 @@ impl LedgerStorage {
         }
 
         Ok(())
+    }
+
+    fn count_addresses(
+        &mut self,
+        from: &Address,
+        to: &Address,
+        amount: TokenAmount,
+        symbol: &Address,
+    ) {
+        if let Some(mut attributes) = self.data_attributes() {
+            let key_to = key_for_account_balance(to, symbol);
+            if self
+                .persistent_store
+                .get(&key_to)
+                .expect("Error communicating with the DB")
+                .is_none()
+            {
+                attributes
+                    .entry(*ACCOUNT_TOTAL_COUNT_INDEX)
+                    .and_modify(|x| {
+                        if let DataValue::Counter(count) = x {
+                            *count += 1;
+                        }
+                    });
+                attributes
+                    .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
+                    .and_modify(|x| {
+                        if let DataValue::Counter(count) = x {
+                            *count += 1;
+                        }
+                    });
+            }
+            let balance_from = self.get_balance(from, symbol);
+            if balance_from == amount {
+                attributes
+                    .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
+                    .and_modify(|x| {
+                        if let DataValue::Counter(count) = x {
+                            *count -= 1;
+                        }
+                    });
+            }
+            self.persistent_store
+                .apply(&[(
+                    DATA_ATTRIBUTES_KEY.to_vec(),
+                    Op::Put(minicbor::to_vec(attributes).unwrap()),
+                )])
+                .unwrap();
+        }
     }
 
     pub fn hash(&self) -> Vec<u8> {

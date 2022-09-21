@@ -164,7 +164,7 @@ fn migration() {
         .try_into()
         .unwrap();
 
-    assert_eq!(total, BigInt::from(4));
+    assert_eq!(total, BigInt::from(5));
     assert_eq!(non_zero, BigInt::from(4));
     assert_eq!(
         harness.balance(harness.id, *MFX_SYMBOL).unwrap(),
