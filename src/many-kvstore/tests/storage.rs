@@ -1,9 +1,7 @@
 use many_identity::testing::identity;
 use many_kvstore::error;
 use many_kvstore::module::KvStoreModuleImpl;
-use many_modules::kvstore::{
-    GetArgs, KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgsBuilder,
-};
+use many_modules::kvstore::{GetArgs, KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs};
 
 /// Verify persistent storage can be re-loaded
 #[test]
@@ -30,11 +28,11 @@ fn load() {
         module_impl
             .put(
                 &identity(1),
-                PutArgsBuilder::default()
-                    .key(vec![2, 3, 4].into())
-                    .value(vec![0, 1, 2, 3].into())
-                    .build()
-                    .unwrap(),
+                PutArgs {
+                    key: vec![2, 3, 4].into(),
+                    value: vec![0, 1, 2, 3].into(),
+                    alternative_owner: None,
+                },
             )
             .expect("Unable to put new data in DB");
     }
@@ -58,11 +56,11 @@ fn load() {
     // This should fail since the sender is not the key owner
     let p = module_impl.put(
         &identity(2),
-        PutArgsBuilder::default()
-            .key(vec![1, 2, 3].into())
-            .value(vec![0].into())
-            .build()
-            .unwrap(),
+        PutArgs {
+            key: vec![1, 2, 3].into(),
+            value: vec![0].into(),
+            alternative_owner: None,
+        },
     );
     assert!(p.is_err());
     assert_eq!(p.unwrap_err().code(), error::permission_denied().code());
@@ -71,11 +69,11 @@ fn load() {
     // This should succeed since the sender is the key owner
     let p = module_impl.put(
         &identity(1),
-        PutArgsBuilder::default()
-            .key(vec![1, 2, 3].into())
-            .value(vec![0].into())
-            .build()
-            .unwrap(),
+        PutArgs {
+            key: vec![1, 2, 3].into(),
+            value: vec![0].into(),
+            alternative_owner: None,
+        },
     );
     assert!(p.is_ok());
 

@@ -163,17 +163,23 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
         let result: kvstore::QueryReturns = minicbor::decode(&payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
+        let owner = if let Some(owner) = result.owner {
+            owner.to_string()
+        } else {
+            "None".to_string()
+        };
+
         if let Some(disabled) = result.disabled {
             match disabled {
                 Either::Left(b) => {
-                    println!("{} ({})", result.owner, b)
+                    println!("{} ({})", owner, b)
                 }
                 Either::Right(reason) => {
-                    println!("{}, ({})", result.owner, reason)
+                    println!("{}, ({})", owner, reason)
                 }
             }
         } else {
-            println!("{}", result.owner);
+            println!("{}", owner);
         }
 
         Ok(())
@@ -193,26 +199,9 @@ fn put(
     };
 
     let response = client.call("kvstore.put", arguments)?;
-    // let payload = &response.data?;
     let payload = wait_response(client, response)?;
     println!("{}", minicbor::display(&payload));
     Ok(())
-    // if payload.is_empty() {
-    //     if response
-    //         .attributes
-    //         .get::<r#async::attributes::AsyncAttribute>()
-    //         .is_ok()
-    //     {
-    //         trace!("Async response received...");
-    //         Ok(())
-    //     } else {
-    //         Err(ManyError::unexpected_empty_response())
-    //     }
-    // } else {
-    //     let _: kvstore::PutReturn = minicbor::decode(payload)
-    //         .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-    //     Ok(())
-    // }
 }
 
 fn disable(
@@ -228,26 +217,9 @@ fn disable(
     };
 
     let response = client.call("kvstore.disable", arguments)?;
-    // let payload = &response.data?;
     let payload = wait_response(client, response)?;
     println!("{}", minicbor::display(&payload));
     Ok(())
-    // if payload.is_empty() {
-    //     if response
-    //         .attributes
-    //         .get::<r#async::attributes::AsyncAttribute>()
-    //         .is_ok()
-    //     {
-    //         trace!("Async response received...");
-    //         Ok(())
-    //     } else {
-    //         Err(ManyError::unexpected_empty_response())
-    //     }
-    // } else {
-    //     let _: kvstore::DisableReturn = minicbor::decode(payload)
-    //         .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
-    //     Ok(())
-    // }
 }
 
 pub(crate) fn wait_response(

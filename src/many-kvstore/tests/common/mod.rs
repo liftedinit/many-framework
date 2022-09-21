@@ -9,7 +9,7 @@ use many_modules::account::features::FeatureInfo;
 use many_modules::account::{AccountModuleBackend, Role};
 use many_modules::kvstore::{
     DisableArgs, DisableReturn, GetArgs, GetReturns, KvStoreCommandsModuleBackend,
-    KvStoreModuleBackend, PutArgsBuilder, QueryArgs, QueryReturns,
+    KvStoreModuleBackend, PutArgs, QueryArgs, QueryReturns,
 };
 use once_cell::sync::Lazy;
 use std::cell::{Ref, RefCell, RefMut};
@@ -83,12 +83,11 @@ impl Setup {
     ) -> Result<(), ManyError> {
         self.module_impl.put(
             sender,
-            PutArgsBuilder::default()
-                .key(key.into())
-                .value(value.into())
-                .alternative_owner(alt_owner)
-                .build()
-                .unwrap(),
+            PutArgs {
+                key: key.into(),
+                value: value.into(),
+                alternative_owner: alt_owner,
+            },
         )?;
         Ok(())
     }

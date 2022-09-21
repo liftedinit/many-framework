@@ -43,7 +43,7 @@ pub struct KvStoreModuleImpl {
 #[cbor(map)]
 pub struct KvStoreMetadata {
     #[n(0)]
-    pub owner: Address,
+    pub owner: Option<Address>,
 
     #[n(1)]
     #[serde(skip_deserializing)]
@@ -207,7 +207,7 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
         self.can_write(owner, key.clone())?;
 
         let meta = KvStoreMetadata {
-            owner: *owner,
+            owner: Some(*owner),
             disabled: Some(Either::Left(false)),
         };
         self.storage.put(&meta, &key, args.value.into())?;
@@ -239,7 +239,7 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
         };
 
         let meta = KvStoreMetadata {
-            owner: *owner,
+            owner: Some(*owner),
             disabled: Some(maybe_reason),
         };
 
