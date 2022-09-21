@@ -28,7 +28,7 @@ lockfile:
 Cargo.nix: lockfile
 	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixos/nix bash docker/e2e/generate-cargo-nix.sh
 
-genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
+genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles
 	$(BUILDER_COMMAND) .#docker-many-ledger
 
@@ -36,7 +36,7 @@ genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix
 many/many-ledger: genfiles/many-ledger.tar.gz
 	docker load < genfiles/many-ledger.tar.gz
 
-genfiles/many-abci.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
+genfiles/many-abci.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles
 	$(BUILDER_COMMAND) .#docker-many-abci
 
