@@ -109,6 +109,7 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
             endpoints: BTreeMap::from([
                 ("kvstore.info".to_string(), EndpointInfo { is_command: false }),
                 ("kvstore.get".to_string(), EndpointInfo { is_command: false }),
+                ("kvstore.query".to_string(), EndpointInfo { is_command: false }),
                 ("kvstore.put".to_string(), EndpointInfo { is_command: true }),
                 ("kvstore.disable".to_string(), EndpointInfo { is_command: true }),
 
