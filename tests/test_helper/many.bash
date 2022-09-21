@@ -57,7 +57,6 @@ function many_message() {
        esac
      done
 
-    echo many message "$pem_arg" --server http://localhost:8000 "$@" >&2
     command many message "$pem_arg" --server http://localhost:8000 "$@"
 }
 
