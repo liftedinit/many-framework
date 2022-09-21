@@ -27,7 +27,7 @@ num-bigint = "0.4.3"
 many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53", features = ["ed25519", "ecdsa"]  }
 many-identity-hsm = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
 many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "cda2c4bf2081f1aa1f6a87d4057b174e6c688f53" }
