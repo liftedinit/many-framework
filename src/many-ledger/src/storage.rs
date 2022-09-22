@@ -612,7 +612,7 @@ impl LedgerStorage {
 
     pub fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>> {
         self.persistent_store
-            .get(b"/data/info")
+            .get(DATA_INFO_KEY)
             .expect("Error while reading the DB")
             .map(|x| minicbor::decode(&x).unwrap())
     }
