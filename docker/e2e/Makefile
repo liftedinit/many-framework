@@ -1,7 +1,7 @@
 # Options
 NB_NODES ?= 4
 ID_WITH_BALANCES ?=
-CPUCORES ?= $$(nproc)
+CPUCORES ?= $$(docker run --rm nixos/nix nproc)
 TENDERMINT_VERSION ?= 0.35.4
 ABCI_TAG ?= "latest"
 LEDGER_TAG ?= "latest"
@@ -9,7 +9,7 @@ LEDGER_TAG ?= "latest"
 # Constants
 VOLUME = $(abspath $(dir $(abspath $(dir $(abspath $(dir $(abspath $(dir $$PWD))))))))
 UINFO = $$(id -u):$$(id -g)
-BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(VOLUME):/volume -v nix-store:/nix -w /volume/many-framework/docker/e2e/ nixpkgs/nix-flakes bash build-image.sh $@
+BUILDER_COMMAND = docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v $(VOLUME):/volume -v nix-store:/nix -w /volume/many-framework/docker/e2e/ nixos/nix bash build-image.sh $@
 SHELL = bash
 
 .PHONY: clean
@@ -19,14 +19,16 @@ clean:
 	fi
 	rm -rf genfiles
 
-../../Cargo.lock: $(shell find ../../ -name Cargo.toml)
+.PHONY: lockfile
+lockfile:
 	cd ../..; cargo fetch
-	touch $@
 
-Cargo.nix: ../../Cargo.lock
-	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixpkgs/nix-flakes bash docker/e2e/generate-cargo-nix.sh
+../../Cargo.lock: lockfile
 
-genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
+Cargo.nix: lockfile
+	docker run --rm -e CPUCORES=$(CPUCORES) -e UINFO=$(UINFO) -v nix-store:/nix -v $(VOLUME):/volume -w /volume/many-framework nixos/nix bash docker/e2e/generate-cargo-nix.sh
+
+genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles
 	$(BUILDER_COMMAND) .#docker-many-ledger
 
@@ -34,7 +36,7 @@ genfiles/many-ledger.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix
 many/many-ledger: genfiles/many-ledger.tar.gz
 	docker load < genfiles/many-ledger.tar.gz
 
-genfiles/many-abci.tar.gz: $(shell find ../../src -type f) Cargo.nix flake.nix flake.lock
+genfiles/many-abci.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles
 	$(BUILDER_COMMAND) .#docker-many-abci
 
