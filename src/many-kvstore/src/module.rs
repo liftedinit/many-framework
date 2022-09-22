@@ -204,7 +204,7 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
             sender
         };
 
-        self.can_write(owner, key.clone())?;
+        self.verify_acl(owner, key.clone())?;
 
         let meta = KvStoreMetadata {
             owner: Some(*owner),
@@ -230,7 +230,7 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
             sender
         };
 
-        self.can_disable(owner, key.clone())?;
+        self.verify_acl(owner, key.clone())?;
 
         let maybe_reason = if let Some(reason) = args.reason {
             Either::Right(reason)

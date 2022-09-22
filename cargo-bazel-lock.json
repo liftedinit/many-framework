@@ -1,5 +1,5 @@
 {
-  "checksum": "6930aa523ac8679dced5467b7f70cc64f5730aa7c1b84cb1bb12b9c6f71e25cb",
+  "checksum": "f4377afb1d89e8c67a394822dfbbb1256d7ae9d9734d7bf0a088441f46c5bb8a",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -607,7 +607,7 @@
               "target": "futures_lite"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -761,7 +761,7 @@
               "target": "log"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -1000,7 +1000,7 @@
               "target": "futures_lite"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             }
           ],
@@ -1559,7 +1559,7 @@
               "target": "cexpr"
             },
             {
-              "id": "clang-sys 1.3.3",
+              "id": "clang-sys 1.4.0",
               "target": "clang_sys"
             },
             {
@@ -1693,7 +1693,7 @@
               "target": "cexpr"
             },
             {
-              "id": "clang-sys 1.3.3",
+              "id": "clang-sys 1.4.0",
               "target": "clang_sys"
             },
             {
@@ -2222,7 +2222,7 @@
               "target": "futures_lite"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             }
           ],
@@ -2936,13 +2936,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "clang-sys 1.3.3": {
+    "clang-sys 1.4.0": {
       "name": "clang-sys",
-      "version": "1.3.3",
+      "version": "1.4.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/clang-sys/1.3.3/download",
-          "sha256": "5a050e2153c5be08febd6734e29298e844fdb0fa21aeddd63b4eb7baa106c69b"
+          "url": "https://crates.io/api/v1/crates/clang-sys/1.4.0/download",
+          "sha256": "fa2e27ae6ab525c3d369ded447057bca5438d86dc3a68f6faafb8269ba82ebf3"
         }
       },
       "targets": [
@@ -2991,7 +2991,7 @@
         "deps": {
           "common": [
             {
-              "id": "clang-sys 1.3.3",
+              "id": "clang-sys 1.4.0",
               "target": "build_script_build"
             },
             {
@@ -3010,7 +3010,7 @@
           "selects": {}
         },
         "edition": "2015",
-        "version": "1.3.3"
+        "version": "1.4.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3178,7 +3178,7 @@
               "target": "indexmap"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -3443,7 +3443,7 @@
               "target": "libc"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -6214,7 +6214,7 @@
               "target": "indenter"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             }
           ],
@@ -9279,13 +9279,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "itertools 0.10.4": {
+    "itertools 0.10.5": {
       "name": "itertools",
-      "version": "0.10.4",
+      "version": "0.10.5",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/itertools/0.10.4/download",
-          "sha256": "d8bf247779e67a9082a4790b45e71ac7cfd1321331a5c856a74a9faebdab78d0"
+          "url": "https://crates.io/api/v1/crates/itertools/0.10.5/download",
+          "sha256": "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
         }
       },
       "targets": [
@@ -9322,7 +9322,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.10.4"
+        "version": "0.10.5"
       },
       "license": "MIT/Apache-2.0"
     },
@@ -9567,6 +9567,10 @@
               "target": "hex"
             },
             {
+              "id": "indicatif 0.16.2",
+              "target": "indicatif"
+            },
+            {
               "id": "many-client 0.1.0",
               "target": "many_client"
             },
@@ -9585,6 +9589,14 @@
             {
               "id": "many-modules 0.1.0",
               "target": "many_modules"
+            },
+            {
+              "id": "many-protocol 0.1.0",
+              "target": "many_protocol"
+            },
+            {
+              "id": "many-types 0.1.0",
+              "target": "many_types"
             },
             {
               "id": "minicbor 0.18.0",
@@ -10189,13 +10201,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "lock_api 0.4.8": {
+    "lock_api 0.4.9": {
       "name": "lock_api",
-      "version": "0.4.8",
+      "version": "0.4.9",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/lock_api/0.4.8/download",
-          "sha256": "9f80bf5aacaf25cbfc8210d1cfb718f2bf3b11c4c54e5afe36c236853a8ec390"
+          "url": "https://crates.io/api/v1/crates/lock_api/0.4.9/download",
+          "sha256": "435011366fe56583b16cf956f9df0095b405b82d76425bc8981c0e22e60ec4df"
         }
       },
       "targets": [
@@ -10232,7 +10244,7 @@
         "deps": {
           "common": [
             {
-              "id": "lock_api 0.4.8",
+              "id": "lock_api 0.4.9",
               "target": "build_script_build"
             },
             {
@@ -10243,7 +10255,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.4.8"
+        "version": "0.4.9"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -10425,7 +10437,7 @@
               "target": "minicbor"
             },
             {
-              "id": "reqwest 0.11.11",
+              "id": "reqwest 0.11.12",
               "target": "reqwest"
             },
             {
@@ -10626,7 +10638,7 @@
               "target": "regex"
             },
             {
-              "id": "reqwest 0.11.11",
+              "id": "reqwest 0.11.12",
               "target": "reqwest"
             },
             {
@@ -10883,7 +10895,7 @@
               "target": "minicbor"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -11016,7 +11028,7 @@
               "target": "minicbor"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -11130,7 +11142,7 @@
               "target": "many_protocol"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -11219,7 +11231,7 @@
               "target": "minicbor"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -11296,7 +11308,7 @@
               "target": "hex"
             },
             {
-              "id": "itertools 0.10.4",
+              "id": "itertools 0.10.5",
               "target": "itertools"
             },
             {
@@ -11388,6 +11400,10 @@
         },
         "deps_dev": {
           "common": [
+            {
+              "id": "once_cell 1.15.0",
+              "target": "once_cell"
+            },
             {
               "id": "tempfile 3.3.0",
               "target": "tempfile"
@@ -11486,7 +11502,7 @@
               "target": "hex"
             },
             {
-              "id": "itertools 0.10.4",
+              "id": "itertools 0.10.5",
               "target": "itertools"
             },
             {
@@ -11607,7 +11623,7 @@
               "target": "many_client"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -11890,7 +11906,7 @@
               "target": "proptest"
             },
             {
-              "id": "reqwest 0.11.11",
+              "id": "reqwest 0.11.12",
               "target": "reqwest"
             },
             {
@@ -12055,7 +12071,7 @@
               "target": "num_traits"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -12075,7 +12091,7 @@
               "target": "regex"
             },
             {
-              "id": "reqwest 0.11.11",
+              "id": "reqwest 0.11.12",
               "target": "reqwest"
             },
             {
@@ -13383,13 +13399,13 @@
       },
       "license": "MIT"
     },
-    "once_cell 1.14.0": {
+    "once_cell 1.15.0": {
       "name": "once_cell",
-      "version": "1.14.0",
+      "version": "1.15.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/once_cell/1.14.0/download",
-          "sha256": "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
+          "url": "https://crates.io/api/v1/crates/once_cell/1.15.0/download",
+          "sha256": "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
         }
       },
       "targets": [
@@ -13417,8 +13433,8 @@
           "race",
           "std"
         ],
-        "edition": "2018",
-        "version": "1.14.0"
+        "edition": "2021",
+        "version": "1.15.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -13514,7 +13530,7 @@
               "target": "libc"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -13896,7 +13912,7 @@
         "deps": {
           "common": [
             {
-              "id": "lock_api 0.4.8",
+              "id": "lock_api 0.4.9",
               "target": "lock_api"
             },
             {
@@ -14613,7 +14629,7 @@
         "deps": {
           "common": [
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -15585,7 +15601,7 @@
               "target": "anyhow"
             },
             {
-              "id": "itertools 0.10.4",
+              "id": "itertools 0.10.5",
               "target": "itertools"
             },
             {
@@ -16399,13 +16415,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "reqwest 0.11.11": {
+    "reqwest 0.11.12": {
       "name": "reqwest",
-      "version": "0.11.11",
+      "version": "0.11.12",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/reqwest/0.11.11/download",
-          "sha256": "b75aa69a3f06bbcc66ede33af2af253c6f7a86b1ca0033f60c580a27074fbf92"
+          "url": "https://crates.io/api/v1/crates/reqwest/0.11.12/download",
+          "sha256": "431949c384f4e2ae07605ccaa56d1d9d2ecdb5cadd4f9577ccfab29f2e5149fc"
         }
       },
       "targets": [
@@ -16502,10 +16518,6 @@
                 "target": "ipnet"
               },
               {
-                "id": "lazy_static 1.4.0",
-                "target": "lazy_static"
-              },
-              {
                 "id": "log 0.4.17",
                 "target": "log"
               },
@@ -16517,6 +16529,10 @@
                 "id": "native-tls 0.2.10",
                 "target": "native_tls",
                 "alias": "native_tls_crate"
+              },
+              {
+                "id": "once_cell 1.15.0",
+                "target": "once_cell"
               },
               {
                 "id": "percent-encoding 2.2.0",
@@ -16566,7 +16582,7 @@
           }
         },
         "edition": "2018",
-        "version": "0.11.11"
+        "version": "0.11.12"
       },
       "license": "MIT/Apache-2.0"
     },
@@ -16646,13 +16662,13 @@
                 "target": "libc"
               },
               {
-                "id": "once_cell 1.14.0",
+                "id": "once_cell 1.15.0",
                 "target": "once_cell"
               }
             ],
             "cfg(any(target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"illumos\", target_os = \"netbsd\", target_os = \"openbsd\", target_os = \"solaris\"))": [
               {
-                "id": "once_cell 1.14.0",
+                "id": "once_cell 1.15.0",
                 "target": "once_cell"
               }
             ],
@@ -18772,7 +18788,7 @@
               "target": "futures_lite"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             }
           ],
@@ -19483,7 +19499,7 @@
             ],
             "cfg(any(windows, target_os = \"linux\", target_os = \"android\"))": [
               {
-                "id": "once_cell 1.14.0",
+                "id": "once_cell 1.15.0",
                 "target": "once_cell"
               }
             ],
@@ -19706,7 +19722,7 @@
               "target": "num_traits"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -20485,7 +20501,7 @@
         "deps": {
           "common": [
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             }
           ],
@@ -20827,7 +20843,7 @@
               "target": "num_cpus"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -21339,7 +21355,7 @@
         "deps": {
           "common": [
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             }
           ],
@@ -22743,7 +22759,7 @@
               "target": "log"
             },
             {
-              "id": "once_cell 1.14.0",
+              "id": "once_cell 1.15.0",
               "target": "once_cell"
             },
             {
@@ -23281,7 +23297,7 @@
           "selects": {
             "cfg(windows)": [
               {
-                "id": "once_cell 1.14.0",
+                "id": "once_cell 1.15.0",
                 "target": "once_cell"
               }
             ]

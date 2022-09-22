@@ -522,9 +522,9 @@ dependencies = [
 
 [[package]]
 name = "clang-sys"
-version = "1.3.3"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a050e2153c5be08febd6734e29298e844fdb0fa21aeddd63b4eb7baa106c69b"
+checksum = "fa2e27ae6ab525c3d369ded447057bca5438d86dc3a68f6faafb8269ba82ebf3"
 dependencies = [
  "glob",
  "libc",
@@ -1710,9 +1710,9 @@ checksum = "879d54834c8c76457ef4293a689b2a8c59b076067ad77b15efafbb05f92a592b"
 
 [[package]]
 name = "itertools"
-version = "0.10.4"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8bf247779e67a9082a4790b45e71ac7cfd1321331a5c856a74a9faebdab78d0"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
 ]
@@ -1764,12 +1764,14 @@ version = "0.1.0"
 dependencies = [
  "clap 3.2.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
+ "indicatif",
  "many-client",
  "many-error",
  "many-identity",
  "many-identity-dsa",
- "many-kvstore",
  "many-modules",
+ "many-protocol",
+ "many-types",
  "minicbor",
  "tokio",
  "tracing",
@@ -1874,9 +1876,9 @@ dependencies = [
 
 [[package]]
 name = "lock_api"
-version = "0.4.8"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f80bf5aacaf25cbfc8210d1cfb718f2bf3b11c4c54e5afe36c236853a8ec390"
+checksum = "435011366fe56583b16cf956f9df0095b405b82d76425bc8981c0e22e60ec4df"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -1928,7 +1930,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1971,7 +1973,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1981,7 +1983,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1992,7 +1994,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "asn1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "base32",
@@ -2019,7 +2021,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "asn1 0.8.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "base32",
@@ -2047,7 +2049,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "asn1 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
@@ -2067,7 +2069,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "base64 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
@@ -2105,6 +2107,7 @@ dependencies = [
  "merk",
  "minicbor",
  "num-bigint",
+ "once_cell",
  "serde",
  "serde_json",
  "sha3 0.10.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2167,7 +2170,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2180,7 +2183,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "async-trait",
  "coset",
@@ -2200,7 +2203,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "base64 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
@@ -2225,7 +2228,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "anyhow",
  "asn1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2274,7 +2277,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 dependencies = [
  "coset",
  "fixed",
@@ -2470,9 +2473,9 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "once_cell"
-version = "1.14.0"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
+checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "opaque-debug"
@@ -3019,9 +3022,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.11"
+version = "0.11.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b75aa69a3f06bbcc66ede33af2af253c6f7a86b1ca0033f60c580a27074fbf92"
+checksum = "431949c384f4e2ae07605ccaa56d1d9d2ecdb5cadd4f9577ccfab29f2e5149fc"
 dependencies = [
  "base64 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes",
@@ -3035,10 +3038,10 @@ dependencies = [
  "hyper-tls",
  "ipnet",
  "js-sys",
- "lazy_static",
  "log",
  "mime",
  "native-tls",
+ "once_cell",
  "percent-encoding",
  "pin-project-lite",
  "serde",
@@ -4372,11 +4375,11 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c0d3cfc5847848b36a891b3ee8fbc967ad50fb55"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/kvstore-rework#c71f4040db70549d969475188263164c734939f1"
 

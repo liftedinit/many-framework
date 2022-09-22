@@ -297,23 +297,15 @@ impl KvStoreModuleImpl {
         }
     }
 
-    pub(crate) fn can_write(&self, sender: &Address, key: Vec<u8>) -> Result<(), ManyError> {
-        self.verify_acl(sender, key)
-    }
-
-    pub(crate) fn can_disable(&self, sender: &Address, key: Vec<u8>) -> Result<(), ManyError> {
-        self.verify_acl(sender, key)
-    }
-
     /// Verify if user is permitted to access the value at the given key
-    fn verify_acl(&self, sender: &Address, key: Vec<u8>) -> Result<(), ManyError> {
+    pub(crate) fn verify_acl(&self, sender: &Address, key: Vec<u8>) -> Result<(), ManyError> {
         // Get ACL, if it exists
-        if let Some(acl_cbor) = self.storage.get_metadata(&key)? {
+        if let Some(meta_cbor) = self.storage.get_metadata(&key)? {
             // Decode ACL
-            let acl: KvStoreMetadata = minicbor::decode(&acl_cbor)
+            let meta: KvStoreMetadata = minicbor::decode(&meta_cbor)
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-            if &acl.owner == sender {
+            if &meta.owner == sender {
                 return Ok(());
             }
 
