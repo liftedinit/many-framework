@@ -1,5 +1,4 @@
 use clap::Parser;
-use data_migration::Migration;
 use many_identity::verifiers::AnonymousVerifier;
 #[cfg(feature = "balance_testing")]
 use many_identity::{Address, Identity};
@@ -16,15 +15,14 @@ use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
 use tracing::{debug, info};
 
-mod data_migration;
 mod error;
 mod json;
-#[cfg(feature = "migrate_blocks")]
 mod migration;
 mod module;
 mod storage;
 
 use crate::json::InitialStateJson;
+use crate::migration::Migration;
 use module::*;
 
 #[derive(clap::ArgEnum, Clone, Debug)]

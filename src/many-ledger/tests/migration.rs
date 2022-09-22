@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use common::*;
 use many_identity::testing::identity;
 use many_ledger::{
-    data_migration::Migration,
+    migration::Migration,
     module::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
 };
 use many_modules::{

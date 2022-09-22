@@ -1,7 +1,7 @@
-use crate::data_migration::Migration;
 use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
+use crate::migration::{run_migrations, Migration};
 use crate::module::{
     validate_account, ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
 };
@@ -180,6 +180,8 @@ pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
 
 pub const DATA_ATTRIBUTES_KEY: &[u8] = b"/data/attributes";
+pub const DATA_INFO_KEY: &[u8] = b"/data/info";
+pub const MIGRATIONS_KEY: &[u8] = b"/config/migrations";
 
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
@@ -355,7 +357,7 @@ impl LedgerStorage {
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         let active_migrations: BTreeSet<String> = persistent_store
-            .get(b"/config/migrations")
+            .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
             .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
             .unwrap_or_default();
@@ -581,17 +583,12 @@ impl LedgerStorage {
         let height = self.inc_height();
         let retain_height = 0;
 
-        let mut operations = vec![];
-
-        for (migration_name, migration) in self.all_migrations.iter() {
-            if (height + 1) >= migration.block_height
-                && self.active_migrations.insert(migration_name.clone())
-            {
-                operations.append(&mut self.migration_init(migration_name));
-            }
-        }
-        operations.sort_by(|(a, _), (b, _)| a.cmp(b));
-        self.persistent_store.apply(&operations).unwrap();
+        run_migrations(
+            height + 1,
+            &self.all_migrations,
+            &mut self.active_migrations,
+            &mut self.persistent_store,
+        );
 
         self.persistent_store.commit(&[]).unwrap();
 
@@ -604,81 +601,6 @@ impl LedgerStorage {
             retain_height,
             hash: hash.into(),
         }
-    }
-
-    fn migration_init(&self, name: &str) -> Vec<(Vec<u8>, Op)> {
-        let mut operations = vec![];
-        operations.push((
-            b"/config/migrations".to_vec(),
-            Op::Put(
-                minicbor::to_vec(&self.active_migrations)
-                    .expect("Could not encode migrations to cbor"),
-            ),
-        ));
-        if name == "account_count_data" {
-            operations.append(&mut self.initial_metrics_data());
-        }
-        operations
-    }
-
-    fn initial_metrics_data(&self) -> Vec<(Vec<u8>, Op)> {
-        let mut total_accounts: u64 = 0;
-        let mut non_zero: u64 = 0;
-
-        let mut upper_bound = b"/balances".to_vec();
-        *upper_bound.last_mut().unwrap() += 1;
-        let mut opts = ReadOptions::default();
-        opts.set_iterate_upper_bound(upper_bound);
-
-        let iterator = self.persistent_store.iter_opt(
-            rocksdb::IteratorMode::From(b"/balances", rocksdb::Direction::Forward),
-            opts,
-        );
-        for item in iterator {
-            let (key, value) = item.expect("Error while reading the DB");
-            let value = merk::tree::Tree::decode(key.to_vec(), value.as_ref());
-            let amount = TokenAmount::from(value.value().to_vec());
-            total_accounts += 1;
-            if !amount.is_zero() {
-                non_zero += 1
-            }
-        }
-        let data = BTreeMap::from([
-            (
-                *ACCOUNT_TOTAL_COUNT_INDEX,
-                DataValue::Counter(total_accounts),
-            ),
-            (
-                *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
-                DataValue::Counter(non_zero),
-            ),
-        ]);
-        let data_info = BTreeMap::from([
-            (
-                *ACCOUNT_TOTAL_COUNT_INDEX,
-                DataInfo {
-                    r#type: many_modules::data::DataType::Counter,
-                    shortname: "accountTotalCount".to_string(),
-                },
-            ),
-            (
-                *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
-                DataInfo {
-                    r#type: many_modules::data::DataType::Counter,
-                    shortname: "nonZeroAccountTotalCount".to_string(),
-                },
-            ),
-        ]);
-        vec![
-            (
-                DATA_ATTRIBUTES_KEY.to_vec(),
-                Op::Put(minicbor::to_vec(data).unwrap()),
-            ),
-            (
-                b"/data/info".to_vec(),
-                Op::Put(minicbor::to_vec(data_info).unwrap()),
-            ),
-        ]
     }
 
     pub fn data_attributes(&self) -> Option<BTreeMap<DataIndex, DataValue>> {
