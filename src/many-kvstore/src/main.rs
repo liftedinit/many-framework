@@ -10,6 +10,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
+use tracing::{debug, info};
 
 mod error;
 mod module;
@@ -23,7 +24,7 @@ enum LogStrategy {
     Syslog,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
@@ -98,10 +99,16 @@ fn main() {
             let (options, facility) = Default::default();
             let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
 
-            let subscriber = subscriber.with_writer(syslog);
+            let subscriber = subscriber.with_ansi(false).with_writer(syslog);
             subscriber.init();
         }
     };
+
+    debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     if clean {
         // Delete the persistent storage.
@@ -148,8 +155,15 @@ fn main() {
             s.add_module(abci_backend::AbciModule::new(module));
         }
     }
+    let mut many_server = HttpServer::new(many);
+
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGHUP, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
+        .expect("Could not register signal handler");
 
     let runtime = tokio::runtime::Runtime::new().unwrap();
-
-    runtime.block_on(HttpServer::new(many).bind(addr)).unwrap();
+    runtime.block_on(many_server.bind(addr)).unwrap();
 }

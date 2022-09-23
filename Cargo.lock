@@ -2107,6 +2107,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3 0.10.5",
+ "signal-hook",
  "simple_asn1",
  "strum",
  "tempfile",
@@ -2114,6 +2115,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-syslog",
+ "vergen",
 ]
 
 [[package]]

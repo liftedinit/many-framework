@@ -1,5 +1,13 @@
 load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test_suite")
+load("@rules_rust//cargo:cargo_build_script.bzl", "cargo_build_script")
+
+cargo_build_script(
+    name = "build_script",
+    srcs = ["build.rs"],
+    data = ["//:.git"],
+    deps = all_crate_deps(build = True),
+)
 
 rust_binary(
     name = "many-kvstore",
@@ -10,7 +18,9 @@ rust_binary(
     ),
     deps = all_crate_deps(
         normal = True,
-    ),
+    ) + [
+        ":build_script",
+    ],
 )
 
 rust_library(
