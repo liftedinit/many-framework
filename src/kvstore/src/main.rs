@@ -175,7 +175,7 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
                     println!("{} ({})", owner, b)
                 }
                 Either::Right(reason) => {
-                    println!("{}, ({})", owner, reason)
+                    println!("{}, disabled ({})", owner, reason)
                 }
             }
         } else {
