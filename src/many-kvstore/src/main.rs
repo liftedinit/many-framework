@@ -6,6 +6,7 @@ use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, kvstore};
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
@@ -36,9 +37,9 @@ struct Opts {
     #[clap(long)]
     pem: PathBuf,
 
-    /// The port to bind to for the MANY Http server.
-    #[clap(long, short, default_value = "8000")]
-    port: u16,
+    /// The address and port to bind to for the MANY Http server.
+    #[clap(long, short, default_value = "127.0.0.1:8000")]
+    addr: SocketAddr,
 
     /// Uses an ABCI application module.
     #[clap(long)]
@@ -67,7 +68,7 @@ fn main() {
         verbose,
         quiet,
         pem,
-        port,
+        addr,
         abci,
         mut state,
         persistent,
@@ -150,7 +151,5 @@ fn main() {
 
     let runtime = tokio::runtime::Runtime::new().unwrap();
 
-    runtime
-        .block_on(HttpServer::new(many).bind(format!("127.0.0.1:{}", port)))
-        .unwrap();
+    runtime.block_on(HttpServer::new(many).bind(addr)).unwrap();
 }
