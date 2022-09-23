@@ -129,8 +129,7 @@ fn list_filter_date() {
         .unwrap();
     // TODO: Remove this when we support factional seconds
     // See https://github.com/liftedinit/many-rs/issues/110
-    std::thread::sleep(std::time::Duration::new(1, 0));
-    let after = Timestamp::now();
+    let after = before + 1;
     let result = setup.module_impl.list(events::ListArgs {
         count: None,
         order: None,
@@ -151,8 +150,7 @@ fn list_filter_date() {
 
     // TODO: Remove this when we support factional seconds
     // See https://github.com/liftedinit/many-rs/issues/110
-    std::thread::sleep(std::time::Duration::new(1, 0));
-    let now = Timestamp::now();
+    let now = after + 1;
     let result = setup.module_impl.list(events::ListArgs {
         count: None,
         order: None,
