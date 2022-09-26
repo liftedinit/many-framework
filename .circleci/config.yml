@@ -265,7 +265,7 @@ jobs:
           name: running BATs tests
           # https://support.circleci.com/hc/en-us/articles/360046544433-Makefile-Command-Inconsistencies
           shell: /bin/bash
-          command: bats .
+          command: bats *
           working_directory: ./tests/resiliency
 
 # Re-usable commands
