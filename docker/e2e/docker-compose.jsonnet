@@ -13,6 +13,13 @@ local generate_balance_flags(id_with_balances="", token="mqbfbahksdwaqeenayy2gxk
         std.split(id_with_balances, " ")
     );
 
+local load_migrations(migrations="") =
+    if std.length(migrations) == 0 then
+        []
+    else [
+      "--migrations-config=" + migrations
+    ];
+
 
 local abci(i, user, abci_tag) = {
     image: "lifted/many-abci:" + abci_tag,
@@ -31,7 +38,7 @@ local abci(i, user, abci_tag) = {
     depends_on: [ "ledger-" + i ],
 };
 
-local ledger(i, user, id_with_balances, ledger_tag) = {
+local ledger(i, user, id_with_balances, ledger_tag, migrations) = {
     image: "lifted/many-ledger:" + ledger_tag,
     user: "" + user,
     volumes: [
@@ -46,7 +53,7 @@ local ledger(i, user, id_with_balances, ledger_tag) = {
         "--pem=/genfiles/ledger.pem",
         "--persistent=/persistent/ledger.db",
         "--addr=0.0.0.0:8000",
-    ] + generate_balance_flags(id_with_balances),
+    ] + load_migrations(migrations) + generate_balance_flags(id_with_balances),
 };
 
 local tendermint(i, user, tendermint_tag) = {
@@ -64,12 +71,12 @@ local tendermint(i, user, tendermint_tag) = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
-function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4", abci_tag="latest", ledger_tag="latest") {
+function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4", abci_tag="latest", ledger_tag="latest", migrations="") {
     version: '3',
     services: {
         ["abci-" + i]: abci(i, user, abci_tag) for i in std.range(0, nb_nodes - 1)
     } + {
-        ["ledger-" + i]: ledger(i, user, id_with_balances, ledger_tag) for i in std.range(0, nb_nodes - 1)
+        ["ledger-" + i]: ledger(i, user, id_with_balances, ledger_tag, migrations) for i in std.range(0, nb_nodes - 1)
     } + {
         ["tendermint-" + i]: tendermint(i, user, tendermint_tag) for i in std.range(0, nb_nodes - 1)
     },

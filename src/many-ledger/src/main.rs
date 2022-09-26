@@ -176,6 +176,8 @@ fn main() {
         })
         .unwrap_or_default();
 
+    info!("Migrations: {:?}", migrations);
+
     let module_impl = LedgerModuleImpl::new(state, persistent, abci)
         .unwrap()
         .with_migrations(migrations);

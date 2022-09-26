@@ -27,7 +27,7 @@ pub fn migrate(tx_id: &[u8], response: ResponseMessage) -> ResponseMessage {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Migration {
     pub issue: Option<String>,
     pub block_height: u64,

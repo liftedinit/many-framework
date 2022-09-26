@@ -5,6 +5,7 @@ CPUCORES ?= $$(docker run --rm nixos/nix nproc)
 TENDERMINT_VERSION ?= 0.35.4
 ABCI_TAG ?= "latest"
 LEDGER_TAG ?= "latest"
+MIGRATIONS ?=
 
 # Constants
 VOLUME = $(abspath $(dir $(abspath $(dir $(abspath $(dir $(abspath $(dir $$PWD))))))))
@@ -68,10 +69,17 @@ genfiles/docker-compose.json: genfiles/jsonnet-docker docker-compose.jsonnet
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
+		--tla-code migrations=\"/genfiles/migrations.toml\" \
 		-o /$@
 
 genfiles/node%: genfiles/openssl-docker
 	mkdir -p "$@/tendermint"
+	rm -f "$@/migrations.toml"
+ifdef MIGRATIONS
+	cp $(MIGRATIONS) "$@/migrations.toml"
+else
+	touch "$@/migrations.toml"
+endif
 	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v$(TENDERMINT_VERSION) init validator
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem
