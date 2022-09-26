@@ -92,7 +92,7 @@ impl KvStoreModuleImpl {
         }
 
         info!(
-            height = storage.height(),
+            height = storage.get_height(),
             hash = hex::encode(storage.hash()).as_str()
         );
 
@@ -132,6 +132,7 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
     }
 
     fn init_chain(&mut self) -> Result<InitChainReturn, ManyError> {
+        info!("abci.init_chain()",);
         Ok(InitChainReturn {})
     }
 
@@ -152,15 +153,28 @@ impl ManyAbciModuleBackend for KvStoreModuleImpl {
     }
 
     fn info(&self) -> Result<AbciInfo, ManyError> {
+        let storage = &self.storage;
+
+        info!(
+            "abci.info(): height={} hash={}",
+            storage.get_height(),
+            hex::encode(storage.hash()).as_str()
+        );
         Ok(AbciInfo {
-            height: self.storage.height(),
-            hash: self.storage.hash().into(),
+            height: storage.get_height(),
+            hash: storage.hash().into(),
         })
     }
 
     fn commit(&mut self) -> Result<AbciCommitInfo, ManyError> {
-        let info = self.storage.commit();
-        Ok(info)
+        let result = self.storage.commit();
+
+        info!(
+            "abci.commit(): retain_height={} hash={}",
+            result.retain_height,
+            hex::encode(result.hash.as_slice()).as_str()
+        );
+        Ok(result)
     }
 }
 

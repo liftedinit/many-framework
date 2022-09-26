@@ -40,6 +40,7 @@ pub struct KvStoreStorage {
 
     latest_event_id: EventId,
     current_time: Option<Timestamp>,
+    current_hash: Option<Vec<u8>>,
     next_account_id: u32,
     account_identity: Address,
 }
@@ -92,6 +93,7 @@ impl KvStoreStorage {
             persistent_store,
             blockchain,
             current_time: None,
+            current_hash: None,
             latest_event_id,
             next_account_id,
             account_identity,
@@ -128,13 +130,25 @@ impl KvStoreStorage {
             persistent_store,
             blockchain,
             current_time: None,
+            current_hash: None,
             latest_event_id: EventId::from(vec![0]),
             next_account_id: 0,
             account_identity: identity,
         })
     }
 
-    pub fn height(&self) -> u64 {
+    fn inc_height(&mut self) -> u64 {
+        let current_height = self.get_height();
+        self.persistent_store
+            .apply(&[(
+                b"/height".to_vec(),
+                Op::Put((current_height + 1).to_be_bytes().to_vec()),
+            )])
+            .unwrap();
+        current_height
+    }
+
+    pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
             .unwrap()
@@ -146,23 +160,25 @@ impl KvStoreStorage {
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
-        let current_height = self.height() + 1;
-        self.persistent_store
-            .apply(&[(
-                b"/height".to_vec(),
-                merk::Op::Put(current_height.to_be_bytes().to_vec()),
-            )])
-            .unwrap();
+        let height = self.inc_height();
+        let retain_height = 0;
         self.persistent_store.commit(&[]).unwrap();
 
+        let hash = self.persistent_store.root_hash().to_vec();
+        self.current_hash = Some(hash.clone());
+
+        self.latest_event_id = EventId::from(height << HEIGHT_EVENTID_SHIFT);
+
         AbciCommitInfo {
-            retain_height: current_height,
-            hash: self.hash().into(),
+            retain_height,
+            hash: hash.into(),
         }
     }
 
     pub fn hash(&self) -> Vec<u8> {
-        self.persistent_store.root_hash().to_vec()
+        self.current_hash
+            .as_ref()
+            .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
     }
 
     fn _get(&self, key: &[u8], prefix: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
@@ -254,16 +270,5 @@ impl KvStoreStorage {
             self.persistent_store.commit(&[]).unwrap();
         }
         Ok(())
-    }
-
-    pub fn get_height(&self) -> u64 {
-        self.persistent_store
-            .get(b"/height")
-            .unwrap()
-            .map_or(0u64, |x| {
-                let mut bytes = [0u8; 8];
-                bytes.copy_from_slice(x.as_slice());
-                u64::from_be_bytes(bytes)
-            })
     }
 }
