@@ -1,17 +1,19 @@
-GIT_ROOT="$BATS_TEST_DIRNAME/../../"
+GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
+MAKEFILE="Makefile.ledger"
 
-load '../test_helper/load'
+load '../../test_helper/load'
+load '../../test_helper/ledger'
 
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
-      make clean
+      make -f $MAKEFILE clean
       for i in {0..2}
       do
-          make $(ciopt start-single-node-dettached)-${i} ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" || {
+          make -f $MAKEFILE $(ciopt start-single-node-dettached)-${i} ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000:$MFX_ADDRESS" || {
             echo Could not start nodes... >&3
             exit 1
           }
@@ -30,11 +32,11 @@ EOT
 function teardown() {
     (
       cd "$GIT_ROOT/docker/e2e/" || exit 1
-      make stop-nodes
+      make -f $MAKEFILE stop-nodes
     ) 2> /dev/null
 
     # Fix for BATS verbose run/test output gathering
-    cd "$GIT_ROOT/tests/resiliency/" || exit 1
+    cd "$GIT_ROOT/tests/resiliency/ledger" || exit 1
 }
 
 @test "$SUITE: Node can catch up" {
@@ -67,7 +69,7 @@ function teardown() {
     sleep 300
 
     # At this point, start the 4th node and check it can catch up
-    make $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" || {
+    make -f $MAKEFILE $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" || {
       echo Could not start nodes... >&3
       exit 1
     }

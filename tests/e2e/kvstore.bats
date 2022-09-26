@@ -1,6 +1,7 @@
 GIT_ROOT="$BATS_TEST_DIRNAME/../../"
 
 load '../test_helper/load'
+load '../test_helper/kvstore'
 
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
