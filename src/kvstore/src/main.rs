@@ -169,14 +169,10 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
             "None".to_string()
         };
 
-        if let Some(disabled) = result.disabled {
-            match disabled {
-                Either::Left(true) => println!("{}, disabled", owner),
-                Either::Left(false) => println!("{}", owner),
-                Either::Right(reason) => println!("{}, disabled ({})", owner, reason),
-            }
-        } else {
-            println!("{}", owner);
+        match result.disabled {
+                Some(Either::Left(true)) => println!("{}, disabled", owner),
+                Some(Either::Right(reason)) => println!("{}, disabled ({})", owner, reason),
+                _ => println!("{}", owner),
         }
 
         Ok(())
