@@ -52,7 +52,7 @@ fn validate_roles_for_account(account: &account::Account) -> Result<(), ManyErro
 
     for r in account_roles {
         if !allowed_roles.contains(&r) {
-            return Err(account::errors::unknown_role(r.to_string()));
+            return Err(account::errors::unknown_role(r));
         }
     }
 
@@ -289,6 +289,8 @@ impl KvStoreModuleImpl {
         if let Some(account) = self.storage.get_account(alternative_owner) {
             account.needs_role(sender, roles)
         } else if alternative_owner.is_subresource() {
+            // TODO: Subresource alternative owner support
+            // https://github.com/liftedinit/many-framework/issues/246
             Err(error::subres_alt_unsupported())
         } else if alternative_owner.is_anonymous() {
             Err(error::anon_alt_denied())
