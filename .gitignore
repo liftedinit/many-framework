@@ -110,3 +110,4 @@ result*
 bazel-*
 rust-project.json
 genhtml/
+docker/e2e/genfiles*
