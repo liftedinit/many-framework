@@ -1,14 +1,16 @@
-GIT_ROOT="$BATS_TEST_DIRNAME/../../"
+GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
+MAKEFILE="Makefile.ledger"
 
-load '../test_helper/load'
+load '../../test_helper/load'
+load '../../test_helper/ledger'
 
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
-      make clean
-      make $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" || {
+      make -f $MAKEFILE clean
+      make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" || {
         echo Could not start nodes... >&3
         exit 1
       }
@@ -26,11 +28,11 @@ EOT
 function teardown() {
     (
       cd "$GIT_ROOT/docker/e2e/" || exit 1
-      make stop-nodes
+      make -f $MAKEFILE stop-nodes
     ) 2> /dev/null
 
     # Fix for BATS verbose run/test output gathering
-    cd "$GIT_ROOT/tests/resiliency/" || exit 1
+    cd "$GIT_ROOT/tests/resiliency/ledger" || exit 1
 }
 
 @test "$SUITE: Network is consistent" {
@@ -61,7 +63,7 @@ function teardown() {
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
     # Bring down node 3.
-    make stop-single-node-3
+    make -f $MAKEFILE stop-single-node-3
 
     # Check consistency with all nodes up.
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002
@@ -81,7 +83,7 @@ function teardown() {
     check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002
 
     # Bring it back.
-    make $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) || {
+    make -f $MAKEFILE $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) || {
         echo Could not start nodes... >&3
         exit 1
     }

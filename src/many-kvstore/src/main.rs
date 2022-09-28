@@ -1,12 +1,16 @@
+use crate::module::account::AccountFeatureModule;
 use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
-use many_modules::{abci_backend, kvstore};
+use many_modules::account::features::Feature;
+use many_modules::{abci_backend, account, events, kvstore};
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
+use tracing::{debug, info};
 
 mod error;
 mod module;
@@ -20,7 +24,7 @@ enum LogStrategy {
     Syslog,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     /// Increase output logging verbosity to DEBUG level.
     #[clap(short, long, parse(from_occurrences))]
@@ -34,9 +38,9 @@ struct Opts {
     #[clap(long)]
     pem: PathBuf,
 
-    /// The port to bind to for the MANY Http server.
-    #[clap(long, short, default_value = "8000")]
-    port: u16,
+    /// The address and port to bind to for the MANY Http server.
+    #[clap(long, short, default_value = "127.0.0.1:8000")]
+    addr: SocketAddr,
 
     /// Uses an ABCI application module.
     #[clap(long)]
@@ -65,7 +69,7 @@ fn main() {
         verbose,
         quiet,
         pem,
-        port,
+        addr,
         abci,
         mut state,
         persistent,
@@ -95,10 +99,16 @@ fn main() {
             let (options, facility) = Default::default();
             let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
 
-            let subscriber = subscriber.with_writer(syslog);
+            let subscriber = subscriber.with_ansi(false).with_writer(syslog);
             subscriber.init();
         }
     };
+
+    debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     if clean {
         // Delete the persistent storage.
@@ -112,7 +122,7 @@ fn main() {
 
     let state = state.map(|state| {
         let content = std::fs::read_to_string(&state).unwrap();
-        serde_json::from_str(&content).unwrap()
+        json5::from_str(&content).unwrap()
     });
 
     let module = if let Some(state) = state {
@@ -134,15 +144,26 @@ fn main() {
         let mut s = many.lock().unwrap();
         s.add_module(kvstore::KvStoreModule::new(module.clone()));
         s.add_module(kvstore::KvStoreCommandsModule::new(module.clone()));
+        s.add_module(events::EventsModule::new(module.clone()));
 
+        s.add_module(AccountFeatureModule::new(
+            account::AccountModule::new(module.clone()),
+            [Feature::with_id(2)],
+        ));
         if abci {
+            s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module));
         }
     }
+    let mut many_server = HttpServer::new(many);
+
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGHUP, many_server.term_signal())
+        .expect("Could not register signal handler");
+    signal_hook::flag::register(signal_hook::consts::SIGINT, many_server.term_signal())
+        .expect("Could not register signal handler");
 
     let runtime = tokio::runtime::Runtime::new().unwrap();
-
-    runtime
-        .block_on(HttpServer::new(many).bind(format!("127.0.0.1:{}", port)))
-        .unwrap();
+    runtime.block_on(many_server.bind(addr)).unwrap();
 }
