@@ -208,10 +208,7 @@ jobs:
           name: build docker images
           command: |
             cd many-framework/docker/e2e
-            make -f Makefile.common Cargo.nix
-            make -f Makefile.common many/many-abci
-            make -f Makefile.ledger many/many-ledger
-            make -f Makefile.kvstore many/many-kvstore
+            make Cargo.nix many/many-abci many/many-ledger many/many-kvstore
             docker tag lifted/many-ledger:latest lifted/many-ledger:nightly
             docker tag lifted/many-abci:latest lifted/many-abci:nightly
             docker tag lifted/many-kvstore:latest lifted/many-kvstore:nightly

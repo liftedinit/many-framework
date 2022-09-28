@@ -19,7 +19,7 @@ incremental = false
 [profile.dev]
 incremental = false
 
-[patch."https://github.com/liftedinit/many-rs.git"]
+#[patch."https://github.com/liftedinit/many-rs.git"]
 #many = { path = "../many-rs/src/many" }
 #many-client = { path = "../many-rs/src/many-client" }
 #many-client-macros = { path = "../many-rs/src/many-client-macros" }
@@ -34,21 +34,6 @@ incremental = false
 #many-protocol = { path = "../many-rs/src/many-protocol" }
 #many-server = { path = "../many-rs/src/many-server" }
 #many-types = { path = "../many-rs/src/many-types" }
-
-many = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-client = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-client-macros = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-error = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-identity = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-identity-dsa = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-identity-hsm = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-identity-webauthn = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-macros = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-mock = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-modules = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-protocol = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-server = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
-many-types = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/kvstore-rework" }
 
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
