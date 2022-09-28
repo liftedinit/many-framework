@@ -35,4 +35,6 @@ function teardown() {
 
 @test "$SUITE: migrations work" {
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
+    call_ledger --pem=1 --port=8000 data info
+    assert_output --partial "{}"
 }
