@@ -1,68 +1,154 @@
-use crate::error::unauthorized;
+use crate::module::{KvStoreMetadata, KvStoreMetadataWrapper};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::abci_backend::AbciCommitInfo;
-use merk::Op;
+use many_modules::events::EventInfo;
+use many_types::{Either, Timestamp};
+use merk::{BatchEntry, Op};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
 
-pub type AclBTreeMap = BTreeMap<Vec<u8>, Vec<Address>>;
+mod account;
+mod event;
+
+use crate::error;
+use event::EventId;
+
+const KVSTORE_ROOT: &[u8] = b"s";
+const KVSTORE_ACL_ROOT: &[u8] = b"a";
+
+// Left-shift the height by this amount of bits
+const HEIGHT_EVENTID_SHIFT: u64 = 32;
+
+#[derive(Serialize, Deserialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct Key {
+    #[serde(with = "hex::serde")]
+    key: Vec<u8>,
+}
+
+pub type AclMap = BTreeMap<Key, KvStoreMetadataWrapper>;
 
 pub struct KvStoreStorage {
-    /// Simple ACL scheme. Any prefix that matches the key
-    acls: AclBTreeMap,
-
     persistent_store: merk::Merk,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
     /// persistent store.
     blockchain: bool,
+
+    latest_event_id: EventId,
+    current_time: Option<Timestamp>,
+    current_hash: Option<Vec<u8>>,
+    next_account_id: u32,
+    account_identity: Address,
 }
 
 impl std::fmt::Debug for KvStoreStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("LedgerStorage").finish()
+        f.debug_struct("KvStoreStorage").finish()
     }
 }
 
 impl KvStoreStorage {
+    #[inline]
+    pub fn set_time(&mut self, time: Timestamp) {
+        self.current_time = Some(time);
+    }
+    #[inline]
+    pub fn now(&self) -> Timestamp {
+        self.current_time.unwrap_or_else(Timestamp::now)
+    }
+
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let acls: AclBTreeMap =
-            minicbor::decode(&persistent_store.get(b"/config/acls").unwrap().unwrap()).unwrap();
+        let next_account_id = persistent_store
+            .get(b"/config/account_id")
+            .unwrap()
+            .map_or(0, |x| {
+                let mut bytes = [0u8; 4];
+                bytes.copy_from_slice(x.as_slice());
+                u32::from_be_bytes(bytes)
+            });
+
+        let account_identity: Address = Address::from_bytes(
+            &persistent_store
+                .get(b"/config/identity")
+                .expect("Could not open storage.")
+                .expect("Could not find key '/config/identity' in storage."),
+        )
+        .map_err(|e| e.to_string())?;
+
+        let height = persistent_store.get(b"/height").unwrap().map_or(0u64, |x| {
+            let mut bytes = [0u8; 8];
+            bytes.copy_from_slice(x.as_slice());
+            u64::from_be_bytes(bytes)
+        });
+
+        let latest_event_id = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         Ok(Self {
-            acls,
             persistent_store,
             blockchain,
+            current_time: None,
+            current_hash: None,
+            latest_event_id,
+            next_account_id,
+            account_identity,
         })
     }
 
     pub fn new<P: AsRef<Path>>(
-        acls: AclBTreeMap,
+        acl: AclMap,
+        identity: Address,
         persistent_path: P,
         blockchain: bool,
     ) -> Result<Self, String> {
         let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
+        let mut batch: Vec<BatchEntry> = Vec::new();
+
+        batch.push((b"/config/identity".to_vec(), Op::Put(identity.to_vec())));
+
+        // Initialize DB with ACL
+        for (k, v) in acl.into_iter() {
+            batch.push((
+                vec![KVSTORE_ACL_ROOT.to_vec(), k.key.to_vec()].concat(),
+                Op::Put(minicbor::to_vec(v).map_err(|e| e.to_string())?),
+            ));
+        }
+
         persistent_store
-            .apply(&[(
-                b"/config/acls".to_vec(),
-                Op::Put(minicbor::to_vec(&acls).unwrap()),
-            )])
+            .apply(batch.as_slice())
             .map_err(|e| e.to_string())?;
+
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
 
         Ok(Self {
-            acls,
             persistent_store,
             blockchain,
+            current_time: None,
+            current_hash: None,
+            latest_event_id: EventId::from(vec![0]),
+            next_account_id: 0,
+            account_identity: identity,
         })
     }
 
-    pub fn height(&self) -> u64 {
+    fn inc_height(&mut self) -> u64 {
+        let current_height = self.get_height();
+        self.persistent_store
+            .apply(&[(
+                b"/height".to_vec(),
+                Op::Put((current_height + 1).to_be_bytes().to_vec()),
+            )])
+            .unwrap();
+        current_height
+    }
+
+    pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
             .unwrap()
@@ -74,137 +160,115 @@ impl KvStoreStorage {
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
-        let current_height = self.height() + 1;
-        self.persistent_store
-            .apply(&[(
-                b"/height".to_vec(),
-                merk::Op::Put(current_height.to_be_bytes().to_vec()),
-            )])
-            .unwrap();
+        let height = self.inc_height();
+        let retain_height = 0;
         self.persistent_store.commit(&[]).unwrap();
 
+        let hash = self.persistent_store.root_hash().to_vec();
+        self.current_hash = Some(hash.clone());
+
+        self.latest_event_id = EventId::from(height << HEIGHT_EVENTID_SHIFT);
+
         AbciCommitInfo {
-            retain_height: current_height,
-            hash: self.hash().into(),
+            retain_height,
+            hash: hash.into(),
         }
     }
 
     pub fn hash(&self) -> Vec<u8> {
-        self.persistent_store.root_hash().to_vec()
+        self.current_hash
+            .as_ref()
+            .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
     }
 
-    fn can_write(&self, id: &Address, key: &[u8]) -> bool {
-        // TODO: remove this.
-        if self.acls.is_empty() {
-            return true;
-        }
-
-        let mut has_matched = false;
-
-        // Any ACL that matches the key as a prefix in the ACL map and contains the identity
-        // is a match.
-        // Since BTreeMap is sorted by key, the first key that doesn't match after a key that
-        // matches is out-of-bound and we won't match, so we can cut short.
-        for (k, v) in self.acls.iter() {
-            if key.starts_with(k) {
-                has_matched = true;
-                if v.contains(id) {
-                    return true;
-                }
-            } else if has_matched {
-                return false;
-            }
-        }
-
-        false
-    }
-
-    #[allow(dead_code)]
-    pub fn query(&self, prefix: Option<&[u8]>) -> Result<StorageIterator<'_>, ManyError> {
-        if let Some(prefix) = prefix {
-            Ok(StorageIterator::prefixed(&self.persistent_store, prefix))
-        } else {
-            Ok(StorageIterator::new(&self.persistent_store))
-        }
-    }
-
-    pub fn get(&self, _id: &Address, key: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
+    fn _get(&self, key: &[u8], prefix: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
         self.persistent_store
-            .get(&vec![b"/store/".to_vec(), key.to_vec()].concat())
+            .get(&vec![prefix.to_vec(), key.to_vec()].concat())
             .map_err(|e| ManyError::unknown(e.to_string()))
     }
 
-    pub fn put(&mut self, id: &Address, key: &[u8], value: Vec<u8>) -> Result<(), ManyError> {
-        if !self.can_write(id, key) {
-            return Err(unauthorized());
-        }
+    pub fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
+        if let Some(cbor) = self._get(key, KVSTORE_ACL_ROOT)? {
+            let meta: KvStoreMetadata = minicbor::decode(&cbor)
+                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
+            if let Some(either) = meta.disabled {
+                match either {
+                    Either::Left(false) => {}
+                    _ => return Err(error::key_disabled()),
+                }
+            }
+        }
+        self._get(key, KVSTORE_ROOT)
+    }
+
+    pub fn get_metadata(&self, key: &[u8]) -> Result<Option<Vec<u8>>, ManyError> {
+        self._get(key, KVSTORE_ACL_ROOT)
+    }
+
+    pub fn put(
+        &mut self,
+        meta: &KvStoreMetadata,
+        key: &[u8],
+        value: Vec<u8>,
+    ) -> Result<(), ManyError> {
+        self.persistent_store
+            .apply(&[
+                (
+                    vec![KVSTORE_ACL_ROOT.to_vec(), key.to_vec()].concat(),
+                    Op::Put(
+                        minicbor::to_vec(meta)
+                            .map_err(|e| ManyError::serialization_error(e.to_string()))?,
+                    ),
+                ),
+                (
+                    vec![KVSTORE_ROOT.to_vec(), key.to_vec()].concat(),
+                    Op::Put(value.clone()),
+                ),
+            ])
+            .map_err(|e| ManyError::unknown(e.to_string()))?;
+
+        self.log_event(EventInfo::KvStorePut {
+            key: key.to_vec().into(),
+            value: value.into(),
+            owner: meta.owner,
+        });
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+        Ok(())
+    }
+
+    pub fn disable(&mut self, meta: &KvStoreMetadata, key: &[u8]) -> Result<(), ManyError> {
         self.persistent_store
             .apply(&[(
-                vec![b"/store/".to_vec(), key.to_vec()].concat(),
-                Op::Put(value),
+                vec![KVSTORE_ACL_ROOT.to_vec(), key.to_vec()].concat(),
+                Op::Put(
+                    minicbor::to_vec(meta)
+                        .map_err(|e| ManyError::serialization_error(e.to_string()))?,
+                ),
             )])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 
+        let reason = if let Some(disabled) = &meta.disabled {
+            match disabled {
+                Either::Right(reason) => Some(reason),
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        self.log_event(EventInfo::KvStoreDisable {
+            key: key.to_vec().into(),
+            owner: meta.owner,
+            reason: reason.cloned(),
+        });
+
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
         }
         Ok(())
-    }
-
-    pub fn delete(&mut self, id: &Address, key: &[u8]) -> Result<(), ManyError> {
-        if !self.can_write(id, key) {
-            return Err(unauthorized());
-        }
-
-        self.persistent_store
-            .apply(&[(vec![b"/store/".to_vec(), key.to_vec()].concat(), Op::Delete)])
-            .map_err(|e| ManyError::unknown(e.to_string()))?;
-
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
-        Ok(())
-    }
-}
-
-pub struct StorageIterator<'a> {
-    inner: merk::rocksdb::DBIterator<'a>,
-}
-
-#[allow(dead_code)]
-impl<'a> StorageIterator<'a> {
-    pub fn new(merk: &'a merk::Merk) -> Self {
-        Self {
-            inner: merk.iter_opt(merk::rocksdb::IteratorMode::Start, Default::default()),
-        }
-    }
-
-    pub fn prefixed(merk: &'a merk::Merk, prefix: &[u8]) -> Self {
-        if prefix.is_empty() {
-            return Self::new(merk);
-        }
-
-        let mut upper_bound = prefix.to_vec();
-        let last = upper_bound.last_mut().unwrap();
-        *last += 1;
-
-        let mut opts = merk::rocksdb::ReadOptions::default();
-        opts.set_iterate_upper_bound(upper_bound);
-
-        Self {
-            inner: merk.iter_opt(
-                merk::rocksdb::IteratorMode::From(prefix, merk::rocksdb::Direction::Forward),
-                opts,
-            ),
-        }
-    }
-}
-
-impl<'a> Iterator for StorageIterator<'a> {
-    type Item = Result<(Box<[u8]>, Box<[u8]>), merk::rocksdb::Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
     }
 }

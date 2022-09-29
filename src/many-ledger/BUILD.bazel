@@ -18,7 +18,10 @@ rust_binary(
     ),
     deps = all_crate_deps(
         normal = True,
-    ) + [":build_script"],
+    ) + [
+        ":build_script",
+        "//src/many-abci:many-abci-lib",
+    ],
 )
 
 rust_library(

@@ -1,6 +1,7 @@
 GIT_ROOT="$BATS_TEST_DIRNAME/../../"
 
 load '../test_helper/load'
+load '../test_helper/ledger'
 
 # Pass in the recall phrase, the identity, the cred id and the key cose.
 function assert_idstore() {

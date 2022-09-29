@@ -1,9 +1,11 @@
 load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test", "rust_test_suite")
 
+package(default_visibility = ["//src/many-ledger:__pkg__"])
+
 rust_binary(
     name = "many-abci",
-    srcs = glob(include=["src/**/*.rs"]),
+    srcs = glob(include = ["src/**/*.rs"]),
     aliases = aliases(),
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
@@ -15,9 +17,9 @@ rust_binary(
 
 rust_library(
     name = "many-abci-lib",
-    srcs = glob(include=["src/**/*.rs"]),
-    crate_name = "many_abci",
+    srcs = glob(include = ["src/**/*.rs"]),
     aliases = aliases(),
+    crate_name = "many_abci",
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
     ),

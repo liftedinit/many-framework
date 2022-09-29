@@ -3,6 +3,7 @@ START_BALANCE=100000000000
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
 
 load '../test_helper/load'
+load '../test_helper/ledger'
 
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
