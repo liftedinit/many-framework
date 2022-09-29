@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "migrate_blocks")]
 use many_protocol::ResponseMessage;
-use serde::{Deserialize, Serialize};
+use serde::{de::Visitor, Deserialize, Serialize};
 
 use crate::storage::MIGRATIONS_KEY;
 
@@ -27,12 +27,60 @@ pub type MigrationMap = BTreeMap<MigrationName, Migration>;
 
 pub type MigrationSet = BTreeSet<MigrationName>;
 
-#[derive(
-    Deserialize, Serialize, Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Encode, Decode,
-)]
+/// The name of a migration, which will be referenced in the migration
+/// configuration TOML file. Every new migration is a new variant in
+/// this enum.
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Encode, Decode)]
 pub enum MigrationName {
+    /// AccountCountData is a migration which introduces data
+    /// attributes and metrics for known accounts and non-empty
+    /// accounts.
     #[n(0)]
     AccountCountData,
+}
+
+// MigrationName has custom Serialize and Deserialize because the
+// derived one neither produces nor consumes TOML strings, and TOML
+// keys are always necessarily TOML strings.
+impl Serialize for MigrationName {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{:?}", self))
+    }
+}
+
+struct MigrationNameVisitor;
+
+impl<'de> Visitor<'de> for MigrationNameVisitor {
+    type Value = MigrationName;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("A variant of the enum MigrationName")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match v {
+            "AccountCountData" => Ok(MigrationName::AccountCountData),
+            s => Err(E::invalid_type(
+                serde::de::Unexpected::Str(s),
+                &"MigrationName",
+            )),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for MigrationName {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(MigrationNameVisitor)
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
