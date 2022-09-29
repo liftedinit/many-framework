@@ -3008,6 +3008,7 @@ in
     };
     devDependencies = {
       many_client = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
       many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
       many_ledger = (rustPackages."unknown".many-ledger."0.1.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.15.0" { inherit profileName; }).out;
