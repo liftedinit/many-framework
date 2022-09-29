@@ -403,6 +403,11 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("account.multisigRevoke".to_string(), EndpointInfo { is_command: true }),
                 ("account.multisigExecute".to_string(), EndpointInfo { is_command: true }),
                 ("account.multisigWithdraw".to_string(), EndpointInfo { is_command: true }),
+
+                // Data Attributes
+                ("data.info".to_string(), EndpointInfo { is_command: false }),
+                ("data.getInfo".to_string(), EndpointInfo { is_command: false }),
+                ("data.query".to_string(), EndpointInfo { is_command: false }),
             ]),
         })
     }
