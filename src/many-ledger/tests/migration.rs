@@ -1,11 +1,9 @@
 pub mod common;
 
-use std::collections::BTreeMap;
-
 use common::*;
 use many_identity::testing::identity;
 use many_ledger::{
-    migration::{Migration, MigrationName},
+    migration::MigrationMap,
     module::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
 };
 use many_modules::{
@@ -18,14 +16,12 @@ use num_bigint::BigInt;
 #[test]
 fn migration() {
     let mut harness = Setup::new(true);
-    let migration = Migration {
-        issue: None,
-        block_height: 2,
-    };
-    harness.module_impl = harness.module_impl.with_migrations(BTreeMap::from([(
-        MigrationName::AccountCountData,
-        migration,
-    )]));
+    let migrations_str = r#"
+    [AccountCountData]
+    block_height = 2
+    "#;
+    let migrations: MigrationMap = toml::from_str(migrations_str).unwrap();
+    harness.module_impl = harness.module_impl.with_migrations(migrations);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, a1) = harness.block(|h| {
