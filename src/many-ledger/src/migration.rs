@@ -2,6 +2,7 @@ pub mod data;
 
 use data::initial_metrics_data;
 use merk::Op;
+use minicbor::{Decode, Encode};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "migrate_blocks")]
@@ -22,6 +23,18 @@ pub fn migrate(tx_id: &[u8], response: ResponseMessage) -> ResponseMessage {
     }
 }
 
+pub type MigrationMap = BTreeMap<MigrationName, Migration>;
+
+pub type MigrationSet = BTreeSet<MigrationName>;
+
+#[derive(
+    Deserialize, Serialize, Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Encode, Decode,
+)]
+pub enum MigrationName {
+    #[n(0)]
+    AccountCountData,
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Migration {
     pub issue: Option<String>,
@@ -30,15 +43,13 @@ pub struct Migration {
 
 pub fn run_migrations(
     current_height: u64,
-    all_migrations: &BTreeMap<String, Migration>,
-    active_migrations: &mut BTreeSet<String>,
+    all_migrations: &MigrationMap,
+    active_migrations: &mut MigrationSet,
     persistent_store: &mut merk::Merk,
 ) {
     let mut operations = vec![];
     for (migration_name, migration) in all_migrations {
-        if current_height >= migration.block_height
-            && active_migrations.insert(migration_name.clone())
-        {
+        if current_height >= migration.block_height && active_migrations.insert(*migration_name) {
             operations.append(&mut migration_init(
                 migration_name,
                 active_migrations,
@@ -51,8 +62,8 @@ pub fn run_migrations(
 }
 
 fn migration_init(
-    name: &str,
-    active_migrations: &BTreeSet<String>,
+    name: &MigrationName,
+    active_migrations: &MigrationSet,
     persistent_store: &merk::Merk,
 ) -> Vec<(Vec<u8>, Op)> {
     let mut operations = vec![];
@@ -60,8 +71,10 @@ fn migration_init(
         MIGRATIONS_KEY.to_vec(),
         Op::Put(minicbor::to_vec(active_migrations).expect("Could not encode migrations to cbor")),
     ));
-    if name == "account_count_data" {
-        operations.append(&mut initial_metrics_data(persistent_store));
+    match name {
+        MigrationName::AccountCountData => {
+            operations.append(&mut initial_metrics_data(persistent_store))
+        }
     }
     operations
 }

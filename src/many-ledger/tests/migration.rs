@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use common::*;
 use many_identity::testing::identity;
 use many_ledger::{
-    migration::Migration,
+    migration::{Migration, MigrationName},
     module::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
 };
 use many_modules::{
@@ -23,7 +23,7 @@ fn migration() {
         block_height: 2,
     };
     harness.module_impl = harness.module_impl.with_migrations(BTreeMap::from([(
-        "account_count_data".to_string(),
+        MigrationName::AccountCountData,
         migration,
     )]));
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);

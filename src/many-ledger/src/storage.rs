@@ -2,7 +2,7 @@ use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
 use crate::migration::data::DataMethods;
-use crate::migration::{run_migrations, Migration};
+use crate::migration::{run_migrations, MigrationMap, MigrationSet};
 use crate::module::validate_account;
 use many_error::ManyError;
 use many_identity::Address;
@@ -274,8 +274,8 @@ pub struct LedgerStorage {
     next_account_id: u32,
     account_identity: Address,
 
-    active_migrations: BTreeSet<String>,
-    all_migrations: BTreeMap<String, Migration>,
+    active_migrations: MigrationSet,
+    all_migrations: MigrationMap,
 }
 
 impl LedgerStorage {
@@ -355,7 +355,7 @@ impl LedgerStorage {
 
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let active_migrations: BTreeSet<String> = persistent_store
+        let active_migrations: MigrationSet = persistent_store
             .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
             .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
@@ -440,7 +440,7 @@ impl LedgerStorage {
         })
     }
 
-    pub fn with_migrations(mut self, all_migrations: BTreeMap<String, Migration>) -> Self {
+    pub fn with_migrations(mut self, all_migrations: MigrationMap) -> Self {
         self.all_migrations = all_migrations;
         self
     }

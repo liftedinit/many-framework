@@ -1,6 +1,6 @@
 use crate::json::InitialStateJson;
-use crate::migration::Migration;
 use crate::migration::data::DataMethods;
+use crate::migration::MigrationMap;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
 use many_error::{ManyError, ManyErrorCode};
@@ -230,7 +230,7 @@ impl LedgerModuleImpl {
         Ok(Self { storage })
     }
 
-    pub fn with_migrations(mut self, migrations: BTreeMap<String, Migration>) -> Self {
+    pub fn with_migrations(mut self, migrations: MigrationMap) -> Self {
         self.storage = self.storage.with_migrations(migrations);
         self
     }

@@ -9,7 +9,6 @@ use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
-use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -23,7 +22,7 @@ mod module;
 mod storage;
 
 use crate::json::InitialStateJson;
-use crate::migration::Migration;
+use crate::migration::MigrationMap;
 use module::*;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
@@ -169,7 +168,7 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let migrations: BTreeMap<String, Migration> = migrations_config
+    let migrations: MigrationMap = migrations_config
         .map(|file| {
             let contents =
                 std::fs::read(file).expect("Could not read file passed to --migrations_config");
