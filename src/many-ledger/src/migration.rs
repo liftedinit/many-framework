@@ -11,10 +11,7 @@ use strum::EnumString;
 
 #[cfg(feature = "migrate_blocks")]
 use many_protocol::ResponseMessage;
-use serde::{
-    de::{Expected, Visitor},
-    Deserialize, Serialize,
-};
+use serde::{de::Visitor, Deserialize, Serialize};
 
 use crate::storage::MIGRATIONS_KEY;
 
