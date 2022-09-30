@@ -1818,9 +1818,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.133"
+version = "0.2.134"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0f80d65747a3e43d1596c7c5492d95d5edddaabd45a7fcdb02b95f644164966"
+checksum = "329c933548736bc49fd575ee68c89e8be4d260064184389a5b77517cddd99ffb"
 
 [[package]]
 name = "libgit2-sys"
@@ -1898,6 +1898,7 @@ dependencies = [
  "clap 3.2.22",
  "coset",
  "hex",
+ "itertools",
  "lazy_static",
  "many-client",
  "many-error",
@@ -1909,6 +1910,8 @@ dependencies = [
  "many-server",
  "many-types",
  "minicbor",
+ "num-integer",
+ "once_cell",
  "reqwest",
  "sha2 0.10.6",
  "signal-hook",
@@ -1926,7 +1929,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1969,7 +1972,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1979,7 +1982,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -1990,7 +1993,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "asn1 0.11.0",
  "base32",
@@ -2017,7 +2020,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2045,7 +2048,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2065,7 +2068,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2166,7 +2169,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2179,7 +2182,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "async-trait",
  "coset",
@@ -2199,7 +2202,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "base64 0.13.0",
  "coset",
@@ -2224,7 +2227,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2273,7 +2276,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=4a4de79e2e90a55b128584bc1d6e43b3415f8f14#4a4de79e2e90a55b128584bc1d6e43b3415f8f14"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
 dependencies = [
  "coset",
  "fixed",
@@ -2820,9 +2823,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.44"
+version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bd7356a8122b6c4a24a82b278680c73357984ca2fc79a0f9fa6dea7dced7c58"
+checksum = "94e2ef8dbfc347b10c094890f778ee2e36ca9bb4262e86dc99cd217e35f3470b"
 dependencies = [
  "unicode-ident",
 ]
@@ -4366,3 +4369,13 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "many"
+version = "0.1.0"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
+
+[[patch.unused]]
+name = "many-mock"
+version = "0.1.0"
+source = "git+https://github.com/fmorency/many-rs?branch=fmorency/enh-206-missing-blockchain-endpoints#f49054e7ef76a8931a0942353d11c4fe20f4268f"
