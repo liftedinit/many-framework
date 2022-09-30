@@ -3,11 +3,18 @@ pub mod data;
 use data::initial_metrics_data;
 use merk::Op;
 use minicbor::{Decode, Encode};
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    str::FromStr,
+};
+use strum::EnumString;
 
 #[cfg(feature = "migrate_blocks")]
 use many_protocol::ResponseMessage;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{
+    de::{Expected, Visitor},
+    Deserialize, Serialize,
+};
 
 use crate::storage::MIGRATIONS_KEY;
 
@@ -30,7 +37,7 @@ pub type MigrationSet = BTreeSet<MigrationName>;
 /// The name of a migration, which will be referenced in the migration
 /// configuration TOML file. Every new migration is a new variant in
 /// this enum.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Encode, Decode)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Encode, Decode, EnumString)]
 pub enum MigrationName {
     /// AccountCountData is a migration which introduces data
     /// attributes and metrics for known accounts and non-empty
@@ -64,13 +71,8 @@ impl<'de> Visitor<'de> for MigrationNameVisitor {
     where
         E: serde::de::Error,
     {
-        match v {
-            "AccountCountData" => Ok(MigrationName::AccountCountData),
-            s => Err(E::invalid_type(
-                serde::de::Unexpected::Str(s),
-                &"MigrationName",
-            )),
-        }
+        MigrationName::from_str(v)
+            .map_err(|_| E::invalid_type(serde::de::Unexpected::Str(v), &"MigrationName"))
     }
 }
 

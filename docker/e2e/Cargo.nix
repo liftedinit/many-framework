@@ -29,7 +29,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "4ad3aa8c7af2c24d8f344a7feeeb6289df634f285702a7e9a81867e87e732395";
+  nixifiedLockHash = "ec9f115a3f7c9fc455b15829ecadb7a435d342e33e2e7fd48c2f2e55c5b97a6c";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -4912,8 +4912,13 @@ in
     src = fetchCratesIo { inherit name version; sha256 = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"; };
     features = builtins.concatLists [
       [ "default" ]
+      [ "derive" ]
       [ "std" ]
+      [ "strum_macros" ]
     ];
+    dependencies = {
+      strum_macros = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".strum_macros."0.24.3" { profileName = "__noProfile"; }).out;
+    };
   });
   
   "registry+https://github.com/rust-lang/crates.io-index".strum_macros."0.24.3" = overridableMkRustCrate (profileName: rec {
