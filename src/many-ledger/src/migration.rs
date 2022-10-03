@@ -1,6 +1,5 @@
 pub mod data;
 
-use data::initial_metrics_data;
 use merk::Op;
 use minicbor::{Decode, Encode};
 use std::{
@@ -18,6 +17,11 @@ use crate::storage::MIGRATIONS_KEY;
 #[cfg(feature = "block_9400")]
 mod block_9400;
 
+lazy_static::lazy_static!(
+    pub static ref MIGRATION_RUNNERS: BTreeMap<MigrationName, MigrationRunner> =
+        BTreeMap::from([(MigrationName::AccountCountData, to_runner(data::migrate))]);
+);
+
 #[cfg(feature = "migrate_blocks")]
 pub fn migrate(tx_id: &[u8], response: ResponseMessage) -> ResponseMessage {
     match hex::encode(tx_id).as_str() {
@@ -30,6 +34,15 @@ pub fn migrate(tx_id: &[u8], response: ResponseMessage) -> ResponseMessage {
 pub type MigrationMap = BTreeMap<MigrationName, Migration>;
 
 pub type MigrationSet = BTreeSet<MigrationName>;
+
+pub type MigrationRunner = Box<dyn Fn(&merk::Merk) -> Vec<(Vec<u8>, Op)> + Send + Sync>;
+
+/// Used to populate the MIGRATION_RUNNERS variable with normal functions
+fn to_runner(
+    f: impl Fn(&merk::Merk) -> Vec<(Vec<u8>, Op)> + Send + Sync + 'static,
+) -> MigrationRunner {
+    Box::new(f) as MigrationRunner
+}
 
 /// The name of a migration, which will be referenced in the migration
 /// configuration TOML file. Every new migration is a new variant in
@@ -97,31 +110,16 @@ pub fn run_migrations(
     let mut operations = vec![];
     for (migration_name, migration) in all_migrations {
         if current_height >= migration.block_height && active_migrations.insert(*migration_name) {
-            operations.append(&mut migration_init(
-                migration_name,
-                active_migrations,
-                persistent_store,
+            operations.push((
+                MIGRATIONS_KEY.to_vec(),
+                Op::Put(
+                    minicbor::to_vec(active_migrations.clone())
+                        .expect("Could not encode migrations to cbor"),
+                ),
             ));
+            operations.append(&mut MIGRATION_RUNNERS[migration_name](persistent_store));
         }
     }
     operations.sort_by(|(a, _), (b, _)| a.cmp(b));
     persistent_store.apply(&operations).unwrap();
-}
-
-fn migration_init(
-    name: &MigrationName,
-    active_migrations: &MigrationSet,
-    persistent_store: &merk::Merk,
-) -> Vec<(Vec<u8>, Op)> {
-    let mut operations = vec![];
-    operations.push((
-        MIGRATIONS_KEY.to_vec(),
-        Op::Put(minicbor::to_vec(active_migrations).expect("Could not encode migrations to cbor")),
-    ));
-    match name {
-        MigrationName::AccountCountData => {
-            operations.append(&mut initial_metrics_data(persistent_store))
-        }
-    }
-    operations
 }

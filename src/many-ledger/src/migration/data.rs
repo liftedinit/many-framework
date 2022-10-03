@@ -12,7 +12,7 @@ use crate::{
     storage::DATA_ATTRIBUTES_KEY,
 };
 
-pub fn initial_metrics_data(persistent_store: &merk::Merk) -> Vec<(Vec<u8>, Op)> {
+pub fn migrate(persistent_store: &merk::Merk) -> Vec<(Vec<u8>, Op)> {
     let mut total_accounts: u64 = 0;
     let mut non_zero: u64 = 0;
 
