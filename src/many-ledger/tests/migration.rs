@@ -66,6 +66,7 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
 
 #[test]
 fn migration() {
+    // Setup starts with 2 accounts because of staging/ledger_state.json5
     let mut harness = Setup::new(true);
     let migrations_str = r#"
     [AccountCountData]
