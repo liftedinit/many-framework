@@ -6,11 +6,16 @@ use many_types::ledger::TokenAmount;
 use merk::rocksdb::{self, ReadOptions};
 use merk::Op;
 
+use crate::storage::DATA_ATTRIBUTES_KEY;
 use crate::storage::{key_for_account_balance, LedgerStorage, DATA_INFO_KEY};
-use crate::{
-    module::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
-    storage::DATA_ATTRIBUTES_KEY,
-};
+
+lazy_static::lazy_static!(
+    pub static ref ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
+        DataIndex::new(0).with_index(2).with_index(0);
+
+    pub static ref NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
+        DataIndex::new(0).with_index(2).with_index(1);
+);
 
 pub fn migrate(persistent_store: &merk::Merk) -> Vec<(Vec<u8>, Op)> {
     let mut total_accounts: u64 = 0;

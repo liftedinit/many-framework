@@ -2,9 +2,9 @@ pub mod common;
 
 use common::*;
 use many_identity::testing::identity;
-use many_ledger::{
-    migration::MigrationMap,
-    module::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
+use many_ledger::migration::{
+    data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
+    MigrationMap,
 };
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},

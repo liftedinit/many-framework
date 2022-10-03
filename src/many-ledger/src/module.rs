@@ -12,8 +12,8 @@ use many_modules::abci_backend::{
 use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
 use many_modules::account::AccountModuleBackend;
 use many_modules::data::{
-    DataGetInfoArgs, DataGetInfoReturns, DataIndex, DataInfoArgs, DataInfoReturns,
-    DataModuleBackend, DataQueryArgs, DataQueryReturns,
+    DataGetInfoArgs, DataGetInfoReturns, DataInfoArgs, DataInfoReturns, DataModuleBackend,
+    DataQueryArgs, DataQueryReturns,
 };
 use many_modules::{account, events, idstore, ledger, EmptyReturn, ManyModule, ManyModuleInfo};
 use many_protocol::{RequestMessage, ResponseMessage};
@@ -28,14 +28,6 @@ use std::path::Path;
 use tracing::info;
 
 const MAXIMUM_EVENT_COUNT: usize = 100;
-
-lazy_static::lazy_static!(
-    pub static ref ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
-        DataIndex::new(0).with_index(2).with_index(0);
-
-    pub static ref NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
-        DataIndex::new(0).with_index(2).with_index(1);
-);
 
 fn get_roles_for_account(account: &account::Account) -> BTreeSet<account::Role> {
     let features = account.features();
