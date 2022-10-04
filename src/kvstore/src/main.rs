@@ -20,14 +20,16 @@ enum LogStrategy {
     Syslog,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     /// Many server URL to connect to.
     #[clap(default_value = "http://localhost:8000")]
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Address>,
+    #[clap(default_value_t)]
+    #[clap(long)]
+    server_id: Address,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -53,7 +55,7 @@ struct Opts {
     subcommand: SubCommand,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 enum SubCommand {
     /// Get a value from the key-value store.
     Get(GetOpt),
@@ -68,7 +70,7 @@ enum SubCommand {
     Disable(DisableOpt),
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct GetOpt {
     /// The key to get.
     key: String,
@@ -82,7 +84,7 @@ struct GetOpt {
     hex: bool,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct QueryOpt {
     /// The key to get.
     key: String,
@@ -92,7 +94,7 @@ struct QueryOpt {
     hex_key: bool,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct PutOpt {
     /// The key to set.
     key: String,
@@ -110,7 +112,7 @@ struct PutOpt {
     stdin: bool,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct DisableOpt {
     /// The key to disable.
     key: String,
@@ -312,7 +314,8 @@ fn main() {
         }
     };
 
-    let server_id = server_id.unwrap_or_default();
+    debug!("{:?}", Opts::parse());
+
     let key = pem.map_or_else(
         || Box::new(AnonymousIdentity) as Box<dyn Identity>,
         |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),

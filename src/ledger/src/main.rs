@@ -69,7 +69,9 @@ struct Opts {
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Address>,
+    #[clap(default_value_t)]
+    #[clap(long)]
+    server_id: Address,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -345,7 +347,6 @@ fn main() {
         }
     };
 
-    let server_id = server_id.unwrap_or_default();
     let key: Box<dyn Identity> = if let (Some(module), Some(slot), Some(keyid)) =
         (module, slot, keyid)
     {

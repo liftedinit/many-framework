@@ -1,4 +1,5 @@
 KVSTORE_TAG ?= "latest"
+ALLOW_ADDRS ?= false
 
 include Makefile.common
 
@@ -8,6 +9,15 @@ clean:
 		docker-compose -f genfiles-kvstore/docker-compose.json -p e2e-kvstore down || true; \
 	fi
 	rm -rf genfiles-kvstore
+
+genfiles-kvstore/generate-allow-addrs-config:
+	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
+		echo $$I genfiles-kvstore/node$$I; \
+		make -f Makefile.kvstore genfiles-kvstore/node$$I; \
+	    bash generate-allow-addrs.sh genfiles-kvstore/node$$I $(PEM_ROOT); \
+		(( I = I + 1 )); \
+	done
+	mkdir -p $(dir $@) && touch $@
 
 genfiles-kvstore/many-kvstore.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles-kvstore
@@ -25,6 +35,7 @@ genfiles-kvstore/docker-compose.json: genfiles-common/jsonnet-docker docker-comp
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code kvstore_tag=\"$(KVSTORE_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
+		--tla-code allow_addrs=$(ALLOW_ADDRS) \
 		-o /$@
 
 genfiles-kvstore/generate-tendermint-e2e-config:
@@ -33,7 +44,6 @@ genfiles-kvstore/generate-tendermint-e2e-config:
 		make -f Makefile.kvstore genfiles-kvstore/node$$I; \
 		(( I = I + 1 )); \
 	done
-	# bash update_config.sh -c "genfiles-kvstore/node%/tendermint/config" -r $${PWD}/genfiles-kvstore/node%/tendermint -i tendermint-% $(NB_NODES)
 	bash update_config.sh -c "genfiles-kvstore/node%/tendermint/config" -i tendermint-% $(NB_NODES)
 	mkdir -p $(dir $@) && touch $@
 

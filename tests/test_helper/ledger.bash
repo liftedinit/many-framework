@@ -20,18 +20,18 @@ function call_ledger() {
       && ledgercmd="ledger" \
       || ledgercmd="$GIT_ROOT/target/debug/ledger"
 
-    echo "${ledgercmd}" "$pem_arg" "http://localhost:${port}/" "$@" >&2
-    run "${ledgercmd}" "$pem_arg" "http://localhost:${port}/" "$@"
+    echo "${ledgercmd} $pem_arg http://localhost:${port}/ $*" >&2
+    run bash -c "${ledgercmd} $pem_arg http://localhost:${port}/ $*"
 }
 
 function check_consistency() {
-    local pem
+    local pem_arg
     local expected_balance
     local id
 
     while (( $# > 0 )); do
       case "$1" in
-        --pem=*) pem=${1#--pem=}; shift ;;
+        --pem=*) pem_arg=${1}; shift ;;
         --balance=*) expected_balance=${1#--balance=}; shift;;
         --id=*) id=${1#--id=}; shift ;;
         --) shift; break ;;
@@ -40,7 +40,7 @@ function check_consistency() {
     done
 
     for port in "$@"; do
-        call_ledger --pem="$pem" --port="$port" balance "$id"
+        call_ledger "--port=$port" "$pem_arg" balance "$id"
         assert_output --partial "$expected_balance MFX "
     done
 }

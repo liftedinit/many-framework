@@ -1,4 +1,5 @@
 LEDGER_TAG ?= "latest"
+ALLOW_ADDRS ?= false
 
 include Makefile.common
 
@@ -8,6 +9,15 @@ clean:
 		docker-compose -f genfiles-ledger/docker-compose.json -p e2e-ledger down || true; \
 	fi
 	rm -rf genfiles-ledger
+
+genfiles-ledger/generate-allow-addrs-config:
+	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
+		echo $$I genfiles-ledger/node$$I; \
+		make -f Makefile.ledger genfiles-ledger/node$$I; \
+	    bash generate-allow-addrs.sh genfiles-ledger/node$$I $(PEM_ROOT); \
+		(( I = I + 1 )); \
+	done
+	mkdir -p $(dir $@) && touch $@
 
 genfiles-ledger/many-ledger.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles-ledger
@@ -26,6 +36,7 @@ genfiles-ledger/docker-compose.json: genfiles-common/jsonnet-docker docker-compo
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
+		--tla-code allow_addrs=$(ALLOW_ADDRS) \
 		-o /$@
 
 genfiles-ledger/generate-tendermint-e2e-config:
