@@ -51,7 +51,7 @@ END_OF_USAGE
 ip_range=10.254.254.%
 port=26656
 config_root=""
-while getopts ":i:p:c:" opt; do
+while getopts ":i:p:c:r:" opt; do
     case "${opt}" in
         i)  ip_range="${OPTARG}"
             ;;
@@ -60,6 +60,9 @@ while getopts ":i:p:c:" opt; do
             ;;
         c)  config_root="${OPTARG}"
             ;;
+        r)  tm_root="${OPTARG}"
+            ;;
+
         *)  usage
             ;;
     esac
@@ -69,6 +72,8 @@ shift $((OPTIND-1))
 [ "$config_root" ] || usage
 
 NB_NODES=$(( $1 - 1 ))
+NODES_34=(1 2 3)
+NODES_35=(0)
 
 all_validators="$(
   for node in $(seq 0 "$NB_NODES"); do
@@ -95,20 +100,29 @@ for node in $(seq 0 "$NB_NODES"); do
   peer_ids=$(seq 0 "$NB_NODES" | grep -v "$node")
   peers=$(for peer in $peer_ids; do
     node_id=$(jq -r .id < "${config_root//%/$peer}"/node_key.json)
+    if [ "$node_id" = "null" ]; then
+      node_id=$(docker run -u $(id -u):$(id -g) -i --rm -v "${tm_root//%/$peer}:/tendermint" tendermint/tendermint:v0.34.21 show_node_id | tail -n +2 | tr -d '\n')
+    fi
     ip_address=${ip_range//%/$peer}
 
     printf '%s' "$node_id@$ip_address:$port,"
   done | sed 's/,$//')
 
-  update_toml_key "$config_toml_path" '' proxy-app "\"tcp:\\/\\/abci-${node}:26658\\/\""
-  update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
-  update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
-  # update_toml_key "$config_toml_path" p2p bootstrap-peers "\"$peers\""
+  if [[ " ${NODES_35[*]} " =~ " ${node} " ]]; then
+    update_toml_key "$config_toml_path" '' proxy-app "\"tcp:\\/\\/abci-${node}:26658\\/\""
+    update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
+    update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
+  else
+    update_toml_key "$config_toml_path" '' proxy_app "\"tcp:\\/\\/abci-${node}:26658\\/\""
+    update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
+    update_toml_key "$config_toml_path" p2p persistent_peers "\"$peers\""
+    update_toml_key "$config_toml_path" p2p max_packet_msg_payload_size "1400"
+  fi
 done
 
 # Same genesis data for all.
 genesis_temp_file=$(mktemp)
-jq ".validators = ${all_validators} | .chain_id = \"many-e2e-ledger\"" "${config_root//%/1}/genesis.json" > "$genesis_temp_file"
+jq ".validators = ${all_validators} | .chain_id = \"many-e2e-dev\"" "${config_root//%/1}/genesis.json" > "$genesis_temp_file"
 for node in $(seq 0 "$NB_NODES"); do
   cp "$genesis_temp_file" "${config_root//%/$node}/genesis.json"
 done

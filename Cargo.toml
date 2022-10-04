@@ -38,3 +38,8 @@ incremental = false
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
 ciborium-io = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
+
+tendermint = { git = "https://github.com/fmorency/tendermint-rs", branch = "readd-block-by-hash" }
+tendermint-abci = { git = "https://github.com/fmorency/tendermint-rs", branch = "readd-block-by-hash" }
+tendermint-rpc = { git = "https://github.com/fmorency/tendermint-rs", branch = "readd-block-by-hash", features = [ "http-client" ] }
+tendermint-proto = { git = "https://github.com/fmorency/tendermint-rs", branch = "readd-block-by-hash" }
