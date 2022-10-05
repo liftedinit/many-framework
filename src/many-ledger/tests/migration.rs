@@ -69,11 +69,15 @@ fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
     let mut harness = Setup::new(true);
     let migrations_str = r#"
-    - type: AccountCountData
-      block_height: 2
-      issue: https://github.com/liftedinit/many-framework/issues/190
+    [
+      {
+        type: "AccountCountData",
+        block_height: 2,
+        issue: "https://github.com/liftedinit/many-framework/issues/190",
+      }
+    ]
     "#;
-    let migrations: Vec<Box<dyn Migration>> = serde_yaml::from_str(migrations_str).unwrap();
+    let migrations: Vec<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
     harness.module_impl = harness.module_impl.with_migrations(migrations);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 

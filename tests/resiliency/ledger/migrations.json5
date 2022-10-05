@@ -1,0 +1,7 @@
+[
+  {
+    type: "AccountCountData",
+    block_height: 2,
+    issue: "https://github.com/liftedinit/many-framework/issues/190",
+  }
+]

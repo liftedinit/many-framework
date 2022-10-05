@@ -169,10 +169,9 @@ fn main() {
 
     let migrations = migrations_config
         .map(|file| {
-            let contents =
-                std::fs::read(file).expect("Could not read file passed to --migrations_config");
-            serde_yaml::from_slice(&contents)
-                .expect("Could not parse file passed to --migrations_config")
+            let contents = std::fs::read_to_string(file)
+                .expect("Could not read file passed to --migrations_config");
+            json5::from_str(&contents).expect("Could not parse file passed to --migrations_config")
         })
         .unwrap_or_default();
 

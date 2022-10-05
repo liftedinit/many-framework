@@ -42,7 +42,6 @@ many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79
 rand = "0.8"
 serde = "1.0.130"
 serde_json = "1.0.72"
-serde_yaml = "0.9.13"
 sha3 = "0.9.1"
 signal-hook = "0.3.13"
 simple_asn1 = "0.6.2"
