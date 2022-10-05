@@ -14,7 +14,7 @@ genfiles-ledger/generate-allow-addrs-config:
 	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
 		echo $$I genfiles-ledger/node$$I; \
 		make -f Makefile.ledger genfiles-ledger/node$$I; \
-	    bash generate-allow-addrs.sh genfiles-ledger/node$$I $(PEM_ROOT); \
+		bash generate-allow-addrs.sh genfiles-ledger/node$$I $(PEM_ROOT); \
 		(( I = I + 1 )); \
 	done
 	mkdir -p $(dir $@) && touch $@

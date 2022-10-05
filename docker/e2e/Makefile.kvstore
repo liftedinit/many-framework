@@ -14,7 +14,7 @@ genfiles-kvstore/generate-allow-addrs-config:
 	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
 		echo $$I genfiles-kvstore/node$$I; \
 		make -f Makefile.kvstore genfiles-kvstore/node$$I; \
-	    bash generate-allow-addrs.sh genfiles-kvstore/node$$I $(PEM_ROOT); \
+		bash generate-allow-addrs.sh genfiles-kvstore/node$$I $(PEM_ROOT); \
 		(( I = I + 1 )); \
 	done
 	mkdir -p $(dir $@) && touch $@
