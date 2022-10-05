@@ -2,6 +2,7 @@ pub mod data;
 
 use merk::Op;
 use std::{collections::BTreeSet, fmt::Debug};
+use tracing::info;
 
 #[cfg(feature = "migrate_blocks")]
 use many_protocol::ResponseMessage;
@@ -66,6 +67,7 @@ pub fn run_migrations(
                         .expect("Could not encode migrations to cbor"),
                 ),
             ));
+            info!("Migration {:?} being applied", migration);
             operations.append(&mut migration.migrate(persistent_store))
         }
     }
