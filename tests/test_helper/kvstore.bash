@@ -21,6 +21,8 @@ function call_kvstore() {
       || kvstorecmd="$GIT_ROOT/target/debug/kvstore"
 
     echo "${kvstorecmd} $pem_arg http://localhost:${port}/ $*" >&2
+    # `run` doesn't handle empty parameters well, i.e., $pem_arg is empty
+    # We need to use `bash -c` to this the issue
     run bash -c "${kvstorecmd} $pem_arg http://localhost:${port}/ $*"
 }
 
@@ -40,6 +42,7 @@ function check_consistency() {
     done
 
     for port in "$@"; do
+        # Named parameters that can be empty need to be located after those who can't
         call_kvstore --port="$port" "$pem_arg" get "$key"
         assert_output --partial "$expected_value"
     done

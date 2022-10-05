@@ -8,13 +8,16 @@ load '../../test_helper/kvstore'
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
+    # Create PEM files beforehand, so we can generate the `allow addrs` config file
     pem 1
     pem 2
 
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make -f $MAKEFILE clean
+      # Generate the `allow addrs` config file using the PEM files from $PEM_ROOT
       make -f $MAKEFILE genfiles-kvstore/generate-allow-addrs-config PEM_ROOT=$PEM_ROOT
+      # Start the nodes, enabling MANY address filtering using the `allow addrs` config file
       make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) KVSTORE_TAG=$(img_tag) ALLOW_ADDRS=true || {
             echo Could not start nodes... >&3
             exit 1

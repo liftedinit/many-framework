@@ -7,13 +7,16 @@ load '../../test_helper/ledger'
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
+    # Create PEM files beforehand, so we can generate the `allow addrs` config file
     pem 1
     pem 2
 
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make -f $MAKEFILE clean
+      # Generate the `allow addrs` config file using the PEM files from $PEM_ROOT
       make -f $MAKEFILE genfiles-ledger/generate-allow-addrs-config PEM_ROOT=$PEM_ROOT
+      # Start the nodes, enabling MANY address filtering using the `allow addrs` config file
       make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ALLOW_ADDRS=true ID_WITH_BALANCES="$(identity 1):1000000" || {
             echo Could not start nodes... >&3
             exit 1
