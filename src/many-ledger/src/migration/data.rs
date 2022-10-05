@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use many_identity::Address;
 use many_modules::data::{DataIndex, DataInfo, DataValue};
 use many_types::ledger::TokenAmount;
 use merk::rocksdb::{self, ReadOptions};
@@ -75,16 +74,4 @@ pub fn migrate(persistent_store: &merk::Merk) -> Vec<(Vec<u8>, Op)> {
             Op::Put(minicbor::to_vec(data_info).unwrap()),
         ),
     ]
-}
-
-pub trait DataMethods {
-    fn update_data_attributes(
-        &mut self,
-        from: &Address,
-        to: &Address,
-        amount: TokenAmount,
-        symbol: &Address,
-    );
-
-    fn data_attributes(&self) -> Option<BTreeMap<DataIndex, DataValue>>;
 }

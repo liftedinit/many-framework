@@ -1,6 +1,6 @@
 use crate::json::InitialStateJson;
-use crate::migration::data::DataMethods;
 use crate::migration::MigrationMap;
+use crate::storage::migration_ext::data::DataExt;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
 use many_error::{ManyError, ManyErrorCode};
