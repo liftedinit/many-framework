@@ -24,7 +24,7 @@ pub struct AbciModuleMany<C: Client> {
     backend_status: base::Status,
     identity: CoseKeyIdentity,
     backend_endpoints: BTreeMap<String, EndpointInfo>,
-    allow_addrs: BTreeSet<Address>,
+    allow_addrs: Option<BTreeSet<Address>>,
 }
 
 impl<C: Client + Sync> AbciModuleMany<C> {
@@ -32,7 +32,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
         client: C,
         backend_status: base::Status,
         identity: CoseKeyIdentity,
-        allow_addrs: BTreeSet<Address>,
+        allow_addrs: Option<BTreeSet<Address>>,
     ) -> Self {
         let init_message = RequestMessageBuilder::default()
             .from(identity.address())
@@ -70,7 +70,10 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                 .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
 
             if is_command {
-                if !self.allow_addrs.is_empty() && !self.allow_addrs.contains(&message.from()) {
+                // TODO: Refactor this when `is_some_and` and/or `let-chains` are stabilized
+                if self.allow_addrs.is_some()
+                    && !self.allow_addrs.as_ref().unwrap().contains(&message.from())
+                {
                     return Err(ManyError::invalid_from_identity());
                 }
 

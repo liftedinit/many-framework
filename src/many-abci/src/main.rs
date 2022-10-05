@@ -192,11 +192,8 @@ async fn main() {
         ),
         key.public_key(),
     );
-    let allowed_addrs: BTreeSet<Address> = if let Some(path) = allow_addrs {
-        json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap()
-    } else {
-        BTreeSet::new()
-    };
+    let allowed_addrs: Option<BTreeSet<Address>> =
+        allow_addrs.map(|path| json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap());
     let backend = AbciModuleMany::new(abci_client.clone(), status, key, allowed_addrs).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
 
