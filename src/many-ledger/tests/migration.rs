@@ -1,5 +1,7 @@
 pub mod common;
 
+use std::collections::BTreeSet;
+
 use common::*;
 use many_identity::testing::identity;
 use many_ledger::migration::{
@@ -77,7 +79,7 @@ fn migration() {
       }
     ]
     "#;
-    let migrations: Vec<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
+    let migrations: BTreeSet<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
     harness.module_impl = harness.module_impl.with_migrations(migrations);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 

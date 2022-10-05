@@ -50,7 +50,7 @@ impl Ord for Box<dyn Migration> {
 
 pub fn run_migrations(
     current_height: u64,
-    all_migrations: &[Box<dyn Migration>],
+    all_migrations: &BTreeSet<Box<dyn Migration>>,
     active_migrations: &mut BTreeSet<String>,
     persistent_store: &mut merk::Merk,
 ) {

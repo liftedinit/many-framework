@@ -222,7 +222,7 @@ impl LedgerModuleImpl {
         Ok(Self { storage })
     }
 
-    pub fn with_migrations(mut self, migrations: Vec<Box<dyn Migration>>) -> Self {
+    pub fn with_migrations(mut self, migrations: BTreeSet<Box<dyn Migration>>) -> Self {
         self.storage = self.storage.with_migrations(migrations);
         self
     }

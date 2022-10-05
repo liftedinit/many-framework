@@ -277,7 +277,7 @@ pub struct LedgerStorage {
     account_identity: Address,
 
     active_migrations: BTreeSet<String>,
-    all_migrations: Vec<Box<dyn Migration>>,
+    all_migrations: BTreeSet<Box<dyn Migration>>,
 }
 
 impl LedgerStorage {
@@ -373,7 +373,7 @@ impl LedgerStorage {
             next_account_id,
             account_identity,
             active_migrations,
-            all_migrations: vec![],
+            all_migrations: BTreeSet::new(),
         })
     }
 
@@ -438,11 +438,11 @@ impl LedgerStorage {
             next_account_id: 0,
             account_identity: identity,
             active_migrations: BTreeSet::new(),
-            all_migrations: vec![],
+            all_migrations: BTreeSet::new(),
         })
     }
 
-    pub fn with_migrations(mut self, all_migrations: Vec<Box<dyn Migration>>) -> Self {
+    pub fn with_migrations(mut self, all_migrations: BTreeSet<Box<dyn Migration>>) -> Self {
         self.all_migrations = all_migrations;
         self
     }
