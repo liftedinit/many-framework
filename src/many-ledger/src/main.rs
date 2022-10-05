@@ -22,7 +22,6 @@ mod module;
 mod storage;
 
 use crate::json::InitialStateJson;
-use crate::migration::MigrationMap;
 use module::*;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
@@ -168,11 +167,12 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let migrations: MigrationMap = migrations_config
+    let migrations = migrations_config
         .map(|file| {
             let contents =
                 std::fs::read(file).expect("Could not read file passed to --migrations_config");
-            toml::from_slice(&contents).expect("Could not parse file passed to --migrations_config")
+            serde_yaml::from_slice(&contents)
+                .expect("Could not parse file passed to --migrations_config")
         })
         .unwrap_or_default();
 

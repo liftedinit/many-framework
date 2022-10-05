@@ -1,5 +1,5 @@
 use crate::json::InitialStateJson;
-use crate::migration::MigrationMap;
+use crate::migration::Migration;
 use crate::storage::migration_ext::data::DataExt;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
@@ -222,7 +222,7 @@ impl LedgerModuleImpl {
         Ok(Self { storage })
     }
 
-    pub fn with_migrations(mut self, migrations: MigrationMap) -> Self {
+    pub fn with_migrations(mut self, migrations: Vec<Box<dyn Migration>>) -> Self {
         self.storage = self.storage.with_migrations(migrations);
         self
     }

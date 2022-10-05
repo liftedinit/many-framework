@@ -10,7 +10,7 @@ function setup() {
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make -f $MAKEFILE clean
-      make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" MIGRATIONS=$GIT_ROOT/tests/resiliency/ledger/migrations.toml || {
+      make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" MIGRATIONS=$GIT_ROOT/tests/resiliency/ledger/migrations.yaml || {
         echo Could not start nodes... >&3
         exit 1
       }
@@ -35,30 +35,30 @@ function teardown() {
     cd "$GIT_ROOT/tests/resiliency/ledger" || exit 1
 }
 
-@test "$SUITE: migrations work" {
+@test "$SUITE: data attribute migrations work" {
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
-    output=$(many message --server="http://localhost:8000" data.info)
+    run many_message --server="http://localhost:8000" data.info
     assert_output "[[]]"
 
     call_ledger --pem=1 --port=8000 send "$(identity 2)" 1000 MFX
-    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002
-    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002
+    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002 8003
 
     # Wait for some blocks to be built
     sleep 60
 
     # Test the new commands
-    output=$(many message --server="http://localhost:8000" data.info)
+    run many_message --server="http://localhost:8000" data.info
     assert_output --partial "[[0, [2, 0]], [0, [2, 1]]]"
-    output=$(many message --server="http://localhost:8000" data.getInfo "[[[0, [2, 0]], [0, [2, 1]]]]")
+    run many_message --server="http://localhost:8000" data.getInfo "[[[0, [2, 0]], [0, [2, 1]]]]"
     assert_output --partial "[0, [2, 0]]: [[0, []], \"accountTotalCount\"]"
     assert_output --partial "[0, [2, 1]]: [[0, []], \"nonZeroAccountTotalCount\"]"
-    output=$(many message --server="http://localhost:8000" data.query "[[[0, [2, 0]], [0, [2, 1]]]]")
+    run many_message --server="http://localhost:8000" data.query "[[[0, [2, 0]], [0, [2, 1]]]]"
     assert_output --partial "[0, [2, 0]]: [0, [3]],"
     assert_output --partial "[0, [2, 1]]: [0, [3]],"
 
     # Check if the chain is still consistent
-    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002
-    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002
+    check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002 8003
+    check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002 8003
 }

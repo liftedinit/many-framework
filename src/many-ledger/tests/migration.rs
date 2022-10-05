@@ -4,7 +4,7 @@ use common::*;
 use many_identity::testing::identity;
 use many_ledger::migration::{
     data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
-    MigrationMap,
+    Migration,
 };
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},
@@ -69,11 +69,11 @@ fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
     let mut harness = Setup::new(true);
     let migrations_str = r#"
-    [AccountCountData]
-    block_height = 2
-    issue = "https://github.com/liftedinit/many-framework/issues/190"
+    - type: AccountCountData
+      block_height: 2
+      issue: https://github.com/liftedinit/many-framework/issues/190
     "#;
-    let migrations: MigrationMap = toml::from_str(migrations_str).unwrap();
+    let migrations: Vec<Box<dyn Migration>> = serde_yaml::from_str(migrations_str).unwrap();
     harness.module_impl = harness.module_impl.with_migrations(migrations);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 

@@ -3,7 +3,7 @@ pub mod migration_ext;
 use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
-use crate::migration::{run_migrations, MigrationMap, MigrationSet};
+use crate::migration::{run_migrations, Migration};
 use crate::module::validate_account;
 use many_error::ManyError;
 use many_identity::Address;
@@ -17,12 +17,12 @@ use many_types::{CborRange, Either, SortOrder, Timestamp};
 use merk::rocksdb::ReadOptions;
 use merk::tree::Tree;
 use merk::{rocksdb, BatchEntry, Op};
+use migration_ext::data::DataExt;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
 use std::path::Path;
 use tracing::{debug, info};
-use migration_ext::data::DataExt;
 
 fn _execute_multisig_tx(
     ledger: &mut LedgerStorage,
@@ -276,8 +276,8 @@ pub struct LedgerStorage {
     next_account_id: u32,
     account_identity: Address,
 
-    active_migrations: MigrationSet,
-    all_migrations: MigrationMap,
+    active_migrations: BTreeSet<String>,
+    all_migrations: Vec<Box<dyn Migration>>,
 }
 
 impl LedgerStorage {
@@ -357,7 +357,7 @@ impl LedgerStorage {
 
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let active_migrations: MigrationSet = persistent_store
+        let active_migrations = persistent_store
             .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
             .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
@@ -373,7 +373,7 @@ impl LedgerStorage {
             next_account_id,
             account_identity,
             active_migrations,
-            all_migrations: BTreeMap::new(),
+            all_migrations: vec![],
         })
     }
 
@@ -438,11 +438,11 @@ impl LedgerStorage {
             next_account_id: 0,
             account_identity: identity,
             active_migrations: BTreeSet::new(),
-            all_migrations: BTreeMap::new(),
+            all_migrations: vec![],
         })
     }
 
-    pub fn with_migrations(mut self, all_migrations: MigrationMap) -> Self {
+    pub fn with_migrations(mut self, all_migrations: Vec<Box<dyn Migration>>) -> Self {
         self.all_migrations = all_migrations;
         self
     }
