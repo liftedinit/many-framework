@@ -19,16 +19,10 @@ lazy_static::lazy_static!(
         DataIndex::new(0).with_index(2).with_index(1);
 );
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AccountCountData {
     block_height: u64,
     issue: Option<String>,
-}
-
-impl Debug for AccountCountData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("AccountCountData")
-    }
 }
 
 #[typetag::serde]
@@ -39,6 +33,10 @@ impl Migration for AccountCountData {
 
     fn issue(&self) -> Option<&str> {
         self.issue.as_deref()
+    }
+
+    fn name(&self) -> &str {
+        "AccountCountData"
     }
 
     fn migrate(&self, persistent_store: &mut merk::Merk) -> Vec<(Vec<u8>, Op)> {

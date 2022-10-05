@@ -25,11 +25,12 @@ pub trait Migration: Debug + Send + Sync {
     fn migrate(&self, persistent_store: &mut merk::Merk) -> Vec<(Vec<u8>, Op)>;
     fn block_height(&self) -> u64;
     fn issue(&self) -> Option<&str>;
+    fn name(&self) -> &str;
 }
 
 impl PartialEq<Box<dyn Migration>> for Box<dyn Migration> {
     fn eq(&self, other: &Box<dyn Migration>) -> bool {
-        format!("{:?}", self).eq(&format!("{:?}", other))
+        self.name().eq(other.name())
     }
 }
 
@@ -37,13 +38,13 @@ impl Eq for Box<dyn Migration> {}
 
 impl PartialOrd<Box<dyn Migration>> for Box<dyn Migration> {
     fn partial_cmp(&self, other: &Box<dyn Migration>) -> Option<std::cmp::Ordering> {
-        format!("{:?}", self).partial_cmp(&format!("{:?}", other))
+        self.name().partial_cmp(other.name())
     }
 }
 
 impl Ord for Box<dyn Migration> {
     fn cmp(&self, other: &Box<dyn Migration>) -> std::cmp::Ordering {
-        format!("{:?}", self).cmp(&format!("{:?}", other))
+        self.name().cmp(other.name())
     }
 }
 
@@ -56,7 +57,7 @@ pub fn run_migrations(
     let mut operations = vec![];
     for migration in all_migrations {
         if current_height >= migration.block_height()
-            && active_migrations.insert(format!("{:?}", migration))
+            && active_migrations.insert(migration.name().to_string())
         {
             operations.push((
                 MIGRATIONS_KEY.to_vec(),
