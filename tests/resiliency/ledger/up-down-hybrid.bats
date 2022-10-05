@@ -1,4 +1,5 @@
 GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
+MAKEFILE="Makefile.hybrid"
 
 load '../../test_helper/load'
 load '../../test_helper/ledger'
@@ -7,9 +8,11 @@ function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
     (
+      cd "$GIT_ROOT/" || exit
+      make hybrid-images
       cd "$GIT_ROOT/docker/e2e/" || exit
-      make -f Makefile.hybrid clean
-      make -f Makefile.hybrid $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" || {
+      make -f $MAKEFILE clean
+      make -f $MAKEFILE $(ciopt start-nodes-dettached) ID_WITH_BALANCES="$(identity 1):1000000" || {
         echo Could not start nodes... >&3
         exit 1
       }
@@ -27,7 +30,7 @@ EOT
 function teardown() {
     (
       cd "$GIT_ROOT/docker/e2e/" || exit 1
-      make -f Makefile.hybrid stop-nodes
+      make -f $MAKEFILE stop-nodes
     ) 2> /dev/null
 
     # Fix for BATS verbose run/test output gathering
@@ -62,7 +65,7 @@ function teardown() {
     cd "$GIT_ROOT/docker/e2e/" || exit 1
 
     # Bring down node 3.
-    make -f Makefile.hybrid stop-single-node-3
+    make -f $MAKEFILE stop-single-node-3
 
     # Check consistency with all nodes up.
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002
@@ -82,7 +85,7 @@ function teardown() {
     check_consistency --pem=2 --balance=6000 --id="$(identity 2)" 8000 8001 8002
 
     # Bring it back.
-    make -f Makefile.hybrid $(ciopt start-single-node-dettached)-3 ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) || {
+    make -f $MAKEFILE $(ciopt start-single-node-dettached)-3 || {
         echo Could not start nodes... >&3
         exit 1
     }

@@ -4785,7 +4785,7 @@ in
       num_bigint = rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; };
       num_traits = rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-traits."0.2.15" { inherit profileName; };
       thiserror = rustPackages."registry+https://github.com/rust-lang/crates.io-index".thiserror."1.0.37" { inherit profileName; };
-      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { inherit profileName; };
+      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { inherit profileName; };
     };
   });
   
@@ -5070,7 +5070,7 @@ in
       subtle = rustPackages."registry+https://github.com/rust-lang/crates.io-index".subtle."2.4.1" { inherit profileName; };
       subtle_encoding = rustPackages."registry+https://github.com/rust-lang/crates.io-index".subtle-encoding."0.5.1" { inherit profileName; };
       tendermint_proto = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tendermint-proto."0.24.0-pre.2" { inherit profileName; };
-      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { inherit profileName; };
+      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { inherit profileName; };
       zeroize = rustPackages."registry+https://github.com/rust-lang/crates.io-index".zeroize."1.4.3" { inherit profileName; };
     };
   });
@@ -5122,7 +5122,7 @@ in
       serde = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.145" { inherit profileName; };
       serde_bytes = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_bytes."0.11.7" { inherit profileName; };
       subtle_encoding = rustPackages."registry+https://github.com/rust-lang/crates.io-index".subtle-encoding."0.5.1" { inherit profileName; };
-      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { inherit profileName; };
+      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { inherit profileName; };
     };
   });
   
@@ -5164,7 +5164,7 @@ in
       tendermint_config = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tendermint-config."0.24.0-pre.2" { inherit profileName; };
       tendermint_proto = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tendermint-proto."0.24.0-pre.2" { inherit profileName; };
       thiserror = rustPackages."registry+https://github.com/rust-lang/crates.io-index".thiserror."1.0.37" { inherit profileName; };
-      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { inherit profileName; };
+      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { inherit profileName; };
       tokio = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tokio."1.21.2" { inherit profileName; };
       tracing = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tracing."0.1.36" { inherit profileName; };
       url = rustPackages."registry+https://github.com/rust-lang/crates.io-index".url."2.3.1" { inherit profileName; };
@@ -5243,11 +5243,11 @@ in
     };
   });
   
-  "registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" = overridableMkRustCrate (profileName: rec {
+  "registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" = overridableMkRustCrate (profileName: rec {
     name = "time";
-    version = "0.3.14";
+    version = "0.3.15";
     registry = "registry+https://github.com/rust-lang/crates.io-index";
-    src = fetchCratesIo { inherit name version; sha256 = "3c3f9a28b618c3a6b9251b6908e9c99e04b9e5c02e6581ccbb67d59c34ef7f9b"; };
+    src = fetchCratesIo { inherit name version; sha256 = "d634a985c4d4238ec39cacaed2e7ae552fbd3c476b552c1deac3021b7d7eaf0c"; };
     features = builtins.concatLists [
       [ "alloc" ]
       [ "default" ]
@@ -5285,7 +5285,7 @@ in
       ascii = rustPackages."registry+https://github.com/rust-lang/crates.io-index".ascii."1.1.0" { inherit profileName; };
       chunked_transfer = rustPackages."registry+https://github.com/rust-lang/crates.io-index".chunked_transfer."1.4.0" { inherit profileName; };
       log = rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; };
-      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { inherit profileName; };
+      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { inherit profileName; };
       url = rustPackages."registry+https://github.com/rust-lang/crates.io-index".url."2.3.1" { inherit profileName; };
     };
   });
@@ -5710,12 +5710,12 @@ in
       rustc_version = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustc_version."0.4.0" { inherit profileName; };
       sysinfo = rustPackages."registry+https://github.com/rust-lang/crates.io-index".sysinfo."0.26.4" { inherit profileName; };
       thiserror = rustPackages."registry+https://github.com/rust-lang/crates.io-index".thiserror."1.0.37" { inherit profileName; };
-      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { inherit profileName; };
+      time = rustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { inherit profileName; };
     };
     buildDependencies = {
       anyhow = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.65" { profileName = "__noProfile"; };
       rustversion = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".rustversion."1.0.9" { profileName = "__noProfile"; };
-      time = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.14" { profileName = "__noProfile"; };
+      time = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".time."0.3.15" { profileName = "__noProfile"; };
     };
   });
   

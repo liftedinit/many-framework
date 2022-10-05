@@ -49,3 +49,13 @@ run-all-doc-test:
 
 .PHONY: ci
 ci: check-lint build-all-test run-all-unit-test run-all-doc-test
+
+.PHONY: hybrid-images
+hybrid-images:
+	cd docker/e2e && \
+	sed -i 's/0\.24\.0\-pre\.2/0\.25\.0/g' ../../src/many-abci/Cargo.toml && \
+	make Cargo.nix many/many-abci many/many-ledger && \
+	docker tag lifted/many-abci:latest lifted/many-abci:v0.34.21 && \
+	sed -i 's/0\.25\.0/0\.24\.0\-pre\.2/g' ../../src/many-abci/Cargo.toml && \
+	make Cargo.nix many/many-abci && \
+	docker tag lifted/many-abci:latest lifted/many-abci:v0.35.4
