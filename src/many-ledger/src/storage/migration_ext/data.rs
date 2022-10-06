@@ -50,10 +50,10 @@ impl DataExt for LedgerStorage {
         symbol: &Address,
     ) {
         if let Some(mut attributes) = self.data_attributes() {
-            let key_to = key_for_account_balance(to, symbol);
+            let destination_key = key_for_account_balance(to, symbol);
             let destination_is_empty = self
                 .persistent_store
-                .get(&key_to)
+                .get(&destination_key)
                 .expect("Error communicating with the DB")
                 .is_none();
             let destination_is_zero = self.get_balance(to, symbol).is_zero();
