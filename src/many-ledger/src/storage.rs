@@ -583,6 +583,9 @@ impl LedgerStorage {
         let height = self.inc_height();
         let retain_height = 0;
 
+        // Committing before the migration so that the migration has
+        // the actual state of the database when setting its
+        // attributes.
         self.persistent_store.commit(&[]).unwrap();
 
         run_migrations(
