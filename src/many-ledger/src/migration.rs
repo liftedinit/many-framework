@@ -60,17 +60,17 @@ pub fn run_migrations(
         if current_height >= migration.block_height()
             && active_migrations.insert(migration.name().to_string())
         {
-            operations.push((
-                MIGRATIONS_KEY.to_vec(),
-                Op::Put(
-                    minicbor::to_vec(active_migrations.clone())
-                        .expect("Could not encode migrations to cbor"),
-                ),
-            ));
             info!("Migration {:?} being applied", migration);
             operations.append(&mut migration.migrate(persistent_store))
         }
     }
+    operations.push((
+        MIGRATIONS_KEY.to_vec(),
+        Op::Put(
+            minicbor::to_vec(active_migrations.clone())
+                .expect("Could not encode migrations to cbor"),
+        ),
+    ));
     operations.sort_by(|(a, _), (b, _)| a.cmp(b));
     persistent_store.apply(&operations).unwrap();
 }
