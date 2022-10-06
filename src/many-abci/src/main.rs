@@ -8,6 +8,7 @@ use many_modules::{base, blockchain, r#async};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
@@ -72,6 +73,12 @@ struct Opts {
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
+
+    /// Path to a JSON file containing an array of MANY addresses
+    /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
+    /// Any addresses will be able to execute queries, e.g., balance, get, ...
+    #[clap(long)]
+    allow_addrs: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -87,6 +94,7 @@ async fn main() {
         quiet,
         allow_origin,
         logmode,
+        allow_addrs,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -184,7 +192,9 @@ async fn main() {
         ),
         key.public_key(),
     );
-    let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
+    let allowed_addrs: Option<BTreeSet<Address>> =
+        allow_addrs.map(|path| json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap());
+    let backend = AbciModuleMany::new(abci_client.clone(), status, key, allowed_addrs).await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
 
     {

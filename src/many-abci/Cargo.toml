@@ -21,6 +21,7 @@ ciborium = "0.2.0"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"
 hex = "0.4.3"
+json5 = "0.4.1"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }

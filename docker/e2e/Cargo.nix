@@ -2659,6 +2659,7 @@ in
       clap = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.22" { inherit profileName; };
       coset = rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; };
       hex = rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; };
+      json5 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".json5."0.4.1" { inherit profileName; };
       lazy_static = rustPackages."registry+https://github.com/rust-lang/crates.io-index".lazy_static."1.4.0" { inherit profileName; };
       many_client = rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; };
       many_error = rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; };
