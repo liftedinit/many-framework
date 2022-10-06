@@ -142,7 +142,7 @@ jobs:
           command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
       - run:
           name: creating release shasum (w/ block migrations)
-          command: shasum artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
+          command: shasum artifacts/many-framework_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
       - rust/build:
           release: true
           with_cache: false
