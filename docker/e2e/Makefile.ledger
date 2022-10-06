@@ -27,7 +27,7 @@ genfiles-ledger/docker-compose.json: genfiles-common/jsonnet-docker docker-compo
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
-                --tla-code migrations=\"/genfiles/migrations.toml\" \
+		--tla-code migrations=\"/genfiles/migrations.toml\" \
 		-o /$@
 
 genfiles-ledger/generate-tendermint-e2e-config:
