@@ -114,7 +114,7 @@ fn migration() {
         harness.balance(harness.id, *MFX_SYMBOL).unwrap(),
         TokenAmount::from(500_000u64),
     );
-    assert_metrics(&harness, 4, 4);
+    assert_metrics(&harness, 5, 5);
 
     let (_height, a3) = harness.block(|h| {
         h.send_(h.id, identity(4), 500_000u32);
@@ -124,9 +124,55 @@ fn migration() {
     let balance = harness.balance(a3, *MFX_SYMBOL).unwrap();
 
     assert_eq!(balance, 500_000u32);
-    assert_metrics(&harness, 5, 4);
+    assert_metrics(&harness, 6, 5);
     assert_eq!(
         harness.balance(harness.id, *MFX_SYMBOL).unwrap(),
         TokenAmount::zero()
     );
+}
+
+#[test]
+fn migration_stress() {
+    let mut harness = Setup::new(true);
+    let migrations_str = r#"
+    [
+      {
+        type: "AccountCountData",
+        block_height: 2,
+        issue: "https://github.com/liftedinit/many-framework/issues/190",
+      }
+    ]
+    "#;
+    let migrations: BTreeSet<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
+    harness.module_impl = harness.module_impl.with_migrations(migrations);
+    harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
+
+    let _ = harness.block(|h| {
+        h.send_(h.id, identity(2), 500_000u32);
+        identity(2)
+    });
+
+    let _ = harness.block(|h| {
+        h.send_(h.id, identity(3), 500_000u32);
+        identity(3)
+    });
+    let balance = harness.balance(harness.id, *MFX_SYMBOL).unwrap();
+    assert_eq!(balance, 0u32);
+    let balance2 = harness.balance(identity(2), *MFX_SYMBOL).unwrap();
+    assert_eq!(balance2, 500_000u32);
+    let balance3 = harness.balance(identity(3), *MFX_SYMBOL).unwrap();
+    assert_eq!(balance3, 500_000u32);
+    assert_metrics(&harness, 5, 4);
+
+    let _ = harness.block(|h| {
+        h.send_(identity(2), h.id, 500_000u32);
+        h.send_(identity(3), h.id, 500_000u32);
+    });
+    let balance = harness.balance(harness.id, *MFX_SYMBOL).unwrap();
+    assert_eq!(balance, 1_000_000u32);
+    let balance2 = harness.balance(identity(2), *MFX_SYMBOL).unwrap();
+    assert_eq!(balance2, 0u32);
+    let balance3 = harness.balance(identity(3), *MFX_SYMBOL).unwrap();
+    assert_eq!(balance3, 0u32);
+    assert_metrics(&harness, 5, 3);
 }

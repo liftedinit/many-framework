@@ -71,6 +71,14 @@ impl DataExt for LedgerStorage {
                             *count += 1;
                         }
                     });
+            } else if self.get_balance(to, symbol).is_zero() {
+                attributes
+                    .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
+                    .and_modify(|x| {
+                        if let DataValue::Counter(count) = x {
+                            *count += 1;
+                        }
+                    });
             }
             let balance_from = self.get_balance(from, symbol);
             if balance_from == amount {

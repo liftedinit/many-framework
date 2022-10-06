@@ -583,6 +583,8 @@ impl LedgerStorage {
         let height = self.inc_height();
         let retain_height = 0;
 
+        self.persistent_store.commit(&[]).unwrap();
+
         run_migrations(
             height + 1,
             &self.all_migrations,
