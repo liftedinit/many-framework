@@ -131,17 +131,26 @@ jobs:
       - detect/init
       - rust/install:
           version: nightly
+      # Build a version with migrations activated. Lifted production network only
       - rust/build:
           release: true
-          # TODO: Remove this feature for general public releases
           crate: --features migrate_blocks
           with_cache: false
       - run: mkdir -p artifacts
       - run:
-          name: creating release archive
+          name: creating release archive (w/ block migrations)
+          command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
+      - run:
+          name: creating release shasum (w/ block migrations)
+          command: shasum artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
+      - rust/build:
+          release: true
+          with_cache: false
+      - run:
+          name: creating release archive (w/o block migrations)
           command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
       - run:
-          name: creating release shasum
+          name: creating release shasum (w/o block migrations)
           command: shasum artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
       - persist_to_workspace:
           root: artifacts
