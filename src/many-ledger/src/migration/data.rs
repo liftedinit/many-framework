@@ -7,9 +7,10 @@ use merk::rocksdb::{self, ReadOptions};
 use merk::Op;
 use serde::{Deserialize, Serialize};
 
-use crate::storage::{DATA_ATTRIBUTES_KEY, DATA_INFO_KEY};
-
 use super::Migration;
+
+pub const DATA_ATTRIBUTES_KEY: &[u8] = b"/data/attributes";
+pub const DATA_INFO_KEY: &[u8] = b"/data/info";
 
 lazy_static::lazy_static!(
     pub static ref ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =

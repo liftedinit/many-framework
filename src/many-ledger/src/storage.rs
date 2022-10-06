@@ -9,7 +9,6 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_modules::abci_backend::AbciCommitInfo;
 use many_modules::account::features::FeatureInfo;
-use many_modules::data::{DataIndex, DataInfo};
 use many_modules::{account, events, idstore, EmptyReturn};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
@@ -180,8 +179,6 @@ pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
 pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
 
-pub const DATA_ATTRIBUTES_KEY: &[u8] = b"/data/attributes";
-pub const DATA_INFO_KEY: &[u8] = b"/data/info";
 pub const MIGRATIONS_KEY: &[u8] = b"/config/migrations";
 
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
@@ -602,13 +599,6 @@ impl LedgerStorage {
             retain_height,
             hash: hash.into(),
         }
-    }
-
-    pub fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>> {
-        self.persistent_store
-            .get(DATA_INFO_KEY)
-            .expect("Error while reading the DB")
-            .map(|x| minicbor::decode(&x).unwrap())
     }
 
     pub fn nb_events(&self) -> u64 {

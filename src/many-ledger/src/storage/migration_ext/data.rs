@@ -1,13 +1,16 @@
 use std::collections::BTreeMap;
 
 use many_identity::Address;
-use many_modules::data::{DataIndex, DataValue};
+use many_modules::data::{DataIndex, DataInfo, DataValue};
 use many_types::ledger::TokenAmount;
 use merk::Op;
 
 use crate::{
-    migration::data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
-    storage::{key_for_account_balance, LedgerStorage, DATA_ATTRIBUTES_KEY},
+    migration::data::{
+        ACCOUNT_TOTAL_COUNT_INDEX, DATA_ATTRIBUTES_KEY, DATA_INFO_KEY,
+        NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+    },
+    storage::{key_for_account_balance, LedgerStorage},
 };
 
 pub trait DataExt {
@@ -20,9 +23,18 @@ pub trait DataExt {
     );
 
     fn data_attributes(&self) -> Option<BTreeMap<DataIndex, DataValue>>;
+
+    fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>>;
 }
 
 impl DataExt for LedgerStorage {
+    fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>> {
+        self.persistent_store
+            .get(DATA_INFO_KEY)
+            .expect("Error while reading the DB")
+            .map(|x| minicbor::decode(&x).unwrap())
+    }
+
     fn data_attributes(&self) -> Option<BTreeMap<DataIndex, DataValue>> {
         self.persistent_store
             .get(DATA_ATTRIBUTES_KEY)
