@@ -1,5 +1,5 @@
 {
-  "checksum": "f21222d7d98b68bb73b6d4f4dd13c6afa94b43406920402fca0ed721f4f75f50",
+  "checksum": "177169db979ea001951eb29043e06cd0d7f373a9a1bfbbfd1e12fedd42b05161",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -10367,6 +10367,18 @@
               "exclude": []
             }
           }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
         }
       ],
       "library_target_name": "many_abci",
@@ -10393,8 +10405,16 @@
               "target": "hex"
             },
             {
+              "id": "json5 0.4.1",
+              "target": "json5"
+            },
+            {
               "id": "lazy_static 1.4.0",
               "target": "lazy_static"
+            },
+            {
+              "id": "many-abci 0.1.0",
+              "target": "build_script_build"
             },
             {
               "id": "many-client 0.1.0",
@@ -10498,6 +10518,20 @@
           "selects": {}
         },
         "version": "0.1.0"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "vergen 7.4.2",
+              "target": "vergen"
+            }
+          ],
+          "selects": {}
+        }
       },
       "license": "Apache-2.0"
     },
@@ -22408,8 +22442,8 @@
         },
         {
           "Binary": {
-            "crate_name": "reader",
-            "crate_root": "src/bin/reader.rs",
+            "crate_name": "exit",
+            "crate_root": "src/bin/exit.rs",
             "srcs": {
               "include": [
                 "**/*.rs"
@@ -22432,8 +22466,8 @@
         },
         {
           "Binary": {
-            "crate_name": "exit",
-            "crate_root": "src/bin/exit.rs",
+            "crate_name": "reader",
+            "crate_root": "src/bin/reader.rs",
             "srcs": {
               "include": [
                 "**/*.rs"
