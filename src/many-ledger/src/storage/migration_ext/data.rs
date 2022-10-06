@@ -51,12 +51,15 @@ impl DataExt for LedgerStorage {
     ) {
         if let Some(mut attributes) = self.data_attributes() {
             let key_to = key_for_account_balance(to, symbol);
-            if self
+            let to_is_empty = self
                 .persistent_store
                 .get(&key_to)
                 .expect("Error communicating with the DB")
-                .is_none()
-            {
+                .is_none();
+            let to_is_zero = self.get_balance(to, symbol).is_zero();
+            // If the destination account does not exist, increase
+            // account total count
+            if to_is_empty {
                 attributes
                     .entry(*ACCOUNT_TOTAL_COUNT_INDEX)
                     .and_modify(|x| {
@@ -64,14 +67,10 @@ impl DataExt for LedgerStorage {
                             *count += 1;
                         }
                     });
-                attributes
-                    .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
-                    .and_modify(|x| {
-                        if let DataValue::Counter(count) = x {
-                            *count += 1;
-                        }
-                    });
-            } else if self.get_balance(to, symbol).is_zero() {
+            }
+            // If the destination account either is empty or is zero,
+            // the amount of non zero accounts increases
+            if to_is_zero || to_is_empty {
                 attributes
                     .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
                     .and_modify(|x| {
@@ -80,6 +79,9 @@ impl DataExt for LedgerStorage {
                         }
                     });
             }
+            // If the amount from the origin account is equal to the
+            // amount being sent, the account will become zero, hence
+            // the non zero account total count decreases
             let balance_from = self.get_balance(from, symbol);
             if balance_from == amount {
                 attributes
