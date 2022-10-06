@@ -82,8 +82,8 @@ impl DataExt for LedgerStorage {
             // If the amount from the origin account is equal to the
             // amount being sent, the account will become zero, hence
             // the non zero account total count decreases
-            let balance_from = self.get_balance(from, symbol);
-            if balance_from == amount {
+            let origin_balance = self.get_balance(from, symbol);
+            if origin_balance == amount {
                 attributes
                     .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
                     .and_modify(|x| {
