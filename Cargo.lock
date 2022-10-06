@@ -1938,6 +1938,7 @@ dependencies = [
  "clap 3.2.22",
  "coset",
  "hex",
+ "json5",
  "lazy_static",
  "many-client",
  "many-error",
