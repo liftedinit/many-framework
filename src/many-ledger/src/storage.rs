@@ -360,6 +360,8 @@ impl LedgerStorage {
             .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
             .unwrap_or_default();
 
+        info!("Active migrations: {:?}", active_migrations);
+
         Ok(Self {
             symbols,
             persistent_store,
