@@ -51,15 +51,15 @@ impl DataExt for LedgerStorage {
     ) {
         if let Some(mut attributes) = self.data_attributes() {
             let key_to = key_for_account_balance(to, symbol);
-            let to_is_empty = self
+            let destination_is_empty = self
                 .persistent_store
                 .get(&key_to)
                 .expect("Error communicating with the DB")
                 .is_none();
-            let to_is_zero = self.get_balance(to, symbol).is_zero();
+            let destination_is_zero = self.get_balance(to, symbol).is_zero();
             // If the destination account does not exist, increase
             // account total count
-            if to_is_empty {
+            if destination_is_empty {
                 attributes
                     .entry(*ACCOUNT_TOTAL_COUNT_INDEX)
                     .and_modify(|x| {
@@ -70,7 +70,7 @@ impl DataExt for LedgerStorage {
             }
             // If the destination account either is empty or is zero,
             // the amount of non zero accounts increases
-            if to_is_zero || to_is_empty {
+            if destination_is_zero || destination_is_empty {
                 attributes
                     .entry(*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX)
                     .and_modify(|x| {
