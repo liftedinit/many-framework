@@ -37,7 +37,7 @@ genfiles-ledger/docker-compose.json: genfiles-common/jsonnet-docker docker-compo
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
-		--tla-code migrations=\"/genfiles/migrations.toml\" \
+		--tla-code migrations=\"/genfiles/migrations.json5\" \
 		--tla-code allow_addrs=$(ALLOW_ADDRS) \
 		-o /$@
 
@@ -53,11 +53,11 @@ genfiles-ledger/generate-tendermint-e2e-config:
 
 genfiles-ledger/node%: genfiles-common/openssl-docker genfiles-common/tendermint-docker
 	mkdir -p "$@/tendermint"
-	rm -f "$@/migrations.toml"
+	rm -f "$@/migrations.json5"
 ifdef MIGRATIONS
-	cp $(MIGRATIONS) "$@/migrations.toml"
+	cp $(MIGRATIONS) "$@/migrations.json5"
 else
-	touch "$@/migrations.toml"
+	echo "[]" > "$@/migrations.json5"
 endif
 	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v$(TENDERMINT_VERSION) init validator
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
