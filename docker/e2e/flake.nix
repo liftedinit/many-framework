@@ -54,6 +54,16 @@
                 };
               })
               (pkgs.rustBuilder.rustLib.makeOverride {
+                name = "many-abci";
+                overrideAttrs = drv: {
+                  prePatch = ''
+                    substituteInPlace build.rs --replace 'use vergen::{vergen, Config};' "use vergen::Config;"
+                    substituteInPlace build.rs --replace 'vergen(config).expect("Vergen could not run.")' ""
+                  '';
+                  VERGEN_GIT_SHA = if (self ? rev ) then self.rev else "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; # random sha1
+                };
+              })
+              (pkgs.rustBuilder.rustLib.makeOverride {
                 name = "many-ledger";
                 overrideAttrs = drv: {
                   prePatch = ''

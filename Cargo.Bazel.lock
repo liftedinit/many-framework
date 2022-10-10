@@ -1902,6 +1902,7 @@ dependencies = [
  "clap 3.2.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
  "hex",
+ "json5",
  "lazy_static",
  "many-client",
  "many-error",
@@ -1925,6 +1926,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "vergen",
 ]
 
 [[package]]

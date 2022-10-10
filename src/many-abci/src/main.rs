@@ -30,7 +30,7 @@ enum LogStrategy {
     Syslog,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     /// Address and port to bind the ABCI server to.
     #[clap(long)]
@@ -123,6 +123,12 @@ async fn main() {
             subscriber.init();
         }
     };
+
+    debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     // Try to get the status of the backend MANY app.
     let many_client = ManyClient::new(&many_app, Address::anonymous(), AnonymousIdentity).unwrap();
