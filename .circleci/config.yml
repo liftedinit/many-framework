@@ -433,6 +433,7 @@ workflows:
           requires:
             - publish_nightly_docker
   nightly_macos:
+##TODO: Re-enable this
 #    when:
 #      and:
 #        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
