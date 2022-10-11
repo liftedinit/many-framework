@@ -164,7 +164,7 @@ jobs:
         default: false
     docker:
       - image: cibuilds/github:0.10
-    resource_class: large
+    resource_class: small
     steps:
       - attach_workspace:
           at: ~/project/artifacts
@@ -273,6 +273,22 @@ jobs:
           shell: /bin/bash
           command: bats *
           working_directory: ./tests/resiliency
+  tag_and_release:
+    parameters:
+      tag:
+        type: string
+        default: ${CIRCLE_TAG}
+    docker:
+      - image: cibuilds/github:0.10
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: tag and release
+          command: | 
+            touch << parameters.tag >>_${CIRCLE_SHA1}
+            ghr -prerelease -recreate -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >> << parameters.tag >>_${CIRCLE_SHA1}
+
 
 # Re-usable commands
 commands:
@@ -310,7 +326,7 @@ workflows:
             - CACHE
           matrix:
             parameters:
-              os: [linux2204, macos]
+              os: [linux2204]
       - bats:
           pre-steps:
             - install-deps:
@@ -320,7 +336,7 @@ workflows:
             - CACHE
           matrix:
             parameters:
-              os: [linux2204, macos]
+              os: [linux2204]
           requires:
             - lint-test-build-v<< matrix.os >>
       - coverage:
@@ -416,4 +432,27 @@ workflows:
                 - main
           requires:
             - publish_nightly_docker
-
+  nightly_macos:
+#    when:
+#      and:
+#        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+#        - equal: [ "macOS nightly", << pipeline.schedule.name >> ]
+    jobs:
+      - lint-test-build:
+          name: lint-test-build-vmacos
+          context:
+            - CACHE
+      - bats:
+          name: bats-vmacos
+          context:
+            - CACHE
+          requires:
+            - lint-test-build-vmacos
+      - tag_and_release:
+          name: macos nightly tag and release
+          tag: macos-green
+          context:
+            - GITHUB_CREDS
+          requires:
+            - lint-test-build-vmacos
+            - bats-vmacos
