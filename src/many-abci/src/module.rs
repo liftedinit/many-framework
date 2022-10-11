@@ -47,7 +47,7 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
                 .time
                 .duration_since(Time::unix_epoch())
                 .unwrap()
-                .as_secs() as u64,
+                .as_secs(),
         )
         .unwrap(),
         txs_count,
