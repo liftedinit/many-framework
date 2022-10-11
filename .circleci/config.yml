@@ -459,9 +459,6 @@ workflows:
           tag: macos-green
           context:
             - GITHUB_CREDS
-          matrix:
-            parameters:
-              os: [macos]
           requires:
-            - lint-test-build-v<< matrix.os >>
-            - bats-v<< matrix.os >>
+            - lint-test-build-vmacos
+            - bats-vmacos
