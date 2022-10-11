@@ -163,7 +163,7 @@ jobs:
         type: boolean
         default: false
     docker:
-      - image: cibuilds/github:0.10
+      - image: cibuilds/github:0.13
     resource_class: small
     steps:
       - attach_workspace:
@@ -279,15 +279,15 @@ jobs:
         type: string
         default: ${CIRCLE_TAG}
     docker:
-      - image: cibuilds/github:0.10
+      - image: cibuilds/github:0.13
     resource_class: small
     steps:
       - checkout
       - run:
           name: tag and release
           command: | 
-            touch << parameters.tag >>_${CIRCLE_SHA1}
-            ghr -prerelease -recreate -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >> << parameters.tag >>_${CIRCLE_SHA1}
+            touch ./<< parameters.tag >>_${CIRCLE_SHA1}
+            ghr -prerelease -recreate -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >> ./<< parameters.tag >>_${CIRCLE_SHA1}
 
 
 # Re-usable commands
