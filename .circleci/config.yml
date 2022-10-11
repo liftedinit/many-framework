@@ -439,20 +439,29 @@ workflows:
 #        - equal: [ "macOS nightly", << pipeline.schedule.name >> ]
     jobs:
       - lint-test-build:
-          name: lint-test-build-vmacos
+          name: lint-test-build-v<< matrix.os >>
           context:
             - CACHE
+          matrix:
+            parameters:
+              os: [macos]
       - bats:
-          name: bats-vmacos
+          name: bats-v<< matrix.os >>
           context:
             - CACHE
+          matrix:
+            parameters:
+              os: [macos]
           requires:
-            - lint-test-build-vmacos
+            - lint-test-build-v<< matrix.os >>
       - tag_and_release:
           name: macos nightly tag and release
           tag: macos-green
           context:
             - GITHUB_CREDS
+          matrix:
+            parameters:
+              os: [macos]
           requires:
-            - lint-test-build-vmacos
-            - bats-vmacos
+            - lint-test-build-v<< matrix.os >>
+            - bats-v<< matrix.os >>
