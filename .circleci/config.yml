@@ -286,7 +286,7 @@ jobs:
       - run:
           name: tag and release
           command: | 
-            touch ./<< parameters.tag >>_${CIRCLE_SHA1}
+            echo ${CIRCLE_SHA1} >> ./<< parameters.tag >>_${CIRCLE_SHA1}
             ghr -prerelease -recreate -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >> ./<< parameters.tag >>_${CIRCLE_SHA1}
 
 
