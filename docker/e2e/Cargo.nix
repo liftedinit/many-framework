@@ -2697,7 +2697,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-client";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     features = builtins.concatLists [
       [ "default" ]
@@ -2750,7 +2750,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-client-macros";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       proc_macro2 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.46" { inherit profileName; };
@@ -2767,7 +2767,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-error";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     features = builtins.concatLists [
       [ "default" ]
@@ -2789,7 +2789,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     features = builtins.concatLists [
       [ "coset" ]
@@ -2831,7 +2831,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-dsa";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     features = builtins.concatLists [
       [ "coset" ]
@@ -2874,7 +2874,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-hsm";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       asn1 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".asn1."0.10.0" { inherit profileName; };
@@ -2901,7 +2901,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-webauthn";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       base64 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.0" { inherit profileName; };
@@ -3032,7 +3032,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-macros";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       inflections = rustPackages."registry+https://github.com/rust-lang/crates.io-index".inflections."1.1.1" { inherit profileName; };
@@ -3052,7 +3052,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-modules";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       async_trait = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".async-trait."0.1.57" { profileName = "__noProfile"; };
@@ -3079,7 +3079,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-protocol";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       base64 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.0" { inherit profileName; };
@@ -3111,7 +3111,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-server";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     features = builtins.concatLists [
       [ "default" ]
@@ -3170,7 +3170,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-types";
       version = "0.1.0";
-      rev = "0fa650e64f62b6186323217f14b90897fc54f47a";
+      rev = "61d8f06e0bd68e72e7e383529b5b649d4dcc1364";
       ref = "fmorency/fix-async-return";};
     dependencies = {
       coset = rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; };
