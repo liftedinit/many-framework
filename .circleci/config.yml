@@ -278,6 +278,9 @@ jobs:
       tag:
         type: string
         default: ${CIRCLE_TAG}
+      branch:
+        type: string
+        default: main
     docker:
       - image: cibuilds/github:0.13
     resource_class: small
@@ -286,8 +289,7 @@ jobs:
       - run:
           name: tag and release
           command: | 
-            echo ${CIRCLE_SHA1} >> ./<< parameters.tag >>_${CIRCLE_SHA1}
-            ghr -prerelease -recreate -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >> ./<< parameters.tag >>_${CIRCLE_SHA1}
+            ghr -prerelease -recreate -c << parameters.branch >> -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >>
 
 
 # Re-usable commands
