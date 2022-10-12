@@ -1,9 +1,9 @@
 use many_client::client::blocking::block_on;
 use many_error::ManyError;
-use many_identity::Address;
+use many_identity::{Address, AnonymousIdentity};
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{abci_frontend, blockchain, r#async};
-use many_protocol::ResponseMessage;
+use many_protocol::{encode_cose_sign1_from_response, ResponseMessage};
 use many_types::blockchain::{
     Block, BlockIdentifier, SingleBlockQuery, SingleTransactionQuery, Transaction,
     TransactionIdentifier,
@@ -86,8 +86,12 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                         tracing::warn!("result: {}", hex::encode(tx.tx_result.data.value()));
                         Ok(StatusReturn::Done {
                             response: Box::new(
-                                ResponseMessage::from_bytes(tx.tx_result.data.value())
-                                    .map_err(abci_frontend::abci_transport_error)?,
+                                encode_cose_sign1_from_response(
+                                    ResponseMessage::from_bytes(tx.tx_result.data.value())
+                                        .map_err(abci_frontend::abci_transport_error)?,
+                                    &AnonymousIdentity,
+                                )
+                                .map_err(abci_frontend::abci_transport_error)?,
                             ),
                         })
                     }
