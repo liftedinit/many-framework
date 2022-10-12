@@ -273,7 +273,7 @@ jobs:
           shell: /bin/bash
           command: bats *
           working_directory: ./tests/resiliency
-  tag_and_release:
+  tag:
     parameters:
       tag:
         type: string
@@ -282,15 +282,18 @@ jobs:
         type: string
         default: main
     docker:
-      - image: cibuilds/github:0.13
+      - image: 'cimg/base:stable'
     resource_class: small
     steps:
       - checkout
       - run:
-          name: tag and release
+          name: tag
           command: | 
-            ghr -prerelease -recreate -c << parameters.branch >> -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} << parameters.tag >>
-
+            git config credential.helper 'cache --timeout=120'
+            git config user.email "build@liftedinit.org"
+            git config user.name "ll-build"
+            git tag -f << parameters.tag >> << parameters.branch >>
+            git push -q --tags https://${GITHUB_TOKEN}@github.com/liftedinit/many-framework.git
 
 # Re-usable commands
 commands:
@@ -435,10 +438,10 @@ workflows:
           requires:
             - publish_nightly_docker
   nightly_macos:
-    when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "macOS nightly", << pipeline.schedule.name >> ]
+#    when:
+#      and:
+#        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+#        - equal: [ "macOS nightly", << pipeline.schedule.name >> ]
     jobs:
       - lint-test-build:
           name: lint-test-build-v<< matrix.os >>
@@ -457,7 +460,7 @@ workflows:
           requires:
             - lint-test-build-v<< matrix.os >>
       - tag_and_release:
-          name: macos nightly tag and release
+          name: macos nightly tag
           tag: macos-green
           context:
             - GITHUB_CREDS
