@@ -1,9 +1,9 @@
-GIT_ROOT="$BATS_TEST_DIRNAME/../../"
+GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
 START_BALANCE=100000000000
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
 
-load '../test_helper/load'
-load '../test_helper/ledger'
+load '../../test_helper/load'
+load '../../test_helper/ledger'
 
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
@@ -17,16 +17,9 @@ function setup() {
         )
     fi
 
-    run_in_background "$GIT_ROOT/target/debug/many-ledger" \
-          -v \
-          --clean \
-          --persistent "$(mktemp -d)" \
-          --state "$GIT_ROOT/staging/ledger_state.json5" \
-          --pem "$(pem 0)" \
+    start_ledger --pem "$(pem 0)" \
           "--balance-only-for-testing=$(identity 1):$START_BALANCE:$MFX_ADDRESS" \
           "--balance-only-for-testing=$(identity 2):$START_BALANCE:$MFX_ADDRESS"
-
-    wait_for_background_output "Running accept thread"
 }
 
 function teardown() {

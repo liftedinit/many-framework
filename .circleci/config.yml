@@ -85,7 +85,7 @@ jobs:
       - bats/install
       - run:
           name: running BATs tests
-          command: bats .
+          command: bats *
           working_directory: ./tests/e2e/
   coverage:
     parameters:
