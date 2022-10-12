@@ -459,7 +459,7 @@ workflows:
               os: [macos]
           requires:
             - lint-test-build-v<< matrix.os >>
-      - tag_and_release:
+      - tag:
           name: macos nightly tag
           tag: macos-green
           context:
