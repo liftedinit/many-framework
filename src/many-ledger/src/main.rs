@@ -9,6 +9,7 @@ use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeSet;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -93,8 +94,16 @@ struct Opts {
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
 
+    /// Path to a JSON5 file containing the configurations for the
+    /// migrations
     #[clap(long, short)]
     migrations_config: Option<PathBuf>,
+
+    /// Path to a JSON file containing an array of MANY addresses
+    /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
+    /// Any addresses will be able to execute queries, e.g., balance, get, ...
+    #[clap(long)]
+    allow_addrs: Option<PathBuf>,
 }
 
 fn main() {
@@ -109,6 +118,7 @@ fn main() {
         clean,
         logmode,
         migrations_config,
+        allow_addrs,
         ..
     } = Opts::parse();
 
@@ -218,7 +228,17 @@ fn main() {
     {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
-        s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
+        let ledger_command_module = ledger::LedgerCommandsModule::new(module_impl.clone());
+        if let Some(path) = allow_addrs {
+            let allow_addrs: BTreeSet<Address> =
+                json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            s.add_module(AllowAddrsModule {
+                inner: ledger_command_module,
+                allow_addrs,
+            });
+        } else {
+            s.add_module(ledger_command_module);
+        }
         s.add_module(events::EventsModule::new(module_impl.clone()));
 
         let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
