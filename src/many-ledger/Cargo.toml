@@ -51,10 +51,12 @@ tracing = "0.1.28"
 tokio = { version = "1.13.0", features = [ "full" ] }
 tracing-subscriber = "0.3"
 typenum = "1.15.0"
+typetag = "0.2.3"
 
 [dev-dependencies]
 once_cell = "1.12"
 many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14", features = ["default", "serde", "testing"] }
 many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14", features = [ "ed25519", "testing" ] }
 many-ledger = { path = ".", features = ["balance_testing"]}
 proptest = "1"

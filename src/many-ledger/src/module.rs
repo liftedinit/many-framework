@@ -1,4 +1,6 @@
 use crate::json::InitialStateJson;
+use crate::migration::Migration;
+use crate::storage::migration_ext::data::DataExt;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
 use many_error::{ManyError, ManyErrorCode};
@@ -9,6 +11,10 @@ use many_modules::abci_backend::{
 };
 use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
 use many_modules::account::AccountModuleBackend;
+use many_modules::data::{
+    DataGetInfoArgs, DataGetInfoReturns, DataInfoArgs, DataInfoReturns, DataModuleBackend,
+    DataQueryArgs, DataQueryReturns,
+};
 use many_modules::{account, events, idstore, ledger, EmptyReturn, ManyModule, ManyModuleInfo};
 use many_protocol::{RequestMessage, ResponseMessage};
 use many_types::cbor::CborAny;
@@ -216,6 +222,11 @@ impl LedgerModuleImpl {
         Ok(Self { storage })
     }
 
+    pub fn with_migrations(mut self, migrations: BTreeSet<Box<dyn Migration>>) -> Self {
+        self.storage = self.storage.with_migrations(migrations);
+        self
+    }
+
     #[cfg(feature = "balance_testing")]
     pub fn set_balance_only_for_testing(&mut self, account: Address, balance: u64, symbol: Symbol) {
         self.storage
@@ -385,6 +396,11 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("account.multisigRevoke".to_string(), EndpointInfo { is_command: true }),
                 ("account.multisigExecute".to_string(), EndpointInfo { is_command: true }),
                 ("account.multisigWithdraw".to_string(), EndpointInfo { is_command: true }),
+
+                // Data Attributes
+                ("data.info".to_string(), EndpointInfo { is_command: false }),
+                ("data.getInfo".to_string(), EndpointInfo { is_command: false }),
+                ("data.query".to_string(), EndpointInfo { is_command: false }),
             ]),
         })
     }
@@ -818,6 +834,45 @@ impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
             cred_id,
             public_key,
         })
+    }
+}
+
+impl DataModuleBackend for LedgerModuleImpl {
+    fn info(&self, _: &Address, _: DataInfoArgs) -> Result<DataInfoReturns, ManyError> {
+        Ok(DataInfoReturns {
+            indices: self
+                .storage
+                .data_attributes()
+                .unwrap_or_default()
+                .into_keys()
+                .collect(),
+        })
+    }
+
+    fn get_info(
+        &self,
+        _sender: &Address,
+        args: DataGetInfoArgs,
+    ) -> Result<DataGetInfoReturns, ManyError> {
+        let filtered = self
+            .storage
+            .data_info()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(k, _)| args.indices.0.contains(k))
+            .collect();
+        Ok(filtered)
+    }
+
+    fn query(&self, _sender: &Address, args: DataQueryArgs) -> Result<DataQueryReturns, ManyError> {
+        let filtered = self
+            .storage
+            .data_attributes()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(k, _)| args.indices.0.contains(k))
+            .collect();
+        Ok(filtered)
     }
 }
 
