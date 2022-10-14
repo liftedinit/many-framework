@@ -293,7 +293,7 @@ jobs:
             git config user.email "build@liftedinit.org"
             git config user.name "ll-build"
             git tag -f << parameters.tag >> << parameters.branch >>
-            git push -q --tags https://${GITHUB_TOKEN}@github.com/liftedinit/many-framework.git
+            git push -f -q https://${GITHUB_TOKEN}@github.com/liftedinit/many-framework.git << parameters.tag >>
 
 # Re-usable commands
 commands:
