@@ -9,11 +9,15 @@ use many_modules::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, BeginBlockReturn, EndpointInfo, InitChainReturn,
     ManyAbciModuleBackend,
 };
-use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
+use many_modules::account::features::multisig::{self, MultisigTransactionState};
+use many_modules::account::features::{FeatureInfo, TryCreateFeature};
 use many_modules::account::AccountModuleBackend;
 use many_modules::data::{
     DataGetInfoArgs, DataGetInfoReturns, DataInfoArgs, DataInfoReturns, DataModuleBackend,
     DataQueryArgs, DataQueryReturns,
+};
+use many_modules::events::{
+    EventFilterAttributeSpecific, EventFilterAttributeSpecificIndex, EventInfo, EventLog,
 };
 use many_modules::{account, events, idstore, ledger, EmptyReturn, ManyModule, ManyModuleInfo};
 use many_protocol::{RequestMessage, ResponseMessage};
@@ -161,6 +165,50 @@ fn filter_date<'a>(
         Ok(events::EventLog { time, .. }) => range.contains(time),
     }))
 }
+
+fn filter_attribute_specific<'a>(
+    mut it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
+    attribute_specific: &'a BTreeMap<
+        EventFilterAttributeSpecificIndex,
+        EventFilterAttributeSpecific,
+    >,
+) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
+    for x in attribute_specific.values() {
+        match x {
+            EventFilterAttributeSpecific::MultisigTransactionState(VecOrSingle(state)) => {
+                it = Box::new(it.filter(|t| match t {
+                    Err(_) => true,
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigSubmit { .. },
+                        ..
+                    })
+                    | Ok(EventLog {
+                        content: EventInfo::AccountMultisigApprove { .. },
+                        ..
+                    }) => state.contains(&MultisigTransactionState::Pending),
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigExecute { .. },
+                        ..
+                    }) => {
+                        state.contains(&MultisigTransactionState::ExecutedAutomatically)
+                            || state.contains(&MultisigTransactionState::ExecutedManually)
+                    }
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigWithdraw { .. },
+                        ..
+                    }) => state.contains(&MultisigTransactionState::Withdrawn),
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigExpired { .. },
+                        ..
+                    }) => state.contains(&MultisigTransactionState::Expired),
+                    _ => false,
+                }))
+            }
+        }
+    }
+    it
+}
+
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
@@ -350,6 +398,7 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
         let iter = filter_event_kind(iter, filter.kind);
         let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
+        let iter = filter_attribute_specific(iter, &filter.events_filter_attribute_specific);
 
         let events: Vec<events::EventLog> = iter.take(count).collect::<Result<_, _>>()?;
 
