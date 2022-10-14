@@ -234,6 +234,7 @@ fn submit_args(
 proptest! {
     #![proptest_config(Config {cases: 200, source_file: Some("tests/events"), .. Config::default()})]
 
+    // TODO test more MultiSigTransactionState variants
     #[test]
     fn list_filter_attribute_specific(SetupWithAccountAndTx {
         mut module_impl,
