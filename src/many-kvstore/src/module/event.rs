@@ -142,3 +142,63 @@ fn filter_attribute_specific<'a>(
     }
     it
 }
+
+#[cfg(test)]
+mod test {
+    use std::collections::BTreeMap;
+
+    use many_error::ManyError;
+    use many_identity::Address;
+    use many_modules::account::features::multisig::MultisigTransactionState;
+    use many_modules::events::{
+        EventFilterAttributeSpecific, EventFilterAttributeSpecificIndex, EventId, EventInfo,
+        EventLog,
+    };
+    use many_types::{Timestamp, VecOrSingle};
+    use minicbor::bytes::ByteVec;
+
+    use super::{filter_attribute_specific, EventLogResult};
+
+    #[test]
+    fn test_filter_attribute_specific() {
+        let eventlogs: Vec<EventLogResult> = vec![
+            Ok(EventLog {
+                id: EventId::from(vec![0]),
+                time: Timestamp::new(0).unwrap(),
+                content: EventInfo::AccountMultisigExpired {
+                    account: Address::anonymous(),
+                    token: ByteVec::from(vec![0]),
+                    time: Timestamp::new(0).unwrap(),
+                },
+            }),
+            Err(ManyError::default()),
+            Ok(EventLog {
+                id: EventId::from(vec![1]),
+                time: Timestamp::now(),
+                content: EventInfo::AccountMultisigWithdraw {
+                    account: Address::anonymous(),
+                    token: ByteVec::from(vec![0]),
+                    withdrawer: Address::anonymous(),
+                },
+            }),
+        ];
+        let filter = BTreeMap::from([(
+            EventFilterAttributeSpecificIndex::MultisigTransactionState,
+            EventFilterAttributeSpecific::MultisigTransactionState(VecOrSingle(vec![
+                MultisigTransactionState::Expired,
+            ])),
+        )]);
+        let iter = Box::new(eventlogs.into_iter());
+        let iter = filter_attribute_specific(iter, &filter);
+        let filtered_eventlogs: Vec<EventLogResult> = iter.collect();
+        assert_eq!(filtered_eventlogs.len(), 2);
+        assert_eq!(
+            filtered_eventlogs[0].as_ref().unwrap().id,
+            EventId::from(vec![0])
+        );
+        assert_eq!(
+            filtered_eventlogs[1].as_ref().unwrap_err(),
+            &ManyError::default()
+        );
+    }
+}
