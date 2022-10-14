@@ -241,9 +241,9 @@ proptest! {
         account_id,
         tx,
     } in setup_with_account_and_tx(AccountType::Multisig)) {
-        let submit_args = submit_args(account_id, tx.clone(), None);
+        let submit_args = submit_args(account_id, tx, None);
         module_impl
-            .multisig_submit_transaction(&id, submit_args.clone())
+            .multisig_submit_transaction(&id, submit_args)
             .expect("Multisig transaction should be sent");
 
         let result = module_impl.list(events::ListArgs {
