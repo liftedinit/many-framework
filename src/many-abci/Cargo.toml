@@ -10,6 +10,7 @@ homepage = "https://liftedinit.org"
 repository = "https://github.com/liftedinit/many-framework"
 keywords = ["cli", "web3", "blockchain", "tendermint", "proto", "crypto", "liftedinit"]
 categories = ["command-line-utilities"]
+build = "build.rs"
 
 [[bin]]
 name = "many-abci"
