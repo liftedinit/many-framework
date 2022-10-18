@@ -1,4 +1,6 @@
 use crate::json::InitialStateJson;
+use crate::migration::Migration;
+use crate::storage::migration_ext::data::DataExt;
 use crate::{error, storage::LedgerStorage};
 use coset::{CborSerializable, CoseKey, CoseSign1};
 use many_error::{ManyError, ManyErrorCode};
@@ -7,8 +9,16 @@ use many_modules::abci_backend::{
     AbciBlock, AbciCommitInfo, AbciInfo, AbciInit, BeginBlockReturn, EndpointInfo, InitChainReturn,
     ManyAbciModuleBackend,
 };
-use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
+use many_modules::account::features::multisig::{self, MultisigTransactionState};
+use many_modules::account::features::{FeatureInfo, TryCreateFeature};
 use many_modules::account::AccountModuleBackend;
+use many_modules::data::{
+    DataGetInfoArgs, DataGetInfoReturns, DataInfoArgs, DataInfoReturns, DataModuleBackend,
+    DataQueryArgs, DataQueryReturns,
+};
+use many_modules::events::{
+    EventFilterAttributeSpecific, EventFilterAttributeSpecificIndex, EventInfo, EventLog,
+};
 use many_modules::{account, events, idstore, ledger, EmptyReturn, ManyModule, ManyModuleInfo};
 use many_protocol::{RequestMessage, ResponseMessage};
 use many_types::cbor::CborAny;
@@ -155,6 +165,50 @@ fn filter_date<'a>(
         Ok(events::EventLog { time, .. }) => range.contains(time),
     }))
 }
+
+fn filter_attribute_specific<'a>(
+    mut it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
+    attribute_specific: &'a BTreeMap<
+        EventFilterAttributeSpecificIndex,
+        EventFilterAttributeSpecific,
+    >,
+) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
+    for x in attribute_specific.values() {
+        match x {
+            EventFilterAttributeSpecific::MultisigTransactionState(VecOrSingle(state)) => {
+                it = Box::new(it.filter(|t| match t {
+                    Err(_) => true,
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigSubmit { .. },
+                        ..
+                    })
+                    | Ok(EventLog {
+                        content: EventInfo::AccountMultisigApprove { .. },
+                        ..
+                    }) => state.contains(&MultisigTransactionState::Pending),
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigExecute { .. },
+                        ..
+                    }) => {
+                        state.contains(&MultisigTransactionState::ExecutedAutomatically)
+                            || state.contains(&MultisigTransactionState::ExecutedManually)
+                    }
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigWithdraw { .. },
+                        ..
+                    }) => state.contains(&MultisigTransactionState::Withdrawn),
+                    Ok(EventLog {
+                        content: EventInfo::AccountMultisigExpired { .. },
+                        ..
+                    }) => state.contains(&MultisigTransactionState::Expired),
+                    _ => false,
+                }))
+            }
+        }
+    }
+    it
+}
+
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug)]
 pub struct LedgerModuleImpl {
@@ -214,6 +268,11 @@ impl LedgerModuleImpl {
         );
 
         Ok(Self { storage })
+    }
+
+    pub fn with_migrations(mut self, migrations: BTreeSet<Box<dyn Migration>>) -> Self {
+        self.storage = self.storage.with_migrations(migrations);
+        self
     }
 
     #[cfg(feature = "balance_testing")]
@@ -339,6 +398,7 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
         let iter = filter_event_kind(iter, filter.kind);
         let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
+        let iter = filter_attribute_specific(iter, &filter.events_filter_attribute_specific);
 
         let events: Vec<events::EventLog> = iter.take(count).collect::<Result<_, _>>()?;
 
@@ -385,6 +445,11 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("account.multisigRevoke".to_string(), EndpointInfo { is_command: true }),
                 ("account.multisigExecute".to_string(), EndpointInfo { is_command: true }),
                 ("account.multisigWithdraw".to_string(), EndpointInfo { is_command: true }),
+
+                // Data Attributes
+                ("data.info".to_string(), EndpointInfo { is_command: false }),
+                ("data.getInfo".to_string(), EndpointInfo { is_command: false }),
+                ("data.query".to_string(), EndpointInfo { is_command: false }),
             ]),
         })
     }
@@ -821,6 +886,45 @@ impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
     }
 }
 
+impl DataModuleBackend for LedgerModuleImpl {
+    fn info(&self, _: &Address, _: DataInfoArgs) -> Result<DataInfoReturns, ManyError> {
+        Ok(DataInfoReturns {
+            indices: self
+                .storage
+                .data_attributes()
+                .unwrap_or_default()
+                .into_keys()
+                .collect(),
+        })
+    }
+
+    fn get_info(
+        &self,
+        _sender: &Address,
+        args: DataGetInfoArgs,
+    ) -> Result<DataGetInfoReturns, ManyError> {
+        let filtered = self
+            .storage
+            .data_info()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(k, _)| args.indices.0.contains(k))
+            .collect();
+        Ok(filtered)
+    }
+
+    fn query(&self, _sender: &Address, args: DataQueryArgs) -> Result<DataQueryReturns, ManyError> {
+        let filtered = self
+            .storage
+            .data_attributes()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(k, _)| args.indices.0.contains(k))
+            .collect();
+        Ok(filtered)
+    }
+}
+
 pub struct IdStoreWebAuthnModule<T: idstore::IdStoreModuleBackend> {
     pub inner: idstore::IdStoreModule<T>,
     pub check_webauthn: bool,
@@ -852,6 +956,36 @@ impl<T: idstore::IdStoreModuleBackend> ManyModule for IdStoreWebAuthnModule<T> {
     }
 
     async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, ManyError> {
+        self.inner.execute(message).await
+    }
+}
+
+pub struct AllowAddrsModule<T: ledger::LedgerCommandsModuleBackend> {
+    pub inner: ledger::LedgerCommandsModule<T>,
+    pub allow_addrs: BTreeSet<Address>,
+}
+
+impl<T: ledger::LedgerCommandsModuleBackend> Debug for AllowAddrsModule<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("AllowAddrsModule")
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: ledger::LedgerCommandsModuleBackend> ManyModule for AllowAddrsModule<T> {
+    fn info(&self) -> &ManyModuleInfo {
+        self.inner.info()
+    }
+
+    fn validate(&self, message: &RequestMessage, envelope: &CoseSign1) -> Result<(), ManyError> {
+        self.inner.validate(message, envelope)
+    }
+
+    async fn execute(&self, message: RequestMessage) -> Result<ResponseMessage, ManyError> {
+        if !self.allow_addrs.contains(&message.from()) {
+            return Err(ManyError::invalid_from_identity());
+        }
+
         self.inner.execute(message).await
     }
 }

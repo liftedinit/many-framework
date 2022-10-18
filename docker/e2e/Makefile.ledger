@@ -1,4 +1,6 @@
 LEDGER_TAG ?= "latest"
+MIGRATIONS ?=
+ALLOW_ADDRS ?= false
 
 include Makefile.common
 
@@ -8,6 +10,15 @@ clean:
 		docker-compose -f genfiles-ledger/docker-compose.json -p e2e-ledger down || true; \
 	fi
 	rm -rf genfiles-ledger
+
+genfiles-ledger/generate-allow-addrs-config:
+	I=0; while [[ $$I -lt ${NB_NODES} ]]; do \
+		echo $$I genfiles-ledger/node$$I; \
+		make -f Makefile.ledger genfiles-ledger/node$$I; \
+		bash generate-allow-addrs.sh genfiles-ledger/node$$I $(PEM_ROOT); \
+		(( I = I + 1 )); \
+	done
+	mkdir -p $(dir $@) && touch $@
 
 genfiles-ledger/many-ledger.tar.gz: $(shell find ../../src -type f) flake.nix flake.lock
 	@mkdir -p genfiles-ledger
@@ -26,6 +37,8 @@ genfiles-ledger/docker-compose.json: genfiles-common/jsonnet-docker docker-compo
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
+		--tla-code migrations=\"/genfiles/migrations.json5\" \
+		--tla-code allow_addrs=$(ALLOW_ADDRS) \
 		-o /$@
 
 genfiles-ledger/generate-tendermint-e2e-config:
@@ -40,6 +53,12 @@ genfiles-ledger/generate-tendermint-e2e-config:
 
 genfiles-ledger/node%: genfiles-common/openssl-docker genfiles-common/tendermint-docker
 	mkdir -p "$@/tendermint"
+	rm -f "$@/migrations.json5"
+ifdef MIGRATIONS
+	cp $(MIGRATIONS) "$@/migrations.json5"
+else
+	echo "[]" > "$@/migrations.json5"
+endif
 	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v$(TENDERMINT_VERSION) init validator
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/abci.pem

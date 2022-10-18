@@ -69,7 +69,9 @@ struct Opts {
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Address>,
+    #[clap(default_value_t)]
+    #[clap(long)]
+    server_id: Address,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -338,14 +340,13 @@ fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"ledger\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_writer(syslog);
             subscriber.init();
         }
     };
 
-    let server_id = server_id.unwrap_or_default();
     let key: Box<dyn Identity> = if let (Some(module), Some(slot), Some(keyid)) =
         (module, slot, keyid)
     {

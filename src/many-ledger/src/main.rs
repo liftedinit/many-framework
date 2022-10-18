@@ -1,14 +1,13 @@
 use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
-#[cfg(feature = "balance_testing")]
-use many_identity::Address;
-use many_identity::Identity;
+use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::account::features::Feature;
-use many_modules::{abci_backend, account, events, idstore, ledger};
+use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeSet;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -17,7 +16,6 @@ use tracing::{debug, info};
 
 mod error;
 mod json;
-#[cfg(feature = "migrate_blocks")]
 mod migration;
 mod module;
 mod storage;
@@ -93,6 +91,17 @@ struct Opts {
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
+
+    /// Path to a JSON5 file containing the configurations for the
+    /// migrations
+    #[clap(long, short)]
+    migrations_config: Option<PathBuf>,
+
+    /// Path to a JSON file containing an array of MANY addresses
+    /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
+    /// Any addresses will be able to execute queries, e.g., balance, get, ...
+    #[clap(long)]
+    allow_addrs: Option<PathBuf>,
 }
 
 fn main() {
@@ -106,6 +115,8 @@ fn main() {
         persistent,
         clean,
         logmode,
+        migrations_config,
+        allow_addrs,
         ..
     } = Opts::parse();
 
@@ -129,7 +140,7 @@ fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"many-ledger\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_ansi(false).with_writer(syslog);
             subscriber.init();
@@ -164,7 +175,19 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
+    let migrations = migrations_config
+        .map(|file| {
+            let contents = std::fs::read_to_string(file)
+                .expect("Could not read file passed to --migrations_config");
+            json5::from_str(&contents).expect("Could not parse file passed to --migrations_config")
+        })
+        .unwrap_or_default();
+
+    info!("Migrations: {:?}", migrations);
+
+    let module_impl = LedgerModuleImpl::new(state, persistent, abci)
+        .unwrap()
+        .with_migrations(migrations);
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]
@@ -203,7 +226,17 @@ fn main() {
     {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
-        s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
+        let ledger_command_module = ledger::LedgerCommandsModule::new(module_impl.clone());
+        if let Some(path) = allow_addrs {
+            let allow_addrs: BTreeSet<Address> =
+                json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            s.add_module(AllowAddrsModule {
+                inner: ledger_command_module,
+                allow_addrs,
+            });
+        } else {
+            s.add_module(ledger_command_module);
+        }
         s.add_module(events::EventsModule::new(module_impl.clone()));
 
         let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
@@ -233,6 +266,7 @@ fn main() {
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),
         ));
+        s.add_module(data::DataModule::new(module_impl.clone()));
         if abci {
             s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module_impl));

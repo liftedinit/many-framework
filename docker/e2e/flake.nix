@@ -1,13 +1,11 @@
 {
   inputs = {
-    cargo2nix.url = "github:cargo2nix/cargo2nix/release-0.11.0";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    cargo2nix.inputs.rust-overlay.follows = "rust-overlay";
+    cargo2nix.url = "github:cargo2nix/cargo2nix/unstable";
     nixpkgs.follows = "cargo2nix/nixpkgs";
     flake-utils.follows = "cargo2nix/flake-utils";
   };
 
-  outputs = { self, cargo2nix, nixpkgs, flake-utils, rust-overlay, ... }:
+  outputs = { self, cargo2nix, nixpkgs, flake-utils, ... }:
   flake-utils.lib.eachDefaultSystem (system:
   let
     rustToolchain = builtins.fromTOML (builtins.readFile ../../rust-toolchain.toml);
@@ -53,6 +51,16 @@
                   nativeBuildInputs = [
                     pkgs.llvmPackages.libcxxClang
                   ];
+                };
+              })
+              (pkgs.rustBuilder.rustLib.makeOverride {
+                name = "many-abci";
+                overrideAttrs = drv: {
+                  prePatch = ''
+                    substituteInPlace build.rs --replace 'use vergen::{vergen, Config};' "use vergen::Config;"
+                    substituteInPlace build.rs --replace 'vergen(config).expect("Vergen could not run.")' ""
+                  '';
+                  VERGEN_GIT_SHA = if (self ? rev ) then self.rev else "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; # random sha1
                 };
               })
               (pkgs.rustBuilder.rustLib.makeOverride {
