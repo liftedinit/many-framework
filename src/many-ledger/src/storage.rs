@@ -1,6 +1,9 @@
+pub mod migration_ext;
+
 use crate::error;
 #[cfg(feature = "migrate_blocks")]
 use crate::migration;
+use crate::migration::{run_migrations, Migration};
 use crate::module::validate_account;
 use many_error::ManyError;
 use many_identity::Address;
@@ -10,8 +13,10 @@ use many_modules::{account, events, idstore, EmptyReturn};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::{CborRange, Either, SortOrder, Timestamp};
+use merk::rocksdb::ReadOptions;
 use merk::tree::Tree;
 use merk::{rocksdb, BatchEntry, Op};
+use migration_ext::data::DataExt;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, Bound};
 use std::ops::RangeBounds;
@@ -174,6 +179,8 @@ pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
 pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
 
+pub const MIGRATIONS_KEY: &[u8] = b"/config/migrations";
+
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
 struct CredentialStorage {
@@ -265,6 +272,9 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Address,
+
+    active_migrations: BTreeSet<String>,
+    all_migrations: BTreeSet<Box<dyn Migration>>,
 }
 
 impl LedgerStorage {
@@ -295,6 +305,7 @@ impl std::fmt::Debug for LedgerStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
             .field("symbols", &self.symbols)
+            .field("active_migrations", &self.active_migrations)
             .finish()
     }
 }
@@ -343,6 +354,14 @@ impl LedgerStorage {
 
         let latest_tid = events::EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
+        let active_migrations = persistent_store
+            .get(MIGRATIONS_KEY)
+            .expect("Could not open storage.")
+            .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
+            .unwrap_or_default();
+
+        info!("Active migrations: {:?}", active_migrations);
+
         Ok(Self {
             symbols,
             persistent_store,
@@ -352,6 +371,8 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
+            active_migrations,
+            all_migrations: BTreeSet::new(),
         })
     }
 
@@ -415,7 +436,14 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
+            active_migrations: BTreeSet::new(),
+            all_migrations: BTreeSet::new(),
         })
+    }
+
+    pub fn with_migrations(mut self, all_migrations: BTreeSet<Box<dyn Migration>>) -> Self {
+        self.all_migrations = all_migrations;
+        self
     }
 
     pub fn commit_persistent_store(&mut self) -> Result<(), String> {
@@ -494,7 +522,7 @@ impl LedgerStorage {
     }
 
     pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
-        use rocksdb::{Direction, IteratorMode, ReadOptions};
+        use rocksdb::{Direction, IteratorMode};
 
         // Set the iterator bounds to iterate all multisig transactions.
         // We will break the loop later if we can.
@@ -554,6 +582,19 @@ impl LedgerStorage {
 
         let height = self.inc_height();
         let retain_height = 0;
+
+        // Committing before the migration so that the migration has
+        // the actual state of the database when setting its
+        // attributes.
+        self.persistent_store.commit(&[]).unwrap();
+
+        run_migrations(
+            height + 1,
+            &self.all_migrations,
+            &mut self.active_migrations,
+            &mut self.persistent_store,
+        );
+
         self.persistent_store.commit(&[]).unwrap();
 
         let hash = self.persistent_store.root_hash().to_vec();
@@ -698,6 +739,8 @@ impl LedgerStorage {
                 (key_from, Op::Put(amount_from.to_vec())),
             ],
         };
+
+        self.update_data_attributes(from, to, amount.clone(), symbol);
 
         self.persistent_store.apply(&batch).unwrap();
 
@@ -1423,7 +1466,7 @@ impl<'a> LedgerIterator<'a> {
         range: CborRange<events::EventId>,
         order: SortOrder,
     ) -> Self {
-        use rocksdb::{IteratorMode, ReadOptions};
+        use rocksdb::IteratorMode;
         let mut opts = ReadOptions::default();
 
         match range.start_bound() {

@@ -1,7 +1,7 @@
-GIT_ROOT="$BATS_TEST_DIRNAME/../../"
+GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
 
-load '../test_helper/load'
-load '../test_helper/kvstore'
+load '../../test_helper/load'
+load '../../test_helper/kvstore'
 
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
@@ -15,14 +15,7 @@ function setup() {
         )
     fi
 
-    run_in_background "$GIT_ROOT/target/debug/many-kvstore" \
-          -v \
-          --clean \
-          --persistent "$(mktemp -d)" \
-          --state "$GIT_ROOT/staging/kvstore_state.json5" \
-          --pem "$(pem 0)"
-
-    wait_for_background_output "Running accept thread"
+    start_kvstore --pem "$(pem 0)"
 }
 
 function teardown() {

@@ -1,7 +1,7 @@
-GIT_ROOT="$BATS_TEST_DIRNAME/../../"
+GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
 
-load '../test_helper/load'
-load '../test_helper/ledger'
+load '../../test_helper/load'
+load '../../test_helper/ledger'
 
 # Pass in the recall phrase, the identity, the cred id and the key cose.
 function assert_idstore() {
@@ -62,7 +62,7 @@ function teardown() {
     local ledger_db
     local state
     ledger_db="$(mktemp -d)"
-    state="$GIT_ROOT/tests/e2e/webauthn_state.json"
+    state="$GIT_ROOT/tests/e2e/ledger/webauthn_state.json"
 
     start_ledger \
         "--persistent=$ledger_db" \
