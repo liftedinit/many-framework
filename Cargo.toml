@@ -19,21 +19,21 @@ incremental = false
 [profile.dev]
 incremental = false
 
-[patch."https://github.com/liftedinit/many-rs.git"]
-many = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-client = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-client-macros = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-error = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-identity = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-identity-dsa = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-identity-hsm = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-identity-webauthn = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-macros = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-mock = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-modules = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-protocol = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-server = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
-many-types = { git = "https://github.com/fmorency/many-rs", branch = "fmorency/enh-206-missing-blockchain-endpoints"}
+#[patch."https://github.com/liftedinit/many-rs.git"]
+#many = { path = "../many-rs/src/many" }
+#many-client = { path = "../many-rs/src/many-client" }
+#many-client-macros = { path = "../many-rs/src/many-client-macros" }
+#many-error = { path = "../many-rs/src/many-error" }
+#many-identity = { path = "../many-rs/src/many-identity" }
+#many-identity-dsa = { path = "../many-rs/src/many-identity-dsa" }
+#many-identity-hsm = { path = "../many-rs/src/many-identity-hsm" }
+#many-identity-webauthn = { path = "../many-rs/src/many-identity-webauthn" }
+#many-macros = { path = "../many-rs/src/many-macros" }
+#many-mock = { path = "../many-rs/src/many-mock" }
+#many-modules = { path = "../many-rs/src/many-modules" }
+#many-protocol = { path = "../many-rs/src/many-protocol" }
+#many-server = { path = "../many-rs/src/many-server" }
+#many-types = { path = "../many-rs/src/many-types" }
 
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
