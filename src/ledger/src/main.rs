@@ -261,7 +261,14 @@ pub(crate) fn wait_response(
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();
-                    return wait_response(client, *response);
+                    let response: ResponseMessage =
+                        minicbor::decode(&response.payload.ok_or_else(|| {
+                            ManyError::deserialization_error(
+                                "Empty payload. Expected ResponseMessage.",
+                            )
+                        })?)
+                        .map_err(ManyError::deserialization_error)?;
+                    return wait_response(client, response);
                 }
                 StatusReturn::Expired => {
                     progress.finish();

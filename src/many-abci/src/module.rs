@@ -133,8 +133,12 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                         tracing::warn!("result: {}", hex::encode(tx.tx_result.data.value()));
                         Ok(StatusReturn::Done {
                             response: Box::new(
-                                ResponseMessage::from_bytes(tx.tx_result.data.value())
-                                    .map_err(abci_frontend::abci_transport_error)?,
+                                encode_cose_sign1_from_response(
+                                    ResponseMessage::from_bytes(tx.tx_result.data.value())
+                                        .map_err(abci_frontend::abci_transport_error)?,
+                                    &AnonymousIdentity,
+                                )
+                                .map_err(abci_frontend::abci_transport_error)?,
                             ),
                         })
                     }
