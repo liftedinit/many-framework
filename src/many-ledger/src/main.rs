@@ -2,6 +2,7 @@ use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity_webauthn::WebAuthnVerifier;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -116,6 +117,7 @@ fn main() {
         clean,
         logmode,
         migrations_config,
+        allow_origin,
         allow_addrs,
         ..
     } = Opts::parse();
@@ -219,7 +221,11 @@ fn main() {
     let many = ManyServer::simple(
         "many-ledger",
         key,
-        (AnonymousVerifier, CoseKeyVerifier),
+        (
+            AnonymousVerifier,
+            CoseKeyVerifier,
+            WebAuthnVerifier::new(allow_origin),
+        ),
         Some(env!("CARGO_PKG_VERSION").to_string()),
     );
 
