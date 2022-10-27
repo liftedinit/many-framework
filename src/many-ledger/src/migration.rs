@@ -7,7 +7,7 @@ use tracing::info;
 #[cfg(feature = "migrate_blocks")]
 use many_protocol::ResponseMessage;
 
-use crate::storage::MIGRATIONS_KEY;
+use crate::storage::data::MIGRATIONS_KEY;
 
 #[cfg(feature = "block_9400")]
 mod block_9400;
