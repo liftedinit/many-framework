@@ -194,13 +194,20 @@ async fn main() {
         (
             AnonymousVerifier,
             CoseKeyVerifier,
-            WebAuthnVerifier::new(allow_origin),
+            WebAuthnVerifier::new(allow_origin.clone()),
         ),
         key.public_key(),
     );
     let allowed_addrs: Option<BTreeSet<Address>> =
         allow_addrs.map(|path| json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap());
-    let backend = AbciModuleMany::new(abci_client.clone(), status, key, allowed_addrs).await;
+    let backend = AbciModuleMany::new(
+        abci_client.clone(),
+        status,
+        key,
+        allowed_addrs,
+        allow_origin,
+    )
+    .await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
 
     {
