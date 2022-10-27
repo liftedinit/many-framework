@@ -166,7 +166,7 @@ impl InitialStateJson {
                             }
                         })
                         .ok_or_else(|| {
-                            ManyError::unknown(format!("Could not resolve symbol '{}'", token_name))
+                            ManyError::unknown(format!("Could not resolve symbol '{token_name}'"))
                         })?;
                     balances.insert(symbol, amount.clone());
                 }

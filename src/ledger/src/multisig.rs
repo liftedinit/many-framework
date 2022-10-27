@@ -242,7 +242,7 @@ fn info(client: ManyClient<impl Identity>, opts: TransactionOpt) -> Result<(), M
     let result: multisig::InfoReturn =
         minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-    println!("{:#?}", result);
+    println!("{result:#?}");
     Ok(())
 }
 

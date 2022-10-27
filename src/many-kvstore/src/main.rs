@@ -127,10 +127,10 @@ fn main() {
         state = None;
     }
 
-    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&pem).unwrap()).unwrap();
+    let key = CoseKeyIdentity::from_pem(std::fs::read_to_string(pem).unwrap()).unwrap();
 
     let state = state.map(|state| {
-        let content = std::fs::read_to_string(&state).unwrap();
+        let content = std::fs::read_to_string(state).unwrap();
         json5::from_str(&content).unwrap()
     });
 
@@ -155,7 +155,7 @@ fn main() {
         let kvstore_command_module = kvstore::KvStoreCommandsModule::new(module.clone());
         if let Some(path) = allow_addrs {
             let allow_addrs: BTreeSet<Address> =
-                json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+                json5::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
             s.add_module(allow_addrs::AllowAddrsModule {
                 inner: kvstore_command_module,
                 allow_addrs,

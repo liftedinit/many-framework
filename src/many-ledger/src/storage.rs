@@ -219,7 +219,7 @@ const EVENT_ID_KEY_SIZE_IN_BYTES: usize = 32;
 
 /// Returns the key for the persistent kv-store.
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
-    format!("/balances/{}/{}", id, symbol).into_bytes()
+    format!("/balances/{id}/{symbol}").into_bytes()
 }
 
 /// Returns the storage key for an event in the kv-store.
@@ -237,7 +237,7 @@ pub(super) fn key_for_event(id: events::EventId) -> Vec<u8> {
 }
 
 pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
-    format!("/accounts/{}", id).into_bytes()
+    format!("/accounts/{id}").into_bytes()
 }
 
 /// Returns the storage key for a multisig pending transaction.
@@ -392,7 +392,7 @@ impl LedgerStorage {
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
                 if !symbols.contains_key(&symbol) {
-                    return Err(format!(r#"Unknown symbol "{}" for identity {}"#, symbol, k));
+                    return Err(format!(r#"Unknown symbol "{symbol}" for identity {k}"#));
                 }
 
                 let key = key_for_account_balance(&k, &symbol);

@@ -7,7 +7,7 @@ use many_types::Either;
 use merk::Op;
 
 fn key_for_account(id: &Address) -> Vec<u8> {
-    format!("/accounts/{}", id).into_bytes()
+    format!("/accounts/{id}").into_bytes()
 }
 
 impl KvStoreStorage {

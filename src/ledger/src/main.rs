@@ -213,9 +213,9 @@ fn balance(
         let balance: ledger::BalanceReturns = minicbor::decode(&payload).unwrap();
         for (symbol, amount) in balance.balances {
             if let Some(symbol_name) = info.local_names.get(&symbol) {
-                println!("{:>12} {} ({})", amount, symbol_name, symbol);
+                println!("{amount:>12} {symbol_name} ({symbol})");
             } else {
-                println!("{:>12} {}", amount, symbol);
+                println!("{amount:>12} {symbol}");
             }
         }
 
@@ -381,7 +381,7 @@ fn main() {
     } else {
         pem.map_or_else(
             || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-            |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+            |p| Box::new(CoseKeyIdentity::from_pem(std::fs::read_to_string(p).unwrap()).unwrap()),
         )
     };
 
@@ -394,7 +394,7 @@ fn main() {
                     .or_else(|_| {
                         let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 
-                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().address())
+                        Ok(CoseKeyIdentity::from_pem(bytes).unwrap().address())
                     })
                     .map_err(|_: std::io::Error| ())
                     .expect("Unable to decode identity command-line argument")
