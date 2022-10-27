@@ -146,7 +146,7 @@ fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), M
                 std::io::Write::write_all(&mut std::io::stdout(), &value).unwrap();
             }
         } else {
-            println!("{:?}", value);
+            println!("{value:?}");
         }
 
         Ok(())
@@ -172,9 +172,9 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
         };
 
         match result.disabled {
-            Some(Either::Left(true)) => println!("{}, disabled", owner),
-            Some(Either::Right(reason)) => println!("{}, disabled ({})", owner, reason),
-            _ => println!("{}", owner),
+            Some(Either::Left(true)) => println!("{owner}, disabled"),
+            Some(Either::Right(reason)) => println!("{owner}, disabled ({reason})"),
+            _ => println!("{owner}"),
         }
 
         Ok(())
@@ -325,7 +325,7 @@ fn main() {
 
     let key = pem.map_or_else(
         || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-        |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+        |p| Box::new(CoseKeyIdentity::from_pem(std::fs::read_to_string(p).unwrap()).unwrap()),
     );
 
     let client = ManyClient::new(&server, server_id, key).unwrap();

@@ -22,7 +22,7 @@ mod ledger_commands;
 pub mod multisig;
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
-    format!("/balances/{}/{}", id, symbol).into_bytes()
+    format!("/balances/{id}/{symbol}").into_bytes()
 }
 
 pub struct LedgerStorage {
@@ -41,6 +41,7 @@ pub struct LedgerStorage {
 
     next_account_id: u32,
     account_identity: Address,
+
     active_migrations: BTreeSet<String>,
     all_migrations: BTreeSet<Box<dyn Migration>>,
 }
@@ -160,7 +161,7 @@ impl LedgerStorage {
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
                 if !symbols.contains_key(&symbol) {
-                    return Err(format!(r#"Unknown symbol "{}" for identity {}"#, symbol, k));
+                    return Err(format!(r#"Unknown symbol "{symbol}" for identity {k}"#));
                 }
 
                 let key = key_for_account_balance(&k, &symbol);
