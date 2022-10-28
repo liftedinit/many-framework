@@ -162,7 +162,7 @@ fn main() {
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => {
-                panic!("Error: {}", e)
+                panic!("Error: {e}")
             }
         }
     } else if persistent.exists() {
@@ -170,8 +170,8 @@ fn main() {
         state = None;
     }
 
-    let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
-    let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
+    let pem = std::fs::read_to_string(pem).expect("Could not read PEM file.");
+    let key = CoseKeyIdentity::from_pem(pem).expect("Could not generate identity from PEM file.");
     info!(address = key.address().to_string().as_str());
 
     let state: Option<InitialStateJson> =
@@ -235,7 +235,7 @@ fn main() {
         let ledger_command_module = ledger::LedgerCommandsModule::new(module_impl.clone());
         if let Some(path) = allow_addrs {
             let allow_addrs: BTreeSet<Address> =
-                json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+                json5::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
             s.add_module(AllowAddrsModule {
                 inner: ledger_command_module,
                 allow_addrs,

@@ -87,7 +87,7 @@ fn main() {
     let server_id = server_id.unwrap_or_default();
     let key: Box<dyn Identity> = pem.map_or_else(
         || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-        |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+        |p| Box::new(CoseKeyIdentity::from_pem(std::fs::read_to_string(p).unwrap()).unwrap()),
     );
 
     let client = ManyClient::new(server, server_id, key).unwrap();
@@ -101,7 +101,7 @@ fn main() {
                 let result = client.call_(
                     "kvstore.get",
                     GetArgs {
-                        key: format!("http/{}", path).into_bytes().into(),
+                        key: format!("http/{path}").into_bytes().into(),
                     },
                 );
                 match result {

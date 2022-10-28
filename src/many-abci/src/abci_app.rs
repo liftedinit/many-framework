@@ -62,7 +62,7 @@ impl Application for AbciApp {
                 Ok(x) => x,
                 Err(err) => {
                     return ResponseInfo {
-                        data: format!("An error occurred during call to abci.info:\n{}", err),
+                        data: format!("An error occurred during call to abci.info:\n{err}"),
                         ..Default::default()
                     }
                 }

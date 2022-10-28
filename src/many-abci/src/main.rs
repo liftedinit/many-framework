@@ -186,7 +186,7 @@ async fn main() {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
+    let key = CoseKeyIdentity::from_pem(std::fs::read_to_string(many_pem).unwrap()).unwrap();
     info!(many_address = key.address().to_string().as_str());
     let server = ManyServer::new(
         format!("AbciModule({})", &status.name),
@@ -199,7 +199,7 @@ async fn main() {
         key.public_key(),
     );
     let allowed_addrs: Option<BTreeSet<Address>> =
-        allow_addrs.map(|path| json5::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap());
+        allow_addrs.map(|path| json5::from_str(&std::fs::read_to_string(path).unwrap()).unwrap());
     let backend = AbciModuleMany::new(
         abci_client.clone(),
         status,
@@ -232,7 +232,7 @@ async fn main() {
         Ok(_) => {}
         Err(error) => {
             error!("{}", error);
-            panic!("Error happened in many: {:?}", error);
+            panic!("Error happened in many: {error:?}");
         }
     }
 
