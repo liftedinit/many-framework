@@ -176,11 +176,11 @@ proptest! {
         assert_eq!(arguments.threshold, Some(3));
         assert_eq!(
             arguments.timeout_in_secs,
-            Some(many_ledger::storage::MULTISIG_DEFAULT_TIMEOUT_IN_SECS)
+            Some(many_ledger::storage::multisig::MULTISIG_DEFAULT_TIMEOUT_IN_SECS)
         );
         assert_eq!(
             arguments.execute_automatically,
-            Some(many_ledger::storage::MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY)
+            Some(many_ledger::storage::multisig::MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY)
         );
     }
 

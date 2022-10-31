@@ -15,14 +15,19 @@ use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
 use tracing::{debug, info};
 
+use crate::allow_addrs::AllowAddrsModule;
+
+#[cfg(feature = "webauthn_testing")]
+use crate::idstore_webauthn::IdStoreWebAuthnModule;
+use crate::json::InitialStateJson;
+use crate::module::account::AccountFeatureModule;
+use module::*;
+
 mod error;
 mod json;
 mod migration;
 mod module;
 mod storage;
-
-use crate::json::InitialStateJson;
-use module::*;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
 enum LogStrategy {
