@@ -1,19 +1,22 @@
-use crate::storage::{key_for_account_balance, LedgerStorage};
-use many_identity::Address;
-use many_types::ledger::{Symbol, TokenAmount};
+use crate::storage::LedgerStorage;
+use many_modules::data::{DataIndex, DataInfo, DataValue};
+use std::collections::BTreeMap;
 
-pub const MIGRATIONS_KEY: &[u8] = b"/config/migrations";
+pub const DATA_ATTRIBUTES_KEY: &[u8] = b"/data/attributes";
+pub const DATA_INFO_KEY: &[u8] = b"/data/info";
 
-impl LedgerStorage {
-    pub fn get_balance(&self, identity: &Address, symbol: &Symbol) -> TokenAmount {
-        if identity.is_anonymous() {
-            TokenAmount::zero()
-        } else {
-            let key = key_for_account_balance(identity, symbol);
-            match self.persistent_store.get(&key).unwrap() {
-                None => TokenAmount::zero(),
-                Some(amount) => TokenAmount::from(amount),
-            }
-        }
+impl LedgerStorage<'_> {
+    pub(crate) fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>> {
+        self.persistent_store
+            .get(DATA_INFO_KEY)
+            .expect("Error while reading the DB")
+            .map(|x| minicbor::decode(&x).unwrap())
+    }
+
+    pub(crate) fn data_attributes(&self) -> Option<BTreeMap<DataIndex, DataValue>> {
+        self.persistent_store
+            .get(DATA_ATTRIBUTES_KEY)
+            .expect("Error while reading the DB")
+            .map(|x| minicbor::decode(&x).unwrap())
     }
 }

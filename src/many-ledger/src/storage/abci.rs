@@ -1,10 +1,9 @@
-use crate::migration::run_migrations;
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use crate::storage::LedgerStorage;
 use many_modules::abci_backend::AbciCommitInfo;
 use many_modules::events::EventId;
 
-impl LedgerStorage {
+impl LedgerStorage<'_> {
     pub fn commit(&mut self) -> AbciCommitInfo {
         // First check if there's any need to clean up multisig transactions. Ignore
         // errors.
@@ -18,12 +17,11 @@ impl LedgerStorage {
         // attributes.
         self.persistent_store.commit(&[]).unwrap();
 
-        run_migrations(
-            height + 1,
-            &self.all_migrations,
-            &mut self.active_migrations,
-            &mut self.persistent_store,
-        );
+        // Initialize/update migrations at current height, if any
+        for migration in self.migrations.values() {
+            migration.initialize(&mut self.persistent_store, height + 1);
+            migration.update(&mut self.persistent_store, height + 1);
+        }
 
         self.persistent_store.commit(&[]).unwrap();
 

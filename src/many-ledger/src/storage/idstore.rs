@@ -30,7 +30,7 @@ impl IdStoreRootSeparator {
     }
 }
 
-impl LedgerStorage {
+impl LedgerStorage<'_> {
     pub(crate) fn inc_idstore_seed(&mut self) -> u64 {
         let idstore_seed = self
             .persistent_store
@@ -158,7 +158,7 @@ impl LedgerStorage {
 pub mod tests {
     use super::*;
 
-    impl LedgerStorage {
+    impl LedgerStorage<'_> {
         pub fn set_idstore_seed(&mut self, seed: u64) {
             self.persistent_store
                 .apply(&[(

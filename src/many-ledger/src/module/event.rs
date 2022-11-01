@@ -115,7 +115,7 @@ fn filter_attribute_specific<'a>(
     it
 }
 
-impl events::EventsModuleBackend for LedgerModuleImpl {
+impl events::EventsModuleBackend for LedgerModuleImpl<'_> {
     fn info(&self, _args: events::InfoArgs) -> Result<events::InfoReturn, ManyError> {
         use strum::IntoEnumIterator;
         Ok(events::InfoReturn {

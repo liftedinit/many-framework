@@ -1,5 +1,5 @@
-#[cfg(feature = "migrate_blocks")]
-use crate::migration;
+// #[cfg(feature = "migrate_blocks")]
+// use crate::migration;
 
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
@@ -190,7 +190,7 @@ pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
 pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
 
-impl LedgerStorage {
+impl LedgerStorage<'_> {
     pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
         use super::rocksdb::{Direction, IteratorMode};
 
@@ -601,8 +601,23 @@ impl LedgerStorage {
             ..Default::default()
         };
 
-        #[cfg(feature = "migrate_blocks")]
-        let response = migration::migrate(tx_id, response);
+        // TODO: Simplify
+        let response = if let Some(migration) = self.migrations.get("Block 9400") {
+            if let Some(response) = migration.hotfix(
+                &minicbor::to_vec(crate::migration::block_9400::Block9400Tx {
+                    tx_id,
+                    response: response.clone(), // TODO: Get rid of clone()
+                })
+                .map_err(ManyError::deserialization_error)?,
+                self.get_height(),
+            ) {
+                minicbor::decode(&response).map_err(ManyError::deserialization_error)?
+            } else {
+                response
+            }
+        } else {
+            response
+        };
 
         Ok(response)
     }

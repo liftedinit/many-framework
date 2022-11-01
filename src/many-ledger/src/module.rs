@@ -1,10 +1,12 @@
 use crate::json::InitialStateJson;
-use crate::migration::Migration;
+// TODO: MIGRATION
+// use crate::migration::Migration;
 use crate::{error, storage::LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
+use many_migration::Migration;
 use many_types::ledger::Symbol;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::path::Path;
 use tracing::info;
@@ -22,13 +24,14 @@ mod multisig;
 
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug)]
-pub struct LedgerModuleImpl {
-    storage: LedgerStorage,
+pub struct LedgerModuleImpl<'a> {
+    storage: LedgerStorage<'a>,
 }
 
-impl LedgerModuleImpl {
+impl<'a> LedgerModuleImpl<'a> {
     pub fn new<P: AsRef<Path>>(
         initial_state: Option<InitialStateJson>,
+        migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
@@ -37,6 +40,7 @@ impl LedgerModuleImpl {
                 state.symbols(),
                 state.balances()?,
                 persistence_store_path,
+                migrations,
                 state.identity,
                 blockchain,
                 state.id_store_seed,
@@ -79,11 +83,6 @@ impl LedgerModuleImpl {
         );
 
         Ok(Self { storage })
-    }
-
-    pub fn with_migrations(mut self, migrations: BTreeSet<Box<dyn Migration>>) -> Self {
-        self.storage = self.storage.with_migrations(migrations);
-        self
     }
 
     #[cfg(feature = "balance_testing")]

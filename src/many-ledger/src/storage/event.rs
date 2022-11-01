@@ -31,7 +31,7 @@ pub(super) fn key_for_event(id: events::EventId) -> Vec<u8> {
     vec![EVENTS_ROOT.to_vec(), exp_id.to_vec()].concat()
 }
 
-impl LedgerStorage {
+impl LedgerStorage<'_> {
     pub(crate) fn new_event_id(&mut self) -> events::EventId {
         self.latest_tid += 1;
         self.latest_tid.clone()

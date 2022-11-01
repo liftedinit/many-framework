@@ -3,23 +3,25 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
+use many_migration::load_migrations;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::allow_addrs::AllowAddrsModule;
 
 #[cfg(feature = "webauthn_testing")]
 use crate::idstore_webauthn::IdStoreWebAuthnModule;
 use crate::json::InitialStateJson;
+use crate::migration::MIGRATIONS;
 use crate::module::account::AccountFeatureModule;
 use module::*;
 
@@ -98,7 +100,7 @@ struct Opts {
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
 
-    /// Path to a JSON5 file containing the configurations for the
+    /// Path to a JSON file containing the configurations for the
     /// migrations
     #[clap(long, short)]
     migrations_config: Option<PathBuf>,
@@ -184,17 +186,18 @@ fn main() {
 
     let migrations = migrations_config
         .map(|file| {
-            let contents = std::fs::read_to_string(file)
+            let content = std::fs::read_to_string(file)
                 .expect("Could not read file passed to --migrations_config");
-            json5::from_str(&contents).expect("Could not parse file passed to --migrations_config")
+            load_migrations(&MIGRATIONS, &content).expect("Could not read migration file")
         })
-        .unwrap_or_default();
+        .unwrap_or(BTreeMap::new());
 
-    info!("Migrations: {:?}", migrations);
+    info!("Loaded migrations");
+    for migration in migrations.values() {
+        info!("{migration}")
+    }
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci)
-        .unwrap()
-        .with_migrations(migrations);
+    let module_impl = LedgerModuleImpl::new(state, migrations, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]

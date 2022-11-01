@@ -6,7 +6,7 @@ use many_modules::EmptyReturn;
 use many_protocol::ResponseMessage;
 use minicbor::bytes::ByteVec;
 
-impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {
+impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl<'_> {
     fn multisig_submit_transaction(
         &mut self,
         sender: &Address,

@@ -1,5 +1,4 @@
 use crate::module::LedgerModuleImpl;
-use crate::storage::migration_ext::data::DataExt;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::data::{
@@ -7,7 +6,7 @@ use many_modules::data::{
     DataQueryArgs, DataQueryReturns,
 };
 
-impl DataModuleBackend for LedgerModuleImpl {
+impl DataModuleBackend for LedgerModuleImpl<'_> {
     fn info(&self, _: &Address, _: DataInfoArgs) -> Result<DataInfoReturns, ManyError> {
         Ok(DataInfoReturns {
             indices: self

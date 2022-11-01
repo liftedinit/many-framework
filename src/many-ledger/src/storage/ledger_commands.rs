@@ -1,5 +1,6 @@
 use crate::error;
-use crate::storage::migration_ext::data::DataExt;
+// TODO: MIGRATION
+// use crate::storage::migration_ext::data::DataExt;
 use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
@@ -9,7 +10,19 @@ use merk::{BatchEntry, Op};
 use std::cmp::Ordering;
 use tracing::info;
 
-impl LedgerStorage {
+impl LedgerStorage<'_> {
+    pub fn get_balance(&self, identity: &Address, symbol: &Symbol) -> TokenAmount {
+        if identity.is_anonymous() {
+            TokenAmount::zero()
+        } else {
+            let key = key_for_account_balance(identity, symbol);
+            match self.persistent_store.get(&key).unwrap() {
+                None => TokenAmount::zero(),
+                Some(amount) => TokenAmount::from(amount),
+            }
+        }
+    }
+
     pub fn send(
         &mut self,
         from: &Address,
@@ -54,8 +67,6 @@ impl LedgerStorage {
                 (key_from, Op::Put(amount_from.to_vec())),
             ],
         };
-
-        self.update_data_attributes(from, to, amount.clone(), symbol);
 
         self.persistent_store.apply(&batch).unwrap();
 

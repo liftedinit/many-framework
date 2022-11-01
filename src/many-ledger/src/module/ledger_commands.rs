@@ -6,7 +6,7 @@ use many_identity::Address;
 use many_modules::account::Role;
 use many_modules::{ledger, EmptyReturn};
 
-impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
+impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl<'_> {
     fn send(&mut self, sender: &Address, args: ledger::SendArgs) -> Result<EmptyReturn, ManyError> {
         let ledger::SendArgs {
             from,

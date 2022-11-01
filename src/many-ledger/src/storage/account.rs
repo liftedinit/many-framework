@@ -15,7 +15,7 @@ pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
     format!("/accounts/{id}").into_bytes()
 }
 
-impl LedgerStorage {
+impl LedgerStorage<'_> {
     fn new_account_id(&mut self) -> Address {
         let current_id = self.next_account_id;
         self.next_account_id += 1;
