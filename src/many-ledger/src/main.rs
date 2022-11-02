@@ -21,7 +21,6 @@ use crate::allow_addrs::AllowAddrsModule;
 #[cfg(feature = "webauthn_testing")]
 use crate::idstore_webauthn::IdStoreWebAuthnModule;
 use crate::json::InitialStateJson;
-use crate::migration::MIGRATIONS;
 use crate::module::account::AccountFeatureModule;
 use module::*;
 
@@ -184,20 +183,7 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let migrations = migrations_config
-        .map(|file| {
-            let content = std::fs::read_to_string(file)
-                .expect("Could not read file passed to --migrations_config");
-            load_migrations(&MIGRATIONS, &content).expect("Could not read migration file")
-        })
-        .unwrap_or(BTreeMap::new());
-
-    info!("Loaded migrations");
-    for migration in migrations.values() {
-        info!("{migration}")
-    }
-
-    let module_impl = LedgerModuleImpl::new(state, migrations, persistent, abci).unwrap();
+    let module_impl = LedgerModuleImpl::new(state, migrations_config, persistent, abci).unwrap();
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]

@@ -1,15 +1,16 @@
-use crate::migration::MIGRATIONS_KEY;
+use crate::migration::{MIGRATIONS, MIGRATIONS_KEY};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
+use linkme::DistributedSlice;
 use many_error::ManyError;
 use many_identity::Address;
-use many_migration::Migration;
+use many_migration::{InnerMigration, Migration, Status};
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
 use merk::{rocksdb, BatchEntry, Op};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use tracing::info;
+use tracing::{info, Metadata};
 
 mod abci;
 mod account;
@@ -87,7 +88,11 @@ impl<'a> LedgerStorage<'a> {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
+    pub fn load<P: AsRef<Path>>(
+        persistent_path: P,
+        migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
+        blockchain: bool,
+    ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -121,18 +126,82 @@ impl<'a> LedgerStorage<'a> {
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        // TODO
-        // let migrations: BTreeMap<&str, Migration<&merk::Merk>> = persistent_store
+        let mig = persistent_store
+            .get(MIGRATIONS_KEY)
+            .expect("Could not open storage.")
+            .map_or(BTreeMap::new(), |x| {
+                let foo: BTreeMap<String, Migration<merk::Merk, ManyError>> =
+                    minicbor::decode_with(&x, &mut MIGRATIONS.clone()).unwrap();
+                foo
+            });
+        // use minicbor::Decode;
+        // #[derive(Debug, Decode)]
+        // #[cbor(map)]
+        // struct Dumb {
+        //     #[n(0)]
+        //     pub r#type: String,
+        //
+        //     #[n(1)]
+        //     pub metadata: many_migration::Metadata,
+        //
+        //     #[n(2)]
+        //     pub status: Status,
+        // }
+        //
+        // // Restore stored migrations and merge with new migrations
+        // // Store the result
+        // let mig = persistent_store
         //     .get(MIGRATIONS_KEY)
         //     .expect("Could not open storage.")
-        //     .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
-        //     .unwrap_or_default();
+        //     .map_or(BTreeMap::new(), |x| {
+        //         let foo: BTreeMap<String, Dumb> = minicbor::decode(&x).unwrap();
+        //         foo
+        //     });
         //
+        // let stored_migrations = mig.into_iter().map(|(k, v)| {
+        //     MIGRATIONS.into_iter().
+        // });
+
+        // let stored_migrations = if let Some(x) = mig {
+        //     minicbor::decode(&x).unwrap()
+        // } else {
+        //     BTreeMap::new()
+        // };
+
+        // let stored_migrations: BTreeMap<&str, Migration<merk::Merk, ManyError>> =
+        //     minicbor::decode_with(&mig, &mut MIGRATIONS.clone()).unwrap();
+
+        // let stored_migrations: BTreeMap<&str, Migration<merk::Merk, ManyError>> =
+        //     if let Some(x) = mig {
+        //         minicbor::decode_with::<
+        //             DistributedSlice<[InnerMigration<'static, merk::Merk, ManyError>]>,
+        //             BTreeMap<&str, Migration<merk::Merk, ManyError>>,
+        //         >(&x, &mut MIGRATIONS.clone())
+        //         .unwrap()
+        // minicbor::decode_with::<
+        //     DistributedSlice<[InnerMigration<'static, merk::Merk, ManyError>]>,
+        //     BTreeMap<&str, Migration<merk::Merk, ManyError>>,
+        // >(&x, &mut MIGRATIONS.clone()) // TODO: Get rid of clone?
+        // .expect("Could not read migrations")
+        // } else {
+        //     BTreeMap::new()
+        // };
+        // info!("Loading migrations from storage");
+        // let stored_migrations: BTreeMap<&str, Migration<merk::Merk, ManyError>> = persistent_store
+        //     .get(MIGRATIONS_KEY)
+        //     .expect("Could not open storage.")
+        //     .map(|x| {
+        //         minicbor::decode_with(&x, &mut foo) // TODO: Get rid of clone?
+        //             .expect("Could not read migrations")
+        //     })
+        //     .unwrap_or_default();
+
         // info!("Storage migrations list");
-        // for migration in migrations.values() {
+        // for migration in stored_migrations.values() {
         //     info!("{migration}")
         // }
-        let migrations = BTreeMap::new();
+        //
+        // let migrations = stored_migrations;
 
         Ok(Self {
             symbols,
@@ -195,6 +264,33 @@ impl<'a> LedgerStorage<'a> {
             for (k, v) in keys {
                 persistent_store.apply(&[(k, Op::Put(v))]).unwrap();
             }
+        }
+
+        // Store current loaded migrations
+        if !migrations.is_empty() {
+            persistent_store
+                .apply(&[(
+                    MIGRATIONS_KEY.to_vec(),
+                    Op::Put(
+                        minicbor::to_vec(
+                            &migrations
+                                .iter()
+                                .map(|(k, v)| v)
+                                .collect::<Vec<&Migration<'_, _, _>>>(),
+                        )
+                        .unwrap(),
+                    ),
+                )])
+                .unwrap();
+            dbg!(hex::encode(
+                minicbor::to_vec(
+                    &migrations
+                        .iter()
+                        .map(|(k, v)| v)
+                        .collect::<Vec<&Migration<'_, _, _>>>()
+                )
+                .unwrap()
+            ));
         }
 
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
