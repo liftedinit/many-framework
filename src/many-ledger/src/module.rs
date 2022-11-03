@@ -1,12 +1,9 @@
 use crate::json::InitialStateJson;
-use std::collections::BTreeMap;
-// TODO: MIGRATION
-// use crate::migration::Migration;
 use crate::migration::MIGRATIONS;
 use crate::{error, storage::LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
-use many_migration::{load_migrations, Migration, MigrationType};
+use many_migration::{load_migrations, MigrationType};
 use many_types::ledger::Symbol;
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
@@ -125,13 +122,5 @@ impl<'a> LedgerModuleImpl<'a> {
     pub fn set_balance_only_for_testing(&mut self, account: Address, balance: u64, symbol: Symbol) {
         self.storage
             .set_balance_only_for_testing(account, balance, symbol);
-    }
-
-    #[cfg(feature = "migration_testing")]
-    pub fn add_migrations(
-        &mut self,
-        migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
-    ) {
-        self.storage.add_migrations(migrations);
     }
 }

@@ -3,8 +3,6 @@ use common::*;
 
 use many_identity::testing::identity;
 use many_ledger::migration::data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX};
-use many_ledger::migration::MIGRATIONS;
-use many_migration::load_migrations;
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},
     EmptyArg,
@@ -66,7 +64,6 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
 #[test]
 fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
-    let mut harness = Setup::new(true);
     let content = r#"
     [
       {
@@ -76,8 +73,7 @@ fn migration() {
       }
     ]
     "#;
-    let migrations = load_migrations(&MIGRATIONS, &content).unwrap();
-    harness.module_impl.add_migrations(migrations);
+    let mut harness = Setup::new_with_migrations(true, content);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, a1) = harness.block(|h| {
@@ -130,7 +126,6 @@ fn migration() {
 
 #[test]
 fn migration_stress() {
-    let mut harness = Setup::new(true);
     let content = r#"
     [
       {
@@ -140,8 +135,7 @@ fn migration_stress() {
       }
     ]
     "#;
-    let migrations = load_migrations(&MIGRATIONS, &content).unwrap();
-    harness.module_impl.add_migrations(migrations);
+    let mut harness = Setup::new_with_migrations(true, content);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let _ = harness.block(|h| {

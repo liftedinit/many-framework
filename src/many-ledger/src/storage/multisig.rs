@@ -1,6 +1,3 @@
-// #[cfg(feature = "migrate_blocks")]
-// use crate::migration;
-
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
 use crate::storage::LedgerStorage;

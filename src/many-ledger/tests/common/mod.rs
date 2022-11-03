@@ -21,6 +21,8 @@ use once_cell::sync::Lazy;
 use proptest::prelude::*;
 use std::{
     collections::{BTreeMap, BTreeSet},
+    io::Write,
+    path::PathBuf,
     str::FromStr,
 };
 
@@ -85,7 +87,7 @@ impl Default for Setup<'_> {
 }
 
 impl Setup<'_> {
-    pub fn new(blockchain: bool) -> Self {
+    fn _new(blockchain: bool, migrations: Option<PathBuf>) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
@@ -96,7 +98,7 @@ impl Setup<'_> {
                         .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                         .expect("Could not read initial state."),
                 ),
-                None,
+                migrations,
                 tempfile::tempdir().unwrap(),
                 blockchain,
             )
@@ -106,6 +108,16 @@ impl Setup<'_> {
             public_key,
             time: Some(1_000_000),
         }
+    }
+
+    pub fn new(blockchain: bool) -> Self {
+        Setup::_new(blockchain, None)
+    }
+
+    pub fn new_with_migrations(blockchain: bool, migrations: &str) -> Self {
+        let mut migration_config = tempfile::NamedTempFile::new().unwrap();
+        write!(&mut migration_config, "{migrations}").unwrap();
+        Setup::_new(blockchain, Some(migration_config.path().into()))
     }
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {
