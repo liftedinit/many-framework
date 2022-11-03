@@ -60,7 +60,7 @@ once_cell = "1.12"
 many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "15122bbd719b44a73ecb733576df5fa32f6929c3" }
 many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "15122bbd719b44a73ecb733576df5fa32f6929c3", features = ["default", "serde", "testing"] }
 many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "15122bbd719b44a73ecb733576df5fa32f6929c3", features = [ "ed25519", "testing" ] }
-many-ledger = { path = ".", features = ["balance_testing"]}
+many-ledger = { path = ".", features = ["balance_testing", "migration_testing"]}
 proptest = "1"
 tempfile = "3.3.0"
 

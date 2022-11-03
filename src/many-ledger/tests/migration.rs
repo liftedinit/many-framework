@@ -1,13 +1,10 @@
 pub mod common;
-
-use std::collections::BTreeSet;
-
 use common::*;
+
 use many_identity::testing::identity;
-use many_ledger::migration::{
-    data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
-    Migration,
-};
+use many_ledger::migration::data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX};
+use many_ledger::migration::MIGRATIONS;
+use many_migration::load_migrations;
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},
     EmptyArg,
@@ -70,17 +67,17 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
 fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
     let mut harness = Setup::new(true);
-    let migrations_str = r#"
+    let content = r#"
     [
       {
-        type: "AccountCountData",
-        block_height: 2,
-        issue: "https://github.com/liftedinit/many-framework/issues/190",
+        "type": "Account Count Data Attribute",
+        "block_height": 2,
+        "issue": "https://github.com/liftedinit/many-framework/issues/190"
       }
     ]
     "#;
-    let migrations: BTreeSet<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
-    harness.module_impl = harness.module_impl.with_migrations(migrations);
+    let migrations = load_migrations(&MIGRATIONS, &content).unwrap();
+    harness.module_impl.add_migrations(migrations);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, a1) = harness.block(|h| {
@@ -134,17 +131,17 @@ fn migration() {
 #[test]
 fn migration_stress() {
     let mut harness = Setup::new(true);
-    let migrations_str = r#"
+    let content = r#"
     [
       {
-        type: "AccountCountData",
-        block_height: 2,
-        issue: "https://github.com/liftedinit/many-framework/issues/190",
+        "type": "Account Count Data Attribute",
+        "block_height": 2,
+        "issue": "https://github.com/liftedinit/many-framework/issues/190"
       }
     ]
     "#;
-    let migrations: BTreeSet<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
-    harness.module_impl = harness.module_impl.with_migrations(migrations);
+    let migrations = load_migrations(&MIGRATIONS, &content).unwrap();
+    harness.module_impl.add_migrations(migrations);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let _ = harness.block(|h| {

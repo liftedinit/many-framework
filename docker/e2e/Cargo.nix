@@ -29,7 +29,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "3aadea5b0d638c726a60fb71a166199edeb571832f266442a0030439d3468813";
+  nixifiedLockHash = "ca6f05bc638d67164ebf51a5a63aaceea9c138c95c04e22628383c1edac8678b";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -2777,7 +2777,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-client";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     features = builtins.concatLists [
       [ "default" ]
@@ -2830,7 +2830,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-client-macros";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       proc_macro2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.47" { inherit profileName; }).out;
@@ -2847,7 +2847,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-error";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     features = builtins.concatLists [
       [ "default" ]
@@ -2869,7 +2869,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     features = builtins.concatLists [
       [ "coset" ]
@@ -2904,7 +2904,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-dsa";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     features = builtins.concatLists [
       [ "coset" ]
@@ -2947,7 +2947,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-hsm";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       asn1 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".asn1."0.10.0" { inherit profileName; }).out;
@@ -2974,7 +2974,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-webauthn";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
@@ -3044,6 +3044,7 @@ in
     src = fetchCrateLocal (workspaceSrc + "/src/many-ledger");
     features = builtins.concatLists [
       [ "balance_testing" ]
+      [ "migration_testing" ]
     ];
     dependencies = {
       async_trait = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".async-trait."0.1.58" { profileName = "__noProfile"; }).out;
@@ -3106,7 +3107,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-macros";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       inflections = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".inflections."1.1.1" { inherit profileName; }).out;
@@ -3126,9 +3127,10 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-migration";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
+      minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.147" { inherit profileName; }).out;
       serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.87" { inherit profileName; }).out;
       strum = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".strum."0.24.1" { inherit profileName; }).out;
@@ -3144,7 +3146,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-modules";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       async_trait = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".async-trait."0.1.58" { profileName = "__noProfile"; }).out;
@@ -3171,7 +3173,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-protocol";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
@@ -3202,7 +3204,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-server";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     features = builtins.concatLists [
       [ "default" ]
@@ -3261,7 +3263,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-types";
       version = "0.1.0";
-      rev = "a5fa0b2c2ec6432a5dd67dc9d59756cea8dd2a99";
+      rev = "163895bc4279eeb3abd4085bdc1711a1c2d21aae";
       ref = "fmorency/migration-redesign";};
     dependencies = {
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;

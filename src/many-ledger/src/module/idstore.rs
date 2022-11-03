@@ -136,6 +136,7 @@ mod tests {
                     .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                     .expect("Could not read initial state."),
             ),
+            None,
             tempfile::tempdir().unwrap(),
             false,
         )

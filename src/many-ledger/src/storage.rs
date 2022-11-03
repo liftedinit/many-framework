@@ -1,16 +1,15 @@
 use crate::migration::{MIGRATIONS, MIGRATIONS_KEY};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
-use linkme::DistributedSlice;
 use many_error::ManyError;
 use many_identity::Address;
-use many_migration::{InnerMigration, Migration, Status};
+use many_migration::Migration;
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
 use merk::{rocksdb, BatchEntry, Op};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::path::Path;
-use tracing::{info, Metadata};
+use tracing::info;
 
 mod abci;
 mod account;
@@ -88,9 +87,25 @@ impl<'a> LedgerStorage<'a> {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
+    pub(crate) fn add_migrations(
+        &mut self,
+        mut migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
+    ) {
+        self.migrations.append(&mut migrations);
+        self.persistent_store
+            .apply(&[(
+                MIGRATIONS_KEY.to_vec(),
+                Op::Put(
+                    minicbor::to_vec(migrations.values().collect::<Vec<&Migration<'_, _, _>>>())
+                        .unwrap(),
+                ),
+            )])
+            .unwrap();
+    }
+
     pub fn load<P: AsRef<Path>>(
         persistent_path: P,
-        migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
+        migrations: &mut BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
         blockchain: bool,
     ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
@@ -126,82 +141,22 @@ impl<'a> LedgerStorage<'a> {
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let mig = persistent_store
+        let mut all_migrations = persistent_store
             .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
             .map_or(BTreeMap::new(), |x| {
-                let foo: BTreeMap<String, Migration<merk::Merk, ManyError>> =
-                    minicbor::decode_with(&x, &mut MIGRATIONS.clone()).unwrap();
-                foo
+                minicbor::decode_with::<_, Vec<Migration<_, _>>>(&x, &mut MIGRATIONS.clone())
+                    .unwrap()
+                    .into_iter()
+                    .map(|mig| (mig.migration.name(), mig))
+                    .collect::<BTreeMap<&str, Migration<_, _>>>()
             });
-        // use minicbor::Decode;
-        // #[derive(Debug, Decode)]
-        // #[cbor(map)]
-        // struct Dumb {
-        //     #[n(0)]
-        //     pub r#type: String,
-        //
-        //     #[n(1)]
-        //     pub metadata: many_migration::Metadata,
-        //
-        //     #[n(2)]
-        //     pub status: Status,
-        // }
-        //
-        // // Restore stored migrations and merge with new migrations
-        // // Store the result
-        // let mig = persistent_store
-        //     .get(MIGRATIONS_KEY)
-        //     .expect("Could not open storage.")
-        //     .map_or(BTreeMap::new(), |x| {
-        //         let foo: BTreeMap<String, Dumb> = minicbor::decode(&x).unwrap();
-        //         foo
-        //     });
-        //
-        // let stored_migrations = mig.into_iter().map(|(k, v)| {
-        //     MIGRATIONS.into_iter().
-        // });
+        all_migrations.append(migrations);
 
-        // let stored_migrations = if let Some(x) = mig {
-        //     minicbor::decode(&x).unwrap()
-        // } else {
-        //     BTreeMap::new()
-        // };
-
-        // let stored_migrations: BTreeMap<&str, Migration<merk::Merk, ManyError>> =
-        //     minicbor::decode_with(&mig, &mut MIGRATIONS.clone()).unwrap();
-
-        // let stored_migrations: BTreeMap<&str, Migration<merk::Merk, ManyError>> =
-        //     if let Some(x) = mig {
-        //         minicbor::decode_with::<
-        //             DistributedSlice<[InnerMigration<'static, merk::Merk, ManyError>]>,
-        //             BTreeMap<&str, Migration<merk::Merk, ManyError>>,
-        //         >(&x, &mut MIGRATIONS.clone())
-        //         .unwrap()
-        // minicbor::decode_with::<
-        //     DistributedSlice<[InnerMigration<'static, merk::Merk, ManyError>]>,
-        //     BTreeMap<&str, Migration<merk::Merk, ManyError>>,
-        // >(&x, &mut MIGRATIONS.clone()) // TODO: Get rid of clone?
-        // .expect("Could not read migrations")
-        // } else {
-        //     BTreeMap::new()
-        // };
-        // info!("Loading migrations from storage");
-        // let stored_migrations: BTreeMap<&str, Migration<merk::Merk, ManyError>> = persistent_store
-        //     .get(MIGRATIONS_KEY)
-        //     .expect("Could not open storage.")
-        //     .map(|x| {
-        //         minicbor::decode_with(&x, &mut foo) // TODO: Get rid of clone?
-        //             .expect("Could not read migrations")
-        //     })
-        //     .unwrap_or_default();
-
-        // info!("Storage migrations list");
-        // for migration in stored_migrations.values() {
-        //     info!("{migration}")
-        // }
-        //
-        // let migrations = stored_migrations;
+        info!("Migrations list");
+        for migration in all_migrations.values() {
+            info!("{migration}")
+        }
 
         Ok(Self {
             symbols,
@@ -212,7 +167,7 @@ impl<'a> LedgerStorage<'a> {
             current_hash: None,
             next_account_id,
             account_identity,
-            migrations,
+            migrations: all_migrations,
         })
     }
 
@@ -220,7 +175,6 @@ impl<'a> LedgerStorage<'a> {
         symbols: BTreeMap<Symbol, String>,
         initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
         persistent_path: P,
-        migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
         identity: Address,
         blockchain: bool,
         maybe_seed: Option<u64>,
@@ -266,33 +220,6 @@ impl<'a> LedgerStorage<'a> {
             }
         }
 
-        // Store current loaded migrations
-        if !migrations.is_empty() {
-            persistent_store
-                .apply(&[(
-                    MIGRATIONS_KEY.to_vec(),
-                    Op::Put(
-                        minicbor::to_vec(
-                            &migrations
-                                .iter()
-                                .map(|(k, v)| v)
-                                .collect::<Vec<&Migration<'_, _, _>>>(),
-                        )
-                        .unwrap(),
-                    ),
-                )])
-                .unwrap();
-            dbg!(hex::encode(
-                minicbor::to_vec(
-                    &migrations
-                        .iter()
-                        .map(|(k, v)| v)
-                        .collect::<Vec<&Migration<'_, _, _>>>()
-                )
-                .unwrap()
-            ));
-        }
-
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
 
         Ok(Self {
@@ -304,7 +231,7 @@ impl<'a> LedgerStorage<'a> {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            migrations,
+            migrations: BTreeMap::new(),
         })
     }
 

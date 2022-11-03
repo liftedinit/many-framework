@@ -69,8 +69,8 @@ fn create_account_args(account_type: AccountType) -> account::CreateArgs {
     }
 }
 
-pub struct Setup {
-    pub module_impl: LedgerModuleImpl,
+pub struct Setup<'a> {
+    pub module_impl: LedgerModuleImpl<'a>,
     pub id: Address,
     pub cred_id: CredentialId,
     pub public_key: PublicKey,
@@ -78,13 +78,13 @@ pub struct Setup {
     time: Option<u64>,
 }
 
-impl Default for Setup {
+impl Default for Setup<'_> {
     fn default() -> Self {
         Self::new(false)
     }
 }
 
-impl Setup {
+impl Setup<'_> {
     pub fn new(blockchain: bool) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
@@ -96,6 +96,7 @@ impl Setup {
                         .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                         .expect("Could not read initial state."),
                 ),
+                None,
                 tempfile::tempdir().unwrap(),
                 blockchain,
             )
@@ -356,12 +357,12 @@ impl Setup {
     }
 }
 
-pub fn setup() -> Setup {
+pub fn setup() -> Setup<'static> {
     Setup::default()
 }
 
-pub struct SetupWithArgs {
-    pub module_impl: LedgerModuleImpl,
+pub struct SetupWithArgs<'a> {
+    pub module_impl: LedgerModuleImpl<'a>,
     pub id: Address,
     pub args: account::CreateArgs,
 }
@@ -373,7 +374,7 @@ pub enum AccountType {
     Ledger,
 }
 
-pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
+pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs<'static> {
     let setup = Setup::default();
     let args = create_account_args(account_type);
 
@@ -384,13 +385,13 @@ pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
     }
 }
 
-pub struct SetupWithAccount {
-    pub module_impl: LedgerModuleImpl,
+pub struct SetupWithAccount<'a> {
+    pub module_impl: LedgerModuleImpl<'a>,
     pub id: Address,
     pub account_id: Address,
 }
 
-pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
+pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount<'static> {
     let SetupWithArgs {
         mut module_impl,
         id,
@@ -405,8 +406,8 @@ pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
 }
 
 #[derive(Debug)]
-pub struct SetupWithAccountAndTx {
-    pub module_impl: LedgerModuleImpl,
+pub struct SetupWithAccountAndTx<'a> {
+    pub module_impl: LedgerModuleImpl<'a>,
     pub id: Address,
     pub account_id: Address,
     pub tx: events::AccountMultisigTransaction,
@@ -588,7 +589,7 @@ fn event_from_kind(
 }
 
 prop_compose! {
-    pub fn setup_with_account_and_tx(account_type: AccountType)(event in arb_event_kind()) -> SetupWithAccountAndTx {
+    pub fn setup_with_account_and_tx(account_type: AccountType)(event in arb_event_kind()) -> SetupWithAccountAndTx<'static> {
         let SetupWithAccount {
             mut module_impl,
             id,
