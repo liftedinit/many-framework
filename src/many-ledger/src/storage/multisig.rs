@@ -599,21 +599,26 @@ impl LedgerStorage<'_> {
         };
 
         // TODO: Simplify
-        let response = if let Some(migration) = self.migrations.get("Block 9400") {
-            if let Some(response) = migration.hotfix(
-                &minicbor::to_vec(crate::migration::block_9400::Block9400Tx {
-                    tx_id,
-                    response: response.clone(), // TODO: Get rid of clone()
-                })
-                .map_err(ManyError::deserialization_error)?,
-                self.get_height(),
-            ) {
-                minicbor::decode(&response).map_err(ManyError::deserialization_error)?
-            } else {
+        let response = match self.get_height() {
+            9400 => {
+                if let Some(migration) = self.migrations.get("Block 9400") {
+                    if migration.is_enabled() {
+                        let data = crate::migration::block_9400::Block9400Tx {
+                            tx_id,
+                            response: response.clone(), // TODO: Get rid of clone()
+                        };
+                        let new_data = migration.hotfix(
+                            &minicbor::to_vec(data).map_err(ManyError::deserialization_error)?,
+                            self.get_height(),
+                        );
+                        if let Some(response) = new_data {
+                            minicbor::decode(&response).map_err(ManyError::deserialization_error)?
+                        }
+                    }
+                }
                 response
             }
-        } else {
-            response
+            _ => response,
         };
 
         Ok(response)
