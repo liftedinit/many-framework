@@ -1,6 +1,5 @@
-use crate::migration::{MIGRATIONS, MIGRATIONS_KEY};
+use crate::migration::{LedgerMigrations, MIGRATIONS, MIGRATIONS_KEY};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
-use many_error::ManyError;
 use many_identity::Address;
 use many_migration::Migration;
 use many_modules::events::EventId;
@@ -41,7 +40,7 @@ pub struct LedgerStorage<'a> {
     next_account_id: u32,
     account_identity: Address,
 
-    migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
+    migrations: LedgerMigrations<'a>,
 }
 
 impl<'a> LedgerStorage<'a> {
@@ -87,10 +86,7 @@ impl<'a> LedgerStorage<'a> {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub(crate) fn add_migrations(
-        &mut self,
-        mut migrations: BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
-    ) {
+    pub(crate) fn add_migrations(&mut self, mut migrations: LedgerMigrations<'a>) {
         self.migrations.append(&mut migrations);
         self.persistent_store
             .apply(&[(
@@ -103,11 +99,7 @@ impl<'a> LedgerStorage<'a> {
             .unwrap();
     }
 
-    pub fn load<P: AsRef<Path>>(
-        persistent_path: P,
-        migrations: &mut BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>,
-        blockchain: bool,
-    ) -> Result<Self, String> {
+    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -141,19 +133,18 @@ impl<'a> LedgerStorage<'a> {
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let mut all_migrations = persistent_store
+        let all_migrations = persistent_store
             .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
-            .map_or(BTreeMap::new(), |x| {
+            .map_or(LedgerMigrations::new(), |x| {
                 minicbor::decode_with::<_, Vec<Migration<_, _>>>(&x, &mut MIGRATIONS.clone())
                     .unwrap()
                     .into_iter()
                     .map(|mig| (mig.migration.name(), mig))
-                    .collect::<BTreeMap<&str, Migration<_, _>>>()
+                    .collect::<LedgerMigrations>()
             });
-        all_migrations.append(migrations);
 
-        info!("Migrations list");
+        info!("LedgerMigrations list");
         for migration in all_migrations.values() {
             info!("{migration}")
         }
@@ -231,7 +222,7 @@ impl<'a> LedgerStorage<'a> {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            migrations: BTreeMap::new(),
+            migrations: LedgerMigrations::new(),
         })
     }
 

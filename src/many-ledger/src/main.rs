@@ -3,6 +3,7 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
+use many_migration::{load_enable_all_regular_migrations, load_migrations};
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -20,6 +21,7 @@ use crate::allow_addrs::AllowAddrsModule;
 #[cfg(feature = "webauthn_testing")]
 use crate::idstore_webauthn::IdStoreWebAuthnModule;
 use crate::json::InitialStateJson;
+use crate::migration::MIGRATIONS;
 use crate::module::account::AccountFeatureModule;
 use module::*;
 
@@ -94,6 +96,13 @@ struct Opts {
     #[clap(long)]
     disable_webauthn_only_for_testing: bool,
 
+    /// If set, this flag will disable any regular migration when creating
+    /// a new storage.
+    /// This requires the feature "migration_testing" to be enabled.
+    #[cfg(feature = "migration_testing")]
+    #[clap(long)]
+    disable_regular_migration_on_new_storage_only_for_testing: bool,
+
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
@@ -124,6 +133,7 @@ fn main() {
         migrations_config,
         allow_origin,
         allow_addrs,
+        disable_regular_migration_on_new_storage_only_for_testing,
         ..
     } = Opts::parse();
 
@@ -182,7 +192,41 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let module_impl = LedgerModuleImpl::new(state, migrations_config, persistent, abci).unwrap();
+    // Different migration loading code path for migration testing
+    info!("Loading migrations from {migrations_config:?}");
+    let mut migrations = migrations_config.map(|file| {
+        let content = std::fs::read_to_string(file)
+            .expect("Could not read file passed to --migrations_config");
+        load_migrations(&MIGRATIONS, &content).expect("Could not read migration file")
+    });
+
+    let module_impl = if let Some(state) = state {
+        let mut load_enable_all = || {
+            let mut all_migrations = load_enable_all_regular_migrations(&MIGRATIONS);
+            if let Some(migrations) = &mut migrations {
+                all_migrations.append(migrations)
+            }
+            all_migrations
+        };
+
+        let migrations = if cfg!(feature = "migration_testing") {
+            if disable_regular_migration_on_new_storage_only_for_testing {
+                info!("Disabling all regular migrations");
+                migrations
+            } else {
+                info!("Enabling all regular migrations");
+                Some(load_enable_all())
+            }
+        } else {
+            info!("Enabling all regular migrations");
+            Some(load_enable_all())
+        };
+        info!("Migration status: {migrations:?}");
+        LedgerModuleImpl::new(state, migrations, persistent, abci).unwrap()
+    } else {
+        info!("Migration status: {migrations:?}");
+        LedgerModuleImpl::load(migrations, persistent, abci).unwrap()
+    };
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]

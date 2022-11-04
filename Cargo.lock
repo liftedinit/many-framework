@@ -1991,7 +1991,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2034,7 +2034,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2044,7 +2044,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2055,7 +2055,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "base32",
  "coset",
@@ -2075,7 +2075,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2103,7 +2103,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2123,7 +2123,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2227,7 +2227,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2240,7 +2240,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "minicbor",
  "serde",
@@ -2252,7 +2252,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "async-trait",
  "coset",
@@ -2272,7 +2272,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2296,7 +2296,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2345,7 +2345,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 dependencies = [
  "coset",
  "fixed",
@@ -2526,9 +2526,9 @@ dependencies = [
 
 [[package]]
 name = "num_cpus"
-version = "1.13.1"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19e64526ebdee182341572e50e9ad03965aa510cd94427a4549448f285e957a1"
+checksum = "f6058e64324c71e02bc2b150e4f3bc8286db6c83092132ffa3f6b1eab0f9def5"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -2741,9 +2741,9 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "pest"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbc7bc69c062e492337d74d59b120c274fd3d261b6bf6d3207d499b4b379c41a"
+checksum = "a528564cc62c19a7acac4d81e01f39e53e25e17b934878f4c6d25cc2836e62f8"
 dependencies = [
  "thiserror",
  "ucd-trie",
@@ -2751,9 +2751,9 @@ dependencies = [
 
 [[package]]
 name = "pest_derive"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60b75706b9642ebcb34dab3bc7750f811609a0eb1dd8b88c2d15bf628c1c65b2"
+checksum = "d5fd9bc6500181952d34bd0b2b0163a54d794227b498be0b7afa7698d0a7b18f"
 dependencies = [
  "pest",
  "pest_generator",
@@ -2761,9 +2761,9 @@ dependencies = [
 
 [[package]]
 name = "pest_generator"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4f9272122f5979a6511a749af9db9bfc810393f63119970d7085fed1c4ea0db"
+checksum = "d2610d5ac5156217b4ff8e46ddcef7cdf44b273da2ac5bca2ecbfa86a330e7c4"
 dependencies = [
  "pest",
  "pest_meta",
@@ -2774,9 +2774,9 @@ dependencies = [
 
 [[package]]
 name = "pest_meta"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c8717927f9b79515e565a64fe46c38b8cd0427e64c40680b14a7365ab09ac8d"
+checksum = "824749bf7e21dd66b36fbe26b3f45c713879cccd4a009a917ab8e045ca8246fe"
 dependencies = [
  "once_cell",
  "pest",
@@ -4554,9 +4554,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#163895bc4279eeb3abd4085bdc1711a1c2d21aae"
+source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"

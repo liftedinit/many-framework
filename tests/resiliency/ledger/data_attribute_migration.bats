@@ -10,7 +10,7 @@ function setup() {
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make -f $MAKEFILE clean
-      make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" MIGRATIONS=$GIT_ROOT/tests/resiliency/ledger/migrations.json || {
+      make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" MIGRATIONS=$GIT_ROOT/tests/resiliency/ledger/migrations.json DISABLE_REGULAR_MIGRATION=true || {
         echo Could not start nodes... >&3
         exit 1
       }

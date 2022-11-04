@@ -1,6 +1,4 @@
 use crate::error;
-// TODO: MIGRATION
-// use crate::storage::migration_ext::data::DataExt;
 use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;

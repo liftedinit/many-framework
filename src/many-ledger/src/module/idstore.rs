@@ -131,11 +131,9 @@ mod tests {
         let public_key: idstore::PublicKey =
             idstore::PublicKey(cose_key_id.public_key().to_vec().unwrap().into());
         let mut module_impl = LedgerModuleImpl::new(
-            Some(
-                InitialStateJson::read("../../staging/ledger_state.json5")
-                    .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
-                    .expect("Could not read initial state."),
-            ),
+            InitialStateJson::read("../../staging/ledger_state.json5")
+                .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
+                .expect("Could not read initial state."),
             None,
             tempfile::tempdir().unwrap(),
             false,

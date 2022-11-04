@@ -99,7 +99,6 @@ fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
     Ok(())
 }
 
-// TODO: Update based on Tx?
 fn update(storage: &mut merk::Merk) -> Result<(), ManyError> {
     let (num_unique_accounts, num_non_zero_account) = get_data_from_db(storage);
 
@@ -118,8 +117,8 @@ fn update(storage: &mut merk::Merk) -> Result<(), ManyError> {
 #[distributed_slice(MIGRATIONS)]
 static ACCOUNT_COUNT_DATA_ATTRIBUTE: InnerMigration<merk::Merk, ManyError> =
     InnerMigration::new_initialize_update(
-        &initialize,
-        &update,
+        initialize,
+        update,
         "Account Count Data Attribute",
         r#"
             Provides the total number of unique addresses. 

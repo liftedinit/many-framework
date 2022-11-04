@@ -1,6 +1,7 @@
 LEDGER_TAG ?= "latest"
 MIGRATIONS ?=
 ALLOW_ADDRS ?= false
+DISABLE_REGULAR_MIGRATIONS ?= false
 
 include Makefile.common
 
@@ -39,6 +40,7 @@ genfiles-ledger/docker-compose.json: genfiles-common/jsonnet-docker docker-compo
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
 		--tla-code migrations=\"/genfiles/migrations.json5\" \
 		--tla-code allow_addrs=$(ALLOW_ADDRS) \
+		--tla-code disable_regular_migrations=$(DISABLE_REGULAR_MIGRATIONS) \
 		-o /$@
 
 genfiles-ledger/generate-tendermint-e2e-config:
