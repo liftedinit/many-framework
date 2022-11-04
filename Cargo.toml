@@ -36,23 +36,6 @@ incremental = false
 #many-server = { path = "../many-rs/src/many-server" }
 #many-types = { path = "../many-rs/src/many-types" }
 
-[patch."https://github.com/liftedinit/many-rs.git"]
-many = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-client = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-client-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-error = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-identity = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-identity-dsa = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-identity-hsm = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-identity-webauthn = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-migration = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-mock = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-modules = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-protocol = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-server = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-many-types = { git = "https://github.com/fmorency/many-rs.git", branch = "fmorency/migration-redesign" }
-
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
 ciborium-io = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }

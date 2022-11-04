@@ -1991,7 +1991,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2034,7 +2034,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2044,7 +2044,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2055,7 +2055,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "base32",
  "coset",
@@ -2075,7 +2075,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2103,7 +2103,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2123,7 +2123,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2227,7 +2227,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2240,7 +2240,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "minicbor",
  "serde",
@@ -2252,7 +2252,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "async-trait",
  "coset",
@@ -2272,7 +2272,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2296,7 +2296,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2345,7 +2345,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=04d7b9f071e2d1377e2375aa6f9a66acf1050f00#04d7b9f071e2d1377e2375aa6f9a66acf1050f00"
 dependencies = [
  "coset",
  "fixed",
@@ -4550,13 +4550,3 @@ dependencies = [
  "syn",
  "synstructure",
 ]
-
-[[patch.unused]]
-name = "many"
-version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
-
-[[patch.unused]]
-name = "many-mock"
-version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=fmorency/migration-redesign#57a4f6ae9055c0f8a5aa0bad950904a56bfe54e1"
