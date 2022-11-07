@@ -31,7 +31,7 @@ pub fn generate_recall_phrase<const W: usize, const FB: usize, const CS: usize>(
     Ok(recall_phrase)
 }
 
-impl idstore::IdStoreModuleBackend for LedgerModuleImpl<'_> {
+impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
     fn store(
         &mut self,
         sender: &Address,

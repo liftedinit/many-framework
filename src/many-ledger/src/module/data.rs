@@ -6,7 +6,7 @@ use many_modules::data::{
     DataQueryArgs, DataQueryReturns,
 };
 
-impl DataModuleBackend for LedgerModuleImpl<'_> {
+impl DataModuleBackend for LedgerModuleImpl {
     fn info(&self, _: &Address, _: DataInfoArgs) -> Result<DataInfoReturns, ManyError> {
         Ok(DataInfoReturns {
             indices: self

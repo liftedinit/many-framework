@@ -101,7 +101,7 @@ pub(crate) fn verify_account_role<R: TryInto<Role> + std::fmt::Display + Copy>(
     Ok(())
 }
 
-impl AccountModuleBackend for LedgerModuleImpl<'_> {
+impl AccountModuleBackend for LedgerModuleImpl {
     fn create(
         &mut self,
         sender: &Address,

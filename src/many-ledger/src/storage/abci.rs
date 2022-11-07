@@ -3,7 +3,7 @@ use crate::storage::LedgerStorage;
 use many_modules::abci_backend::AbciCommitInfo;
 use many_modules::events::EventId;
 
-impl LedgerStorage<'_> {
+impl LedgerStorage {
     pub fn commit(&mut self) -> AbciCommitInfo {
         // First check if there's any need to clean up multisig transactions. Ignore
         // errors.

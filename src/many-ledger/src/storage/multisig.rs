@@ -187,7 +187,7 @@ pub const MULTISIG_DEFAULT_TIMEOUT_IN_SECS: u64 = 60 * 60 * 24; // A day.
 pub const MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY: bool = false;
 pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 months.
 
-impl LedgerStorage<'_> {
+impl LedgerStorage {
     pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
         use super::rocksdb::{Direction, IteratorMode};
 

@@ -10,7 +10,7 @@ use tracing::info;
 
 // This module is always supported, but will only be added when created using an ABCI
 // flag.
-impl ManyAbciModuleBackend for LedgerModuleImpl<'_> {
+impl ManyAbciModuleBackend for LedgerModuleImpl {
     #[rustfmt::skip]
     fn init(&mut self) -> Result<AbciInit, ManyError> {
         Ok(AbciInit {

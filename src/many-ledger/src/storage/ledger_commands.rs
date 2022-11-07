@@ -8,7 +8,7 @@ use merk::{BatchEntry, Op};
 use std::cmp::Ordering;
 use tracing::info;
 
-impl LedgerStorage<'_> {
+impl LedgerStorage {
     pub fn get_balance(&self, identity: &Address, symbol: &Symbol) -> TokenAmount {
         if identity.is_anonymous() {
             TokenAmount::zero()

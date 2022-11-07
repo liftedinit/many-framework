@@ -3,7 +3,7 @@ use many_identity::Address;
 use many_types::ledger::{Symbol, TokenAmount};
 use std::collections::{BTreeMap, BTreeSet};
 
-impl LedgerStorage<'_> {
+impl LedgerStorage {
     fn get_all_balances(&self, identity: &Address) -> BTreeMap<&Symbol, TokenAmount> {
         if identity.is_anonymous() {
             // Anonymous cannot hold funds.

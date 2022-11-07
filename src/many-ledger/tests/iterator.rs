@@ -7,7 +7,7 @@ use many_types::{CborRange, SortOrder};
 use std::collections::BTreeMap;
 use std::ops::Bound;
 
-fn setup() -> LedgerStorage<'static> {
+fn setup() -> LedgerStorage {
     let symbol0 = Address::anonymous();
     let id0 = identity(0);
     let id1 = identity(1);
@@ -40,11 +40,11 @@ fn setup() -> LedgerStorage<'static> {
     storage
 }
 
-fn iter_asc<'a>(
-    storage: &'a LedgerStorage<'a>,
+fn iter_asc(
+    storage: &LedgerStorage,
     start: Bound<EventId>,
     end: Bound<EventId>,
-) -> impl Iterator<Item = EventLog> + 'a {
+) -> impl Iterator<Item = EventLog> + '_ {
     storage
         .iter(CborRange { start, end }, SortOrder::Ascending)
         .into_iter()

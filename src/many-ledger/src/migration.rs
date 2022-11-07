@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 pub mod block_9400;
 pub mod data;
 
-pub type LedgerMigrations<'a> = BTreeMap<&'a str, Migration<'a, merk::Merk, ManyError>>;
+pub type LedgerMigrations = BTreeMap<&'static str, Migration<'static, merk::Merk, ManyError>>;
 
 // This is the global migration registry
 // Doesn't contain any metadata

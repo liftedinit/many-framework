@@ -23,7 +23,7 @@ pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> 
     format!("/balances/{id}/{symbol}").into_bytes()
 }
 
-pub struct LedgerStorage<'a> {
+pub struct LedgerStorage {
     symbols: BTreeMap<Symbol, String>,
     persistent_store: merk::Merk,
 
@@ -40,10 +40,10 @@ pub struct LedgerStorage<'a> {
     next_account_id: u32,
     account_identity: Address,
 
-    migrations: LedgerMigrations<'a>,
+    migrations: LedgerMigrations,
 }
 
-impl<'a> LedgerStorage<'a> {
+impl LedgerStorage {
     #[cfg(feature = "balance_testing")]
     pub(crate) fn set_balance_only_for_testing(
         &mut self,
@@ -67,7 +67,7 @@ impl<'a> LedgerStorage<'a> {
     }
 }
 
-impl std::fmt::Debug for LedgerStorage<'_> {
+impl std::fmt::Debug for LedgerStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
             .field("symbols", &self.symbols)
@@ -76,7 +76,7 @@ impl std::fmt::Debug for LedgerStorage<'_> {
     }
 }
 
-impl<'a> LedgerStorage<'a> {
+impl LedgerStorage {
     #[inline]
     pub fn set_time(&mut self, time: Timestamp) {
         self.current_time = Some(time);
@@ -86,7 +86,7 @@ impl<'a> LedgerStorage<'a> {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub(crate) fn add_migrations(&mut self, mut migrations: LedgerMigrations<'a>) {
+    pub(crate) fn add_migrations(&mut self, mut migrations: LedgerMigrations) {
         self.migrations.append(&mut migrations);
         self.persistent_store
             .apply(&[(

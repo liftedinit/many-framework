@@ -21,14 +21,14 @@ mod multisig;
 
 /// A simple ledger that keeps transactions in memory.
 #[derive(Debug)]
-pub struct LedgerModuleImpl<'a> {
-    storage: LedgerStorage<'a>,
+pub struct LedgerModuleImpl {
+    storage: LedgerStorage,
 }
 
-impl<'a> LedgerModuleImpl<'a> {
+impl LedgerModuleImpl {
     pub fn new<P: AsRef<Path>>(
         state: InitialStateJson,
-        migrations: Option<LedgerMigrations<'a>>,
+        migrations: Option<LedgerMigrations>,
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
@@ -81,7 +81,7 @@ impl<'a> LedgerModuleImpl<'a> {
     }
 
     pub fn load<P: AsRef<Path>>(
-        migrations: Option<LedgerMigrations<'a>>,
+        migrations: Option<LedgerMigrations>,
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {

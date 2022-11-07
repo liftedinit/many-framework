@@ -5,7 +5,7 @@ use many_modules::ledger;
 use std::collections::BTreeSet;
 use tracing::info;
 
-impl ledger::LedgerModuleBackend for LedgerModuleImpl<'_> {
+impl ledger::LedgerModuleBackend for LedgerModuleImpl {
     fn info(
         &self,
         _sender: &Address,

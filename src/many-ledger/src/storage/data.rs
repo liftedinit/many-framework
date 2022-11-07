@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 pub const DATA_ATTRIBUTES_KEY: &[u8] = b"/data/attributes";
 pub const DATA_INFO_KEY: &[u8] = b"/data/info";
 
-impl LedgerStorage<'_> {
+impl LedgerStorage {
     pub(crate) fn data_info(&self) -> Option<BTreeMap<DataIndex, DataInfo>> {
         self.persistent_store
             .get(DATA_INFO_KEY)

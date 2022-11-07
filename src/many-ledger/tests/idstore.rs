@@ -7,13 +7,13 @@ use many_ledger::module::LedgerModuleImpl;
 use many_modules::idstore;
 use many_modules::idstore::{CredentialId, IdStoreModuleBackend, PublicKey};
 
-pub struct SetupWithArgs<'a> {
-    pub module_impl: LedgerModuleImpl<'a>,
+pub struct SetupWithArgs {
+    pub module_impl: LedgerModuleImpl,
     pub id: Address,
     pub args: idstore::StoreArgs,
 }
 
-fn setup_with_args() -> SetupWithArgs<'static> {
+fn setup_with_args() -> SetupWithArgs {
     let Setup {
         module_impl,
         id,
@@ -32,15 +32,15 @@ fn setup_with_args() -> SetupWithArgs<'static> {
     }
 }
 
-pub struct SetupWithStore<'a> {
-    pub module_impl: LedgerModuleImpl<'a>,
+pub struct SetupWithStore {
+    pub module_impl: LedgerModuleImpl,
     pub id: Address,
     pub cred_id: CredentialId,
     pub public_key: PublicKey,
     pub recall_phrase: Vec<String>,
 }
 
-fn setup_with_store() -> SetupWithStore<'static> {
+fn setup_with_store() -> SetupWithStore {
     let SetupWithArgs {
         mut module_impl,
         id,
