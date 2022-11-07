@@ -1,5 +1,6 @@
 use crate::migration::{LedgerMigrations, MIGRATIONS, MIGRATIONS_KEY};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
+use many_error::ManyError;
 use many_identity::Address;
 use many_migration::Migration;
 use many_modules::events::EventId;
@@ -260,5 +261,28 @@ impl LedgerStorage {
         self.current_hash
             .as_ref()
             .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
+    }
+
+    pub fn block_hotfix<T: minicbor::Encode<()>, C: for<'a> minicbor::Decode<'a, ()>>(
+        &self,
+        name: &str,
+        data: T,
+    ) -> Result<Option<C>, ManyError> {
+        if let Some(migration) = self.migrations.get(name) {
+            if self.get_height() == migration.metadata.block_height && migration.is_enabled() {
+                let data_enc = minicbor::to_vec(data).map_err(ManyError::serialization_error)?;
+                let new_data = migration.hotfix(&data_enc, self.get_height());
+                if let Some(new_data) = new_data {
+                    return Ok(Some(
+                        minicbor::decode(&new_data).map_err(ManyError::deserialization_error)?,
+                    ));
+                }
+                return Err(ManyError::unknown(
+                    "Something went wrong while running migration \"{name}\"",
+                ));
+            }
+            return Ok(None);
+        }
+        Ok(None)
     }
 }

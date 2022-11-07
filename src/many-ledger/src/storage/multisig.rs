@@ -1,3 +1,4 @@
+use crate::migration::block_9400::Block9400Tx;
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
 use crate::storage::LedgerStorage;
@@ -598,24 +599,10 @@ impl LedgerStorage {
             ..Default::default()
         };
 
-        // TODO: Simplify
         let response = match self.get_height() {
-            9400 => {
-                if let Some(migration) = self.migrations.get("Block 9400") {
-                    if migration.is_enabled() {
-                        let data =
-                            crate::migration::block_9400::Block9400Tx::new(tx_id, response.clone());
-                        let new_data = migration.hotfix(
-                            &minicbor::to_vec(data).map_err(ManyError::deserialization_error)?,
-                            self.get_height(),
-                        );
-                        if let Some(response) = new_data {
-                            minicbor::decode(&response).map_err(ManyError::deserialization_error)?
-                        }
-                    }
-                }
-                response
-            }
+            9400 => self
+                .block_hotfix("Block 9400", Block9400Tx::new(tx_id, response.clone()))?
+                .unwrap_or(response),
             _ => response,
         };
 
