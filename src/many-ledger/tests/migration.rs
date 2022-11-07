@@ -27,8 +27,8 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
                 &harness.id,
                 DataGetInfoArgs {
                     indices: VecOrSingle(vec![
-                        *ACCOUNT_TOTAL_COUNT_INDEX,
-                        *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX
+                        ACCOUNT_TOTAL_COUNT_INDEX,
+                        NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX
                     ])
                 }
             )
@@ -42,17 +42,17 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
             &harness.id,
             DataQueryArgs {
                 indices: VecOrSingle(vec![
-                    *ACCOUNT_TOTAL_COUNT_INDEX,
-                    *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+                    ACCOUNT_TOTAL_COUNT_INDEX,
+                    NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
                 ]),
             },
         )
         .unwrap();
-    let total: BigInt = query[&*ACCOUNT_TOTAL_COUNT_INDEX]
+    let total: BigInt = query[&ACCOUNT_TOTAL_COUNT_INDEX]
         .clone()
         .try_into()
         .unwrap();
-    let non_zero: BigInt = query[&*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX]
+    let non_zero: BigInt = query[&NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX]
         .clone()
         .try_into()
         .unwrap();

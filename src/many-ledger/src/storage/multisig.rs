@@ -603,10 +603,8 @@ impl LedgerStorage {
             9400 => {
                 if let Some(migration) = self.migrations.get("Block 9400") {
                     if migration.is_enabled() {
-                        let data = crate::migration::block_9400::Block9400Tx {
-                            tx_id,
-                            response: response.clone(), // TODO: Get rid of clone()
-                        };
+                        let data =
+                            crate::migration::block_9400::Block9400Tx::new(tx_id, response.clone());
                         let new_data = migration.hotfix(
                             &minicbor::to_vec(data).map_err(ManyError::deserialization_error)?,
                             self.get_height(),
