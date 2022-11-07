@@ -49,8 +49,9 @@ struct Opts {
     quiet: i8,
 
     /// The location of a PEM file for the identity of this server.
-    #[clap(long)]
-    pem: PathBuf,
+    // https://github.com/clap-rs/clap/issues/4462
+    #[clap(long, required = true)]
+    pem: Option<PathBuf>,
 
     /// The address and port to bind to for the MANY Http server.
     #[clap(long, short, default_value = "127.0.0.1:8000")]
@@ -65,8 +66,9 @@ struct Opts {
     state: Option<PathBuf>,
 
     /// Path to a persistent store database (rocksdb).
-    #[clap(long)]
-    persistent: PathBuf,
+    // https://github.com/clap-rs/clap/issues/4462
+    #[clap(long, required = true)]
+    persistent: Option<PathBuf>,
 
     /// Delete the persistent storage to start from a clean state.
     /// If this is not specified the initial state will not be used.
@@ -112,6 +114,10 @@ struct Opts {
     #[clap(long, short)]
     migrations_config: Option<PathBuf>,
 
+    /// List built-in migrations supported by this binary
+    #[clap(long, exclusive = true)]
+    list_migrations: bool,
+
     /// Path to a JSON file containing an array of MANY addresses
     /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
     /// Any addresses will be able to execute queries, e.g., balance, get, ...
@@ -134,6 +140,7 @@ fn main() {
         allow_origin,
         allow_addrs,
         disable_regular_migration_on_new_storage_only_for_testing,
+        list_migrations,
         ..
     } = Opts::parse();
 
@@ -169,6 +176,20 @@ fn main() {
         version = env!("CARGO_PKG_VERSION"),
         git_sha = env!("VERGEN_GIT_SHA")
     );
+
+    if list_migrations {
+        for migration in MIGRATIONS {
+            println!("Name: {}", migration.name());
+            println!("Description: {}", migration.description());
+        }
+        return;
+    }
+
+    // Safe unwrap.
+    // At this point the Options should contain a value.
+    // https://github.com/clap-rs/clap/issues/4462
+    let pem = pem.unwrap();
+    let persistent = persistent.unwrap();
 
     if clean {
         // Delete the persistent storage.
