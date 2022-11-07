@@ -24,14 +24,14 @@ indicatif = "0.16.2"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 num-bigint = "0.4.3"
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00", features = ["ed25519", "ecdsa"]  }
-many-identity-hsm = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "04d7b9f071e2d1377e2375aa6f9a66acf1050f00" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980", features = ["ed25519", "ecdsa"]  }
+many-identity-hsm = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "207ca9fdd0e403b758a3a31752ab98daac14e980" }
 regex = "1.5.4"
 ring = "0.16.20"
 rpassword = "6.0"

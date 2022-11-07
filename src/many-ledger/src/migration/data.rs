@@ -9,13 +9,9 @@ use merk::rocksdb::ReadOptions;
 use merk::{rocksdb, Op};
 use std::collections::BTreeMap;
 
-lazy_static::lazy_static!(
-    pub static ref ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
-        DataIndex::new(0).with_index(2).with_index(0);
-
-    pub static ref NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
-        DataIndex::new(0).with_index(2).with_index(1);
-);
+pub static ACCOUNT_TOTAL_COUNT_INDEX: DataIndex = DataIndex::new(0).with_index(2).with_index(0);
+pub static NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
+    DataIndex::new(0).with_index(2).with_index(1);
 
 fn get_data_from_db(storage: &merk::Merk) -> (u64, u64) {
     let mut num_unique_accounts: u64 = 0;
@@ -46,14 +42,14 @@ fn get_data_from_db(storage: &merk::Merk) -> (u64, u64) {
 fn data_info() -> BTreeMap<DataIndex, DataInfo> {
     BTreeMap::from([
         (
-            *ACCOUNT_TOTAL_COUNT_INDEX,
+            ACCOUNT_TOTAL_COUNT_INDEX,
             DataInfo {
                 r#type: many_modules::data::DataType::Counter,
                 shortname: "accountTotalCount".to_string(),
             },
         ),
         (
-            *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+            NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
             DataInfo {
                 r#type: many_modules::data::DataType::Counter,
                 shortname: "nonZeroAccountTotalCount".to_string(),
@@ -68,11 +64,11 @@ fn data_value(
 ) -> BTreeMap<DataIndex, DataValue> {
     BTreeMap::from([
         (
-            *ACCOUNT_TOTAL_COUNT_INDEX,
+            ACCOUNT_TOTAL_COUNT_INDEX,
             DataValue::Counter(num_unique_accounts),
         ),
         (
-            *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+            NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
             DataValue::Counter(num_non_zero_account),
         ),
     ])

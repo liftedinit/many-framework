@@ -19,6 +19,12 @@ pub struct Block9400Tx<'a> {
     pub response: ResponseMessage,
 }
 
+impl<'a> Block9400Tx<'a> {
+    pub const fn new(tx_id: &'a [u8], response: ResponseMessage) -> Self {
+        Self { tx_id, response }
+    }
+}
+
 const BLOCK_9400_TX_ID: &str = "241e00000001";
 const BLOCK_9400_NEW_TIMESTAMP: u64 = 1658348752;
 
