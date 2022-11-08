@@ -49,7 +49,7 @@ struct Opts {
     quiet: i8,
 
     /// The location of a PEM file for the identity of this server.
-    // https://github.com/clap-rs/clap/issues/4462
+    // The field needs to be an Option for the clap derive to work properly.
     #[clap(long, required = true)]
     pem: Option<PathBuf>,
 
@@ -66,7 +66,7 @@ struct Opts {
     state: Option<PathBuf>,
 
     /// Path to a persistent store database (rocksdb).
-    // https://github.com/clap-rs/clap/issues/4462
+    // The field needs to be an Option for the clap derive to work properly.
     #[clap(long, required = true)]
     persistent: Option<PathBuf>,
 
@@ -187,7 +187,6 @@ fn main() {
 
     // Safe unwrap.
     // At this point the Options should contain a value.
-    // https://github.com/clap-rs/clap/issues/4462
     let pem = pem.unwrap();
     let persistent = persistent.unwrap();
 
