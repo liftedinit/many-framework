@@ -89,14 +89,18 @@ impl LedgerStorage {
 
     pub(crate) fn add_migrations(&mut self, mut migrations: LedgerMigrations) {
         self.migrations.append(&mut migrations);
+        let data = minicbor::to_vec(
+            self.migrations
+                .values()
+                .collect::<Vec<&Migration<'_, _, _>>>(),
+        )
+        .unwrap();
+        tracing::trace!(
+            "Migrations CBOR stored to persistent storage: {}",
+            hex::encode(&data)
+        );
         self.persistent_store
-            .apply(&[(
-                MIGRATIONS_KEY.to_vec(),
-                Op::Put(
-                    minicbor::to_vec(migrations.values().collect::<Vec<&Migration<'_, _, _>>>())
-                        .unwrap(),
-                ),
-            )])
+            .apply(&[(MIGRATIONS_KEY.to_vec(), Op::Put(data))])
             .unwrap();
     }
 
@@ -138,6 +142,10 @@ impl LedgerStorage {
             .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
             .map_or(LedgerMigrations::new(), |x| {
+                tracing::trace!(
+                    "Migration CBOR loaded for persistent storage: {}",
+                    hex::encode(&x)
+                );
                 minicbor::decode_with::<_, Vec<Migration<_, _>>>(&x, &mut MIGRATIONS.clone())
                     .unwrap()
                     .into_iter()
