@@ -22,7 +22,7 @@ local load_migrations(migrations="") =
 
 local generate_disable_regular_migrations_flag(disable) =
     if disable then
-        ["--disable_regular_migration_on_new_storage_only_for_testing"]
+        ["--disable-regular-migration-on-new-storage-only-for-testing"]
     else
         [];
 
