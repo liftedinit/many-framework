@@ -1,4 +1,6 @@
 use crate::migration::block_9400::Block9400Tx;
+// #[cfg(feature = "migration_testing")]
+// use crate::migration::dummy_hotfix::DummyHotfix;
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
 use crate::storage::LedgerStorage;
@@ -599,13 +601,9 @@ impl LedgerStorage {
             ..Default::default()
         };
 
-        let response = match self.get_height() {
-            9400 => self
-                .block_hotfix("Block 9400", Block9400Tx::new(tx_id, response.clone()))?
-                .unwrap_or(response),
-            _ => response,
-        };
-
+        let response = self
+            .block_hotfix("Block 9400", || Block9400Tx::new(tx_id, response.clone()))?
+            .unwrap_or(response);
         Ok(response)
     }
 }

@@ -263,14 +263,18 @@ impl LedgerStorage {
             .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
     }
 
-    pub fn block_hotfix<T: minicbor::Encode<()>, C: for<'a> minicbor::Decode<'a, ()>>(
+    pub fn block_hotfix<
+        T: minicbor::Encode<()>,
+        C: for<'a> minicbor::Decode<'a, ()>,
+        F: FnOnce() -> T,
+    >(
         &self,
         name: &str,
-        data: T,
+        data: F,
     ) -> Result<Option<C>, ManyError> {
         if let Some(migration) = self.migrations.get(name) {
             if self.get_height() == migration.metadata.block_height && migration.is_enabled() {
-                let data_enc = minicbor::to_vec(data).map_err(ManyError::serialization_error)?;
+                let data_enc = minicbor::to_vec(data()).map_err(ManyError::serialization_error)?;
                 let new_data = migration.hotfix(&data_enc, self.get_height());
                 if let Some(new_data) = new_data {
                     return Ok(Some(

@@ -74,6 +74,7 @@ fn data_value(
     ])
 }
 
+/// Initialize the account count data attribute
 fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
     let (num_unique_accounts, num_non_zero_account) = get_data_from_db(storage);
 
@@ -95,26 +96,10 @@ fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
     Ok(())
 }
 
-fn update(storage: &mut merk::Merk) -> Result<(), ManyError> {
-    let (num_unique_accounts, num_non_zero_account) = get_data_from_db(storage);
-
-    storage
-        .apply(&[(
-            DATA_ATTRIBUTES_KEY.to_vec(),
-            Op::Put(
-                minicbor::to_vec(data_value(num_unique_accounts, num_non_zero_account)).unwrap(),
-            ),
-        )])
-        .map_err(ManyError::unknown)?; // TODO: Custom error
-
-    Ok(())
-}
-
 #[distributed_slice(MIGRATIONS)]
 static ACCOUNT_COUNT_DATA_ATTRIBUTE: InnerMigration<merk::Merk, ManyError> =
-    InnerMigration::new_initialize_update(
+    InnerMigration::new_initialize(
         initialize,
-        update,
         "Account Count Data Attribute",
         r#"
             Provides the total number of unique addresses. 
