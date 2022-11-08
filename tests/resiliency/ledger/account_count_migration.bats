@@ -11,7 +11,7 @@ function setup() {
     [
       {
         "type": "Account Count Data Attribute",
-        "block_height": 50,
+        "block_height": 20,
         "issue": "https://github.com/liftedinit/many-framework/issues/190"
       }
     ]' > "$BATS_TEST_ROOTDIR/migrations.json"
@@ -24,7 +24,7 @@ function setup() {
           LEDGER_TAG=$(img_tag) \
           ID_WITH_BALANCES="$(identity 1):1000000" \
           MIGRATIONS="$BATS_TEST_ROOTDIR/migrations.json" \
-          DISABLE_REGULAR_MIGRATION=true || {
+          DISABLE_REGULAR_MIGRATIONS=true || {
         echo Could not start nodes... >&3
         exit 1
       }
