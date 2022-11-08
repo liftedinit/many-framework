@@ -246,6 +246,8 @@ impl LedgerStorage {
         current_height
     }
 
+    /// Return the current height of the blockchain.
+    /// The current height correspond to finished, committed blocks.
     pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
@@ -273,9 +275,10 @@ impl LedgerStorage {
         data: F,
     ) -> Result<Option<C>, ManyError> {
         if let Some(migration) = self.migrations.get(name) {
-            if self.get_height() == migration.metadata.block_height && migration.is_enabled() {
+            // We are building the current block so the correct height is the current height (finished blocks) + 1
+            if self.get_height() + 1 == migration.metadata.block_height && migration.is_enabled() {
                 let data_enc = minicbor::to_vec(data()).map_err(ManyError::serialization_error)?;
-                let new_data = migration.hotfix(&data_enc, self.get_height());
+                let new_data = migration.hotfix(&data_enc, self.get_height() + 1);
                 if let Some(new_data) = new_data {
                     return Ok(Some(
                         minicbor::decode(&new_data).map_err(ManyError::deserialization_error)?,
