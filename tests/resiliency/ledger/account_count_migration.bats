@@ -49,7 +49,7 @@ function teardown() {
     cd "$GIT_ROOT/tests/resiliency/ledger" || exit 1
 }
 
-@test "$SUITE: data attribute migrations work" {
+@test "$SUITE: Account Count" {
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
     run many_message --pem=0 data.info

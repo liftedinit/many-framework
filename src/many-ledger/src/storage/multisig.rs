@@ -1,6 +1,6 @@
 use crate::migration::block_9400::Block9400Tx;
-// #[cfg(feature = "migration_testing")]
-// use crate::migration::dummy_hotfix::DummyHotfix;
+#[cfg(feature = "migration_testing")]
+use crate::migration::dummy_hotfix::DummyHotfix;
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
 use crate::storage::LedgerStorage;
@@ -604,6 +604,12 @@ impl LedgerStorage {
         let response = self
             .block_hotfix("Block 9400", || Block9400Tx::new(tx_id, response.clone()))?
             .unwrap_or(response);
+
+        #[cfg(feature = "migration_testing")]
+        let response = self
+            .block_hotfix("Dummy Hotfix", || DummyHotfix::new(tx_id, response.clone()))?
+            .unwrap_or(response);
+
         Ok(response)
     }
 }
