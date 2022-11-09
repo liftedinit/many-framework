@@ -241,10 +241,8 @@ fn main() {
             info!("Enabling all regular migrations");
             Some(load_enable_all())
         };
-        info!("Migration status: {migrations:?}");
         LedgerModuleImpl::new(state, migrations, persistent, abci).unwrap()
     } else {
-        info!("Migration status: {migrations:?}");
         LedgerModuleImpl::load(migrations, persistent, abci).unwrap()
     };
     let module_impl = Arc::new(Mutex::new(module_impl));

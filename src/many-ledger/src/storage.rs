@@ -9,7 +9,7 @@ use many_types::Timestamp;
 use merk::{rocksdb, BatchEntry, Op};
 use std::collections::BTreeMap;
 use std::path::Path;
-use tracing::info;
+use tracing::{debug, trace};
 
 mod abci;
 mod account;
@@ -87,7 +87,8 @@ impl LedgerStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub(crate) fn add_migrations(&mut self, mut migrations: LedgerMigrations) {
+    pub(crate) fn store_migrations(&mut self, mut migrations: LedgerMigrations) {
+        debug!("Storing migrations in persistent storage");
         self.migrations.append(&mut migrations);
         let data = minicbor::to_vec(
             self.migrations
@@ -95,7 +96,7 @@ impl LedgerStorage {
                 .collect::<Vec<&Migration<'_, _, _>>>(),
         )
         .unwrap();
-        tracing::trace!(
+        trace!(
             "Migrations CBOR stored to persistent storage: {}",
             hex::encode(&data)
         );
@@ -104,7 +105,15 @@ impl LedgerStorage {
             .unwrap();
     }
 
-    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
+    pub fn migrations(&self) -> &LedgerMigrations {
+        &self.migrations
+    }
+
+    pub fn load<P: AsRef<Path>>(
+        persistent_path: P,
+        migrations: Option<LedgerMigrations>,
+        blockchain: bool,
+    ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -138,11 +147,12 @@ impl LedgerStorage {
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let all_migrations = persistent_store
+        debug!("Loading migrations from persistent storage");
+        let mut all_migrations = persistent_store
             .get(MIGRATIONS_KEY)
             .expect("Could not open storage.")
             .map_or(LedgerMigrations::new(), |x| {
-                tracing::trace!(
+                trace!(
                     "Migration CBOR loaded for persistent storage: {}",
                     hex::encode(&x)
                 );
@@ -153,9 +163,9 @@ impl LedgerStorage {
                     .collect::<LedgerMigrations>()
             });
 
-        info!("LedgerMigrations list");
-        for migration in all_migrations.values() {
-            info!("{migration}")
+        debug!("Appending CLI migrations to persistent storage migrations");
+        if let Some(mut migrations) = migrations {
+            all_migrations.append(&mut migrations);
         }
 
         Ok(Self {
