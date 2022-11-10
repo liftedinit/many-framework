@@ -1,3 +1,5 @@
+#![cfg(feature = "migration_testing")]
+
 use crate::migration::MIGRATIONS;
 use linkme::distributed_slice;
 use many_error::ManyError;
