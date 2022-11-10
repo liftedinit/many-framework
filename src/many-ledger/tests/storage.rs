@@ -27,7 +27,7 @@ fn load() {
             None,
             None,
         );
-        let mut module_impl = LedgerModuleImpl::new(None, path.clone(), false).unwrap();
+        let mut module_impl = LedgerModuleImpl::load(None, path.clone(), false).unwrap();
 
         id = module_impl
             .create(
@@ -47,7 +47,7 @@ fn load() {
             .id;
     }
 
-    let module_impl = LedgerModuleImpl::new(None, path, false).unwrap();
+    let module_impl = LedgerModuleImpl::load(None, path, false).unwrap();
     let balance = module_impl
         .balance(
             &identity(5),

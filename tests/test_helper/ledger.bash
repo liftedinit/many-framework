@@ -5,15 +5,18 @@ function start_ledger() {
     local persistent
     local state
     local clean
+    local background_output
     persistent="$(mktemp -d)"
     state="$GIT_ROOT/staging/ledger_state.json5"
     clean="--clean"
+    background_output="Running accept thread"
 
     while (( $# > 0 )); do
         case "$1" in
             --persistent=*) persistent="${1#--persistent=}"; shift ;;
             --state=*) state="${1#--state=}"; shift ;;
             --no-clean) clean=""; shift ;;
+            --background_output=*) background_output="${1#--background_output=}"; shift ;;
             --) shift; break ;;
             *) break ;;
         esac
@@ -25,7 +28,7 @@ function start_ledger() {
         --persistent "$persistent" \
         --state "$state" \
         "$@"
-    wait_for_background_output "Running accept thread"
+    wait_for_background_output "$background_output"
 }
 
 # Do not rename this function `ledger`.

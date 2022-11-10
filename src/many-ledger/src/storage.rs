@@ -1,16 +1,13 @@
-pub mod migration_ext;
-
-use crate::migration::Migration;
-use crate::storage::data::MIGRATIONS_KEY;
+use crate::migration::LedgerMigrations;
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
+use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
 use merk::{rocksdb, BatchEntry, Op};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::path::Path;
-use tracing::info;
 
 mod abci;
 mod account;
@@ -42,8 +39,7 @@ pub struct LedgerStorage {
     next_account_id: u32,
     account_identity: Address,
 
-    active_migrations: BTreeSet<String>,
-    all_migrations: BTreeSet<Box<dyn Migration>>,
+    migrations: LedgerMigrations,
 }
 
 impl LedgerStorage {
@@ -71,10 +67,10 @@ impl LedgerStorage {
 }
 
 impl std::fmt::Debug for LedgerStorage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
             .field("symbols", &self.symbols)
-            .field("active_migrations", &self.active_migrations)
+            .field("migrations", &self.migrations)
             .finish()
     }
 }
@@ -87,6 +83,14 @@ impl LedgerStorage {
     #[inline]
     pub fn now(&self) -> Timestamp {
         self.current_time.unwrap_or_else(Timestamp::now)
+    }
+
+    pub(crate) fn set_migrations(&mut self, migrations: LedgerMigrations) {
+        self.migrations = migrations
+    }
+
+    pub fn migrations(&self) -> &LedgerMigrations {
+        &self.migrations
     }
 
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
@@ -123,14 +127,6 @@ impl LedgerStorage {
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        let active_migrations = persistent_store
-            .get(MIGRATIONS_KEY)
-            .expect("Could not open storage.")
-            .map(|x| minicbor::decode(&x).expect("Could not read migrations"))
-            .unwrap_or_default();
-
-        info!("Active migrations: {:?}", active_migrations);
-
         Ok(Self {
             symbols,
             persistent_store,
@@ -140,8 +136,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
-            active_migrations,
-            all_migrations: BTreeSet::new(),
+            migrations: LedgerMigrations::new(),
         })
     }
 
@@ -205,14 +200,8 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            active_migrations: BTreeSet::new(),
-            all_migrations: BTreeSet::new(),
+            migrations: LedgerMigrations::new(),
         })
-    }
-
-    pub fn with_migrations(mut self, all_migrations: BTreeSet<Box<dyn Migration>>) -> Self {
-        self.all_migrations = all_migrations;
-        self
     }
 
     pub fn commit_persistent_store(&mut self) -> Result<(), String> {
@@ -234,6 +223,8 @@ impl LedgerStorage {
         current_height
     }
 
+    /// Return the current height of the blockchain.
+    /// The current height correspond to finished, committed blocks.
     pub fn get_height(&self) -> u64 {
         self.persistent_store
             .get(b"/height")
@@ -249,5 +240,33 @@ impl LedgerStorage {
         self.current_hash
             .as_ref()
             .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
+    }
+
+    pub fn block_hotfix<
+        T: minicbor::Encode<()>,
+        C: for<'a> minicbor::Decode<'a, ()>,
+        F: FnOnce() -> T,
+    >(
+        &self,
+        name: &str,
+        data: F,
+    ) -> Result<Option<C>, ManyError> {
+        if let Some(migration) = self.migrations.get(name) {
+            // We are building the current block so the correct height is the current height (finished blocks) + 1
+            if self.get_height() + 1 == migration.metadata.block_height && migration.is_enabled() {
+                let data_enc = minicbor::to_vec(data()).map_err(ManyError::serialization_error)?;
+                let new_data = migration.hotfix(&data_enc, self.get_height() + 1);
+                if let Some(new_data) = new_data {
+                    return Ok(Some(
+                        minicbor::decode(&new_data).map_err(ManyError::deserialization_error)?,
+                    ));
+                }
+                return Err(ManyError::unknown(
+                    "Something went wrong while running migration \"{name}\"",
+                ));
+            }
+            return Ok(None);
+        }
+        Ok(None)
     }
 }

@@ -1,5 +1,4 @@
 use crate::module::LedgerModuleImpl;
-use crate::storage::migration_ext::data::DataExt;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::data::{

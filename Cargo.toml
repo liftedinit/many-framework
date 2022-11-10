@@ -29,6 +29,7 @@ incremental = false
 #many-identity-hsm = { path = "../many-rs/src/many-identity-hsm" }
 #many-identity-webauthn = { path = "../many-rs/src/many-identity-webauthn" }
 #many-macros = { path = "../many-rs/src/many-macros" }
+#many-migration = { path = "../many-rs/src/many-migration" }
 #many-mock = { path = "../many-rs/src/many-mock" }
 #many-modules = { path = "../many-rs/src/many-modules" }
 #many-protocol = { path = "../many-rs/src/many-protocol" }

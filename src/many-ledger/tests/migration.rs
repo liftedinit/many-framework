@@ -1,13 +1,8 @@
 pub mod common;
-
-use std::collections::BTreeSet;
-
 use common::*;
+
 use many_identity::testing::identity;
-use many_ledger::migration::{
-    data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX},
-    Migration,
-};
+use many_ledger::migration::data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX};
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},
     EmptyArg,
@@ -32,8 +27,8 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
                 &harness.id,
                 DataGetInfoArgs {
                     indices: VecOrSingle(vec![
-                        *ACCOUNT_TOTAL_COUNT_INDEX,
-                        *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX
+                        ACCOUNT_TOTAL_COUNT_INDEX,
+                        NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX
                     ])
                 }
             )
@@ -47,17 +42,17 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
             &harness.id,
             DataQueryArgs {
                 indices: VecOrSingle(vec![
-                    *ACCOUNT_TOTAL_COUNT_INDEX,
-                    *NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+                    ACCOUNT_TOTAL_COUNT_INDEX,
+                    NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
                 ]),
             },
         )
         .unwrap();
-    let total: BigInt = query[&*ACCOUNT_TOTAL_COUNT_INDEX]
+    let total: BigInt = query[&ACCOUNT_TOTAL_COUNT_INDEX]
         .clone()
         .try_into()
         .unwrap();
-    let non_zero: BigInt = query[&*NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX]
+    let non_zero: BigInt = query[&NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX]
         .clone()
         .try_into()
         .unwrap();
@@ -69,18 +64,16 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
 #[test]
 fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
-    let mut harness = Setup::new(true);
-    let migrations_str = r#"
+    let content = r#"
     [
       {
-        type: "AccountCountData",
-        block_height: 2,
-        issue: "https://github.com/liftedinit/many-framework/issues/190",
+        "type": "Account Count Data Attribute",
+        "block_height": 2,
+        "issue": "https://github.com/liftedinit/many-framework/issues/190"
       }
     ]
     "#;
-    let migrations: BTreeSet<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
-    harness.module_impl = harness.module_impl.with_migrations(migrations);
+    let mut harness = Setup::new_with_migrations(true, content);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, a1) = harness.block(|h| {
@@ -133,18 +126,16 @@ fn migration() {
 
 #[test]
 fn migration_stress() {
-    let mut harness = Setup::new(true);
-    let migrations_str = r#"
+    let content = r#"
     [
       {
-        type: "AccountCountData",
-        block_height: 2,
-        issue: "https://github.com/liftedinit/many-framework/issues/190",
+        "type": "Account Count Data Attribute",
+        "block_height": 2,
+        "issue": "https://github.com/liftedinit/many-framework/issues/190"
       }
     ]
     "#;
-    let migrations: BTreeSet<Box<dyn Migration>> = json5::from_str(migrations_str).unwrap();
-    harness.module_impl = harness.module_impl.with_migrations(migrations);
+    let mut harness = Setup::new_with_migrations(true, content);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let _ = harness.block(|h| {

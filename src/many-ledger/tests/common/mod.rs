@@ -4,7 +4,9 @@ use many_identity::testing::identity;
 use many_identity::{Address, Identity};
 use many_identity_dsa::ed25519::generate_random_ed25519_identity;
 use many_ledger::json::InitialStateJson;
+use many_ledger::migration::{LedgerMigrations, MIGRATIONS};
 use many_ledger::module::LedgerModuleImpl;
+use many_migration::load_migrations;
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many_modules::account::features::multisig::{
     AccountMultisigModuleBackend, ExecuteArgs, InfoReturn, Memo,
@@ -85,17 +87,16 @@ impl Default for Setup {
 }
 
 impl Setup {
-    pub fn new(blockchain: bool) -> Self {
+    fn _new(blockchain: bool, migrations: Option<LedgerMigrations>) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         Self {
             module_impl: LedgerModuleImpl::new(
-                Some(
-                    InitialStateJson::read("../../staging/ledger_state.json5")
-                        .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
-                        .expect("Could not read initial state."),
-                ),
+                InitialStateJson::read("../../staging/ledger_state.json5")
+                    .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
+                    .expect("Could not read initial state."),
+                migrations,
                 tempfile::tempdir().unwrap(),
                 blockchain,
             )
@@ -105,6 +106,15 @@ impl Setup {
             public_key,
             time: Some(1_000_000),
         }
+    }
+
+    pub fn new(blockchain: bool) -> Self {
+        Setup::_new(blockchain, None)
+    }
+
+    pub fn new_with_migrations(blockchain: bool, migrations: &str) -> Self {
+        let migrations = load_migrations(&MIGRATIONS, migrations).unwrap();
+        Setup::_new(blockchain, Some(migrations))
     }
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {

@@ -103,6 +103,8 @@ for node in $(seq 0 "$NB_NODES"); do
   update_toml_key "$config_toml_path" '' proxy-app "\"tcp:\\/\\/abci-${node}:26658\\/\""
   update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
   update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
+  update_toml_key "$config_toml_path" consensus timeout-commit "\"2s\""
+  update_toml_key "$config_toml_path" consensus timeout-precommit "\"2s\""
   # update_toml_key "$config_toml_path" p2p bootstrap-peers "\"$peers\""
 done
 

@@ -1,4 +1,3 @@
-use crate::migration::run_migrations;
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use crate::storage::LedgerStorage;
 use many_modules::abci_backend::AbciCommitInfo;
@@ -18,12 +17,15 @@ impl LedgerStorage {
         // attributes.
         self.persistent_store.commit(&[]).unwrap();
 
-        run_migrations(
-            height + 1,
-            &self.all_migrations,
-            &mut self.active_migrations,
-            &mut self.persistent_store,
-        );
+        // Initialize/update migrations at current height, if any
+        for migration in self.migrations.values() {
+            migration
+                .initialize(&mut self.persistent_store, height + 1)
+                .expect("Unable to initialize migration");
+            migration
+                .update(&mut self.persistent_store, height + 1)
+                .expect("Unable to perform migration update");
+        }
 
         self.persistent_store.commit(&[]).unwrap();
 

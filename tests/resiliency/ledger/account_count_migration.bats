@@ -7,10 +7,33 @@ load '../../test_helper/ledger'
 function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
+    echo '
+    [
+      {
+        "type": "Account Count Data Attribute",
+        "block_height": 20,
+        "issue": "https://github.com/liftedinit/many-framework/issues/190"
+      },
+      {
+        "type": "Dummy Hotfix",
+        "block_height": 0,
+        "status": "Disabled"
+      },
+      {
+        "type": "Block 9400",
+        "block_height": 0,
+        "status": "Disabled"
+      }
+    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make -f $MAKEFILE clean
-      make -f $MAKEFILE $(ciopt start-nodes-dettached) ABCI_TAG=$(img_tag) LEDGER_TAG=$(img_tag) ID_WITH_BALANCES="$(identity 1):1000000" MIGRATIONS=$GIT_ROOT/tests/resiliency/ledger/migrations.json5 || {
+      make -f $MAKEFILE $(ciopt start-nodes-dettached) \
+          ABCI_TAG=$(img_tag) \
+          LEDGER_TAG=$(img_tag) \
+          ID_WITH_BALANCES="$(identity 1):1000000" \
+          MIGRATIONS="$BATS_TEST_ROOTDIR/migrations.json" || {
         echo Could not start nodes... >&3
         exit 1
       }
@@ -35,7 +58,7 @@ function teardown() {
     cd "$GIT_ROOT/tests/resiliency/ledger" || exit 1
 }
 
-@test "$SUITE: data attribute migrations work" {
+@test "$SUITE: Account Count" {
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
     run many_message --pem=0 data.info

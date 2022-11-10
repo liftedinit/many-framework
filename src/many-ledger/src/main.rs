@@ -3,6 +3,7 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
+use many_migration::load_migrations;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -20,6 +21,7 @@ use crate::allow_addrs::AllowAddrsModule;
 #[cfg(feature = "webauthn_testing")]
 use crate::idstore_webauthn::IdStoreWebAuthnModule;
 use crate::json::InitialStateJson;
+use crate::migration::MIGRATIONS;
 use crate::module::account::AccountFeatureModule;
 use module::*;
 
@@ -47,8 +49,9 @@ struct Opts {
     quiet: i8,
 
     /// The location of a PEM file for the identity of this server.
-    #[clap(long)]
-    pem: PathBuf,
+    // The field needs to be an Option for the clap derive to work properly.
+    #[clap(long, required = true)]
+    pem: Option<PathBuf>,
 
     /// The address and port to bind to for the MANY Http server.
     #[clap(long, short, default_value = "127.0.0.1:8000")]
@@ -63,8 +66,9 @@ struct Opts {
     state: Option<PathBuf>,
 
     /// Path to a persistent store database (rocksdb).
-    #[clap(long)]
-    persistent: PathBuf,
+    // The field needs to be an Option for the clap derive to work properly.
+    #[clap(long, required = true)]
+    persistent: Option<PathBuf>,
 
     /// Delete the persistent storage to start from a clean state.
     /// If this is not specified the initial state will not be used.
@@ -98,10 +102,16 @@ struct Opts {
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
 
-    /// Path to a JSON5 file containing the configurations for the
+    /// Path to a JSON file containing the configurations for the
     /// migrations
+    /// Migrations are DISABLED unless this configuration file
+    /// is given
     #[clap(long, short)]
     migrations_config: Option<PathBuf>,
+
+    /// List built-in migrations supported by this binary
+    #[clap(long, exclusive = true)]
+    list_migrations: bool,
 
     /// Path to a JSON file containing an array of MANY addresses
     /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
@@ -124,6 +134,7 @@ fn main() {
         migrations_config,
         allow_origin,
         allow_addrs,
+        list_migrations,
         ..
     } = Opts::parse();
 
@@ -160,6 +171,19 @@ fn main() {
         git_sha = env!("VERGEN_GIT_SHA")
     );
 
+    if list_migrations {
+        for migration in MIGRATIONS {
+            println!("Name: {}", migration.name());
+            println!("Description: {}", migration.description());
+        }
+        return;
+    }
+
+    // Safe unwrap.
+    // At this point the Options should contain a value.
+    let pem = pem.unwrap();
+    let persistent = persistent.unwrap();
+
     if clean {
         // Delete the persistent storage.
         // Ignore NotFound errors.
@@ -182,19 +206,48 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let migrations = migrations_config
-        .map(|file| {
-            let contents = std::fs::read_to_string(file)
-                .expect("Could not read file passed to --migrations_config");
-            json5::from_str(&contents).expect("Could not parse file passed to --migrations_config")
-        })
-        .unwrap_or_default();
+    // TODO: Refactor this piece.
+    info!("Loading migrations from {migrations_config:?}");
+    let maybe_migrations = migrations_config.map(|file| {
+        let content = std::fs::read_to_string(file)
+            .expect("Could not read file passed to --migrations_config");
+        let mut migrations =
+            load_migrations(&MIGRATIONS, &content).expect("Could not read migration file");
 
-    info!("Migrations: {:?}", migrations);
+        // Check if we have the right number of migrations
+        if migrations.len() < MIGRATIONS.len() {
+            panic!("Migration configuration file is missing migration(s)");
+        }
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci)
-        .unwrap()
-        .with_migrations(migrations);
+        // Check if we defined every migrations
+        for migration in MIGRATIONS {
+            if !migrations.contains_key(migration.name()) {
+                panic!(
+                    "Migration configuration file is missing {}",
+                    migration.name()
+                );
+            }
+        }
+
+        // Set the migration status according to the configuration file
+        for migration in migrations.values_mut() {
+            if let Some(status) = migration.metadata.extra.get("status") {
+                let status = status.as_str().unwrap();
+                match status {
+                    "Disabled" => migration.disable(),
+                    "Enabled" => migration.enable(),
+                    s => panic!("Invalid status: '{s}'"),
+                }
+            }
+        }
+        migrations
+    });
+
+    let module_impl = if let Some(state) = state {
+        LedgerModuleImpl::new(state, maybe_migrations, persistent, abci).unwrap()
+    } else {
+        LedgerModuleImpl::load(maybe_migrations, persistent, abci).unwrap()
+    };
     let module_impl = Arc::new(Mutex::new(module_impl));
 
     #[cfg(feature = "balance_testing")]
