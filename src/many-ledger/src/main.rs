@@ -236,7 +236,7 @@ fn main() {
                 match status {
                     "Disabled" => migration.disable(),
                     "Enabled" => migration.enable(),
-                    _ => unimplemented!(),
+                    s => panic!("Invalid status: '{s}'"),
                 }
             }
         }
