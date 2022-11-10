@@ -1,7 +1,11 @@
 LEDGER_TAG ?= "latest"
 MIGRATIONS ?=
 ALLOW_ADDRS ?= false
-DISABLE_REGULAR_MIGRATIONS ?= false
+
+ENABLE_MIGRATIONS := false
+ifdef MIGRATIONS
+	ENABLE_MIGRATIONS := true
+endif
 
 include Makefile.common
 
@@ -38,9 +42,8 @@ genfiles-ledger/docker-compose.json: genfiles-common/jsonnet-docker docker-compo
 		--tla-code abci_tag=\"$(ABCI_TAG)\" \
 		--tla-code ledger_tag=\"$(LEDGER_TAG)\" \
 		--tla-code tendermint_tag=\"$(TENDERMINT_VERSION)\" \
-		--tla-code migrations=\"/genfiles/migrations.json\" \
+		--tla-code enable_migrations=$(ENABLE_MIGRATIONS) \
 		--tla-code allow_addrs=$(ALLOW_ADDRS) \
-		--tla-code disable_regular_migrations=$(DISABLE_REGULAR_MIGRATIONS) \
 		-o /$@
 
 genfiles-ledger/generate-tendermint-e2e-config:
@@ -57,8 +60,6 @@ genfiles-ledger/node%: genfiles-common/openssl-docker genfiles-common/tendermint
 	rm -f "$@/migrations.json"
 ifdef MIGRATIONS
 	cp "$(MIGRATIONS)" "$@/migrations.json"
-else
-	echo "[]" > "$@/migrations.json"
 endif
 	docker run --user $$(id -u) -it --rm -v "${PWD}/$@/tendermint:/tendermint" tendermint/tendermint:v$(TENDERMINT_VERSION) init validator
 	docker run --user $$(id -u) -it --rm -v ${PWD}/$@/:/export alpine/openssl genpkey -algorithm Ed25519 -out /export/ledger.pem

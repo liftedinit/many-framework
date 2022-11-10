@@ -1,15 +1,13 @@
-use crate::migration::{LedgerMigrations, MIGRATIONS, MIGRATIONS_KEY};
+use crate::migration::LedgerMigrations;
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use many_error::ManyError;
 use many_identity::Address;
-use many_migration::Migration;
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
 use merk::{rocksdb, BatchEntry, Op};
 use std::collections::BTreeMap;
 use std::path::Path;
-use tracing::{debug, trace};
 
 mod abci;
 mod account;
@@ -87,33 +85,15 @@ impl LedgerStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub(crate) fn store_migrations(&mut self, mut migrations: LedgerMigrations) {
-        debug!("Storing migrations in persistent storage");
-        self.migrations.append(&mut migrations);
-        let data = minicbor::to_vec(
-            self.migrations
-                .values()
-                .collect::<Vec<&Migration<'_, _, _>>>(),
-        )
-        .unwrap();
-        trace!(
-            "Migrations CBOR stored to persistent storage: {}",
-            hex::encode(&data)
-        );
-        self.persistent_store
-            .apply(&[(MIGRATIONS_KEY.to_vec(), Op::Put(data))])
-            .unwrap();
+    pub(crate) fn set_migrations(&mut self, migrations: LedgerMigrations) {
+        self.migrations = migrations
     }
 
     pub fn migrations(&self) -> &LedgerMigrations {
         &self.migrations
     }
 
-    pub fn load<P: AsRef<Path>>(
-        persistent_path: P,
-        migrations: Option<LedgerMigrations>,
-        blockchain: bool,
-    ) -> Result<Self, String> {
+    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -147,27 +127,6 @@ impl LedgerStorage {
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
-        debug!("Loading migrations from persistent storage");
-        let mut all_migrations = persistent_store
-            .get(MIGRATIONS_KEY)
-            .expect("Could not open storage.")
-            .map_or(LedgerMigrations::new(), |x| {
-                trace!(
-                    "Migration CBOR loaded for persistent storage: {}",
-                    hex::encode(&x)
-                );
-                minicbor::decode_with::<_, Vec<Migration<_, _>>>(&x, &mut MIGRATIONS.clone())
-                    .unwrap()
-                    .into_iter()
-                    .map(|mig| (mig.migration.name(), mig))
-                    .collect::<LedgerMigrations>()
-            });
-
-        debug!("Appending CLI migrations to persistent storage migrations");
-        if let Some(mut migrations) = migrations {
-            all_migrations.append(&mut migrations);
-        }
-
         Ok(Self {
             symbols,
             persistent_store,
@@ -177,7 +136,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
-            migrations: all_migrations,
+            migrations: LedgerMigrations::new(),
         })
     }
 

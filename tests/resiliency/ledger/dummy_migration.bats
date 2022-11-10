@@ -12,6 +12,17 @@ function setup() {
       {
         "type": "Dummy Hotfix",
         "block_height": 20
+      },
+      {
+        "type": "Account Count Data Attribute",
+        "block_height": 0,
+        "issue": "https://github.com/liftedinit/many-framework/issues/190",
+        "status": "Disabled"
+      },
+      {
+        "type": "Block 9400",
+        "block_height": 0,
+        "status": "Disabled"
       }
     ]' > "$BATS_TEST_ROOTDIR/migration.json"
     (
@@ -21,8 +32,7 @@ function setup() {
           ABCI_TAG=$(img_tag) \
           LEDGER_TAG=$(img_tag) \
           ID_WITH_BALANCES="$(identity 1):1000000" \
-          MIGRATIONS="$BATS_TEST_ROOTDIR/migration.json" \
-          DISABLE_REGULAR_MIGRATIONS=true || {
+          MIGRATIONS="$BATS_TEST_ROOTDIR/migration.json" || {
         echo Could not start nodes... >&3
         exit 1
       }

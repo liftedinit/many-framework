@@ -3,7 +3,7 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
-use many_migration::{load_enable_all_regular_migrations, load_migrations};
+use many_migration::load_migrations;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -98,19 +98,14 @@ struct Opts {
     #[clap(long)]
     disable_webauthn_only_for_testing: bool,
 
-    /// If set, this flag will disable any regular migration when creating
-    /// a new storage.
-    /// This requires the feature "migration_testing" to be enabled.
-    #[cfg(feature = "migration_testing")]
-    #[clap(long)]
-    disable_regular_migration_on_new_storage_only_for_testing: bool,
-
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
 
     /// Path to a JSON file containing the configurations for the
     /// migrations
+    /// Migrations are DISABLED unless this configuration file
+    /// is given
     #[clap(long, short)]
     migrations_config: Option<PathBuf>,
 
@@ -139,7 +134,6 @@ fn main() {
         migrations_config,
         allow_origin,
         allow_addrs,
-        disable_regular_migration_on_new_storage_only_for_testing,
         list_migrations,
         ..
     } = Opts::parse();
@@ -212,38 +206,47 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    // Different migration loading code path for migration testing
+    // TODO: Refactor this piece.
     info!("Loading migrations from {migrations_config:?}");
-    let mut migrations = migrations_config.map(|file| {
+    let maybe_migrations = migrations_config.map(|file| {
         let content = std::fs::read_to_string(file)
             .expect("Could not read file passed to --migrations_config");
-        load_migrations(&MIGRATIONS, &content).expect("Could not read migration file")
+        let mut migrations =
+            load_migrations(&MIGRATIONS, &content).expect("Could not read migration file");
+
+        // Check if we have the right number of migrations
+        if migrations.len() < MIGRATIONS.len() {
+            panic!("Migration configuration file is missing migration(s)");
+        }
+
+        // Check if we defined every migrations
+        for migration in MIGRATIONS {
+            if !migrations.contains_key(migration.name()) {
+                panic!(
+                    "Migration configuration file is missing {}",
+                    migration.name()
+                );
+            }
+        }
+
+        // Set the migration status according to the configuration file
+        for migration in migrations.values_mut() {
+            if let Some(status) = migration.metadata.extra.get("status") {
+                let status = status.as_str().unwrap();
+                match status {
+                    "Disabled" => migration.disable(),
+                    "Enabled" => migration.enable(),
+                    _ => unimplemented!(),
+                }
+            }
+        }
+        migrations
     });
 
     let module_impl = if let Some(state) = state {
-        let mut load_enable_all = || {
-            let mut all_migrations = load_enable_all_regular_migrations(&MIGRATIONS);
-            if let Some(migrations) = &mut migrations {
-                all_migrations.append(migrations)
-            }
-            all_migrations
-        };
-
-        let migrations = if cfg!(feature = "migration_testing") {
-            if disable_regular_migration_on_new_storage_only_for_testing {
-                info!("Disabling all regular migrations");
-                migrations
-            } else {
-                info!("Enabling all regular migrations");
-                Some(load_enable_all())
-            }
-        } else {
-            info!("Enabling all regular migrations");
-            Some(load_enable_all())
-        };
-        LedgerModuleImpl::new(state, migrations, persistent, abci).unwrap()
+        LedgerModuleImpl::new(state, maybe_migrations, persistent, abci).unwrap()
     } else {
-        LedgerModuleImpl::load(migrations, persistent, abci).unwrap()
+        LedgerModuleImpl::load(maybe_migrations, persistent, abci).unwrap()
     };
     let module_impl = Arc::new(Mutex::new(module_impl));
 

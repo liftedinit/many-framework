@@ -59,6 +59,7 @@ impl LedgerModuleImpl {
             }
             storage.commit_persistent_store().expect("Could not commit");
         }
+
         if let Some(h) = state.hash {
             // Verify the hash.
             let actual = hex::encode(storage.hash());
@@ -68,8 +69,7 @@ impl LedgerModuleImpl {
         }
 
         if let Some(migrations) = migrations {
-            storage.store_migrations(migrations);
-            storage.commit_persistent_store().expect("Could not commit");
+            storage.set_migrations(migrations)
         }
 
         info!(
@@ -87,7 +87,11 @@ impl LedgerModuleImpl {
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
-        let storage = LedgerStorage::load(persistence_store_path, migrations, blockchain).unwrap();
+        let mut storage = LedgerStorage::load(persistence_store_path, blockchain).unwrap();
+
+        if let Some(migrations) = migrations {
+            storage.set_migrations(migrations)
+        }
 
         tracing::debug!("Final migrations: {:?}", storage.migrations());
 

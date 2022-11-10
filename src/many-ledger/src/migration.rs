@@ -15,5 +15,3 @@ pub type LedgerMigrations = BTreeMap<&'static str, Migration<'static, merk::Merk
 // Doesn't contain any metadata
 #[distributed_slice]
 pub static MIGRATIONS: [InnerMigration<'static, merk::Merk, ManyError>] = [..];
-
-pub const MIGRATIONS_KEY: &[u8] = b"/config/migrations";
