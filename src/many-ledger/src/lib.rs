@@ -1,3 +1,5 @@
+#![feature(used_with_arg)]
+
 extern crate core;
 
 pub mod error;
