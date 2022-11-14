@@ -2,8 +2,6 @@ use crate::json::InitialStateJson;
 use crate::migration::LedgerMigrations;
 use crate::{error, storage::LedgerStorage};
 use many_error::ManyError;
-use many_identity::Address;
-use many_types::ledger::Symbol;
 use std::fmt::Debug;
 use std::path::Path;
 use tracing::info;
@@ -99,7 +97,12 @@ impl LedgerModuleImpl {
     }
 
     #[cfg(feature = "balance_testing")]
-    pub fn set_balance_only_for_testing(&mut self, account: Address, balance: u64, symbol: Symbol) {
+    pub fn set_balance_only_for_testing(
+        &mut self,
+        account: many_identity::Address,
+        balance: u64,
+        symbol: many_types::ledger::Symbol,
+    ) {
         self.storage
             .set_balance_only_for_testing(account, balance, symbol);
     }
