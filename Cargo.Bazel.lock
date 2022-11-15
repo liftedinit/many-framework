@@ -2012,7 +2012,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2055,7 +2055,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2065,7 +2065,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2076,7 +2076,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "base32",
  "coset",
@@ -2096,7 +2096,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "asn1 0.8.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "base32",
@@ -2124,7 +2124,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "asn1 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
@@ -2144,7 +2144,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "base64 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2260,7 +2260,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "minicbor",
  "serde",
@@ -2272,7 +2272,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "async-trait",
  "coset",
@@ -2292,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "base64 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "coset",
@@ -2316,7 +2316,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "anyhow",
  "asn1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2365,7 +2365,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=207ca9fdd0e403b758a3a31752ab98daac14e980#207ca9fdd0e403b758a3a31752ab98daac14e980"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=539f8aa33c8c8f10872373bf5665d20fafb8a7a6#539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
 dependencies = [
  "coset",
  "fixed",
