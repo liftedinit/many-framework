@@ -13,7 +13,7 @@ function setup() {
     if ! [ $CI ]; then
         (
           cd "$GIT_ROOT"
-          cargo build
+          cargo build --all-features
         )
     fi
 
