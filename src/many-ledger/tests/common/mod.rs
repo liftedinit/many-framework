@@ -9,7 +9,7 @@ use many_ledger::module::LedgerModuleImpl;
 use many_migration::load_migrations;
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many_modules::account::features::multisig::{
-    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn, Memo,
+    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
 };
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
@@ -18,6 +18,7 @@ use many_modules::ledger::{BalanceArgs, LedgerCommandsModuleBackend, LedgerModul
 use many_modules::{account, events, ledger};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Memo;
 use minicbor::bytes::ByteVec;
 use once_cell::sync::Lazy;
 use proptest::prelude::*;
@@ -273,7 +274,8 @@ impl Setup {
                     threshold: None,
                     timeout_in_secs: None,
                     execute_automatically: None,
-                    data: None,
+                    data_: None,
+                    memo_: None,
                 },
             )
             .map(|x| x.token)
@@ -491,7 +493,8 @@ fn event_from_kind(
                     threshold: None,
                     timeout_in_secs: None,
                     execute_automatically: Some(false),
-                    data: None,
+                    data_: None,
+                    memo_: None,
                 },
             )
         }
@@ -506,7 +509,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()
@@ -526,7 +530,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()
@@ -547,7 +552,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()
@@ -574,7 +580,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()

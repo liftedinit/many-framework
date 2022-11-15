@@ -5,7 +5,7 @@ use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
-use many_modules::account::features::multisig::{AccountMultisigModuleBackend, Memo};
+use many_modules::account::features::multisig::AccountMultisigModuleBackend;
 use many_modules::account::features::{multisig, TryCreateFeature};
 use many_modules::{account, events, ledger};
 use many_types::ledger::TokenAmount;
@@ -50,12 +50,13 @@ fn submit_args(
 ) -> multisig::SubmitTransactionArgs {
     multisig::SubmitTransactionArgs {
         account: account_id,
-        memo: Some(Memo::try_from("Foo".to_string()).unwrap()),
+        memo: None,
         transaction: Box::new(transaction),
         threshold: None,
         timeout_in_secs: None,
         execute_automatically,
-        data: None,
+        data_: None,
+        memo_: None,
     }
 }
 
@@ -126,7 +127,8 @@ proptest! {
         assert!(get_approbation(&tx_info, &id));
         assert_eq!(tx_info.threshold, 3);
         assert!(!tx_info.execute_automatically);
-        assert_eq!(tx_info.data, submit_args.data);
+        assert_eq!(tx_info.data_, submit_args.data_);
+        assert_eq!(tx_info.memo_, submit_args.memo_);
     }
 
     #[test]
@@ -677,7 +679,8 @@ fn recursive_multisig() {
             threshold: None,
             timeout_in_secs: None,
             execute_automatically: Some(false),
-            data: None,
+            data_: None,
+            memo_: None,
         },
     );
 
@@ -713,7 +716,7 @@ fn recursive_multisig() {
     assert!(response.data.is_err());
     assert_many_err(
         response.data,
-        ManyError::attribute_not_found(account::features::multisig::MultisigAccountFeature::ID),
+        ManyError::attribute_not_found(multisig::MultisigAccountFeature::ID),
     );
 
     // Let's make acc2 a Multisig account
@@ -736,7 +739,8 @@ fn recursive_multisig() {
             threshold: None,
             timeout_in_secs: None,
             execute_automatically: None,
-            data: None,
+            data_: None,
+            memo_: None,
         },
     );
 

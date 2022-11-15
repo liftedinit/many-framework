@@ -5,14 +5,14 @@ use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::account::features::multisig::{
-    self, AccountMultisigModuleBackend, Memo, MultisigTransactionState,
+    self, AccountMultisigModuleBackend, MultisigTransactionState,
 };
 use many_modules::events::{
     self, EventFilterAttributeSpecific, EventFilterAttributeSpecificIndex, EventsModuleBackend,
 };
 use many_modules::ledger;
 use many_modules::ledger::LedgerCommandsModuleBackend;
-use many_types::{CborRange, Timestamp};
+use many_types::{CborRange, Memo, Timestamp};
 use proptest::prelude::*;
 use proptest::test_runner::Config;
 use std::collections::BTreeMap;
@@ -227,7 +227,8 @@ fn submit_args(
         threshold: None,
         timeout_in_secs: None,
         execute_automatically,
-        data: None,
+        data_: None,
+        memo_: None,
     }
 }
 

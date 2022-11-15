@@ -7,6 +7,7 @@ use many_modules::account::features::multisig;
 use many_modules::{events, ledger};
 use many_protocol::ResponseMessage;
 use many_types::ledger::TokenAmount;
+use many_types::Memo;
 use minicbor::bytes::ByteVec;
 use tracing::info;
 
@@ -118,12 +119,13 @@ fn submit_send(
     });
     let arguments = multisig::SubmitTransactionArgs {
         account,
-        memo: None,
+        memo: Some(Memo::try_from("Foo".to_string()).unwrap()),
         transaction: Box::new(transaction),
         threshold,
         timeout_in_secs: timeout.map(|d| d.as_secs()),
         execute_automatically,
-        data: None,
+        data_: None,
+        memo_: None,
     };
     let response = client.call("account.multisigSubmitTransaction", arguments)?;
 
@@ -165,7 +167,8 @@ fn submit_set_defaults(
         threshold,
         timeout_in_secs: timeout.map(|d| d.as_secs()),
         execute_automatically,
-        data: None,
+        data_: None,
+        memo_: None,
     };
     let response = client.call("account.multisigSubmitTransaction", arguments)?;
 

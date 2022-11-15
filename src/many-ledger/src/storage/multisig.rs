@@ -374,6 +374,7 @@ impl LedgerStorage {
         let storage = MultisigTransactionStorage {
             account: account_id,
             info: account::features::multisig::InfoReturn {
+                memo_: None,
                 memo: arg.memo.clone(),
                 transaction: arg.transaction.as_ref().clone(),
                 submitter: *sender,
@@ -381,7 +382,7 @@ impl LedgerStorage {
                 threshold,
                 execute_automatically,
                 timeout,
-                data: arg.data.clone(),
+                data_: None,
                 state: account::features::multisig::MultisigTransactionState::Pending,
             },
             creation: self.now().as_system_time()?,
@@ -392,13 +393,14 @@ impl LedgerStorage {
         self.log_event(events::EventInfo::AccountMultisigSubmit {
             submitter: *sender,
             account: account_id,
-            memo: arg.memo,
+            memo_: None,
             transaction: Box::new(*arg.transaction),
             token: Some(event_id.clone().into()),
             threshold,
             timeout,
             execute_automatically,
-            data: arg.data,
+            data_: None,
+            memo: arg.memo,
         });
 
         Ok(event_id.into())
