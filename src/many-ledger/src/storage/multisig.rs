@@ -1,4 +1,5 @@
 use crate::migration::block_9400::Block9400Tx;
+use crate::migration::memo::MEMO_MIGRATION;
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
 use crate::storage::LedgerStorage;
@@ -315,6 +316,7 @@ impl LedgerStorage {
         sender: &Address,
         arg: account::features::multisig::SubmitTransactionArgs,
     ) -> Result<Vec<u8>, ManyError> {
+        eprintln!("arg: {:?}", arg);
         let event_id = self.new_event_id();
         let account_id = arg.account;
 
@@ -371,18 +373,28 @@ impl LedgerStorage {
                 .ok_or_else(|| ManyError::unknown("Invalid time.".to_string()))?,
         )?;
 
+        // If the migration hasn't been applied yet, use the old fields and skip
+        // the new memo field. If it has, ignore the old fields and only use the
+        // new field.
+        let (memo_, data_, memo) = if self.migrations.is_active(&MEMO_MIGRATION) {
+            (None, None, arg.memo.clone())
+        } else {
+            (arg.memo_, arg.data_, None)
+        };
+        eprintln!("memo: ({memo_:?}, {data_:?}, {memo:?})");
+
         let storage = MultisigTransactionStorage {
             account: account_id,
             info: account::features::multisig::InfoReturn {
-                memo_: None,
-                memo: arg.memo.clone(),
+                memo_,
+                memo,
                 transaction: arg.transaction.as_ref().clone(),
                 submitter: *sender,
                 approvers,
                 threshold,
                 execute_automatically,
                 timeout,
-                data_: None,
+                data_,
                 state: account::features::multisig::MultisigTransactionState::Pending,
             },
             creation: self.now().as_system_time()?,

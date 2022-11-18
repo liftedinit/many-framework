@@ -2,6 +2,7 @@ use crate::migration::LedgerMigrations;
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use many_error::ManyError;
 use many_identity::Address;
+use many_migration::InnerMigration;
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
@@ -91,6 +92,15 @@ impl LedgerStorage {
 
     pub fn migrations(&self) -> &LedgerMigrations {
         &self.migrations
+    }
+
+    /// TODO: refactor this to be part of the LedgerMigrations type.
+    pub fn has_migration<T, E>(&self, migration: &InnerMigration<T, E>) -> bool {
+        if let Some(mig) = self.migrations.get(migration.name()) {
+            mig.is_enabled()
+        } else {
+            false
+        }
     }
 
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {

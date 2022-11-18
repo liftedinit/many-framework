@@ -125,6 +125,10 @@ pub struct LedgerIterator<'a> {
 }
 
 impl<'a> LedgerIterator<'a> {
+    pub fn all(merk: &'a merk::Merk) -> Self {
+        Self::scoped_by_id(merk, CborRange::default(), SortOrder::Indeterminate)
+    }
+
     pub fn scoped_by_id(merk: &'a merk::Merk, range: CborRange<EventId>, order: SortOrder) -> Self {
         use rocksdb::IteratorMode;
         let mut opts = ReadOptions::default();

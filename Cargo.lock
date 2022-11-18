@@ -1876,6 +1876,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ledger-db"
+version = "0.1.0"
+dependencies = [
+ "clap 3.2.23",
+ "hex",
+ "many-modules",
+ "many-types",
+ "merk",
+ "minicbor",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2250,6 +2262,7 @@ dependencies = [
 name = "many-migration"
 version = "0.1.0"
 dependencies = [
+ "many-error",
  "minicbor",
  "serde",
  "serde_json",

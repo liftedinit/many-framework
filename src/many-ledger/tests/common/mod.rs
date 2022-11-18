@@ -1,4 +1,5 @@
 use coset::CborSerializable;
+use itertools::Itertools;
 use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::{Address, Identity};
@@ -6,7 +7,7 @@ use many_identity_dsa::ed25519::generate_random_ed25519_identity;
 use many_ledger::json::InitialStateJson;
 use many_ledger::migration::{LedgerMigrations, MIGRATIONS};
 use many_ledger::module::LedgerModuleImpl;
-use many_migration::load_migrations;
+use many_migration::{load_migrations, InnerMigration};
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many_modules::account::features::multisig::{
     AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
@@ -27,6 +28,54 @@ use std::{
     str::FromStr,
 };
 
+pub struct MigrationHarness {
+    inner: &'static InnerMigration<'static, merk::Merk, ManyError>,
+    block_height: u64,
+    enabled: bool,
+}
+
+impl MigrationHarness {
+    pub fn to_json_str(&self) -> String {
+        let maybe_enabled = if self.enabled {
+            r#", "status": "Disabled""#
+        } else {
+            ""
+        };
+
+        format!(
+            r#"{{ "type": "{}", "block_height": {}, "issue": "" {maybe_enabled} }}"#,
+            self.inner.name(),
+            self.block_height
+        )
+    }
+}
+
+impl Into<MigrationHarness> for (u64, &'static InnerMigration<'static, merk::Merk, ManyError>) {
+    fn into(self) -> MigrationHarness {
+        MigrationHarness {
+            inner: self.1,
+            block_height: self.0,
+            enabled: true,
+        }
+    }
+}
+
+impl Into<MigrationHarness>
+    for (
+        u64,
+        &'static InnerMigration<'static, merk::Merk, ManyError>,
+        bool,
+    )
+{
+    fn into(self) -> MigrationHarness {
+        MigrationHarness {
+            inner: self.1,
+            block_height: self.0,
+            enabled: self.2,
+        }
+    }
+}
+
 pub static MFX_SYMBOL: Lazy<Address> = Lazy::new(|| {
     Address::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
 });
@@ -35,7 +84,7 @@ pub fn assert_many_err<I: std::fmt::Debug + PartialEq>(r: Result<I, ManyError>, 
     assert_eq!(r, Err(err));
 }
 
-fn create_account_args(account_type: AccountType) -> account::CreateArgs {
+pub fn create_account_args(account_type: AccountType) -> account::CreateArgs {
     let (roles, features) = match account_type {
         AccountType::Multisig => {
             let roles = Some(BTreeMap::from_iter([
@@ -92,13 +141,16 @@ impl Setup {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
+        let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
+        eprintln!("Store path: {:?}", store_path.path());
+
         Self {
             module_impl: LedgerModuleImpl::new(
                 InitialStateJson::read("../../staging/ledger_state.json5")
                     .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                     .expect("Could not read initial state."),
                 migrations,
-                tempfile::tempdir().unwrap(),
+                store_path,
                 blockchain,
             )
             .unwrap(),
@@ -113,8 +165,20 @@ impl Setup {
         Setup::_new(blockchain, None)
     }
 
-    pub fn new_with_migrations(blockchain: bool, migrations: &str) -> Self {
-        let migrations = load_migrations(&MIGRATIONS, migrations).unwrap();
+    pub fn new_with_migrations<T: Into<MigrationHarness>>(
+        blockchain: bool,
+        migrations: impl IntoIterator<Item = T>,
+    ) -> Self {
+        let migrations = format!(
+            "[{}]",
+            migrations
+                .into_iter()
+                .map(|x| x.into().to_json_str())
+                .join(",")
+        );
+
+        let migrations = load_migrations(&MIGRATIONS, &migrations).unwrap();
+        eprintln!("migrations: {migrations:#?}");
         Setup::_new(blockchain, Some(migrations))
     }
 
