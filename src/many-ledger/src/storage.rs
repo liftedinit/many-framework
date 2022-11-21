@@ -141,6 +141,7 @@ impl LedgerStorage {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeMap<Symbol, String>,
         initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
