@@ -1,3 +1,5 @@
+#![feature(used_with_arg)]
+
 use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
