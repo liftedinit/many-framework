@@ -3,7 +3,6 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
-use many_migration::load_migrations;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -211,36 +210,7 @@ fn main() {
     let maybe_migrations = migrations_config.map(|file| {
         let content = std::fs::read_to_string(file)
             .expect("Could not read file passed to --migrations_config");
-        let mut migrations =
-            load_migrations(&MIGRATIONS, &content).expect("Could not read migration file");
-
-        // Check if we have the right number of migrations
-        if migrations.len() < MIGRATIONS.len() {
-            panic!("Migration configuration file is missing migration(s)");
-        }
-
-        // Check if we defined every migrations
-        for migration in MIGRATIONS {
-            if !migrations.contains_key(migration.name()) {
-                panic!(
-                    "Migration configuration file is missing {}",
-                    migration.name()
-                );
-            }
-        }
-
-        // Set the migration status according to the configuration file
-        for migration in migrations.values_mut() {
-            if let Some(status) = migration.metadata.extra.get("status") {
-                let status = status.as_str().unwrap();
-                match status {
-                    "Disabled" => migration.disable(),
-                    "Enabled" => migration.enable(),
-                    s => panic!("Invalid status: '{s}'"),
-                }
-            }
-        }
-        migrations
+        serde_json::from_str(&content).unwrap()
     });
 
     let module_impl = if let Some(state) = state {

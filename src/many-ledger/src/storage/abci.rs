@@ -19,7 +19,7 @@ impl LedgerStorage {
 
         // Initialize/update migrations at current height, if any
         self.migrations
-            .update(&mut self.persistent_store, height + 1)
+            .update_at_height(&mut self.persistent_store, height + 1)
             .expect("Unable to run migrations");
 
         self.persistent_store.commit(&[]).unwrap();

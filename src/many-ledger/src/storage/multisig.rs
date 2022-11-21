@@ -316,7 +316,6 @@ impl LedgerStorage {
         sender: &Address,
         arg: account::features::multisig::SubmitTransactionArgs,
     ) -> Result<Vec<u8>, ManyError> {
-        eprintln!("arg: {:?}", arg);
         let event_id = self.new_event_id();
         let account_id = arg.account;
 
@@ -381,20 +380,19 @@ impl LedgerStorage {
         } else {
             (arg.memo_, arg.data_, None)
         };
-        eprintln!("memo: ({memo_:?}, {data_:?}, {memo:?})");
 
         let storage = MultisigTransactionStorage {
             account: account_id,
             info: account::features::multisig::InfoReturn {
-                memo_,
-                memo,
+                memo_: memo_.clone(),
+                memo: memo.clone(),
                 transaction: arg.transaction.as_ref().clone(),
                 submitter: *sender,
                 approvers,
                 threshold,
                 execute_automatically,
                 timeout,
-                data_,
+                data_: data_.clone(),
                 state: account::features::multisig::MultisigTransactionState::Pending,
             },
             creation: self.now().as_system_time()?,
@@ -405,14 +403,14 @@ impl LedgerStorage {
         self.log_event(events::EventInfo::AccountMultisigSubmit {
             submitter: *sender,
             account: account_id,
-            memo_: None,
+            memo_,
             transaction: Box::new(*arg.transaction),
             token: Some(event_id.clone().into()),
             threshold,
             timeout,
             execute_automatically,
-            data_: None,
-            memo: arg.memo,
+            data_,
+            memo,
         });
 
         Ok(event_id.into())

@@ -5,9 +5,8 @@ use many_identity::testing::identity;
 use many_identity::{Address, Identity};
 use many_identity_dsa::ed25519::generate_random_ed25519_identity;
 use many_ledger::json::InitialStateJson;
-use many_ledger::migration::{LedgerMigrations, MIGRATIONS};
 use many_ledger::module::LedgerModuleImpl;
-use many_migration::{load_migrations, InnerMigration};
+use many_migration::{InnerMigration, MigrationConfig};
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many_modules::account::features::multisig::{
     AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
@@ -27,9 +26,10 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
 };
+use tracing::debug;
 
 pub struct MigrationHarness {
-    inner: &'static InnerMigration<'static, merk::Merk, ManyError>,
+    inner: &'static InnerMigration<merk::Merk, ManyError>,
     block_height: u64,
     enabled: bool,
 }
@@ -43,14 +43,14 @@ impl MigrationHarness {
         };
 
         format!(
-            r#"{{ "type": "{}", "block_height": {}, "issue": "" {maybe_enabled} }}"#,
+            r#"{{ "name": "{}", "block_height": {}, "issue": "" {maybe_enabled} }}"#,
             self.inner.name(),
             self.block_height
         )
     }
 }
 
-impl Into<MigrationHarness> for (u64, &'static InnerMigration<'static, merk::Merk, ManyError>) {
+impl Into<MigrationHarness> for (u64, &'static InnerMigration<merk::Merk, ManyError>) {
     fn into(self) -> MigrationHarness {
         MigrationHarness {
             inner: self.1,
@@ -60,13 +60,7 @@ impl Into<MigrationHarness> for (u64, &'static InnerMigration<'static, merk::Mer
     }
 }
 
-impl Into<MigrationHarness>
-    for (
-        u64,
-        &'static InnerMigration<'static, merk::Merk, ManyError>,
-        bool,
-    )
-{
+impl Into<MigrationHarness> for (u64, &'static InnerMigration<merk::Merk, ManyError>, bool) {
     fn into(self) -> MigrationHarness {
         MigrationHarness {
             inner: self.1,
@@ -137,19 +131,19 @@ impl Default for Setup {
 }
 
 impl Setup {
-    fn _new(blockchain: bool, migrations: Option<LedgerMigrations>) -> Self {
+    fn _new(blockchain: bool, migration_config: Option<MigrationConfig>) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
-        eprintln!("Store path: {:?}", store_path.path());
+        debug!("Store path: {:?}", store_path.path());
 
         Self {
             module_impl: LedgerModuleImpl::new(
                 InitialStateJson::read("../../staging/ledger_state.json5")
                     .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
                     .expect("Could not read initial state."),
-                migrations,
+                migration_config,
                 store_path,
                 blockchain,
             )
@@ -177,9 +171,7 @@ impl Setup {
                 .join(",")
         );
 
-        let migrations = load_migrations(&MIGRATIONS, &migrations).unwrap();
-        eprintln!("migrations: {migrations:#?}");
-        Setup::_new(blockchain, Some(migrations))
+        Setup::_new(blockchain, Some(serde_json::from_str(&migrations).unwrap()))
     }
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {

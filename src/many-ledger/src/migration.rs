@@ -1,7 +1,6 @@
 use linkme::distributed_slice;
 use many_error::ManyError;
-use many_migration::{InnerMigration, Migration, MigrationSet};
-use std::collections::BTreeMap;
+use many_migration::{InnerMigration, MigrationSet};
 
 pub mod block_9400;
 pub mod data;

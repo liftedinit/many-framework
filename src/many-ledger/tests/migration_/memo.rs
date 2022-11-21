@@ -52,7 +52,6 @@ fn memo_migration_works() {
         .unwrap();
 
     assert_eq!(events.nb_events, 2);
-    eprintln!("last {:#?}", events.events.last());
     assert!(matches!(
         events.events.get(1).unwrap().content,
         EventInfo::AccountMultisigSubmit {
@@ -63,17 +62,23 @@ fn memo_migration_works() {
         },
     ));
 
-    for _ in 0..1 {
-        harness.block(|_| {});
-    }
-
-    // Wait 1 more block for the migration to run.
+    // Wait 1 block for the migration to run.
     harness.block(|_| {});
 
+    let events = harness
+        .module_impl
+        .list(ListArgs {
+            count: Some(10),
+            order: None,
+            filter: None,
+        })
+        .unwrap();
+
     // List events again.
-    assert_eq!(events.nb_events, 1);
+    assert_eq!(events.nb_events, 2);
+
     assert!(matches!(
-        events.events.first().unwrap().content,
+        events.events.last().unwrap().content,
         EventInfo::AccountMultisigSubmit {
             memo_: None,
             data_: None,
