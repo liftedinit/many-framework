@@ -38,41 +38,41 @@ function teardown() {
 }
 
 # Relates https://github.com/liftedinit/many-framework/issues/290
-#@test "$SUITE: Application hash is consistent with 1 node down" {
-#    cd "$GIT_ROOT/docker/e2e/" || exit 1
-#
-#    # Create transactions before bringing the node down
-#    call_kvstore --pem=1 --port=8000 put foo bar
-#    check_consistency --pem=1 --key=foo --value=bar 8000 8001 8002 8003
-#
-#    call_kvstore --pem=1 --port=8001 put bar foo
-#    check_consistency --pem=1 --key=foo --value=bar 8000 8001 8002 8003
-#    check_consistency --pem=1 --key=bar --value=foo 8000 8001 8002 8003
-#
-#    # Bring down node 3.
-#    make -f $MAKEFILE stop-single-node-3
-#
-#    sleep 10
-#
-#    # Bring it back
-#    make -f $MAKEFILE $(ciopt start-single-node-dettached)-3 \
-#      ABCI_TAG=$(img_tag) \
-#      KVSTORE_TAG=$(img_tag) || {
-#        echo Could not start nodes... >&3
-#        exit 1
-#    }
-#
-#    # At this point, node 3 should catch up and the global application hash should be valid
-#
-#    # Give time to the servers to start.
-#    timeout 60s bash <<EOT
-#    while ! many message --server http://localhost:8003 status; do
-#      sleep 1
-#    done >/dev/null
-#EOT
-#
-#    sleep 10
-#}
+@test "$SUITE: Application hash is consistent with 1 node down" {
+    cd "$GIT_ROOT/docker/e2e/" || exit 1
+
+    # Create transactions before bringing the node down
+    call_kvstore --pem=1 --port=8000 put foo bar
+    check_consistency --pem=1 --key=foo --value=bar 8000 8001 8002 8003
+
+    call_kvstore --pem=1 --port=8001 put bar foo
+    check_consistency --pem=1 --key=foo --value=bar 8000 8001 8002 8003
+    check_consistency --pem=1 --key=bar --value=foo 8000 8001 8002 8003
+
+    # Bring down node 3.
+    make -f $MAKEFILE stop-single-node-3
+
+    sleep 10
+
+    # Bring it back
+    make -f $MAKEFILE $(ciopt start-single-node-dettached)-3 \
+      ABCI_TAG=$(img_tag) \
+      KVSTORE_TAG=$(img_tag) || {
+        echo Could not start nodes... >&3
+        exit 1
+    }
+
+    # At this point, node 3 should catch up and the global application hash should be valid
+
+    # Give time to the servers to start.
+    timeout 60s bash <<EOT
+    while ! many message --server http://localhost:8003 status; do
+      sleep 1
+    done >/dev/null
+EOT
+
+    sleep 10
+}
 
 # Relates https://github.com/liftedinit/many-framework/issues/289
 @test "$SUITE: First block after load has a transaction" {
