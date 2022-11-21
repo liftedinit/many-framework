@@ -125,7 +125,15 @@ impl LedgerStorage {
             u64::from_be_bytes(bytes)
         });
 
-        let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
+        // The call to `saturating_sub()` is required to fix
+        // https://github.com/liftedinit/many-framework/issues/289
+        //
+        // The `commit()` function computes the `latest_tid` using the previous height while
+        // the following line computes the `latest_tid` using the current height.
+        //
+        // The discrepancy will lead to an application hash mismatch if the block following the `load()` contains
+        // a transaction.
+        let latest_tid = EventId::from(height.saturating_sub(1) << HEIGHT_EVENTID_SHIFT);
 
         Ok(Self {
             symbols,
