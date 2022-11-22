@@ -2024,6 +2024,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2066,6 +2067,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2075,6 +2077,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2085,6 +2088,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "base32",
  "coset",
@@ -2104,6 +2108,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2131,6 +2136,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2150,6 +2156,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2252,6 +2259,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2264,6 +2272,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2276,6 +2285,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "async-trait",
  "coset",
@@ -2295,6 +2305,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2318,6 +2329,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2366,6 +2378,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 dependencies = [
  "coset",
  "fixed",
@@ -4563,7 +4576,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?rev=fe48cf7cc75745317d7fadc88f286e7331638853#fe48cf7cc75745317d7fadc88f286e7331638853"

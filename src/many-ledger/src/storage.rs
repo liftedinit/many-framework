@@ -251,12 +251,15 @@ impl LedgerStorage {
         F: FnOnce() -> T,
     >(
         &mut self,
-        _name: &str,
+        name: &str,
         data: F,
     ) -> Result<Option<C>, ManyError> {
         let data_enc = minicbor::to_vec(data()).map_err(ManyError::serialization_error)?;
 
-        if let Some(data) = self.migrations.hotfix(&data_enc, self.get_height() + 1)? {
+        if let Some(data) = self
+            .migrations
+            .hotfix(name, &data_enc, self.get_height() + 1)?
+        {
             let dec_data = minicbor::decode(&data).map_err(ManyError::deserialization_error)?;
             Ok(Some(dec_data))
         } else {

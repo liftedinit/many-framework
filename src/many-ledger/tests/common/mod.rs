@@ -19,6 +19,7 @@ use many_modules::{account, events, ledger};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Memo;
+use merk::Merk;
 use minicbor::bytes::ByteVec;
 use once_cell::sync::Lazy;
 use proptest::prelude::*;
@@ -50,22 +51,24 @@ impl MigrationHarness {
     }
 }
 
-impl Into<MigrationHarness> for (u64, &'static InnerMigration<merk::Merk, ManyError>) {
-    fn into(self) -> MigrationHarness {
+impl From<(u64, &'static InnerMigration<merk::Merk, ManyError>)> for MigrationHarness {
+    fn from((block_height, inner): (u64, &'static InnerMigration<Merk, ManyError>)) -> Self {
         MigrationHarness {
-            inner: self.1,
-            block_height: self.0,
-            enabled: true,
+            inner,
+            block_height,
+            enabled: false,
         }
     }
 }
 
-impl Into<MigrationHarness> for (u64, &'static InnerMigration<merk::Merk, ManyError>, bool) {
-    fn into(self) -> MigrationHarness {
+impl From<(u64, &'static InnerMigration<merk::Merk, ManyError>, bool)> for MigrationHarness {
+    fn from(
+        (block_height, inner, enabled): (u64, &'static InnerMigration<Merk, ManyError>, bool),
+    ) -> Self {
         MigrationHarness {
-            inner: self.1,
-            block_height: self.0,
-            enabled: self.2,
+            inner,
+            block_height,
+            enabled,
         }
     }
 }
@@ -159,9 +162,9 @@ impl Setup {
         Setup::_new(blockchain, None)
     }
 
-    pub fn new_with_migrations<T: Into<MigrationHarness>>(
+    pub fn new_with_migrations(
         blockchain: bool,
-        migrations: impl IntoIterator<Item = T>,
+        migrations: impl IntoIterator<Item = impl Into<MigrationHarness>>,
     ) -> Self {
         let migrations = format!(
             "[{}]",
