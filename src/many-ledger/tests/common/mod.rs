@@ -56,7 +56,7 @@ impl From<(u64, &'static InnerMigration<merk::Merk, ManyError>)> for MigrationHa
         MigrationHarness {
             inner,
             block_height,
-            enabled: false,
+            enabled: true,
         }
     }
 }

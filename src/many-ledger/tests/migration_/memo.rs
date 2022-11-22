@@ -49,7 +49,7 @@ fn memo_migration_works() {
     }
 
     // Setup starts with 2 accounts because of staging/ledger_state.json5
-    let mut harness = Setup::new_with_migrations(true, [(3, &MEMO_MIGRATION, false)]);
+    let mut harness = Setup::new_with_migrations(true, [(5, &MEMO_MIGRATION)]);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
     let (_, account_id) = harness.block(|h| {
         // Create an account.
@@ -72,7 +72,25 @@ fn memo_migration_works() {
         }
     });
 
-    // Wait 1 block for the migration to run.
+    // Wait 2 block for the migration to run.
+    for _ in 0..2 {
+        harness.block(|_| {});
+        check_events(&harness, 2, |(_, ev)| {
+            if let EventInfo::AccountMultisigSubmit {
+                memo_, data_, memo, ..
+            } = ev.content
+            {
+                assert_eq!(memo_.as_ref().map(|x| x.as_ref()), Some("Legacy Memo"));
+                assert_eq!(
+                    data_.as_ref().map(|x| x.as_bytes()),
+                    Some(b"Legacy Data".as_slice())
+                );
+                assert!(memo.is_none());
+            }
+        });
+    }
+
+    // Wait 1 more block, migration activates here.
     harness.block(|_| {});
 
     check_events(&harness, 2, |(_, ev)| {
