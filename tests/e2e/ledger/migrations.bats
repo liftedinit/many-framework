@@ -133,7 +133,7 @@ function teardown() {
       }
     ]' > "$BATS_TEST_ROOTDIR/migrations.json"
 
-    start_ledger --background_output="block_height: 40.*status: Disabled" \
+    start_ledger --background_output="block_height: 40, disabled: true" \
         --pem "$(pem 0)" \
         "--migrations-config=$BATS_TEST_ROOTDIR/migrations.json"
 }
