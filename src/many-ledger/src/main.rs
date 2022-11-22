@@ -104,9 +104,8 @@ struct Opts {
     logmode: LogStrategy,
 
     /// Path to a JSON file containing the configurations for the
-    /// migrations
-    /// Migrations are DISABLED unless this configuration file
-    /// is given
+    /// migrations. Migrations are DISABLED unless this configuration file
+    /// is given.
     #[clap(long, short)]
     migrations_config: Option<PathBuf>,
 

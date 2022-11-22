@@ -37,8 +37,8 @@ pub struct MigrationHarness {
 
 impl MigrationHarness {
     pub fn to_json_str(&self) -> String {
-        let maybe_enabled = if self.enabled {
-            r#", "status": "Disabled""#
+        let maybe_enabled = if !self.enabled {
+            r#", "disabled": true"#
         } else {
             ""
         };
