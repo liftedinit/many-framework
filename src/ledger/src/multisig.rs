@@ -7,6 +7,7 @@ use many_modules::account::features::multisig;
 use many_modules::{events, ledger};
 use many_protocol::ResponseMessage;
 use many_types::ledger::TokenAmount;
+use many_types::memo::MemoLegacy;
 use many_types::Memo;
 use minicbor::bytes::ByteVec;
 use tracing::info;
@@ -33,6 +34,14 @@ enum SubcommandOpt {
     Submit {
         /// The account to use as the source of the multisig command.
         account: Address,
+
+        /// Memo to use for a transaction.
+        #[clap(long)]
+        memo: Option<String>,
+
+        /// Legacy memo to use for a transaction.
+        #[clap(long)]
+        legacy_memo: Option<String>,
 
         #[clap(flatten)]
         multisig_arg: MultisigArgOpt,
@@ -98,6 +107,8 @@ fn submit_send(
     account: Address,
     multisig_arg: MultisigArgOpt,
     opts: TargetCommandOpt,
+    memo: Option<String>,
+    legacy_memo: Option<String>,
 ) -> Result<(), ManyError> {
     let TargetCommandOpt {
         account: from,
@@ -119,13 +130,13 @@ fn submit_send(
     });
     let arguments = multisig::SubmitTransactionArgs {
         account,
-        memo: Some(Memo::try_from("Foo".to_string()).unwrap()),
+        memo: memo.map(|x| Memo::try_from(x.as_str()).unwrap()),
         transaction: Box::new(transaction),
         threshold,
         timeout_in_secs: timeout.map(|d| d.as_secs()),
         execute_automatically,
         data_: None,
-        memo_: None,
+        memo_: legacy_memo.map(|x| MemoLegacy::try_from(x).unwrap()),
     };
     let response = client.call("account.multisigSubmitTransaction", arguments)?;
 
@@ -188,9 +199,13 @@ fn submit(
     account: Address,
     multisig_arg: MultisigArgOpt,
     opts: SubmitOpt,
+    memo: Option<String>,
+    legacy_memo: Option<String>,
 ) -> Result<(), ManyError> {
     match opts {
-        SubmitOpt::Send(target) => submit_send(client, account, multisig_arg, target),
+        SubmitOpt::Send(target) => {
+            submit_send(client, account, multisig_arg, target, memo, legacy_memo)
+        }
         SubmitOpt::SetDefaults(SetDefaultsOpt {
             target_account,
             opts,
@@ -276,7 +291,9 @@ pub fn multisig(client: ManyClient<impl Identity>, opts: CommandOpt) -> Result<(
             account,
             multisig_arg,
             subcommand,
-        } => submit(client, account, multisig_arg, subcommand),
+            memo,
+            legacy_memo,
+        } => submit(client, account, multisig_arg, subcommand, memo, legacy_memo),
         SubcommandOpt::Approve(sub_opts) => approve(client, sub_opts),
         SubcommandOpt::Revoke(sub_opts) => revoke(client, sub_opts),
         SubcommandOpt::Execute(sub_opts) => execute(client, sub_opts),

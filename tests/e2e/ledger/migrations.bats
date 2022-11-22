@@ -38,6 +38,11 @@ function teardown() {
         "name": "Block 9400",
         "block_height": 0,
         "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
@@ -57,10 +62,15 @@ function teardown() {
         "name": "Block 9400",
         "block_height": 0,
         "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
-    start_ledger --background_output="Migration configuration file is missing migration\(s\)"\
+    start_ledger --background_output="Migration Config is missing migration"\
         --pem "$(pem 0)" \
         "--migrations-config=$BATS_TEST_ROOTDIR/migrations.json"
 }
@@ -81,10 +91,15 @@ function teardown() {
         "name": "Block 9400",
         "block_height": 0,
         "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
-    start_ledger --background_output="Migration configuration file is missing" \
+    start_ledger --background_output="Migration Config is missing migration" \
         --pem "$(pem 0)" \
         "--migrations-config=$BATS_TEST_ROOTDIR/migrations.json"
 }
@@ -103,6 +118,11 @@ function teardown() {
       },
       {
         "name": "Block 9400",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Memo Migration",
         "block_height": 0,
         "disabled": true
       }
@@ -129,6 +149,11 @@ function teardown() {
       {
         "name": "Block 9400",
         "block_height": 40,
+        "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
         "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"

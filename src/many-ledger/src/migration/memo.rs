@@ -78,6 +78,9 @@ fn update_multisig_submit_events(storage: &mut merk::Merk) -> Result<(), ManyErr
         }
     }
 
+    // The iterator is already sorted when going through rocksdb.
+    // Since we only filter and map above, the keys in batch will always
+    // be sorted at this point.
     storage
         .apply(batch.as_slice())
         .map_err(ManyError::unknown)?;
@@ -85,15 +88,9 @@ fn update_multisig_submit_events(storage: &mut merk::Merk) -> Result<(), ManyErr
     Ok(())
 }
 
-fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
-    update_multisig_submit_events(storage)?;
-
-    Ok(())
-}
-
 #[distributed_slice(MIGRATIONS)]
 pub static MEMO_MIGRATION: InnerMigration<merk::Merk, ManyError> = InnerMigration::new_initialize(
-    initialize,
+    update_multisig_submit_events,
     "Memo Migration",
     "Move the database from legacy memo and data to the new memo data type.",
 );

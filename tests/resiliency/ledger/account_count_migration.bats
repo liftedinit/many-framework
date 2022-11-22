@@ -23,6 +23,11 @@ function setup() {
         "name": "Block 9400",
         "block_height": 0,
         "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
