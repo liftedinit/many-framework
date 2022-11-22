@@ -1,7 +1,6 @@
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::{module::LedgerModuleImpl, storage::LedgerStorage};
-use many_migration::MigrationConfig;
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
 use many_modules::ledger::LedgerModuleBackend;
@@ -27,7 +26,7 @@ fn load() {
             false,
             None,
             None,
-            MigrationConfig::default(),
+            None,
         );
         let mut module_impl = LedgerModuleImpl::load(None, path.clone(), false).unwrap();
 

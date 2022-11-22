@@ -47,7 +47,7 @@ impl LedgerModuleImpl {
                     })
                     .collect()
             }),
-            migration_config.unwrap_or_default(),
+            migration_config,
         )
         .map_err(ManyError::unknown)?;
 
@@ -83,12 +83,7 @@ impl LedgerModuleImpl {
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
-        let storage = LedgerStorage::load(
-            persistence_store_path,
-            blockchain,
-            migrations.unwrap_or_default(),
-        )
-        .unwrap();
+        let storage = LedgerStorage::load(persistence_store_path, blockchain, migrations).unwrap();
 
         tracing::debug!("Final migrations: {:?}", storage.migrations());
 

@@ -1,7 +1,6 @@
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::storage::LedgerStorage;
-use many_migration::MigrationConfig;
 use many_modules::events::{EventId, EventLog};
 use many_types::ledger::TokenAmount;
 use many_types::{CborRange, SortOrder};
@@ -26,7 +25,7 @@ fn setup() -> LedgerStorage {
         false,
         None,
         None,
-        MigrationConfig::default(),
+        None,
     )
     .unwrap();
 

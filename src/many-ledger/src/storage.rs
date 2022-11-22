@@ -2,7 +2,7 @@ use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use many_error::ManyError;
 use many_identity::Address;
-use many_migration::MigrationConfig;
+use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
@@ -18,30 +18,6 @@ mod idstore;
 mod ledger;
 mod ledger_commands;
 pub mod multisig;
-
-fn _load_migrations(
-    migration_config: MigrationConfig,
-    height: u64,
-) -> Result<LedgerMigrations, String> {
-    let migrations = LedgerMigrations::load(&MIGRATIONS, migration_config, height)?;
-
-    // Check if we have the right number of migrations
-    if migrations.len() < MIGRATIONS.len() {
-        panic!("Migration configuration file is missing migration(s)");
-    }
-
-    // Check if we defined every migrations
-    for migration in MIGRATIONS {
-        if !migrations.contains_key(migration.name()) {
-            return Err(format!(
-                "Migration configuration file is missing {}",
-                migration.name()
-            ));
-        }
-    }
-
-    Ok(migrations)
-}
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
@@ -117,7 +93,7 @@ impl LedgerStorage {
     pub fn load<P: AsRef<Path>>(
         persistent_path: P,
         blockchain: bool,
-        migration_config: MigrationConfig,
+        migration_config: Option<MigrationConfig>,
     ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
@@ -151,7 +127,9 @@ impl LedgerStorage {
         });
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
-        let migrations = _load_migrations(migration_config, height)?;
+        let migrations = migration_config.map_or_else(MigrationSet::empty, |config| {
+            LedgerMigrations::load(&MIGRATIONS, config, height)
+        })?;
 
         Ok(Self {
             symbols,
@@ -175,7 +153,7 @@ impl LedgerStorage {
         blockchain: bool,
         maybe_seed: Option<u64>,
         maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
-        migration_config: MigrationConfig,
+        migration_config: Option<MigrationConfig>,
     ) -> Result<Self, String> {
         let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
@@ -218,7 +196,9 @@ impl LedgerStorage {
         }
 
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
-        let migrations = _load_migrations(migration_config, 0)?;
+        let migrations = migration_config.map_or_else(MigrationSet::empty, |config| {
+            LedgerMigrations::load(&MIGRATIONS, config, 0)
+        })?;
 
         Ok(Self {
             symbols,

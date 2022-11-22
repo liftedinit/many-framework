@@ -167,7 +167,7 @@ impl Setup {
         migrations: impl IntoIterator<Item = impl Into<MigrationHarness>>,
     ) -> Self {
         let migrations = format!(
-            "[{}]",
+            r#"{{ "migrations": [{}] }}"#,
             migrations
                 .into_iter()
                 .map(|x| x.into().to_json_str())

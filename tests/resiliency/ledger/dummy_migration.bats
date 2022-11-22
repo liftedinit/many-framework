@@ -8,7 +8,7 @@ function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
     echo '
-    [
+    { "migrations": [
       {
         "name": "Dummy Hotfix",
         "block_height": 20
@@ -24,7 +24,7 @@ function setup() {
         "block_height": 0,
         "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migration.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migration.json"
     (
       cd "$GIT_ROOT/docker/e2e/" || exit
       make -f $MAKEFILE clean

@@ -45,7 +45,7 @@ fn update_multisig_submit_events(storage: &mut merk::Merk) -> Result<(), ManyErr
             let memo = match (memo_, data_) {
                 (Some(m), Some(d)) => {
                     let mut m = Memo::from(m);
-                    m.push_byte_vec(d.as_bytes().to_vec().into())?;
+                    m.push_bytes(d.as_bytes().to_vec())?;
                     Some(m)
                 }
                 (Some(m), _) => Some(Memo::from(m)),

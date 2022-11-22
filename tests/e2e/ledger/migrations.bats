@@ -23,7 +23,7 @@ function teardown() {
 
 @test "$SUITE: Load migrations" {
     echo '
-    [
+    { "migrations": [
       {
         "name": "Account Count Data Attribute",
         "block_height": 20,
@@ -39,7 +39,7 @@ function teardown() {
         "block_height": 0,
         "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
     start_ledger --pem "$(pem 0)" \
         "--migrations-config=$BATS_TEST_ROOTDIR/migrations.json"
@@ -47,7 +47,7 @@ function teardown() {
 
 @test "$SUITE: Missing migration (bad length)" {
     echo '
-    [
+    { "migrations": [
       {
         "name": "Dummy Hotfix",
         "block_height": 0,
@@ -58,7 +58,7 @@ function teardown() {
         "block_height": 0,
         "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
     start_ledger --background_output="Migration configuration file is missing migration\(s\)"\
         --pem "$(pem 0)" \
@@ -67,7 +67,7 @@ function teardown() {
 
 @test "$SUITE: Missing migration (right length, duplicate)" {
     echo '
-    [
+    { "migrations": [
       {
         "name": "Dummy Hotfix",
         "block_height": 20
@@ -82,7 +82,7 @@ function teardown() {
         "block_height": 0,
         "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
     start_ledger --background_output="Migration configuration file is missing" \
         --pem "$(pem 0)" \
@@ -91,7 +91,7 @@ function teardown() {
 
 @test "$SUITE: Unsupported migration type" {
     echo '
-    [
+    { "migrations": [
       {
         "name": "Foobar",
         "block_height": 20
@@ -106,7 +106,7 @@ function teardown() {
         "block_height": 0,
         "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
     start_ledger --background_output="Unsupported migration 'Foobar'" \
         --pem "$(pem 0)" \
@@ -115,7 +115,7 @@ function teardown() {
 
 @test "$SUITE: Can disable" {
     echo '
-    [
+    { "migrations": [
       {
         "name": "Account Count Data Attribute",
         "block_height": 20,
@@ -131,7 +131,7 @@ function teardown() {
         "block_height": 40,
         "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
     start_ledger --background_output="block_height: 40, disabled: true" \
         --pem "$(pem 0)" \

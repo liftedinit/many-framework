@@ -5,6 +5,7 @@ use many_identity::verifiers::AnonymousVerifier;
 use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
+use many_migration::MigrationConfig;
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
@@ -211,7 +212,8 @@ fn main() {
     let maybe_migrations = migrations_config.map(|file| {
         let content = std::fs::read_to_string(file)
             .expect("Could not read file passed to --migrations_config");
-        serde_json::from_str(&content).unwrap()
+        let config: MigrationConfig = serde_json::from_str(&content).unwrap();
+        config.strict()
     });
 
     let module_impl = if let Some(state) = state {
