@@ -1,5 +1,5 @@
 {
-  "checksum": "9522d71094ba5144046e9a2a44c3a6d0be73e4695e11b067fdd44443ed91f1df",
+  "checksum": "67ac4227c8f0b31d984f69751735510e784219a59fd6b70a7cd742d14e4aaaec",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -58,13 +58,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "aho-corasick 0.7.19": {
+    "aho-corasick 0.7.20": {
       "name": "aho-corasick",
-      "version": "0.7.19",
+      "version": "0.7.20",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/aho-corasick/0.7.19/download",
-          "sha256": "b4f55bd91a0978cbfd91c457a164bab8b4001c833b7f323132c0a4e1922dd44e"
+          "url": "https://crates.io/api/v1/crates/aho-corasick/0.7.20/download",
+          "sha256": "cc936419f96fa211c1b9166887b38e5e40b19958e5b895be7c1f93adec7071ac"
         }
       },
       "targets": [
@@ -100,9 +100,9 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.7.19"
+        "version": "0.7.20"
       },
-      "license": "Unlicense/MIT"
+      "license": "Unlicense OR MIT"
     },
     "ansi_term 0.12.1": {
       "name": "ansi_term",
@@ -1996,7 +1996,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             }
           ],
@@ -2344,13 +2344,13 @@
       },
       "license": "Unlicense OR MIT"
     },
-    "bytes 1.2.1": {
+    "bytes 1.3.0": {
       "name": "bytes",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/bytes/1.2.1/download",
-          "sha256": "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
+          "url": "https://crates.io/api/v1/crates/bytes/1.3.0/download",
+          "sha256": "dfb24e866b15a1af2a1b663f10c6b6b8f397a84aadb828f12e5b289ec23a3a3c"
         }
       },
       "targets": [
@@ -2387,7 +2387,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.2.1"
+        "version": "1.3.0"
       },
       "license": "MIT"
     },
@@ -2457,7 +2457,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             },
             {
@@ -2504,13 +2504,13 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "cc 1.0.76": {
+    "cc 1.0.77": {
       "name": "cc",
-      "version": "1.0.76",
+      "version": "1.0.77",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/cc/1.0.76/download",
-          "sha256": "76a284da2e6fe2092f2353e51713435363112dfd60030e22add80be333fb928f"
+          "url": "https://crates.io/api/v1/crates/cc/1.0.77/download",
+          "sha256": "e9f73505338f7d905b19d18738976aae232eb46b8efc15554ffc56deb5d9ebe4"
         }
       },
       "targets": [
@@ -2558,7 +2558,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.76"
+        "version": "1.0.77"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -3178,7 +3178,7 @@
               "target": "clap_lex"
             },
             {
-              "id": "indexmap 1.9.1",
+              "id": "indexmap 1.9.2",
               "target": "indexmap"
             },
             {
@@ -3306,7 +3306,7 @@
         "deps": {
           "common": [
             {
-              "id": "os_str_bytes 6.4.0",
+              "id": "os_str_bytes 6.4.1",
               "target": "os_str_bytes"
             }
           ],
@@ -3447,7 +3447,7 @@
         "deps": {
           "common": [
             {
-              "id": "crossbeam-utils 0.8.12",
+              "id": "crossbeam-utils 0.8.14",
               "target": "crossbeam_utils"
             }
           ],
@@ -3872,13 +3872,13 @@
       },
       "license": "MIT"
     },
-    "crossbeam-utils 0.8.12": {
+    "crossbeam-utils 0.8.14": {
       "name": "crossbeam-utils",
-      "version": "0.8.12",
+      "version": "0.8.14",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/crossbeam-utils/0.8.12/download",
-          "sha256": "edbafec5fa1f196ca66527c1b12c2ec4745ca14b50f1ad8f9f6f720b55d11fac"
+          "url": "https://crates.io/api/v1/crates/crossbeam-utils/0.8.14/download",
+          "sha256": "4fb766fa798726286dbbb842f174001dab8abc7b627a1dd86e0b7222a95d929f"
         }
       },
       "targets": [
@@ -3919,14 +3919,14 @@
               "target": "cfg_if"
             },
             {
-              "id": "crossbeam-utils 0.8.12",
+              "id": "crossbeam-utils 0.8.14",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.8.12"
+        "version": "0.8.14"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -5427,13 +5427,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "digest 0.10.5": {
+    "digest 0.10.6": {
       "name": "digest",
-      "version": "0.10.5",
+      "version": "0.10.6",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/digest/0.10.5/download",
-          "sha256": "adfbc57365a37acbd2ebf2b64d7e69bb766e2fea813521ed536f5d0520dcf86c"
+          "url": "https://crates.io/api/v1/crates/digest/0.10.6/download",
+          "sha256": "8168378f4e5023e7218c89c891c0fd8ecdb5e5e4f18cb78f38cf245dd021e76f"
         }
       },
       "targets": [
@@ -5482,7 +5482,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.10.5"
+        "version": "0.10.6"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -7953,7 +7953,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -7977,7 +7977,7 @@
               "target": "http"
             },
             {
-              "id": "indexmap 1.9.1",
+              "id": "indexmap 1.9.2",
               "target": "indexmap"
             },
             {
@@ -7985,7 +7985,7 @@
               "target": "slab"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -8156,7 +8156,7 @@
               "target": "bitflags"
             },
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -8435,7 +8435,7 @@
         "deps": {
           "common": [
             {
-              "id": "digest 0.10.5",
+              "id": "digest 0.10.6",
               "target": "digest"
             }
           ],
@@ -8477,7 +8477,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -8527,7 +8527,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -8612,7 +8612,7 @@
               "target": "tiny_http"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -8801,7 +8801,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -8849,7 +8849,7 @@
               "target": "socket2"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -8911,7 +8911,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -8939,7 +8939,7 @@
               "target": "rustls_native_certs"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -9025,7 +9025,7 @@
               "target": "rustls_native_certs"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -9079,7 +9079,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -9091,7 +9091,7 @@
               "target": "native_tls"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -9227,7 +9227,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             }
           ],
@@ -9283,13 +9283,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "indexmap 1.9.1": {
+    "indexmap 1.9.2": {
       "name": "indexmap",
-      "version": "1.9.1",
+      "version": "1.9.2",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/indexmap/1.9.1/download",
-          "sha256": "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
+          "url": "https://crates.io/api/v1/crates/indexmap/1.9.2/download",
+          "sha256": "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
         }
       },
       "targets": [
@@ -9333,14 +9333,14 @@
               "target": "hashbrown"
             },
             {
-              "id": "indexmap 1.9.1",
+              "id": "indexmap 1.9.2",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "1.9.1"
+        "version": "1.9.2"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -9911,7 +9911,7 @@
               "target": "syslog_tracing"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -10102,7 +10102,7 @@
               "target": "syslog_tracing"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -10112,6 +10112,63 @@
             {
               "id": "tracing-subscriber 0.3.16",
               "target": "tracing_subscriber"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.1.0"
+      },
+      "license": "Apache-2.0"
+    },
+    "ledger-db 0.1.0": {
+      "name": "ledger-db",
+      "version": "0.1.0",
+      "repository": null,
+      "targets": [
+        {
+          "Binary": {
+            "crate_name": "ledger-db",
+            "crate_root": "src/main.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "clap 3.2.23",
+              "target": "clap"
+            },
+            {
+              "id": "hex 0.4.3",
+              "target": "hex"
+            },
+            {
+              "id": "many-modules 0.1.0",
+              "target": "many_modules"
+            },
+            {
+              "id": "many-types 0.1.0",
+              "target": "many_types"
+            },
+            {
+              "id": "merk 1.0.0",
+              "target": "merk"
+            },
+            {
+              "id": "minicbor 0.18.0",
+              "target": "minicbor"
             }
           ],
           "selects": {}
@@ -10251,7 +10308,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             },
             {
@@ -10394,7 +10451,7 @@
               "target": "bindgen"
             },
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             },
             {
@@ -10484,7 +10541,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             },
             {
@@ -10867,7 +10924,7 @@
               "target": "num_integer"
             },
             {
-              "id": "reqwest 0.11.12",
+              "id": "reqwest 0.11.13",
               "target": "reqwest"
             },
             {
@@ -10903,7 +10960,7 @@
               "target": "tendermint_rpc"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -10950,9 +11007,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-client"
         }
@@ -11082,7 +11139,7 @@
               "target": "regex"
             },
             {
-              "id": "reqwest 0.11.12",
+              "id": "reqwest 0.11.13",
               "target": "reqwest"
             },
             {
@@ -11106,7 +11163,7 @@
               "target": "tiny_http"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -11143,9 +11200,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -11196,9 +11253,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-error"
         }
@@ -11262,9 +11319,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-identity"
         }
@@ -11363,9 +11420,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -11497,9 +11554,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -11590,9 +11647,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -11655,7 +11712,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -11796,7 +11853,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -11820,7 +11877,7 @@
               "target": "syslog_tracing"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -12029,7 +12086,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -12053,7 +12110,7 @@
               "target": "syslog_tracing"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -12129,9 +12186,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-macros"
         }
@@ -12194,9 +12251,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-migration"
         }
@@ -12223,6 +12280,10 @@
         "deps": {
           "common": [
             {
+              "id": "many-error 0.1.0",
+              "target": "many_error"
+            },
+            {
               "id": "minicbor 0.18.0",
               "target": "minicbor"
             },
@@ -12231,7 +12292,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -12255,9 +12316,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-modules"
         }
@@ -12353,9 +12414,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -12426,7 +12487,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -12467,9 +12528,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-server"
         }
@@ -12607,7 +12668,7 @@
               "target": "regex"
             },
             {
-              "id": "reqwest 0.11.12",
+              "id": "reqwest 0.11.13",
               "target": "reqwest"
             },
             {
@@ -12615,7 +12676,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -12643,7 +12704,7 @@
               "target": "tiny_http"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -12684,9 +12745,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/liftedinit/many-rs.git",
+          "remote": "https://github.com/hansl/many-rs.git",
           "commitish": {
-            "Rev": "539f8aa33c8c8f10872373bf5665d20fafb8a7a6"
+            "Branch": "memo-refactor"
           },
           "strip_prefix": "src/many-types"
         }
@@ -14249,7 +14310,7 @@
               "target": "autocfg"
             },
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             },
             {
@@ -14270,13 +14331,13 @@
       },
       "license": "MIT"
     },
-    "os_str_bytes 6.4.0": {
+    "os_str_bytes 6.4.1": {
       "name": "os_str_bytes",
-      "version": "6.4.0",
+      "version": "6.4.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/os_str_bytes/6.4.0/download",
-          "sha256": "7b5bf27447411e9ee3ff51186bf7a08e16c341efdde93f4d823e8844429bed7e"
+          "url": "https://crates.io/api/v1/crates/os_str_bytes/6.4.1/download",
+          "sha256": "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
         }
       },
       "targets": [
@@ -14302,7 +14363,7 @@
           "raw_os_str"
         ],
         "edition": "2021",
-        "version": "6.4.0"
+        "version": "6.4.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -14635,7 +14696,7 @@
         "deps": {
           "common": [
             {
-              "id": "digest 0.10.5",
+              "id": "digest 0.10.6",
               "target": "digest"
             }
           ],
@@ -16104,7 +16165,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             }
           ],
@@ -16213,7 +16274,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -16866,7 +16927,7 @@
         "deps": {
           "common": [
             {
-              "id": "aho-corasick 0.7.19",
+              "id": "aho-corasick 0.7.20",
               "target": "aho_corasick"
             },
             {
@@ -16973,13 +17034,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "reqwest 0.11.12": {
+    "reqwest 0.11.13": {
       "name": "reqwest",
-      "version": "0.11.12",
+      "version": "0.11.13",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/reqwest/0.11.12/download",
-          "sha256": "431949c384f4e2ae07605ccaa56d1d9d2ecdb5cadd4f9577ccfab29f2e5149fc"
+          "url": "https://crates.io/api/v1/crates/reqwest/0.11.13/download",
+          "sha256": "68cc60575865c7831548863cc02356512e3f1dc2f3f82cb837d7fc4cc8f3c97c"
         }
       },
       "targets": [
@@ -17017,7 +17078,7 @@
               "target": "base64"
             },
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -17101,7 +17162,7 @@
                 "target": "pin_project_lite"
               },
               {
-                "id": "tokio 1.21.2",
+                "id": "tokio 1.22.0",
                 "target": "tokio"
               },
               {
@@ -17115,7 +17176,7 @@
                 "target": "js_sys"
               },
               {
-                "id": "serde_json 1.0.87",
+                "id": "serde_json 1.0.89",
                 "target": "serde_json"
               },
               {
@@ -17140,7 +17201,7 @@
           }
         },
         "edition": "2018",
-        "version": "0.11.12"
+        "version": "0.11.13"
       },
       "license": "MIT/Apache-2.0"
     },
@@ -17248,7 +17309,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             }
           ],
@@ -17339,7 +17400,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             }
           ],
@@ -18357,13 +18418,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "serde_json 1.0.87": {
+    "serde_json 1.0.89": {
       "name": "serde_json",
-      "version": "1.0.87",
+      "version": "1.0.89",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/serde_json/1.0.87/download",
-          "sha256": "6ce777b7b150d76b9cf60d28b55f5847135a003f7d7350c6be7a773508ce7d45"
+          "url": "https://crates.io/api/v1/crates/serde_json/1.0.89/download",
+          "sha256": "020ff22c755c2ed3f8cf162dbb41a7268d934702f3ed3631656ea597e08fc3db"
         }
       },
       "targets": [
@@ -18417,14 +18478,14 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.87"
+        "version": "1.0.89"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -18626,7 +18687,7 @@
               "target": "cfg_if"
             },
             {
-              "id": "digest 0.10.5",
+              "id": "digest 0.10.6",
               "target": "digest"
             }
           ],
@@ -18683,7 +18744,7 @@
               "target": "cfg_if"
             },
             {
-              "id": "digest 0.10.5",
+              "id": "digest 0.10.6",
               "target": "digest"
             }
           ],
@@ -18800,7 +18861,7 @@
         "deps": {
           "common": [
             {
-              "id": "digest 0.10.5",
+              "id": "digest 0.10.6",
               "target": "digest"
             },
             {
@@ -20296,7 +20357,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -20340,7 +20401,7 @@
               "target": "serde_bytes"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -20438,7 +20499,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -20504,7 +20565,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -20558,7 +20619,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -20665,7 +20726,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -20713,7 +20774,7 @@
               "target": "serde_bytes"
             },
             {
-              "id": "serde_json 1.0.87",
+              "id": "serde_json 1.0.89",
               "target": "serde_json"
             },
             {
@@ -20745,7 +20806,7 @@
               "target": "time"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -21397,13 +21458,13 @@
       },
       "license": "MIT OR Apache-2.0 OR Zlib"
     },
-    "tokio 1.21.2": {
+    "tokio 1.22.0": {
       "name": "tokio",
-      "version": "1.21.2",
+      "version": "1.22.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/tokio/1.21.2/download",
-          "sha256": "a9e03c497dc955702ba729190dc4aac6f2a0ce97f913e5b1b5912fc5039d9099"
+          "url": "https://crates.io/api/v1/crates/tokio/1.22.0/download",
+          "sha256": "d76ce4a75fb488c605c54bf610f221cea8b0dafb53333c1a67e8ee199dcd2ae3"
         }
       },
       "targets": [
@@ -21465,7 +21526,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -21489,7 +21550,7 @@
               "target": "pin_project_lite"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "build_script_build"
             }
           ],
@@ -21528,7 +21589,7 @@
           ],
           "selects": {}
         },
-        "version": "1.21.2"
+        "version": "1.22.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -21631,7 +21692,7 @@
               "target": "native_tls"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             }
           ],
@@ -21677,7 +21738,7 @@
               "target": "rustls"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -21728,7 +21789,7 @@
         "deps": {
           "common": [
             {
-              "id": "bytes 1.2.1",
+              "id": "bytes 1.3.0",
               "target": "bytes"
             },
             {
@@ -21744,7 +21805,7 @@
               "target": "pin_project_lite"
             },
             {
-              "id": "tokio 1.21.2",
+              "id": "tokio 1.22.0",
               "target": "tokio"
             },
             {
@@ -23073,8 +23134,8 @@
         },
         {
           "Binary": {
-            "crate_name": "reader",
-            "crate_root": "src/bin/reader.rs",
+            "crate_name": "exit",
+            "crate_root": "src/bin/exit.rs",
             "srcs": {
               "include": [
                 "**/*.rs"
@@ -23097,8 +23158,8 @@
         },
         {
           "Binary": {
-            "crate_name": "exit",
-            "crate_root": "src/bin/exit.rs",
+            "crate_name": "reader",
+            "crate_root": "src/bin/reader.rs",
             "srcs": {
               "include": [
                 "**/*.rs"
@@ -23941,7 +24002,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.76",
+              "id": "cc 1.0.77",
               "target": "cc"
             }
           ],
@@ -25405,7 +25466,7 @@
   "binary_crates": [
     "bindgen 0.59.2",
     "bindgen 0.60.1",
-    "cc 1.0.76",
+    "cc 1.0.77",
     "clap 3.2.23",
     "minicbor 0.18.0",
     "peg-macros 0.7.0",
@@ -25419,6 +25480,7 @@
     "idstore-export 0.1.0": "src/idstore-export",
     "kvstore 0.1.0": "src/kvstore",
     "ledger 0.1.0": "src/ledger",
+    "ledger-db 0.1.0": "src/ledger-db",
     "many-abci 0.1.0": "src/many-abci",
     "many-kvstore 0.1.0": "src/many-kvstore",
     "many-ledger 0.1.0": "src/many-ledger"

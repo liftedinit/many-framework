@@ -49,6 +49,7 @@ crates_repository(
         "//src/idstore-export:Cargo.toml",
         "//src/kvstore:Cargo.toml",
         "//src/ledger:Cargo.toml",
+        "//src/ledger-db:Cargo.toml",
         "//src/many-abci:Cargo.toml",
         "//src/many-kvstore:Cargo.toml",
         "//src/many-ledger:Cargo.toml",
