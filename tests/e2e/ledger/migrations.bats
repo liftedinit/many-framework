@@ -108,7 +108,7 @@ function teardown() {
       }
     ]' > "$BATS_TEST_ROOTDIR/migrations.json"
 
-    start_ledger --background_output="Unsupported migration type" \
+    start_ledger --background_output="Unsupported migration 'Foobar'" \
         --pem "$(pem 0)" \
         "--migrations-config=$BATS_TEST_ROOTDIR/migrations.json"
 }

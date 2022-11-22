@@ -19,6 +19,30 @@ mod ledger;
 mod ledger_commands;
 pub mod multisig;
 
+fn _load_migrations(
+    migration_config: MigrationConfig,
+    height: u64,
+) -> Result<LedgerMigrations, String> {
+    let migrations = LedgerMigrations::load(&MIGRATIONS, migration_config, height)?;
+
+    // Check if we have the right number of migrations
+    if migrations.len() < MIGRATIONS.len() {
+        panic!("Migration configuration file is missing migration(s)");
+    }
+
+    // Check if we defined every migrations
+    for migration in MIGRATIONS {
+        if !migrations.contains_key(migration.name()) {
+            return Err(format!(
+                "Migration configuration file is missing {}",
+                migration.name()
+            ));
+        }
+    }
+
+    Ok(migrations)
+}
+
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
 }
@@ -127,6 +151,7 @@ impl LedgerStorage {
         });
 
         let latest_tid = EventId::from(height << HEIGHT_EVENTID_SHIFT);
+        let migrations = _load_migrations(migration_config, height)?;
 
         Ok(Self {
             symbols,
@@ -137,7 +162,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
-            migrations: LedgerMigrations::load(&MIGRATIONS, migration_config, height)?,
+            migrations,
         })
     }
 
@@ -193,6 +218,7 @@ impl LedgerStorage {
         }
 
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
+        let migrations = _load_migrations(migration_config, 0)?;
 
         Ok(Self {
             symbols,
@@ -203,7 +229,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            migrations: LedgerMigrations::load(&MIGRATIONS, migration_config, 0)?,
+            migrations,
         })
     }
 
