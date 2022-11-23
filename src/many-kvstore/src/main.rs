@@ -134,10 +134,22 @@ fn main() {
         json5::from_str(&content).unwrap()
     });
 
-    let module = if let Some(state) = state {
+    let module = if persistent.exists() {
+        if state.is_some() {
+            tracing::warn!(
+                r#"
+                An existing persistent store {} was found and a staging file {state:?} was given.
+                Ignoring staging file and loading existing persistent store.
+                "#,
+                persistent.display()
+            );
+        }
+
+        KvStoreModuleImpl::load(persistent, abci).unwrap()
+    } else if let Some(state) = state {
         KvStoreModuleImpl::new(state, persistent, abci).unwrap()
     } else {
-        KvStoreModuleImpl::load(persistent, abci).unwrap()
+        panic!("Persistent store or staging file not found.")
     };
 
     let module = Arc::new(Mutex::new(module));

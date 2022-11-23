@@ -18,9 +18,6 @@ use event::EventId;
 const KVSTORE_ROOT: &[u8] = b"s";
 const KVSTORE_ACL_ROOT: &[u8] = b"a";
 
-// Left-shift the height by this amount of bits
-const HEIGHT_EVENTID_SHIFT: u64 = 32;
-
 #[derive(Serialize, Deserialize, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[serde(transparent)]
 pub struct Key {
@@ -81,13 +78,13 @@ impl KvStoreStorage {
         )
         .map_err(|e| e.to_string())?;
 
-        let height = persistent_store.get(b"/height").unwrap().map_or(0u64, |x| {
-            let mut bytes = [0u8; 8];
-            bytes.copy_from_slice(x.as_slice());
-            u64::from_be_bytes(bytes)
-        });
-
-        let latest_event_id = EventId::from(height << HEIGHT_EVENTID_SHIFT);
+        let latest_event_id = minicbor::decode(
+            &persistent_store
+                .get(b"/latest_event_id")
+                .expect("Could not open storage.")
+                .expect("Could not find key '/latest_event_id'"),
+        )
+        .map_err(|e| e.to_string())?;
 
         Ok(Self {
             persistent_store,
@@ -124,6 +121,14 @@ impl KvStoreStorage {
             .apply(batch.as_slice())
             .map_err(|e| e.to_string())?;
 
+        let latest_event_id = EventId::from(vec![0]);
+        persistent_store
+            .apply(&[(
+                b"/latest_event_id".to_vec(),
+                Op::Put(minicbor::to_vec(&latest_event_id).expect("Unable to encode event id")),
+            )])
+            .unwrap();
+
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
 
         Ok(Self {
@@ -131,7 +136,7 @@ impl KvStoreStorage {
             blockchain,
             current_time: None,
             current_hash: None,
-            latest_event_id: EventId::from(vec![0]),
+            latest_event_id,
             next_account_id: 0,
             account_identity: identity,
         })
@@ -160,14 +165,20 @@ impl KvStoreStorage {
     }
 
     pub fn commit(&mut self) -> AbciCommitInfo {
-        let height = self.inc_height();
-        let retain_height = 0;
+        let _ = self.inc_height();
+        self.persistent_store
+            .apply(&[(
+                b"/latest_event_id".to_vec(),
+                Op::Put(
+                    minicbor::to_vec(&self.latest_event_id).expect("Unable to encode event id"),
+                ),
+            )])
+            .unwrap();
         self.persistent_store.commit(&[]).unwrap();
 
+        let retain_height = 0;
         let hash = self.persistent_store.root_hash().to_vec();
         self.current_hash = Some(hash.clone());
-
-        self.latest_event_id = EventId::from(height << HEIGHT_EVENTID_SHIFT);
 
         AbciCommitInfo {
             retain_height,
