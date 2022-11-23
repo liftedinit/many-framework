@@ -8,6 +8,7 @@ use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{ledger, r#async};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Memo;
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
@@ -147,6 +148,10 @@ pub(crate) struct TargetCommandOpt {
     /// a local name for a symbol. If it doesn't parse to an identity an
     /// additional call will be made to retrieve local names.
     symbol: String,
+
+    /// Optional memo
+    #[clap(long)]
+    memo: Option<String>,
 }
 
 pub fn resolve_symbol(
@@ -294,6 +299,7 @@ fn send(
     to: Address,
     amount: BigUint,
     symbol: String,
+    memo: Option<Memo>,
 ) -> Result<(), ManyError> {
     let symbol = resolve_symbol(&client, symbol)?;
 
@@ -305,6 +311,7 @@ fn send(
             to,
             symbol,
             amount: TokenAmount::from(amount),
+            memo,
         };
         let response = client.call("ledger.send", arguments)?;
         let payload = wait_response(client, response)?;
@@ -407,9 +414,17 @@ fn main() {
             identity,
             amount,
             symbol,
+            memo,
         }) => {
             let from = account.unwrap_or(client_address);
-            send(client, from, identity, amount, symbol)
+            send(
+                client,
+                from,
+                identity,
+                amount,
+                symbol,
+                memo.map(|m| Memo::try_from(m.as_str()).unwrap()),
+            )
         }
         SubCommand::Multisig(opts) => multisig::multisig(client, opts),
     };

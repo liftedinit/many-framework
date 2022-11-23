@@ -227,6 +227,7 @@ impl Setup {
                 to,
                 amount: amount.into(),
                 symbol,
+                memo: None,
             },
         )?;
         Ok(())
@@ -363,6 +364,7 @@ impl Setup {
                 to,
                 symbol,
                 amount: amount.into(),
+                memo: None,
             }),
         )
     }
@@ -495,6 +497,7 @@ fn event_from_kind(
         to: identity(3),
         symbol: *MFX_SYMBOL,
         amount: TokenAmount::from(10u16),
+        memo: None,
     });
 
     match event {

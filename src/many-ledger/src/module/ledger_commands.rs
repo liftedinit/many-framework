@@ -13,6 +13,7 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
             to,
             amount,
             symbol,
+            memo,
         } = args;
 
         let from = from.as_ref().unwrap_or(sender);
@@ -24,7 +25,7 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
             }
         }
 
-        self.storage.send(from, &to, &symbol, amount)?;
+        self.storage.send(from, &to, &symbol, amount, memo)?;
         Ok(EmptyReturn)
     }
 }

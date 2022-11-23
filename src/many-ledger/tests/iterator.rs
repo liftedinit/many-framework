@@ -31,7 +31,7 @@ fn setup() -> LedgerStorage {
 
     for _ in 0..5 {
         storage
-            .send(&id0, &id1, &symbol0, TokenAmount::from(100u16))
+            .send(&id0, &id1, &symbol0, TokenAmount::from(100u16), None)
             .unwrap();
     }
 

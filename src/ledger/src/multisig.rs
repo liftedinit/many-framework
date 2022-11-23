@@ -115,6 +115,7 @@ fn submit_send(
         identity,
         amount,
         symbol,
+        memo: send_memo,
     } = opts;
     let MultisigArgOpt {
         threshold,
@@ -127,6 +128,7 @@ fn submit_send(
         to: identity,
         symbol,
         amount: TokenAmount::from(amount),
+        memo: send_memo.map(|m| Memo::try_from(m.as_str()).unwrap()),
     });
     let arguments = multisig::SubmitTransactionArgs {
         account,

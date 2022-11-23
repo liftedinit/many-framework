@@ -17,6 +17,7 @@ fn memo_migration_works() {
             to: identity(10),
             symbol: *MFX_SYMBOL,
             amount: TokenAmount::from(10_000u16),
+            memo: None,
         });
 
         let tx = account::features::multisig::SubmitTransactionArgs {

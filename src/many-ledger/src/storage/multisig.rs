@@ -45,6 +45,7 @@ fn _execute_multisig_tx(
             to,
             symbol,
             amount,
+            memo,
         }) => {
             // Use the `from` field to resolve the account sending the funds
             let from = from.ok_or_else(ManyError::invalid_from_identity)?;
@@ -58,7 +59,7 @@ fn _execute_multisig_tx(
                 [account::Role::CanLedgerTransact, account::Role::Owner],
             )?;
 
-            ledger.send(&from, to, symbol, amount.clone())?;
+            ledger.send(&from, to, symbol, amount.clone(), memo.clone())?;
             minicbor::to_vec(EmptyReturn)
         }
 

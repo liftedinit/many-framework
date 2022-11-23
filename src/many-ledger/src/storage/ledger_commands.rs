@@ -4,6 +4,7 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
 use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Memo;
 use merk::{BatchEntry, Op};
 use std::cmp::Ordering;
 use tracing::info;
@@ -27,6 +28,7 @@ impl LedgerStorage {
         to: &Address,
         symbol: &Symbol,
         amount: TokenAmount,
+        memo: Option<Memo>,
     ) -> Result<(), ManyError> {
         if from == to {
             return Err(error::destination_is_source());
@@ -75,6 +77,7 @@ impl LedgerStorage {
             to: *to,
             symbol: *symbol,
             amount,
+            memo,
         });
 
         if !self.blockchain {

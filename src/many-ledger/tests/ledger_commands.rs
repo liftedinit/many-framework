@@ -21,7 +21,8 @@ proptest! {
             from: Some(id),
             to: identity(1),
             amount: half.into(),
-            symbol: *MFX_SYMBOL
+            symbol: *MFX_SYMBOL,
+            memo: None,
         });
         assert!(result.is_ok());
         verify_balance(&module_impl, id, *MFX_SYMBOL, (amount - half).into());
@@ -41,7 +42,8 @@ proptest! {
             from: Some(account_id),
             to: identity(1),
             amount: half.into(),
-            symbol: *MFX_SYMBOL
+            symbol: *MFX_SYMBOL,
+            memo: None,
         });
         assert!(result.is_ok());
         verify_balance(&module_impl, account_id, *MFX_SYMBOL, (amount - half).into());
@@ -63,6 +65,7 @@ fn send_account_missing_feature() {
             to: identity(1),
             amount: 10u16.into(),
             symbol: *MFX_SYMBOL,
+            memo: None,
         },
     );
     assert!(result.is_err());
@@ -83,6 +86,7 @@ fn send_invalid_account() {
             to: identity(1),
             amount: 10u16.into(),
             symbol: *MFX_SYMBOL,
+            memo: None,
         },
     );
     assert!(result.is_err());

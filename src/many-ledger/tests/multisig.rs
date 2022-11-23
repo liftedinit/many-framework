@@ -554,6 +554,7 @@ fn multisig_send_from_another_identity_owner() {
         to: identity(1234),
         symbol: *MFX_SYMBOL,
         amount: TokenAmount::from(10u16),
+        memo: None,
     });
 
     // Create a multisig tx on acc1 which sends funds from acc2 to some Address
@@ -614,6 +615,7 @@ fn multisig_send_from_another_identity_with_perm() {
         to: identity(1234),
         symbol: *MFX_SYMBOL,
         amount: TokenAmount::from(10u16),
+        memo: None,
     });
 
     // Create a multisig tx on acc1 which sends funds from acc2 to some Address
@@ -669,6 +671,7 @@ fn recursive_multisig() {
         to: identity(1234),
         symbol: *MFX_SYMBOL,
         amount: TokenAmount::from(10u16),
+        memo: None,
     });
 
     let multisig_tx = events::AccountMultisigTransaction::AccountMultisigSubmit(
@@ -729,6 +732,7 @@ fn recursive_multisig() {
         to: identity(1234),
         symbol: *MFX_SYMBOL,
         amount: TokenAmount::from(10u16),
+        memo: None,
     });
 
     let multisig_tx = events::AccountMultisigTransaction::AccountMultisigSubmit(

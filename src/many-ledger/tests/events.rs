@@ -31,6 +31,7 @@ fn send_(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
             to,
             amount: 10u16.into(),
             symbol: *MFX_SYMBOL,
+            memo: None,
         },
     );
     assert!(result.is_ok());
