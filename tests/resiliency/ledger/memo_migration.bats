@@ -26,7 +26,7 @@ function setup() {
       },
       {
         "name": "Memo Migration",
-        "block_height": 5
+        "block_height": 30
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
@@ -62,20 +62,36 @@ function teardown() {
     cd "$GIT_ROOT/tests/resiliency/ledger" || exit 1
 }
 
-@test "$SUITE: Account Count" {
+@test "$SUITE: Memo Migration" {
+    local account_id
+    local tx_id
+
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
-    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')
-    call_ledger --pem=1 --port=8000 multisig \
-        submit --legacy-memo="Legacy Memo" --memo="New Memo" "$account_id" \
+    call_ledger --pem=1 --port=8000 send "$account_id" 1000000 MFX
+    account_id="$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')"
+
+    call_ledger --pem=1 --port=8000 -vv multisig \
+        submit --legacy-memo="Legacy_Memo" --memo="New_Memo" "$account_id" \
         send "$(identity 2)" 1000 MFX
 
-    run many_message events.list "{}"
+    run many_message --pem=1 events.list "{}"
+    assert_output --regexp "3:.*Legacy_Memo"
+    refute_output --partial "New_Memo"
 
-    # Wait for some blocks to be built
-    sleep 15
+    # Wait for block 30
+    wait_for_block 30
 
-    run many_message events.list "{}"
-    assert_output --partial "New Memo"
-    assert_output --partial "Legacy Memo"
+    run many_message --pem=1 events.list "{}"
+    refute_output --partial "3: \"Legacy_Memo\""
+    assert_output --partial "10: [\"Legacy_Memo\"]"
+    refute_output --partial "New_Memo"
+
+    call_ledger --pem=1 --port=8000 -vv multisig \
+        submit --legacy-memo="Legacy_Memo2" --memo="New_Memo2" "$account_id" \
+        send "$(identity 2)" 1000 MFX
+
+    run many_message --pem=1 events.list "{}"
+    assert_output --regexp "10:.*New_Memo2"
+    refute_output --partial "Legacy_Memo2"
 }

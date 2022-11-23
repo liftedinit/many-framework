@@ -44,3 +44,14 @@ function identity_hex() {
 function account() {
     command many id mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow "$1"
 }
+
+function wait_for_block() {
+    local block
+    local current
+    block="$1"
+    current=$(many message --server http://localhost:8000/ blockchain.info | grep -oE '1: \d+' | colrm 1 3)
+    while [ "$current" -lt "$block" ]; do
+      sleep 1
+      current=$(many message --server http://localhost:8000/ blockchain.info | grep -oE '1: \d+' | colrm 1 3)
+    done >/dev/null
+}
