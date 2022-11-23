@@ -16,7 +16,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::allow_addrs::AllowAddrsModule;
 
@@ -216,38 +216,65 @@ fn main() {
         config.strict()
     });
 
-    let module_impl = if let Some(state) = state {
+    let module_impl = if persistent.exists() {
+        if state.is_some() {
+            warn!(
+                r#"
+                An existing persistent store {} was found and a staging file {state:?} was given.
+                Ignoring staging file and loading existing persistent store.
+                "#,
+                persistent.display()
+            );
+        }
+
+        #[cfg(feature = "balance_testing")]
+        {
+            let Opts {
+                balance_only_for_testing,
+                ..
+            } = Opts::parse();
+            if balance_only_for_testing.is_some() {
+                warn!("Loading existing persistent store, ignoring --balance_only_for_testing");
+            }
+        }
+
+        LedgerModuleImpl::load(maybe_migrations, persistent, abci).unwrap()
+    } else if let Some(state) = state {
+        #[cfg(feature = "balance_testing")]
+        {
+            let mut module_impl =
+                LedgerModuleImpl::new(state, maybe_migrations, persistent, abci).unwrap();
+
+            use std::str::FromStr;
+
+            let Opts {
+                balance_only_for_testing,
+                ..
+            } = Opts::parse();
+
+            for balance in balance_only_for_testing.unwrap_or_default() {
+                let args: Vec<&str> = balance.splitn(3, ':').collect();
+                let (identity, amount, symbol) = (
+                    args.first().unwrap(),
+                    args.get(1).expect("No amount."),
+                    args.get(2).expect("No symbol."),
+                );
+
+                module_impl.set_balance_only_for_testing(
+                    Address::from_str(identity).expect("Invalid identity."),
+                    amount.parse::<u64>().expect("Invalid amount."),
+                    Address::from_str(symbol).expect("Invalid symbol."),
+                )
+            }
+            module_impl
+        }
+
+        #[cfg(not(feature = "balance_testing"))]
         LedgerModuleImpl::new(state, maybe_migrations, persistent, abci).unwrap()
     } else {
-        LedgerModuleImpl::load(maybe_migrations, persistent, abci).unwrap()
+        panic!("Persistent store or staging file not found.")
     };
     let module_impl = Arc::new(Mutex::new(module_impl));
-
-    #[cfg(feature = "balance_testing")]
-    {
-        use std::str::FromStr;
-
-        let mut module_impl = module_impl.lock().unwrap();
-
-        let Opts {
-            balance_only_for_testing,
-            ..
-        } = Opts::parse();
-        for balance in balance_only_for_testing.unwrap_or_default() {
-            let args: Vec<&str> = balance.splitn(3, ':').collect();
-            let (identity, amount, symbol) = (
-                args.first().unwrap(),
-                args.get(1).expect("No amount."),
-                args.get(2).expect("No symbol."),
-            );
-
-            module_impl.set_balance_only_for_testing(
-                Address::from_str(identity).expect("Invalid identity."),
-                amount.parse::<u64>().expect("Invalid amount."),
-                Address::from_str(symbol).expect("Invalid symbol."),
-            )
-        }
-    }
 
     let many = ManyServer::simple(
         "many-ledger",
