@@ -68,10 +68,10 @@ function teardown() {
 
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
-    call_ledger --pem=1 --port=8000 send "$account_id" 1000000 MFX
     account_id="$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canMultisigApprove"] }, 2: [[1, { 0: 2 }]] }')"
+    call_ledger --pem=1 --port=8000 send "$account_id" 1000000 MFX
 
-    call_ledger --pem=1 --port=8000 -vv multisig \
+    call_ledger --pem=1 --port=8000 multisig \
         submit --legacy-memo="Legacy_Memo" --memo="New_Memo" "$account_id" \
         send "$(identity 2)" 1000 MFX
 
@@ -87,7 +87,7 @@ function teardown() {
     assert_output --partial "10: [\"Legacy_Memo\"]"
     refute_output --partial "New_Memo"
 
-    call_ledger --pem=1 --port=8000 -vv multisig \
+    call_ledger --pem=1 --port=8000 multisig \
         submit --legacy-memo="Legacy_Memo2" --memo="New_Memo2" "$account_id" \
         send "$(identity 2)" 1000 MFX
 
