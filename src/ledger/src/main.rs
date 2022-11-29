@@ -22,6 +22,7 @@ use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 mod multisig;
+mod tokens;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
 enum LogStrategy {
@@ -116,6 +117,9 @@ enum SubCommand {
 
     /// Perform a multisig operation.
     Multisig(multisig::CommandOpt),
+
+    /// Perform a token operation
+    Token(tokens::CommandOpt),
 }
 
 #[derive(Parser)]
@@ -427,6 +431,7 @@ fn main() {
             )
         }
         SubCommand::Multisig(opts) => multisig::multisig(client, opts),
+        SubCommand::Token(opts) => tokens::tokens(client, opts),
     };
 
     if let Err(err) = result {
