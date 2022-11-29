@@ -61,7 +61,15 @@ rust_test(
 
 rust_test_suite(
     name = "many-ledger-test-suite",
-    srcs = glob(include = ["tests/*.rs"]),
+    srcs = glob(
+        include = ["tests/*.rs"],
+        exclude = [
+            "tests/add_token_ext_info.rs",
+            "tests/create_token.rs",
+            "tests/remove_token_ext_info.rs",
+            "tests/update_token.rs",
+        ],
+    ),
     compile_data = [
         "tests/common/mod.rs",
         "tests/migration_/mod.rs",
@@ -73,6 +81,36 @@ rust_test_suite(
         proc_macro = True,
         proc_macro_dev = True,
     ),
+    deps = all_crate_deps(
+        normal = True,
+        normal_dev = True,
+    ) + [
+        ":many-ledger-lib-for-test",
+    ],
+)
+
+rust_test_suite(
+    name = "many-ledger-test-cucumber-suite",
+    srcs = glob(
+        include = [
+            "tests/add_token_ext_info.rs",
+            "tests/create_token.rs",
+            "tests/remove_token_ext_info.rs",
+            "tests/update_token.rs",
+        ],
+    ),
+    compile_data = [
+        "tests/common/mod.rs",
+    ],
+    crate_features = ["balance_testing"],
+    data = [
+        "//:staging/ledger_state.json5",
+    ] + glob(include = ["tests/features/**/*.feature"]),
+    proc_macro_deps = all_crate_deps(
+        proc_macro = True,
+        proc_macro_dev = True,
+    ),
+    use_libtest_harness = False,
     deps = all_crate_deps(
         normal = True,
         normal_dev = True,

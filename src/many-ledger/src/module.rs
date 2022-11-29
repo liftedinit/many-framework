@@ -16,6 +16,7 @@ mod idstore;
 pub mod idstore_webauthn;
 mod ledger;
 mod ledger_commands;
+mod ledger_tokens;
 mod multisig;
 
 /// A simple ledger that keeps transactions in memory.
@@ -33,6 +34,7 @@ impl LedgerModuleImpl {
     ) -> Result<Self, ManyError> {
         let mut storage = LedgerStorage::new(
             state.symbols(),
+            state.symbols_meta.clone(), // TODO: Remove clone
             state.balances()?,
             persistence_store_path,
             state.identity,

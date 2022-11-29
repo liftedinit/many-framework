@@ -1,5 +1,6 @@
 use many_identity::testing::identity;
 use many_identity::Address;
+use many_ledger::json::SymbolMetaJson;
 use many_ledger::storage::LedgerStorage;
 use many_modules::events::{EventId, EventLog};
 use many_types::ledger::TokenAmount;
@@ -14,11 +15,22 @@ fn setup() -> LedgerStorage {
     let id2 = identity(2);
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "MFX".to_string())].into_iter());
+    let symbols_meta = BTreeMap::from([(
+        symbol0,
+        SymbolMetaJson {
+            // TODO: Don't use JSON here
+            name: "Manifest Network Token".to_string(),
+            decimals: 9,
+            owner: None,
+            maximum: None,
+        },
+    )]);
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
     let mut storage = LedgerStorage::new(
         symbols,
+        symbols_meta,
         balances,
         persistent_path,
         id2,

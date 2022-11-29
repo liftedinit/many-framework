@@ -14,10 +14,14 @@ use many_modules::account::features::multisig::{
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
 use many_modules::idstore::{CredentialId, PublicKey};
-use many_modules::ledger::{BalanceArgs, LedgerCommandsModuleBackend, LedgerModuleBackend};
+use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
+use many_modules::ledger::extended_info::TokenExtendedInfo;
+use many_modules::ledger::{
+    BalanceArgs, LedgerCommandsModuleBackend, LedgerModuleBackend, TokenCreateArgs,
+};
 use many_modules::{account, events, ledger};
 use many_protocol::ResponseMessage;
-use many_types::ledger::{Symbol, TokenAmount};
+use many_types::ledger::{LedgerTokensAddressMap, Symbol, TokenAmount, TokenInfoSummary};
 use many_types::Memo;
 use merk::Merk;
 use minicbor::bytes::ByteVec;
@@ -28,6 +32,32 @@ use std::{
     str::FromStr,
 };
 use tracing::debug;
+
+pub fn default_token_create_args() -> TokenCreateArgs {
+    let mut logos = VisualTokenLogo::new();
+    logos.unicode_front('∑');
+    TokenCreateArgs {
+        summary: TokenInfoSummary {
+            name: "Test Token".to_string(),
+            ticker: "TT".to_string(),
+            decimals: 9,
+        },
+        owner: Some(Some(Address::anonymous())),
+        initial_distribution: Some(LedgerTokensAddressMap::from([
+            (identity(1), TokenAmount::from(123u64)),
+            (identity(2), TokenAmount::from(456u64)),
+            (identity(3), TokenAmount::from(789u64)),
+        ])),
+        maximum_supply: Some(TokenAmount::from(100000000u64)),
+        extended_info: Some(
+            TokenExtendedInfo::new()
+                .with_memo("Foofoo".try_into().unwrap())
+                .unwrap()
+                .with_visual_logo(logos)
+                .unwrap(),
+        ),
+    }
+}
 
 pub struct MigrationHarness {
     inner: &'static InnerMigration<merk::Merk, ManyError>,
@@ -118,6 +148,7 @@ pub fn create_account_args(account_type: AccountType) -> account::CreateArgs {
     }
 }
 
+#[derive(Debug)]
 pub struct Setup {
     pub module_impl: LedgerModuleImpl,
     pub id: Address,
@@ -244,7 +275,7 @@ impl Setup {
         account_type: AccountType,
     ) -> Result<Address, ManyError> {
         let args = create_account_args(account_type);
-        self.module_impl.create(&id, args).map(|x| x.id)
+        AccountModuleBackend::create(&mut self.module_impl, &id, args).map(|x| x.id)
     }
 
     pub fn create_account(&mut self, account_type: AccountType) -> Result<Address, ManyError> {
@@ -469,7 +500,7 @@ pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
         id,
         args,
     } = setup_with_args(account_type);
-    let account = module_impl.create(&id, args).unwrap();
+    let account = AccountModuleBackend::create(&mut module_impl, &id, args).unwrap();
     SetupWithAccount {
         module_impl,
         id,

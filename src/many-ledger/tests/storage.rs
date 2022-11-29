@@ -1,5 +1,6 @@
 use many_identity::testing::identity;
 use many_identity::Address;
+use many_ledger::json::SymbolMetaJson;
 use many_ledger::{module::LedgerModuleImpl, storage::LedgerStorage};
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
@@ -17,6 +18,16 @@ fn load() {
     {
         let _ = LedgerStorage::new(
             BTreeMap::from([(identity(1000), "MF0".to_string())]),
+            BTreeMap::from([(
+                identity(1000),
+                SymbolMetaJson {
+                    // TODO: Don't use JSON here
+                    name: "Manifest Network Token".to_string(),
+                    decimals: 9,
+                    owner: None,
+                    maximum: None,
+                },
+            )]),
             BTreeMap::from([(
                 identity(5),
                 BTreeMap::from([(identity(1000), 10000000u64.into())]),

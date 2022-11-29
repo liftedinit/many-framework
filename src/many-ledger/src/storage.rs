@@ -1,10 +1,12 @@
+use crate::json::SymbolMetaJson;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
+use crate::storage::ledger_tokens::key_for_symbol;
 use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
-use many_types::ledger::{Symbol, TokenAmount};
+use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
 use many_types::Timestamp;
 use merk::{rocksdb, BatchEntry, Op};
 use std::collections::BTreeMap;
@@ -17,6 +19,7 @@ pub mod event;
 mod idstore;
 mod ledger;
 mod ledger_commands;
+mod ledger_tokens;
 pub mod multisig;
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
@@ -155,6 +158,7 @@ impl LedgerStorage {
     #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeMap<Symbol, String>,
+        symbols_meta: BTreeMap<Symbol, SymbolMetaJson>, // TODO: This is dumb, don't do that
         initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
         persistent_path: P,
         identity: Address,
@@ -167,8 +171,15 @@ impl LedgerStorage {
 
         let mut batch: Vec<BatchEntry> = Vec::new();
 
+        let mut total_supply = BTreeMap::new();
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
+                if let Some(x) = total_supply.get_mut(&symbol) {
+                    *x += tokens.clone(); // TODO: Remove clone
+                } else {
+                    total_supply.insert(symbol, tokens.clone());
+                }
+
                 if !symbols.contains_key(&symbol) {
                     return Err(format!(r#"Unknown symbol "{symbol}" for identity {k}"#));
                 }
@@ -179,10 +190,37 @@ impl LedgerStorage {
         }
 
         batch.push((b"/config/identity".to_vec(), Op::Put(identity.to_vec())));
-        batch.push((
-            b"/config/symbols".to_vec(),
-            Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
-        ));
+
+        for ((s1, ticker), (s2, meta)) in symbols.iter().zip(symbols_meta.into_iter()) {
+            if s1 != &s2 {
+                return Err("Symbols {s1} and {s2} don't match".to_string());
+            }
+
+            let total_supply = total_supply.get(s1).expect("Unable to get total supply");
+            let info = TokenInfo {
+                symbol: s2,
+                summary: TokenInfoSummary {
+                    name: meta.name,
+                    ticker: ticker.clone(), // TODO: Remove clone
+                    decimals: meta.decimals,
+                },
+                supply: TokenInfoSupply {
+                    total: total_supply.clone(),
+                    circulating: total_supply.clone(),
+                    maximum: meta.maximum,
+                },
+                owner: meta.owner,
+            };
+
+            batch.push((
+                b"/config/symbols".to_vec(),
+                Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
+            ));
+            batch.push((
+                key_for_symbol(s1),
+                Op::Put(minicbor::to_vec(info).map_err(|e| e.to_string())?),
+            ));
+        }
 
         persistent_store
             .apply(batch.as_slice())

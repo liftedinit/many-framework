@@ -23,6 +23,15 @@
     "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "MFX"
   },
 
+  // List of symbols metadata
+  // TODO: Unify initial, symbols and symbols_meta
+  symbols_meta: {
+   "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": {
+     name: "Manifest Network Token",
+     decimals: 9,
+   }
+  },
+
   // List of accounts to create at start time.
   accounts: [
     {
@@ -71,5 +80,5 @@
   ],
 
   // Hash calculated after the initial state is created.
-  hash: "fc0041ca4f7d959fe9e5a337e175bd8a68942cad76745711a3daf820a159f7eb"
+  hash: "802bfbd3db48ba2253dcf9da07ab50f5e8286edeea42b39583d84756fb800864"
 }
