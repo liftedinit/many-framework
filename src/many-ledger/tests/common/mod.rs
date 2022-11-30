@@ -27,7 +27,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
 };
-use tracing::debug;
 
 pub struct MigrationHarness {
     inner: &'static InnerMigration<merk::Merk, ManyError>,
@@ -139,7 +138,7 @@ impl Setup {
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
-        debug!("Store path: {:?}", store_path.path());
+        eprintln!("Store path: {:?}", store_path.path());
 
         Self {
             module_impl: LedgerModuleImpl::new(

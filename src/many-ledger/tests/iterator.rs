@@ -47,8 +47,7 @@ fn iter_asc(
     end: Bound<EventId>,
 ) -> impl Iterator<Item = EventLog> + '_ {
     storage
-        .iter(CborRange { start, end }, SortOrder::Ascending)
-        .into_iter()
+        .iter_events(CborRange { start, end }, SortOrder::Ascending)
         .map(|item| {
             let (_, v) = item.expect("Error while reading DB");
             minicbor::decode(&v).expect("Iterator item not an event.")

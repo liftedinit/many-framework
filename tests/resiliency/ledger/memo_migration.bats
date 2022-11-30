@@ -79,7 +79,6 @@ function teardown() {
     assert_output --regexp "3:.*Legacy_Memo"
     refute_output --partial "New_Memo"
 
-    # Wait for block 30
     wait_for_block 30
 
     run many_message --pem=1 events.list "{}"

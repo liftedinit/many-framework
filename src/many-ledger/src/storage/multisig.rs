@@ -8,9 +8,7 @@ use many_identity::Address;
 use many_modules::account::features::FeatureInfo;
 use many_modules::{account, events, EmptyReturn};
 use many_protocol::ResponseMessage;
-use many_types::Timestamp;
-use merk::rocksdb::ReadOptions;
-use merk::tree::Tree;
+use many_types::{SortOrder, Timestamp};
 use merk::Op;
 use std::collections::BTreeMap;
 use tracing::debug;
@@ -191,26 +189,13 @@ pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 mont
 
 impl LedgerStorage {
     pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
-        use super::rocksdb::{Direction, IteratorMode};
-
-        // Set the iterator bounds to iterate all multisig transactions.
-        // We will break the loop later if we can.
-        let mut options = ReadOptions::default();
-        options.set_iterate_lower_bound(MULTISIG_TRANSACTIONS_ROOT);
-        let mut bound = MULTISIG_TRANSACTIONS_ROOT.to_vec();
-        bound[MULTISIG_TRANSACTIONS_ROOT.len() - 1] += 1;
-
-        let it = self
-            .persistent_store
-            .iter_opt(IteratorMode::From(&bound, Direction::Reverse), options);
-
+        let it = self.iter_multisig(SortOrder::Descending);
         let mut batch = vec![];
 
         for item in it {
             let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
-            let v = Tree::decode(k.to_vec(), v.as_ref());
 
-            let mut storage: MultisigTransactionStorage = minicbor::decode(v.value())
+            let mut storage: MultisigTransactionStorage = minicbor::decode(v.as_slice())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             let now = self.now();
 
