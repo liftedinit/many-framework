@@ -1,12 +1,40 @@
+use crate::error;
+use crate::module::account::verify_account_role;
 use crate::module::LedgerModuleImpl;
+use crate::storage::LedgerStorage;
 use many_error::ManyError;
 use many_identity::Address;
+use many_modules::account;
+use many_modules::account::features::TryCreateFeature;
+use many_modules::account::Role;
 use many_modules::ledger::{
     LedgerTokensModuleBackend, TokenAddExtendedInfoArgs, TokenAddExtendedInfoReturns,
     TokenCreateArgs, TokenCreateReturns, TokenInfoArgs, TokenInfoReturns,
     TokenRemoveExtendedInfoArgs, TokenRemoveExtendedInfoReturns, TokenUpdateArgs,
     TokenUpdateReturns,
 };
+use many_types::Either;
+
+fn verify_tokens_acl(
+    storage: &LedgerStorage,
+    sender: &Address,
+    addr: &Address,
+    roles: impl IntoIterator<Item = Role>,
+) -> Result<(), ManyError> {
+    if addr != sender {
+        if let Some(account) = storage.get_account(addr) {
+            verify_account_role(
+                &account,
+                sender,
+                account::features::tokens::TokenAccountLedger::ID,
+                roles,
+            )?;
+        } else {
+            return Err(error::unauthorized());
+        }
+    }
+    Ok(())
+}
 
 impl LedgerTokensModuleBackend for LedgerModuleImpl {
     fn create(
@@ -17,6 +45,15 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // TODO: Limit token creation to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+
+        if let Some(maybe_owner) = &args.owner {
+            match maybe_owner {
+                Either::Left(addr) => {
+                    verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensCreate])?;
+                }
+                _ => {}
+            }
+        }
 
         let ticker = &args.summary.ticker;
         if self.storage.get_symbols().values().any(|v| v == ticker) {
@@ -45,6 +82,29 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
 
+        // Get the current owner and check if we're allowed to update this token
+        let current_owner = self.storage.get_owner(&args.symbol)?;
+        match current_owner {
+            Some(addr) => {
+                verify_tokens_acl(&self.storage, sender, &addr, [Role::CanTokensUpdate])?;
+            }
+            None => {
+                return Err(ManyError::unknown(
+                    "Unable to update, this token is immutable",
+                ))
+            }
+        }
+
+        // Check if we're allowed to update the owner
+        if let Some(maybe_owner) = &args.owner {
+            match maybe_owner {
+                Either::Left(addr) => {
+                    verify_tokens_acl(&self.storage, sender, &addr, [Role::CanTokensUpdate])?;
+                }
+                _ => {}
+            }
+        }
+
         // Check the memory symbol cache for requested symbol
         let symbol = &args.symbol;
         if !self.storage.get_symbols().contains_key(symbol) {
@@ -56,24 +116,56 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
 
     fn add_extended_info(
         &mut self,
-        _sender: &Address,
+        sender: &Address,
         args: TokenAddExtendedInfoArgs,
     ) -> Result<TokenAddExtendedInfoReturns, ManyError> {
         // TODO: Limit adding extended info to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+        let current_owner = self.storage.get_owner(&args.symbol)?;
+        match current_owner {
+            Some(addr) => {
+                verify_tokens_acl(
+                    &self.storage,
+                    sender,
+                    &addr,
+                    [Role::CanTokensAddExtendedInfo],
+                )?;
+            }
+            None => {
+                return Err(ManyError::unknown(
+                    "Unable to update, this token is immutable",
+                ))
+            }
+        }
 
         self.storage.add_extended_info(args)
     }
 
     fn remove_extended_info(
         &mut self,
-        _sender: &Address,
+        sender: &Address,
         args: TokenRemoveExtendedInfoArgs,
     ) -> Result<TokenRemoveExtendedInfoReturns, ManyError> {
         // TODO: Limit adding extended info to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+        let current_owner = self.storage.get_owner(&args.symbol)?;
+        match current_owner {
+            Some(addr) => {
+                verify_tokens_acl(
+                    &self.storage,
+                    sender,
+                    &addr,
+                    [Role::CanTokensRemoveExtendedInfo],
+                )?;
+            }
+            None => {
+                return Err(ManyError::unknown(
+                    "Unable to update, this token is immutable",
+                ))
+            }
+        }
 
         self.storage.remove_extended_info(args)
     }

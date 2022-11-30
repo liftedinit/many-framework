@@ -21,6 +21,23 @@ pub fn key_for_ext_info(symbol: &Symbol) -> Vec<u8> {
 }
 
 impl LedgerStorage {
+    pub(crate) fn get_owner(&self, symbol: &Symbol) -> Result<Option<Address>, ManyError> {
+        let token_info_enc = self
+            .persistent_store
+            .get(&key_for_symbol(&symbol))
+            .map_err(ManyError::unknown)?
+            .ok_or_else(|| {
+                ManyError::unknown(
+                    "Symbol {symbol} token information not found in persistent storage",
+                )
+            })?; // TODO: Custom error
+
+        let info: TokenInfo =
+            minicbor::decode(&token_info_enc).map_err(ManyError::deserialization_error)?;
+
+        Ok(info.owner)
+    }
+
     pub fn create_token(
         &mut self,
         sender: &Address,

@@ -19,7 +19,7 @@ fn create_default_token(w: &mut UpdateWorld) {
     let result = w
         .setup
         .module_impl
-        .create(&w.setup.id, common::default_token_create_args())
+        .create(&w.setup.id, common::default_token_create_args(w.setup.id))
         .expect("Unable to create default token");
     w.info = result.info;
     w.args.symbol = w.info.symbol;

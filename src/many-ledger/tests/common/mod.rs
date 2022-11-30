@@ -35,7 +35,7 @@ use std::{
 };
 use tracing::debug;
 
-pub fn default_token_create_args() -> TokenCreateArgs {
+pub fn default_token_create_args(id: Address) -> TokenCreateArgs {
     let mut logos = VisualTokenLogo::new();
     logos.unicode_front('∑');
     TokenCreateArgs {
@@ -44,7 +44,7 @@ pub fn default_token_create_args() -> TokenCreateArgs {
             ticker: "TT".to_string(),
             decimals: 9,
         },
-        owner: Some(TokenMaybeOwner::Left(Address::anonymous())), // TODO: Anon should not be allowed
+        owner: Some(TokenMaybeOwner::Left(id)),
         initial_distribution: Some(LedgerTokensAddressMap::from([
             (identity(1), TokenAmount::from(123u64)),
             (identity(2), TokenAmount::from(456u64)),

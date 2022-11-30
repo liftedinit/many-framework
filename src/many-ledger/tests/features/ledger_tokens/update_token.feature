@@ -21,12 +21,12 @@ Scenario: Updating a token's decimal
 	When I update the token
 	Then the token new decimal is 16
 
-@tokens
-Scenario: Updating a token's owner
-	Given a default token
-	And a new token owner maem7b3bkzipk4dluaxjlw2pnwjll4rggqn4akimt3xhjhja55
-	When I update the token
-	Then the token new owner is maem7b3bkzipk4dluaxjlw2pnwjll4rggqn4akimt3xhjhja55
+#@tokens
+#Scenario: Updating a token's owner
+#	Given a default token
+#	And a new token owner maem7b3bkzipk4dluaxjlw2pnwjll4rggqn4akimt3xhjhja55
+#	When I update the token
+#	Then the token new owner is maem7b3bkzipk4dluaxjlw2pnwjll4rggqn4akimt3xhjhja55
 
 @tokens
 Scenario: Removing a token's owner
