@@ -2234,18 +2234,18 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "linkme"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cab56277eeaacac09e1398bcefc113319c6c8d4fb464f11c54ba247cdb65776e"
+checksum = "c25ef733283514e2c267f019701d6c81537e5d1807d6b1d7ef17f17585db964b"
 dependencies = [
  "linkme-impl",
 ]
 
 [[package]]
 name = "linkme-impl"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "624b78e5a5f99b2c751812a14785a2c661f894a34bc3dd1f2ec3e3fffb4605e7"
+checksum = "2a82efd9655156d970e99312fd3a613b4be4f169b4c35f4463b7499a40d3ed24"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2318,7 +2318,6 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2361,7 +2360,6 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2371,7 +2369,6 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2382,7 +2379,6 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "base32",
  "coset",
@@ -2402,7 +2398,6 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2430,7 +2425,6 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2450,7 +2444,6 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2554,7 +2547,6 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2567,7 +2559,6 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2580,7 +2571,6 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "async-trait",
  "coset",
@@ -2601,7 +2591,6 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2625,7 +2614,6 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2674,7 +2662,6 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 dependencies = [
  "coset",
  "fixed",
@@ -4468,9 +4455,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "1.8.0"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9724f9a975fb987ef7a3cd9be0350edcbe130698af5b8f7a631e23d42d052484"
+checksum = "d266c00fde287f55d3f1c3e96c500c362a2b8c695076ec180f27918820bc6df8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5094,9 +5081,7 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#bd71323e5c9cc8a50cf3154e92bdd99a35de8bfd"

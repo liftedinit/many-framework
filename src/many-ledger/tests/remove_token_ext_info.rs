@@ -71,6 +71,7 @@ fn create_default_token(w: &mut RemoveExtInfoWorld) {
         .create(&w.setup.id, common::default_token_create_args())
         .expect("Unable to create default token");
     w.info = result.info;
+    w.args.symbol = w.info.symbol;
 
     refresh_token_info(w);
 }

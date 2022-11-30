@@ -8,7 +8,7 @@ use many_modules::ledger::{
     TokenRemoveExtendedInfoArgs, TokenRemoveExtendedInfoReturns, TokenUpdateArgs,
     TokenUpdateReturns,
 };
-use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfoSummary};
+use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfoSummary, TokenMaybeOwner};
 use many_types::{AttributeRelatedIndex, Memo};
 
 #[derive(Parser)]
@@ -40,7 +40,7 @@ struct CreateTokenOpt {
     decimals: u64,
 
     #[clap(long)]
-    owner: Option<Address>,
+    owner: Option<TokenMaybeOwner>,
 
     #[clap(long)]
     initial_distribution: Option<String>,
@@ -66,7 +66,7 @@ struct UpdateTokenOpt {
     decimals: Option<u64>,
 
     #[clap(long)]
-    owner: Option<Address>,
+    owner: Option<TokenMaybeOwner>,
 
     #[clap(long)]
     memo: Option<String>,
@@ -120,9 +120,9 @@ fn create_token(client: ManyClient<impl Identity>, opts: CreateTokenOpt) -> Resu
             ticker: opts.ticker,
             decimals: opts.decimals,
         },
-        owner: opts.owner.map_or(None, |addr| Some(Some(addr))),
+        owner: opts.owner,
         initial_distribution,
-        maximum_supply: opts.maximum_supply.map(|amount| TokenAmount::from(amount)),
+        maximum_supply: opts.maximum_supply.map(TokenAmount::from),
         extended_info,
     };
     let response = client.call("tokens.create", args)?;
@@ -140,7 +140,7 @@ fn update_token(client: ManyClient<impl Identity>, opts: UpdateTokenOpt) -> Resu
         name: opts.name,
         ticker: opts.ticker,
         decimals: opts.decimals,
-        owner: opts.owner.map_or(None, |addr| Some(Some(addr))),
+        owner: opts.owner,
         memo: opts
             .memo
             .map(|memo| Memo::try_from(memo).expect("Unable to create Memo from String")),
@@ -181,7 +181,7 @@ fn remove_ext_info(
         extended_info: opts
             .indices
             .into_iter()
-            .map(|i| AttributeRelatedIndex::new(i))
+            .map(AttributeRelatedIndex::new)
             .collect(),
     };
     let response = client.call("tokens.removeExtendedInfo", args)?;

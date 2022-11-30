@@ -9,13 +9,8 @@ use many_modules::ledger::{
     TokenUpdateArgs, TokenUpdateReturns,
 };
 use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSupply};
-use many_types::AttributeRelatedIndex;
+use many_types::{AttributeRelatedIndex, Either};
 use merk::{BatchEntry, Op};
-
-// TODO: How?
-fn generate_new_token_symbol() -> Symbol {
-    Symbol::anonymous()
-}
 
 pub fn key_for_symbol(symbol: &Symbol) -> Vec<u8> {
     format!("/config/symbols/{symbol}").into_bytes()
@@ -40,10 +35,11 @@ impl LedgerStorage {
         } = args;
 
         // Create a new token symbol and store in memory and in the persistent store
-        let symbol = generate_new_token_symbol();
+        let symbol = self.new_subresource_id();
 
         // TODO: I don't like having a memory cache of this kind. Things should be atomic...
         //       We get an inconsistent state if persistent storage ops fail.
+        // Get rid of self.symbols and lookup symbol key in DB, maybe?
         self.symbols.insert(symbol, summary.ticker.clone());
         self.persistent_store
             .apply(&[(
@@ -73,27 +69,29 @@ impl LedgerStorage {
         };
 
         // Create the token information and store it in the persistent storage
-        let owner = owner.map_or(Some(*sender), |owner| owner);
+        let maybe_owner = owner.map_or(Some(*sender), |maybe_owner| match maybe_owner {
+            Either::Left(addr) => Some(addr),
+            Either::Right(_) => None,
+        });
         let info = TokenInfo {
             symbol,
             summary: summary.clone(),
             supply,
-            owner,
+            owner: maybe_owner,
         };
-        batch.push((
-            key_for_symbol(&symbol),
-            Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
-        ));
 
         let ext_info = extended_info
             .clone()
             .map_or(TokenExtendedInfo::default(), |e| e);
-        self.persistent_store
-            .apply(&[(
-                key_for_ext_info(&symbol),
-                Op::Put(minicbor::to_vec(&ext_info).map_err(ManyError::serialization_error)?),
-            )])
-            .map_err(ManyError::unknown)?; // TODO: Custom error
+        batch.push((
+            key_for_ext_info(&symbol),
+            Op::Put(minicbor::to_vec(&ext_info).map_err(ManyError::serialization_error)?),
+        ));
+
+        batch.push((
+            key_for_symbol(&symbol),
+            Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
+        ));
 
         self.log_event(EventInfo::TokenCreate {
             summary,
@@ -193,8 +191,10 @@ impl LedgerStorage {
             }
             match owner {
                 None => {}
-                Some(None) => info.owner = None,
-                Some(x) => info.owner = x,
+                Some(x) => match x {
+                    Either::Left(addr) => info.owner = Some(addr),
+                    Either::Right(_) => info.owner = None,
+                },
             };
 
             self.persistent_store

@@ -16,27 +16,28 @@ pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
 }
 
 impl LedgerStorage {
-    fn new_account_id(&mut self) -> Address {
-        let current_id = self.next_account_id;
-        self.next_account_id += 1;
-        self.persistent_store
-            .apply(&[(
-                b"/config/account_id".to_vec(),
-                Op::Put(self.next_account_id.to_be_bytes().to_vec()),
-            )])
-            .unwrap();
-
-        self.account_identity
-            .with_subresource_id(current_id)
-            .expect("Too many accounts")
-    }
+    // TODO: Migrate /config/account_id to /config/subresource_id
+    // fn new_account_id(&mut self) -> Address {
+    //     let current_id = self.next_subresource;
+    //     self.next_subresource += 1;
+    //     self.persistent_store
+    //         .apply(&[(
+    //             b"/config/account_id".to_vec(),
+    //             Op::Put(self.next_subresource.to_be_bytes().to_vec()),
+    //         )])
+    //         .unwrap();
+    //
+    //     self.root_identity
+    //         .with_subresource_id(current_id)
+    //         .expect("Too many accounts")
+    // }
 
     pub(crate) fn _add_account(
         &mut self,
         mut account: account::Account,
         add_event: bool,
     ) -> Result<Address, ManyError> {
-        let id = self.new_account_id();
+        let id = self.new_subresource_id();
 
         // The account MUST own itself.
         account.add_role(&id, account::Role::Owner);

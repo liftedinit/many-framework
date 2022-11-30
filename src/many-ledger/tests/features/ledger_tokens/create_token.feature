@@ -9,7 +9,7 @@ Scenario: Creating a new token
 	Given id 1 has 123 initial tokens
 	And id 2 has 456 initial tokens
 	When the token is created
-	Then the token symbol is maa
+	Then the token symbol is a subresource
 	And the token ticker is FBR
 	And the token name is Foobar
 	And the token owner is maa

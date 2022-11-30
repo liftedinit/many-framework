@@ -5,7 +5,7 @@ use cucumber::{given, then, when, World};
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenCreateArgs, TokenCreateReturns};
-use many_types::ledger::{LedgerTokensAddressMap, TokenAmount};
+use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenMaybeOwner};
 use std::path::Path;
 
 #[derive(World, Debug, Default)]
@@ -32,7 +32,7 @@ fn given_token_decimals(w: &mut CreateWorld, decimals: u64) {
 
 #[given(expr = "an owner {word}")]
 fn given_token_owner(w: &mut CreateWorld, owner: Address) {
-    w.args.owner = Some(Some(owner));
+    w.args.owner = Some(TokenMaybeOwner::Left(owner));
 }
 
 #[given(expr = "no owner")]
@@ -42,7 +42,7 @@ fn given_token_owner_none(w: &mut CreateWorld) {
 
 #[given(expr = "removing the owner")]
 fn given_token_rm_owner(w: &mut CreateWorld) {
-    w.args.owner = Some(None);
+    w.args.owner = Some(TokenMaybeOwner::Right(()));
 }
 
 #[given(expr = "id {int} has {int} initial tokens")]
@@ -63,9 +63,9 @@ fn when_create_token(w: &mut CreateWorld) {
         .expect("Could not create token");
 }
 
-#[then(expr = "the token symbol is {word}")]
-fn then_token_symbol(w: &mut CreateWorld, symbol: Address) {
-    assert_eq!(w.result.info.symbol, symbol);
+#[then(expr = "the token symbol is a subresource")]
+fn then_token_symbol(w: &mut CreateWorld) {
+    assert!(w.result.info.symbol.is_subresource());
 }
 
 #[then(expr = "the token ticker is {word}")]

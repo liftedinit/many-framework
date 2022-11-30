@@ -4,14 +4,14 @@ use common::Setup;
 use cucumber::{given, then, when, World};
 use many_identity::Address;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenUpdateArgs};
-use many_types::ledger::TokenInfo;
+use many_types::ledger::{TokenInfo, TokenMaybeOwner};
 use std::path::Path;
 
 #[derive(World, Debug, Default)]
 struct UpdateWorld {
     setup: Setup,
     args: TokenUpdateArgs,
-    result: TokenInfo,
+    info: TokenInfo,
 }
 
 #[given(expr = "a default token")]
@@ -21,7 +21,8 @@ fn create_default_token(w: &mut UpdateWorld) {
         .module_impl
         .create(&w.setup.id, common::default_token_create_args())
         .expect("Unable to create default token");
-    w.result = result.info;
+    w.info = result.info;
+    w.args.symbol = w.info.symbol;
 }
 
 #[given(expr = "a new token ticker {word}")]
@@ -41,12 +42,12 @@ fn given_new_decimal(w: &mut UpdateWorld, decimal: u64) {
 
 #[given(expr = "a new token owner {word}")]
 fn given_new_owner(w: &mut UpdateWorld, owner: Address) {
-    w.args.owner = Some(Some(owner));
+    w.args.owner = Some(TokenMaybeOwner::Left(owner));
 }
 
 #[given(expr = "removing the token owner")]
 fn given_rm_owner(w: &mut UpdateWorld) {
-    w.args.owner = Some(None);
+    w.args.owner = Some(TokenMaybeOwner::Right(()));
 }
 
 #[when(expr = "I update the token")]
@@ -62,37 +63,37 @@ fn when_update_ticker(w: &mut UpdateWorld) {
         .info(
             &w.setup.id,
             TokenInfoArgs {
-                symbol: w.result.symbol,
+                symbol: w.info.symbol,
                 ..Default::default()
             },
         )
         .expect("Unable to fetch token info");
-    w.result = res.info;
+    w.info = res.info;
 }
 
 #[then(expr = "the token new ticker is {word}")]
 fn then_new_ticker(w: &mut UpdateWorld, ticker: String) {
-    assert_eq!(w.result.summary.ticker, ticker);
+    assert_eq!(w.info.summary.ticker, ticker);
 }
 
 #[then(expr = "the token new name is {word}")]
 fn then_new_name(w: &mut UpdateWorld, name: String) {
-    assert_eq!(w.result.summary.name, name);
+    assert_eq!(w.info.summary.name, name);
 }
 
 #[then(expr = "the token new decimal is {int}")]
 fn then_new_decimal(w: &mut UpdateWorld, decimal: u64) {
-    assert_eq!(w.result.summary.decimals, decimal);
+    assert_eq!(w.info.summary.decimals, decimal);
 }
 
 #[then(expr = "the token new owner is {word}")]
 fn then_new_owner(w: &mut UpdateWorld, owner: Address) {
-    assert_eq!(w.result.owner, Some(owner));
+    assert_eq!(w.info.owner, Some(owner));
 }
 
 #[then(expr = "the token owner is removed")]
 fn then_rm_owner(w: &mut UpdateWorld) {
-    assert!(w.result.owner.is_none());
+    assert!(w.info.owner.is_none());
 }
 
 #[tokio::main]

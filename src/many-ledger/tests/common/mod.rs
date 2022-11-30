@@ -21,7 +21,9 @@ use many_modules::ledger::{
 };
 use many_modules::{account, events, ledger};
 use many_protocol::ResponseMessage;
-use many_types::ledger::{LedgerTokensAddressMap, Symbol, TokenAmount, TokenInfoSummary};
+use many_types::ledger::{
+    LedgerTokensAddressMap, Symbol, TokenAmount, TokenInfoSummary, TokenMaybeOwner,
+};
 use many_types::Memo;
 use merk::Merk;
 use minicbor::bytes::ByteVec;
@@ -42,7 +44,7 @@ pub fn default_token_create_args() -> TokenCreateArgs {
             ticker: "TT".to_string(),
             decimals: 9,
         },
-        owner: Some(Some(Address::anonymous())),
+        owner: Some(TokenMaybeOwner::Left(Address::anonymous())), // TODO: Anon should not be allowed
         initial_distribution: Some(LedgerTokensAddressMap::from([
             (identity(1), TokenAmount::from(123u64)),
             (identity(2), TokenAmount::from(456u64)),
