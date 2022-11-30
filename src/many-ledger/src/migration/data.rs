@@ -97,12 +97,12 @@ fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
 }
 
 #[distributed_slice(MIGRATIONS)]
-static ACCOUNT_COUNT_DATA_ATTRIBUTE: InnerMigration<merk::Merk, ManyError> =
+pub static ACCOUNT_COUNT_DATA_ATTRIBUTE: InnerMigration<merk::Merk, ManyError> =
     InnerMigration::new_initialize(
         initialize,
         "Account Count Data Attribute",
         r#"
-            Provides the total number of unique addresses. 
+            Provides the total number of unique addresses.
             Provides the total number of unique addresses with a non-zero balance.
             "#,
     );

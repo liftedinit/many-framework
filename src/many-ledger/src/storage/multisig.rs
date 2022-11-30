@@ -1,4 +1,5 @@
 use crate::migration::block_9400::Block9400Tx;
+use crate::migration::memo::MEMO_MIGRATION;
 use crate::module::account::validate_account;
 use crate::storage::event::EVENT_ID_KEY_SIZE_IN_BYTES;
 use crate::storage::LedgerStorage;
@@ -7,9 +8,7 @@ use many_identity::Address;
 use many_modules::account::features::FeatureInfo;
 use many_modules::{account, events, EmptyReturn};
 use many_protocol::ResponseMessage;
-use many_types::Timestamp;
-use merk::rocksdb::ReadOptions;
-use merk::tree::Tree;
+use many_types::{SortOrder, Timestamp};
 use merk::Op;
 use std::collections::BTreeMap;
 use tracing::debug;
@@ -190,26 +189,13 @@ pub const MULTISIG_MAXIMUM_TIMEOUT_IN_SECS: u64 = 185 * 60 * 60 * 24; // ~6 mont
 
 impl LedgerStorage {
     pub fn check_timed_out_multisig_transactions(&mut self) -> Result<(), ManyError> {
-        use super::rocksdb::{Direction, IteratorMode};
-
-        // Set the iterator bounds to iterate all multisig transactions.
-        // We will break the loop later if we can.
-        let mut options = ReadOptions::default();
-        options.set_iterate_lower_bound(MULTISIG_TRANSACTIONS_ROOT);
-        let mut bound = MULTISIG_TRANSACTIONS_ROOT.to_vec();
-        bound[MULTISIG_TRANSACTIONS_ROOT.len() - 1] += 1;
-
-        let it = self
-            .persistent_store
-            .iter_opt(IteratorMode::From(&bound, Direction::Reverse), options);
-
+        let it = self.iter_multisig(SortOrder::Descending);
         let mut batch = vec![];
 
         for item in it {
             let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
-            let v = Tree::decode(k.to_vec(), v.as_ref());
 
-            let mut storage: MultisigTransactionStorage = minicbor::decode(v.value())
+            let mut storage: MultisigTransactionStorage = minicbor::decode(v.as_slice())
                 .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
             let now = self.now();
 
@@ -371,17 +357,27 @@ impl LedgerStorage {
                 .ok_or_else(|| ManyError::unknown("Invalid time.".to_string()))?,
         )?;
 
+        // If the migration hasn't been applied yet, use the old fields and skip
+        // the new memo field. If it has, ignore the old fields and only use the
+        // new field.
+        let (memo_, data_, memo) = if self.migrations.is_active(&MEMO_MIGRATION) {
+            (None, None, arg.memo.clone())
+        } else {
+            (arg.memo_, arg.data_, None)
+        };
+
         let storage = MultisigTransactionStorage {
             account: account_id,
             info: account::features::multisig::InfoReturn {
-                memo: arg.memo.clone(),
+                memo_: memo_.clone(),
+                memo: memo.clone(),
                 transaction: arg.transaction.as_ref().clone(),
                 submitter: *sender,
                 approvers,
                 threshold,
                 execute_automatically,
                 timeout,
-                data: arg.data.clone(),
+                data_: data_.clone(),
                 state: account::features::multisig::MultisigTransactionState::Pending,
             },
             creation: self.now().as_system_time()?,
@@ -392,13 +388,14 @@ impl LedgerStorage {
         self.log_event(events::EventInfo::AccountMultisigSubmit {
             submitter: *sender,
             account: account_id,
-            memo: arg.memo,
+            memo_,
             transaction: Box::new(*arg.transaction),
             token: Some(event_id.clone().into()),
             threshold,
             timeout,
             execute_automatically,
-            data: arg.data,
+            data_,
+            memo,
         });
 
         Ok(event_id.into())

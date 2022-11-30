@@ -1,7 +1,8 @@
+use crate::error;
 use crate::json::InitialStateJson;
-use crate::migration::LedgerMigrations;
-use crate::{error, storage::LedgerStorage};
+use crate::storage::LedgerStorage;
 use many_error::ManyError;
+use many_migration::MigrationConfig;
 use std::fmt::Debug;
 use std::path::Path;
 use tracing::info;
@@ -26,7 +27,7 @@ pub struct LedgerModuleImpl {
 impl LedgerModuleImpl {
     pub fn new<P: AsRef<Path>>(
         state: InitialStateJson,
-        migrations: Option<LedgerMigrations>,
+        migration_config: Option<MigrationConfig>,
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
@@ -46,6 +47,7 @@ impl LedgerModuleImpl {
                     })
                     .collect()
             }),
+            migration_config,
         )
         .map_err(ManyError::unknown)?;
 
@@ -66,10 +68,6 @@ impl LedgerModuleImpl {
             }
         }
 
-        if let Some(migrations) = migrations {
-            storage.set_migrations(migrations)
-        }
-
         info!(
             height = storage.get_height(),
             hash = hex::encode(storage.hash()).as_str()
@@ -81,15 +79,11 @@ impl LedgerModuleImpl {
     }
 
     pub fn load<P: AsRef<Path>>(
-        migrations: Option<LedgerMigrations>,
+        migrations: Option<MigrationConfig>,
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
-        let mut storage = LedgerStorage::load(persistence_store_path, blockchain).unwrap();
-
-        if let Some(migrations) = migrations {
-            storage.set_migrations(migrations)
-        }
+        let storage = LedgerStorage::load(persistence_store_path, blockchain, migrations).unwrap();
 
         tracing::debug!("Final migrations: {:?}", storage.migrations());
 

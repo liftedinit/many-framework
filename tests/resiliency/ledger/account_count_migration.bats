@@ -8,23 +8,28 @@ function setup() {
     mkdir "$BATS_TEST_ROOTDIR"
 
     echo '
-    [
+    { "migrations": [
       {
-        "type": "Account Count Data Attribute",
+        "name": "Account Count Data Attribute",
         "block_height": 20,
         "issue": "https://github.com/liftedinit/many-framework/issues/190"
       },
       {
-        "type": "Dummy Hotfix",
+        "name": "Dummy Hotfix",
         "block_height": 0,
-        "status": "Disabled"
+        "disabled": true
       },
       {
-        "type": "Block 9400",
+        "name": "Block 9400",
         "block_height": 0,
-        "status": "Disabled"
+        "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
       }
-    ]' > "$BATS_TEST_ROOTDIR/migrations.json"
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
     (
       cd "$GIT_ROOT/docker/e2e/" || exit

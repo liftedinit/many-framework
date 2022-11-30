@@ -26,6 +26,7 @@ fn load() {
             false,
             None,
             None,
+            None,
         );
         let mut module_impl = LedgerModuleImpl::load(None, path.clone(), false).unwrap();
 

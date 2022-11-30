@@ -1,8 +1,12 @@
 pub mod common;
 use common::*;
 
+pub mod migration_;
+
 use many_identity::testing::identity;
-use many_ledger::migration::data::{ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX};
+use many_ledger::migration::data::{
+    ACCOUNT_COUNT_DATA_ATTRIBUTE, ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
+};
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},
     EmptyArg,
@@ -64,16 +68,7 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
 #[test]
 fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
-    let content = r#"
-    [
-      {
-        "type": "Account Count Data Attribute",
-        "block_height": 2,
-        "issue": "https://github.com/liftedinit/many-framework/issues/190"
-      }
-    ]
-    "#;
-    let mut harness = Setup::new_with_migrations(true, content);
+    let mut harness = Setup::new_with_migrations(true, [(2, &ACCOUNT_COUNT_DATA_ATTRIBUTE)]);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, a1) = harness.block(|h| {
@@ -126,16 +121,7 @@ fn migration() {
 
 #[test]
 fn migration_stress() {
-    let content = r#"
-    [
-      {
-        "type": "Account Count Data Attribute",
-        "block_height": 2,
-        "issue": "https://github.com/liftedinit/many-framework/issues/190"
-      }
-    ]
-    "#;
-    let mut harness = Setup::new_with_migrations(true, content);
+    let mut harness = Setup::new_with_migrations(true, [(2, &ACCOUNT_COUNT_DATA_ATTRIBUTE)]);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let _ = harness.block(|h| {

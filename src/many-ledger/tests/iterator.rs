@@ -17,12 +17,13 @@ fn setup() -> LedgerStorage {
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
-    let mut storage = many_ledger::storage::LedgerStorage::new(
+    let mut storage = LedgerStorage::new(
         symbols,
         balances,
         persistent_path,
         id2,
         false,
+        None,
         None,
         None,
     )
@@ -46,8 +47,7 @@ fn iter_asc(
     end: Bound<EventId>,
 ) -> impl Iterator<Item = EventLog> + '_ {
     storage
-        .iter(CborRange { start, end }, SortOrder::Ascending)
-        .into_iter()
+        .iter_events(CborRange { start, end }, SortOrder::Ascending)
         .map(|item| {
             let (_, v) = item.expect("Error while reading DB");
             minicbor::decode(&v).expect("Iterator item not an event.")

@@ -1,11 +1,12 @@
-use crate::migration::LedgerMigrations;
+use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use many_error::ManyError;
 use many_identity::Address;
+use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount};
 use many_types::Timestamp;
-use merk::{rocksdb, BatchEntry, Op};
+use merk::{BatchEntry, Op};
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -85,15 +86,15 @@ impl LedgerStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub(crate) fn set_migrations(&mut self, migrations: LedgerMigrations) {
-        self.migrations = migrations
-    }
-
     pub fn migrations(&self) -> &LedgerMigrations {
         &self.migrations
     }
 
-    pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
+    pub fn load<P: AsRef<Path>>(
+        persistent_path: P,
+        blockchain: bool,
+        migration_config: Option<MigrationConfig>,
+    ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
         let symbols = persistent_store
@@ -134,6 +135,9 @@ impl LedgerStorage {
         // The discrepancy will lead to an application hash mismatch if the block following the `load()` contains
         // a transaction.
         let latest_tid = EventId::from(height.saturating_sub(1) << HEIGHT_EVENTID_SHIFT);
+        let migrations = migration_config.map_or_else(MigrationSet::empty, |config| {
+            LedgerMigrations::load(&MIGRATIONS, config, height)
+        })?;
 
         Ok(Self {
             symbols,
@@ -144,10 +148,11 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id,
             account_identity,
-            migrations: LedgerMigrations::new(),
+            migrations,
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeMap<Symbol, String>,
         initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
@@ -156,6 +161,7 @@ impl LedgerStorage {
         blockchain: bool,
         maybe_seed: Option<u64>,
         maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
+        migration_config: Option<MigrationConfig>,
     ) -> Result<Self, String> {
         let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
@@ -198,6 +204,9 @@ impl LedgerStorage {
         }
 
         persistent_store.commit(&[]).map_err(|e| e.to_string())?;
+        let migrations = migration_config.map_or_else(MigrationSet::empty, |config| {
+            LedgerMigrations::load(&MIGRATIONS, config, 0)
+        })?;
 
         Ok(Self {
             symbols,
@@ -208,7 +217,7 @@ impl LedgerStorage {
             current_hash: None,
             next_account_id: 0,
             account_identity: identity,
-            migrations: LedgerMigrations::new(),
+            migrations,
         })
     }
 
@@ -255,26 +264,20 @@ impl LedgerStorage {
         C: for<'a> minicbor::Decode<'a, ()>,
         F: FnOnce() -> T,
     >(
-        &self,
+        &mut self,
         name: &str,
         data: F,
     ) -> Result<Option<C>, ManyError> {
-        if let Some(migration) = self.migrations.get(name) {
-            // We are building the current block so the correct height is the current height (finished blocks) + 1
-            if self.get_height() + 1 == migration.metadata.block_height && migration.is_enabled() {
-                let data_enc = minicbor::to_vec(data()).map_err(ManyError::serialization_error)?;
-                let new_data = migration.hotfix(&data_enc, self.get_height() + 1);
-                if let Some(new_data) = new_data {
-                    return Ok(Some(
-                        minicbor::decode(&new_data).map_err(ManyError::deserialization_error)?,
-                    ));
-                }
-                return Err(ManyError::unknown(
-                    "Something went wrong while running migration \"{name}\"",
-                ));
-            }
-            return Ok(None);
+        let data_enc = minicbor::to_vec(data()).map_err(ManyError::serialization_error)?;
+
+        if let Some(data) = self
+            .migrations
+            .hotfix(name, &data_enc, self.get_height() + 1)?
+        {
+            let dec_data = minicbor::decode(&data).map_err(ManyError::deserialization_error)?;
+            Ok(Some(dec_data))
+        } else {
+            Ok(None)
         }
-        Ok(None)
     }
 }

@@ -74,8 +74,12 @@ impl LedgerStorage {
         }
     }
 
-    pub fn iter(&self, range: CborRange<EventId>, order: SortOrder) -> LedgerIterator {
-        LedgerIterator::scoped_by_id(&self.persistent_store, range, order)
+    pub fn iter_multisig(&self, order: SortOrder) -> LedgerIterator {
+        LedgerIterator::all_multisig(&self.persistent_store, order)
+    }
+
+    pub fn iter_events(&self, range: CborRange<EventId>, order: SortOrder) -> LedgerIterator {
+        LedgerIterator::events_scoped_by_id(&self.persistent_store, range, order)
     }
 }
 
@@ -125,7 +129,33 @@ pub struct LedgerIterator<'a> {
 }
 
 impl<'a> LedgerIterator<'a> {
-    pub fn scoped_by_id(merk: &'a merk::Merk, range: CborRange<EventId>, order: SortOrder) -> Self {
+    pub fn all_multisig(merk: &'a merk::Merk, order: SortOrder) -> Self {
+        use crate::storage::multisig::MULTISIG_TRANSACTIONS_ROOT;
+        use rocksdb::IteratorMode;
+
+        // Set the iterator bounds to iterate all multisig transactions.
+        let mut options = ReadOptions::default();
+        options.set_iterate_range(rocksdb::PrefixRange(MULTISIG_TRANSACTIONS_ROOT));
+
+        let it_mode = match order {
+            SortOrder::Indeterminate | SortOrder::Ascending => IteratorMode::Start,
+            SortOrder::Descending => IteratorMode::End,
+        };
+
+        let inner = merk.iter_opt(it_mode, options);
+
+        Self { inner }
+    }
+
+    pub fn all_events(merk: &'a merk::Merk) -> Self {
+        Self::events_scoped_by_id(merk, CborRange::default(), SortOrder::Indeterminate)
+    }
+
+    pub fn events_scoped_by_id(
+        merk: &'a merk::Merk,
+        range: CborRange<EventId>,
+        order: SortOrder,
+    ) -> Self {
         use rocksdb::IteratorMode;
         let mut opts = ReadOptions::default();
 
