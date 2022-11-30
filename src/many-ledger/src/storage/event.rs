@@ -2,7 +2,7 @@ use crate::storage::LedgerStorage;
 use many_modules::events;
 use many_modules::events::EventId;
 use many_types::{CborRange, SortOrder};
-use merk::rocksdb::{Direction, ReadOptions};
+use merk::rocksdb::ReadOptions;
 use merk::tree::Tree;
 use merk::{rocksdb, Op};
 use std::ops::{Bound, RangeBounds};
@@ -134,19 +134,12 @@ impl<'a> LedgerIterator<'a> {
         use rocksdb::IteratorMode;
 
         // Set the iterator bounds to iterate all multisig transactions.
-        // We will break the loop later if we can.
         let mut options = ReadOptions::default();
-        options.set_iterate_lower_bound(MULTISIG_TRANSACTIONS_ROOT);
-
-        let mut bound = MULTISIG_TRANSACTIONS_ROOT.to_vec();
-        bound[MULTISIG_TRANSACTIONS_ROOT.len() - 1] += 1;
-        options.set_iterate_upper_bound(bound.clone());
+        options.set_iterate_range(rocksdb::PrefixRange(MULTISIG_TRANSACTIONS_ROOT));
 
         let it_mode = match order {
-            SortOrder::Indeterminate | SortOrder::Ascending => {
-                IteratorMode::From(MULTISIG_TRANSACTIONS_ROOT, Direction::Forward)
-            }
-            SortOrder::Descending => IteratorMode::From(&bound, Direction::Reverse),
+            SortOrder::Indeterminate | SortOrder::Ascending => IteratorMode::Start,
+            SortOrder::Descending => IteratorMode::End,
         };
 
         let inner = merk.iter_opt(it_mode, options);
