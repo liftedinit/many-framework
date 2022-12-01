@@ -1,36 +1,89 @@
 Feature: Update ledger Tokens
 
 @tokens
-Scenario: Updating a token's ticker
-	Given a default token
-	And a new token ticker ABC
-	When I update the token
+Scenario: Updating a token's ticker as myself
+	Given a default token owned by myself
+	And a new ticker ABC
+	When I update the token as myself
 	Then the token new ticker is ABC
 
 @tokens
-Scenario: Updating a token's name
-	Given a default token
-	And a new token name Supercalifragilisticexpialidocious
-	When I update the token
+Scenario: Updating a token's name as myself
+	Given a default token owned by myself
+	And a new name Supercalifragilisticexpialidocious
+	When I update the token as myself
 	Then the token new name is Supercalifragilisticexpialidocious
 
 @tokens
-Scenario: Updating a token's decimal
-	Given a default token
-	And a new token decimal 16
-	When I update the token
+Scenario: Updating a token's decimal as myself
+	Given a default token owned by myself
+	And a new decimal 16
+	When I update the token as myself
 	Then the token new decimal is 16
 
-#@tokens
-#Scenario: Updating a token's owner
-#	Given a default token
-#	And a new token owner maem7b3bkzipk4dluaxjlw2pnwjll4rggqn4akimt3xhjhja55
-#	When I update the token
-#	Then the token new owner is maem7b3bkzipk4dluaxjlw2pnwjll4rggqn4akimt3xhjhja55
+@tokens
+Scenario: Updating a token owned by myself as anonymous/random
+	Given a default token owned by myself
+	And a new ticker ABC
+	Then updating the token as anonymous fails with unauthorized
+	Then updating the token as random fails with unauthorized
+
+@tokens
+Scenario: Updating a token owner by anonymous
+	Given a default token owned by anonymous
+	And a new ticker ABC
+	Then updating the token as myself fails with unauthorized
+
+@tokens
+Scenario: Updating a token owner by random
+	Given a default token owned by random
+	And a new ticker ABC
+	Then updating the token as myself fails with unauthorized
+
+@tokens
+Scenario: Updating a token owned by no one
+	Given a default token owned by no one
+	And a new ticker ABC
+	Then updating the token as myself fails with immutable
+	Then updating the token as anonymous fails with immutable
+	Then updating the token as random fails with immutable
+
+@tokens
+Scenario: Updating a token, sender is myself, token owner is account I'm not part of
+	Given a token account
+	And id 5 as the account owner
+	And a default token owned by the account
+	And setting the account as the owner
+	Then updating the token as myself fails with missing permission token update
+
+@tokens
+Scenario: Updating a token, sender is myself, token owner is account I'm the owner of
+	Given a token account
+	And myself as the account owner
+	And a default token owned by the account
+	When I update the token as myself
+	Then the token new owner is the account
+
+@tokens
+Scenario: Updating a token, sender is some id, token owner is account where some id is part of and with token update permission
+	Given a token account
+	And id 5 has token update permission
+	And setting the account as the owner
+	And a default token owned by the account
+	When I update the token as id 5
+	Then the token new owner is the account
+
+@tokens
+Scenario: Updating a token, sender is some id, token owner is account where some id is part of without token update permission
+	Given a token account
+	And id 6 has token mint permission
+	And setting the account as the owner
+	And a default token owned by the account
+	Then updating the token as id 6 fails with missing permission token update
 
 @tokens
 Scenario: Removing a token's owner
-	Given a default token
+	Given a default token owned by myself
 	And removing the token owner
-	When I update the token
+	When I update the token as myself
 	Then the token owner is removed

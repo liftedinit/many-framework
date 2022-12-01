@@ -1,6 +1,6 @@
 pub mod common;
 
-use common::Setup;
+use common::*;
 use std::collections::{BTreeMap, BTreeSet};
 
 use cucumber::{given, then, when, Parameter, World};
@@ -8,7 +8,6 @@ use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::{Address, Identity};
 use many_identity_dsa::ecdsa::generate_random_ecdsa_identity;
-use many_ledger::error;
 use many_modules::account;
 use many_modules::account::features::{FeatureInfo, FeatureSet};
 use many_modules::account::{
@@ -33,7 +32,7 @@ struct CreateWorld {
     name = "id",
     regex = "(myself)|id ([0-9])|(random)|(anonymous)|(the account)"
 )]
-enum SomeId {
+pub enum SomeId {
     Id(u32),
     #[default]
     Myself,
@@ -56,45 +55,6 @@ impl FromStr for SomeId {
     }
 }
 
-#[derive(Debug, Default, Eq, Parameter, PartialEq)]
-#[param(name = "error", regex = "(unauthorized)|(missing permission)")]
-enum SomeError {
-    #[default]
-    Unauthorized,
-    MissingPermission,
-}
-
-impl FromStr for SomeError {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "unauthorized" => Self::Unauthorized,
-            "missing permission" => Self::MissingPermission,
-            invalid => return Err(format!("Invalid `SomeError`: {invalid}")),
-        })
-    }
-}
-#[derive(Debug, Default, Eq, Parameter, PartialEq)]
-#[param(name = "permission", regex = "(token creation)|(token mint)")]
-enum SomePermission {
-    #[default]
-    Create,
-    Mint,
-}
-
-impl FromStr for SomePermission {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "token creation" => Self::Create,
-            "token mint" => Self::Mint,
-            invalid => return Err(format!("Invalid `SomeError`: {invalid}")),
-        })
-    }
-}
-
 impl SomeId {
     fn as_address(&self, w: &mut CreateWorld) -> Address {
         match self {
@@ -103,24 +63,6 @@ impl SomeId {
             SomeId::Anonymous => Address::anonymous(),
             SomeId::Random => generate_random_ecdsa_identity().address(),
             SomeId::Account => w.account,
-        }
-    }
-}
-
-impl SomeError {
-    fn as_many(&self) -> ManyError {
-        match self {
-            SomeError::Unauthorized => error::unauthorized(),
-            SomeError::MissingPermission => account::errors::user_needs_role(Role::CanTokensCreate),
-        }
-    }
-}
-
-impl SomePermission {
-    fn as_role(&self) -> Role {
-        match self {
-            SomePermission::Create => Role::CanTokensCreate,
-            SomePermission::Mint => Role::CanTokensMint,
         }
     }
 }

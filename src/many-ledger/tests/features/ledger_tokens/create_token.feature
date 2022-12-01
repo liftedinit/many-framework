@@ -18,24 +18,30 @@ Scenario: Creating a new token as myself
 	And the token maximum supply has no maximum
 
 @tokens
-Scenario: Creating a new token as someone random
+Scenario: Creating a new token, sender is myself, token owner is random
 	Given random as owner
 	Then creating the token as myself fails with unauthorized
 
 @tokens
-Scenario: Creating a new token as anonymous
+Scenario: Creating a new token, sender is myself, token owner is anonymous
 	Given anonymous as owner
 	Then creating the token as myself fails with unauthorized
 
 @tokens
-Scenario: Creating a new token on behalf of an account I'm not part of
+Scenario: Creating a new token, sender is anon/random, token owner is myself
+	Given myself as owner
+	Then creating the token as anonymous fails with unauthorized
+	Then creating the token as random fails with unauthorized
+
+@tokens
+Scenario: Creating a new token, sender is myself, token owner is account I'm not part of
 	Given a token account
 	And id 5 as the account owner
 	And setting the account as the owner
-	Then creating the token as myself fails with missing permission
+	Then creating the token as myself fails with missing permission token creation
 
 @tokens
-Scenario: Creating a new token on behalf of an account I'm the Owner of
+Scenario: Creating a new token, sender is myself, token owner is account I'm the owner of
 	Given a token account
 	And myself as the account owner
 	And setting the account as the owner
@@ -43,7 +49,7 @@ Scenario: Creating a new token on behalf of an account I'm the Owner of
 	Then the token owner is the account
 
 @tokens
-Scenario: Creating a new token on behalf of an account I'm part of with token creation permission
+Scenario: Creating a new token, sender is some id, token owner is account where some id is part of and with token creation permission
 	Given a token account
 	And id 5 has token creation permission
 	And setting the account as the owner
@@ -51,11 +57,11 @@ Scenario: Creating a new token on behalf of an account I'm part of with token cr
 	Then the token owner is the account
 
 @tokens
-Scenario: Creating a new token on behalf of an account I'm part of without token creation permission
+Scenario: Creating a new token, sender is some id, token owner is account where some id is part of without token creation permission
 	Given a token account
 	And id 6 has token mint permission
 	And setting the account as the owner
-	Then creating the token as id 6 fails with missing permission
+	Then creating the token as id 6 fails with missing permission token creation
 
 @tokens
 Scenario: Creating a new token without owner (owner is sender)

@@ -1,9 +1,11 @@
 use coset::CborSerializable;
+use cucumber::Parameter;
 use itertools::Itertools;
 use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::{Address, Identity};
 use many_identity_dsa::ed25519::generate_random_ed25519_identity;
+use many_ledger::error;
 use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
 use many_migration::{InnerMigration, MigrationConfig};
@@ -12,7 +14,7 @@ use many_modules::account::features::multisig::{
     AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
 };
 use many_modules::account::features::FeatureInfo;
-use many_modules::account::AccountModuleBackend;
+use many_modules::account::{AccountModuleBackend, Role};
 use many_modules::idstore::{CredentialId, PublicKey};
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
@@ -35,7 +37,80 @@ use std::{
 };
 use tracing::debug;
 
-pub fn default_token_create_args(id: Address) -> TokenCreateArgs {
+#[derive(Debug, Default, Eq, Parameter, PartialEq)]
+#[param(
+    name = "error",
+    regex = "(unauthorized)|missing permission ([a-z ]+)|(immutable)"
+)]
+pub enum SomeError {
+    #[default]
+    Unauthorized,
+    MissingPermission(SomePermission),
+    Immutable,
+}
+
+impl FromStr for SomeError {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "unauthorized" => Self::Unauthorized,
+            "immutable" => Self::Immutable,
+            permission => Self::MissingPermission(
+                SomePermission::from_str(permission)
+                    .expect("Unable to convert string to permission"),
+            ),
+        })
+    }
+}
+#[derive(Debug, Default, Eq, Parameter, PartialEq)]
+#[param(
+    name = "permission",
+    regex = "(token creation)|(token mint)|(token update)"
+)]
+pub enum SomePermission {
+    #[default]
+    Create,
+    Update,
+    Mint,
+}
+
+impl FromStr for SomePermission {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "token creation" => Self::Create,
+            "token mint" => Self::Mint,
+            "token update" => Self::Update,
+            invalid => return Err(format!("Invalid `SomeError`: {invalid}")),
+        })
+    }
+}
+
+impl SomeError {
+    pub fn as_many(&self) -> ManyError {
+        match self {
+            SomeError::Unauthorized => error::unauthorized(),
+            SomeError::MissingPermission(permission) => {
+                account::errors::user_needs_role(permission.as_role())
+            }
+            SomeError::Immutable => ManyError::unknown("Unable to update, this token is immutable"), // TODO: Custom error
+        }
+    }
+}
+
+impl SomePermission {
+    pub fn as_role(&self) -> Role {
+        match self {
+            SomePermission::Create => Role::CanTokensCreate,
+            SomePermission::Mint => Role::CanTokensMint,
+            SomePermission::Update => Role::CanTokensUpdate,
+        }
+    }
+}
+
+pub fn default_token_create_args(owner: Option<TokenMaybeOwner>) -> TokenCreateArgs {
     let mut logos = VisualTokenLogo::new();
     logos.unicode_front('∑');
     TokenCreateArgs {
@@ -44,7 +119,7 @@ pub fn default_token_create_args(id: Address) -> TokenCreateArgs {
             ticker: "TT".to_string(),
             decimals: 9,
         },
-        owner: Some(TokenMaybeOwner::Left(id)),
+        owner,
         initial_distribution: Some(LedgerTokensAddressMap::from([
             (identity(1), TokenAmount::from(123u64)),
             (identity(2), TokenAmount::from(456u64)),
