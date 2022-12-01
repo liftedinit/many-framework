@@ -66,13 +66,14 @@ impl FromStr for SomeError {
 #[derive(Debug, Default, Eq, Parameter, PartialEq)]
 #[param(
     name = "permission",
-    regex = "(token creation)|(token mint)|(token update)|(token add extended info)"
+    regex = "(token creation)|(token mint)|(token update)|(token add extended info)|(token remove extended info)"
 )]
 pub enum SomePermission {
     #[default]
     Create,
     Update,
     AddExtInfo,
+    RemoveExtInfo,
     Mint,
 }
 
@@ -85,6 +86,7 @@ impl FromStr for SomePermission {
             "token mint" => Self::Mint,
             "token update" => Self::Update,
             "token add extended info" => Self::AddExtInfo,
+            "token remove extended info" => Self::RemoveExtInfo,
             invalid => return Err(format!("Invalid `SomeError`: {invalid}")),
         })
     }
@@ -109,6 +111,7 @@ impl SomePermission {
             SomePermission::Mint => Role::CanTokensMint,
             SomePermission::Update => Role::CanTokensUpdate,
             SomePermission::AddExtInfo => Role::CanTokensAddExtendedInfo,
+            SomePermission::RemoveExtInfo => Role::CanTokensRemoveExtendedInfo,
         }
     }
 }
