@@ -13,8 +13,10 @@ use many_modules::account::features::{FeatureInfo, FeatureSet};
 use many_modules::account::{
     AccountModuleBackend, AddRolesArgs, CreateArgs, RemoveRolesArgs, Role,
 };
+use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenUpdateArgs};
 use many_types::ledger::{TokenInfo, TokenMaybeOwner};
+use many_types::Memo;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -141,6 +143,7 @@ fn given_account_owner(w: &mut UpdateWorld) {
     w.args.owner = Some(TokenMaybeOwner::Left(w.account));
 }
 
+// TODO: DRY
 #[given(expr = "a default token owned by {id}")]
 fn create_default_token(w: &mut UpdateWorld, id: SomeId) {
     let id = id.as_address(w);
@@ -186,6 +189,11 @@ fn given_new_owner(w: &mut UpdateWorld, owner: Address) {
     w.args.owner = Some(TokenMaybeOwner::Left(owner));
 }
 
+#[given(expr = "a memo {string}")]
+fn given_memo(w: &mut UpdateWorld, memo: String) {
+    w.args.memo = Some(Memo::try_from(memo).unwrap());
+}
+
 #[given(expr = "removing the token owner")]
 fn given_rm_owner(w: &mut UpdateWorld) {
     w.args.owner = Some(TokenMaybeOwner::Right(()));
@@ -224,6 +232,29 @@ fn then_new_name(w: &mut UpdateWorld, name: String) {
 #[then(expr = "the token new decimal is {int}")]
 fn then_new_decimal(w: &mut UpdateWorld, decimal: u64) {
     assert_eq!(w.info.summary.decimals, decimal);
+}
+
+#[then(expr = "the memo is {string}")]
+fn then_memo(w: &mut UpdateWorld, memo: String) {
+    let res = EventsModuleBackend::list(
+        &w.setup.module_impl,
+        ListArgs {
+            filter: Some(EventFilter {
+                kind: Some(vec![EventKind::TokenUpdate].into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    )
+    .expect("Unable to list TokenUpdate event");
+    let memo = Memo::try_from(memo).unwrap();
+    assert!(res.nb_events >= 1);
+    // TODO: INVESTIGATE THE FAIL
+    for event in res.events {
+        dbg!(&event.content);
+        assert!(event.content.memo().is_some());
+        assert_eq!(event.content.memo().unwrap(), &memo);
+    }
 }
 
 #[then(expr = "the token new owner is {id}")]

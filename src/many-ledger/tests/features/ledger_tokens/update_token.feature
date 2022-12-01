@@ -8,6 +8,15 @@ Scenario: Updating a token's ticker as myself
 	Then the token new ticker is ABC
 
 @tokens
+Scenario: Updating a token's ticker as myself, with memo
+	Given a default token owned by myself
+	And a new ticker ABC
+	And a memo "Some memo"
+	When I update the token as myself
+	Then the token new ticker is ABC
+	And the memo is "Some memo"
+
+@tokens
 Scenario: Updating a token's name as myself
 	Given a default token owned by myself
 	And a new name Supercalifragilisticexpialidocious
@@ -29,13 +38,13 @@ Scenario: Updating a token owned by myself as anonymous/random
 	Then updating the token as random fails with unauthorized
 
 @tokens
-Scenario: Updating a token owner by anonymous
+Scenario: Updating a token owned by anonymous
 	Given a default token owned by anonymous
 	And a new ticker ABC
 	Then updating the token as myself fails with unauthorized
 
 @tokens
-Scenario: Updating a token owner by random
+Scenario: Updating a token owned by random
 	Given a default token owned by random
 	And a new ticker ABC
 	Then updating the token as myself fails with unauthorized
