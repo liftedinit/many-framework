@@ -24,7 +24,7 @@ impl LedgerStorage {
     pub(crate) fn get_owner(&self, symbol: &Symbol) -> Result<Option<Address>, ManyError> {
         let token_info_enc = self
             .persistent_store
-            .get(&key_for_symbol(&symbol))
+            .get(&key_for_symbol(symbol))
             .map_err(ManyError::unknown)?
             .ok_or_else(|| {
                 ManyError::unknown(

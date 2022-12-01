@@ -46,13 +46,8 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
 
-        if let Some(maybe_owner) = &args.owner {
-            match maybe_owner {
-                Either::Left(addr) => {
-                    verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensCreate])?;
-                }
-                _ => {}
-            }
+        if let Some(Either::Left(addr)) = &args.owner {
+            verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensCreate])?;
         }
 
         let ticker = &args.summary.ticker;
@@ -96,13 +91,8 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         }
 
         // Check if we're allowed to update the owner
-        if let Some(maybe_owner) = &args.owner {
-            match maybe_owner {
-                Either::Left(addr) => {
-                    verify_tokens_acl(&self.storage, sender, &addr, [Role::CanTokensUpdate])?;
-                }
-                _ => {}
-            }
+        if let Some(Either::Left(addr)) = &args.owner {
+            verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensUpdate])?;
         }
 
         // Check the memory symbol cache for requested symbol
