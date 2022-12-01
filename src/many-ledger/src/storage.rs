@@ -8,7 +8,7 @@ use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
 use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
 use many_types::Timestamp;
-use merk::{rocksdb, BatchEntry, Op};
+use merk::{BatchEntry, Op};
 use std::collections::BTreeMap;
 use std::path::Path;
 

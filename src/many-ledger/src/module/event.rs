@@ -138,7 +138,7 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
 
         let storage = &self.storage;
         let nb_events = storage.nb_events();
-        let iter = storage.iter(
+        let iter = storage.iter_events(
             filter.id_range.unwrap_or_default(),
             order.unwrap_or_default(),
         );

@@ -64,7 +64,8 @@ function teardown() {
 
 @test "$SUITE: Memo Migration" {
     local account_id
-    local tx_id
+    local tx_id_1
+    local tx_id_2
 
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
@@ -74,12 +75,17 @@ function teardown() {
     call_ledger --pem=1 --port=8000 multisig \
         submit --legacy-memo="Legacy_Memo" --memo="New_Memo" "$account_id" \
         send "$(identity 2)" 1000 MFX
+    tx_id_1=$(echo $output | grep "Transaction Token:" | grep -o "[0-9a-f]*$")
 
     run many_message --pem=1 events.list "{}"
     assert_output --regexp "3:.*Legacy_Memo"
     refute_output --partial "New_Memo"
 
-    # Wait for block 30
+    call_ledger --port=8000 multisig info $tx_id_1
+    assert_output --partial "memo_: Some"
+    assert_output --partial "data_: None"
+    assert_output --partial "memo: None"
+
     wait_for_block 30
 
     run many_message --pem=1 events.list "{}"
@@ -90,8 +96,19 @@ function teardown() {
     call_ledger --pem=1 --port=8000 multisig \
         submit --legacy-memo="Legacy_Memo2" --memo="New_Memo2" "$account_id" \
         send "$(identity 2)" 1000 MFX
+    tx_id_2=$(echo $output | grep "Transaction Token:" | grep -o "[0-9a-f]*$")
 
     run many_message --pem=1 events.list "{}"
     assert_output --regexp "10:.*New_Memo2"
     refute_output --partial "Legacy_Memo2"
+
+    call_ledger --port=8000 multisig info $tx_id_1
+    assert_output --partial "memo_: None"
+    assert_output --partial "data_: None"
+    assert_output --partial "memo: Some"
+
+    call_ledger --port=8000 multisig info $tx_id_2
+    assert_output --partial "memo_: None"
+    assert_output --partial "data_: None"
+    assert_output --partial "memo: Some"
 }

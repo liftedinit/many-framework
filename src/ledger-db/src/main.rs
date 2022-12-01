@@ -37,8 +37,12 @@ fn main() {
             let (id, symbol) = (it.next().unwrap(), it.next().unwrap());
             let t = TokenAmount::from(v.to_vec());
             println!("balance {id} => {t} {symbol}");
+        } else if k.starts_with(b"/multisig/") {
+            let k = &k[10..];
+            let multisig = hex::encode(v);
+            println!("multisig tx 0x{} => {multisig}", hex::encode(k))
         } else if let Ok(k) = String::from_utf8(k.clone()) {
-            println!("unknown '{}' => {}", k, hex::encode(v));
+            println!("unknown {:?} => {}", k, hex::encode(v));
         } else {
             println!("unknown 0x {} => {}", hex::encode(k), hex::encode(v));
         }
