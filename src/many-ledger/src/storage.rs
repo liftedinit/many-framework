@@ -1,11 +1,12 @@
 use crate::json::SymbolMetaJson;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
-use crate::storage::ledger_tokens::key_for_symbol;
+use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol};
 use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
+use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
 use many_types::Timestamp;
 use merk::{BatchEntry, Op};
@@ -229,6 +230,10 @@ impl LedgerStorage {
             };
 
             batch.push((
+                key_for_ext_info(s1),
+                Op::Put(minicbor::to_vec(TokenExtendedInfo::default()).map_err(|e| e.to_string())?),
+            ));
+            batch.push((
                 b"/config/symbols".to_vec(),
                 Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
             ));
@@ -237,6 +242,8 @@ impl LedgerStorage {
                 Op::Put(minicbor::to_vec(info).map_err(|e| e.to_string())?),
             ));
         }
+
+        batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
 
         persistent_store
             .apply(batch.as_slice())
