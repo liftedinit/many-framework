@@ -1,5 +1,5 @@
 {
-  "checksum": "233003ad52c56ac7de299596d54d2945f69de614063e0e8e06f21a7bcb64ce46",
+  "checksum": "9a499cba124dcf9e4bad0e4bd7a3cb63e5a3fc406ceac4543799fa89889ba30f",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -11549,6 +11549,10 @@
             {
               "id": "indicatif 0.16.2",
               "target": "indicatif"
+            },
+            {
+              "id": "itertools 0.10.5",
+              "target": "itertools"
             },
             {
               "id": "lazy_static 1.4.0",

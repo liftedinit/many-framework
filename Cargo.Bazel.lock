@@ -2140,6 +2140,7 @@ dependencies = [
  "hex",
  "humantime",
  "indicatif",
+ "itertools",
  "lazy_static",
  "many-client",
  "many-error",
