@@ -63,7 +63,6 @@ Scenario: Updating a token, sender is myself, token owner is account I'm not par
 	Given a token account
 	And id 5 as the account owner
 	And a default token owned by the account
-	And setting the account as the owner
 	Then updating the token as myself fails with missing permission token update
 
 @tokens
@@ -78,7 +77,6 @@ Scenario: Updating a token, sender is myself, token owner is account I'm the own
 Scenario: Updating a token, sender is some id, token owner is account where some id is part of and with token update permission
 	Given a token account
 	And id 5 has token update permission
-	And setting the account as the owner
 	And a default token owned by the account
 	When I update the token as id 5
 	Then the token new owner is the account
@@ -87,7 +85,6 @@ Scenario: Updating a token, sender is some id, token owner is account where some
 Scenario: Updating a token, sender is some id, token owner is account where some id is part of without token update permission
 	Given a token account
 	And id 6 has token mint permission
-	And setting the account as the owner
 	And a default token owned by the account
 	Then updating the token as id 6 fails with missing permission token update
 

@@ -1,11 +1,11 @@
+pub mod many_cucumber;
+
 use coset::CborSerializable;
-use cucumber::Parameter;
 use itertools::Itertools;
 use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::{Address, Identity};
 use many_identity_dsa::ed25519::generate_random_ed25519_identity;
-use many_ledger::error;
 use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
 use many_migration::{InnerMigration, MigrationConfig};
@@ -14,7 +14,7 @@ use many_modules::account::features::multisig::{
     AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
 };
 use many_modules::account::features::FeatureInfo;
-use many_modules::account::{AccountModuleBackend, Role};
+use many_modules::account::AccountModuleBackend;
 use many_modules::idstore::{CredentialId, PublicKey};
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
@@ -35,85 +35,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
 };
-
-#[derive(Debug, Default, Eq, Parameter, PartialEq)]
-#[param(
-    name = "error",
-    regex = "(unauthorized)|missing permission ([a-z ]+)|(immutable)"
-)]
-pub enum SomeError {
-    #[default]
-    Unauthorized,
-    MissingPermission(SomePermission),
-    Immutable,
-}
-
-impl FromStr for SomeError {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "unauthorized" => Self::Unauthorized,
-            "immutable" => Self::Immutable,
-            permission => Self::MissingPermission(
-                SomePermission::from_str(permission)
-                    .expect("Unable to convert string to permission"),
-            ),
-        })
-    }
-}
-#[derive(Debug, Default, Eq, Parameter, PartialEq)]
-#[param(
-    name = "permission",
-    regex = "(token creation)|(token mint)|(token update)|(token add extended info)|(token remove extended info)"
-)]
-pub enum SomePermission {
-    #[default]
-    Create,
-    Update,
-    AddExtInfo,
-    RemoveExtInfo,
-    Mint,
-}
-
-impl FromStr for SomePermission {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "token creation" => Self::Create,
-            "token mint" => Self::Mint,
-            "token update" => Self::Update,
-            "token add extended info" => Self::AddExtInfo,
-            "token remove extended info" => Self::RemoveExtInfo,
-            invalid => return Err(format!("Invalid `SomeError`: {invalid}")),
-        })
-    }
-}
-
-impl SomeError {
-    pub fn as_many(&self) -> ManyError {
-        match self {
-            SomeError::Unauthorized => error::unauthorized(),
-            SomeError::MissingPermission(permission) => {
-                account::errors::user_needs_role(permission.as_role())
-            }
-            SomeError::Immutable => ManyError::unknown("Unable to update, this token is immutable"), // TODO: Custom error
-        }
-    }
-}
-
-impl SomePermission {
-    pub fn as_role(&self) -> Role {
-        match self {
-            SomePermission::Create => Role::CanTokensCreate,
-            SomePermission::Mint => Role::CanTokensMint,
-            SomePermission::Update => Role::CanTokensUpdate,
-            SomePermission::AddExtInfo => Role::CanTokensAddExtendedInfo,
-            SomePermission::RemoveExtInfo => Role::CanTokensRemoveExtendedInfo,
-        }
-    }
-}
 
 pub fn default_token_create_args(owner: Option<TokenMaybeOwner>) -> TokenCreateArgs {
     let mut logos = VisualTokenLogo::new();
