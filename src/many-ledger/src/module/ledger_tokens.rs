@@ -90,11 +90,6 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
             }
         }
 
-        // Check if we're allowed to update the owner
-        if let Some(Either::Left(addr)) = &args.owner {
-            verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensUpdate])?;
-        }
-
         // Check the memory symbol cache for requested symbol
         let symbol = &args.symbol;
         if !self.storage.get_symbols().contains_key(symbol) {
