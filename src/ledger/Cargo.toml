@@ -16,7 +16,6 @@ name = "ledger"
 doc = false
 
 [dependencies]
-cbor-diag = "0.1.11"
 clap = { version = "3.0.0", features = ["derive"] }
 crc-any = "2.4.0"
 hex = "0.4.3"

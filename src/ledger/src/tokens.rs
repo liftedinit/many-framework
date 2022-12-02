@@ -71,8 +71,8 @@ struct CreateTokenOpt {
     #[clap(long)]
     maximum_supply: Option<u64>,
 
-    #[clap(long)]
-    extended_info: Option<String>,
+    #[clap(subcommand)]
+    extended_info: Option<CreateExtInfoOpt>,
 }
 
 #[derive(Parser)]
@@ -146,6 +146,24 @@ struct RemoveExtInfoOpt {
     indices: Vec<u32>, // TODO: Use Index
 }
 
+fn create_ext_info(opts: CreateExtInfoOpt) -> TokenExtendedInfo {
+    match opts {
+        CreateExtInfoOpt::Memo(opts) => TokenExtendedInfo::new().with_memo(opts.memo).unwrap(),
+        CreateExtInfoOpt::Logo(opts) => {
+            let mut logo = VisualTokenLogo::new();
+            match opts.logo_type {
+                CreateLogoOpt::Unicode(opts) => {
+                    logo.unicode_front(opts.glyph);
+                }
+                CreateLogoOpt::Image(opts) => {
+                    logo.image_front(opts.content_type, opts.data.into_bytes())
+                }
+            }
+            TokenExtendedInfo::new().with_visual_logo(logo).unwrap()
+        }
+    }
+}
+
 fn create_token(client: ManyClient<impl Identity>, opts: CreateTokenOpt) -> Result<(), ManyError> {
     let initial_distribution = opts.initial_distribution.map(|initial_distribution| {
         initial_distribution
@@ -161,18 +179,7 @@ fn create_token(client: ManyClient<impl Identity>, opts: CreateTokenOpt) -> Resu
             .collect::<LedgerTokensAddressMap>()
     });
 
-    let extended_info: Option<TokenExtendedInfo> = if let Some(data) = opts.extended_info {
-        Some(
-            minicbor::decode(
-                &cbor_diag::parse_diag(data)
-                    .map_err(ManyError::unknown)?
-                    .to_bytes(),
-            )
-            .map_err(ManyError::deserialization_error)?,
-        )
-    } else {
-        None
-    };
+    let extended_info = opts.extended_info.map(create_ext_info);
 
     let args = TokenCreateArgs {
         summary: TokenInfoSummary {
@@ -212,21 +219,7 @@ fn update_token(client: ManyClient<impl Identity>, opts: UpdateTokenOpt) -> Resu
 }
 
 fn add_ext_info(client: ManyClient<impl Identity>, opts: AddExtInfoOpt) -> Result<(), ManyError> {
-    let extended_info = match opts.ext_info_type {
-        CreateExtInfoOpt::Memo(opts) => TokenExtendedInfo::new().with_memo(opts.memo).unwrap(),
-        CreateExtInfoOpt::Logo(opts) => {
-            let mut logo = VisualTokenLogo::new();
-            match opts.logo_type {
-                CreateLogoOpt::Unicode(opts) => {
-                    logo.unicode_front(opts.glyph);
-                }
-                CreateLogoOpt::Image(opts) => {
-                    logo.image_front(opts.content_type, opts.data.into_bytes())
-                }
-            }
-            TokenExtendedInfo::new().with_visual_logo(logo).unwrap()
-        }
-    };
+    let extended_info = create_ext_info(opts.ext_info_type);
 
     let args = TokenAddExtendedInfoArgs {
         symbol: opts.symbol,
