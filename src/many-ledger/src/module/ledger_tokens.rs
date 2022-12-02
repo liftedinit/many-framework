@@ -52,9 +52,9 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
 
         let ticker = &args.summary.ticker;
         if self.storage.get_symbols().values().any(|v| v == ticker) {
-            return Err(ManyError::unknown(
-                "The ticker {ticker} already exists on this network",
-            ));
+            return Err(ManyError::unknown(format!(
+                "The ticker {ticker} already exists on this network"
+            )));
         }
         self.storage.create_token(sender, args)
     }
@@ -63,7 +63,9 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // Check the memory symbol cache for requested symbol
         let symbol = &args.symbol;
         if !self.storage.get_symbols().contains_key(symbol) {
-            return Err(ManyError::unknown("The symbol {symbol} was not found"));
+            return Err(ManyError::unknown(format!(
+                "The symbol {symbol} was not found"
+            )));
         }
         self.storage.info_token(args)
     }
@@ -93,7 +95,9 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // Check the memory symbol cache for requested symbol
         let symbol = &args.symbol;
         if !self.storage.get_symbols().contains_key(symbol) {
-            return Err(ManyError::unknown("The symbol {symbol} was not found"));
+            return Err(ManyError::unknown(format!(
+                "The symbol {symbol} was not found"
+            )));
         }
 
         self.storage.update_token(sender, args)
