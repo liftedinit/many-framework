@@ -2140,6 +2140,7 @@ dependencies = [
  "hex",
  "humantime",
  "indicatif",
+ "itertools",
  "lazy_static",
  "many-client",
  "many-error",
@@ -2318,7 +2319,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2361,7 +2362,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2371,7 +2372,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2382,7 +2383,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "base32",
  "coset",
@@ -2402,7 +2403,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2430,7 +2431,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2450,7 +2451,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2554,7 +2555,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2567,7 +2568,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2580,7 +2581,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "async-trait",
  "coset",
@@ -2601,7 +2602,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2625,7 +2626,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2674,7 +2675,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 dependencies = [
  "coset",
  "fixed",
@@ -5094,9 +5095,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#1e0469e4ba5c1bc49f5995f728b8a0963569a456"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#3357b921e0e626479513706e9586e2e59094de10"
