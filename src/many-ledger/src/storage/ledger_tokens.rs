@@ -86,10 +86,12 @@ impl LedgerStorage {
         };
 
         // Create the token information and store it in the persistent storage
-        let maybe_owner = owner.map_or(Some(*sender), |maybe_owner| match maybe_owner {
-            Either::Left(addr) => Some(addr),
-            Either::Right(_) => None,
-        });
+        let maybe_owner = owner
+            .as_ref()
+            .map_or(Some(*sender), |maybe_owner| match maybe_owner {
+                Either::Left(addr) => Some(*addr),
+                Either::Right(_) => None,
+            });
         let info = TokenInfo {
             symbol,
             summary: summary.clone(),
@@ -206,10 +208,10 @@ impl LedgerStorage {
             if let Some(decimals) = decimals {
                 info.summary.decimals = decimals;
             }
-            match owner {
+            match owner.as_ref() {
                 None => {}
                 Some(x) => match x {
-                    Either::Left(addr) => info.owner = Some(addr),
+                    Either::Left(addr) => info.owner = Some(*addr),
                     Either::Right(_) => info.owner = None,
                 },
             };

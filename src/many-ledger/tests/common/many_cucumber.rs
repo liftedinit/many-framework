@@ -12,6 +12,7 @@ use many_modules::account::{
     AccountModuleBackend, AddRolesArgs, CreateArgs, RemoveRolesArgs, Role,
 };
 use many_modules::ledger::LedgerTokensModuleBackend;
+use many_types::cbor::CborNull;
 use many_types::ledger::{TokenInfo, TokenMaybeOwner};
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
@@ -221,7 +222,7 @@ pub fn create_default_token(w: &mut dyn TokenWorld, id: SomeId) {
     let (id, owner) = if let Some(id) = id.as_maybe_address(w) {
         (id, TokenMaybeOwner::Left(id))
     } else {
-        (w.setup_id(), TokenMaybeOwner::Right(()))
+        (w.setup_id(), TokenMaybeOwner::Right(CborNull))
     };
     let result = LedgerTokensModuleBackend::create(
         w.module_impl(),

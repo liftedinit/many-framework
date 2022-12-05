@@ -9,6 +9,7 @@ use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenUpdateArgs};
+use many_types::cbor::CborNull;
 use many_types::ledger::{TokenInfo, TokenMaybeOwner};
 use many_types::Memo;
 use std::path::Path;
@@ -100,7 +101,7 @@ fn given_memo(w: &mut UpdateWorld, memo: String) {
 
 #[given(expr = "removing the token owner")]
 fn given_rm_owner(w: &mut UpdateWorld) {
-    w.args.owner = Some(TokenMaybeOwner::Right(()));
+    w.args.owner = Some(TokenMaybeOwner::Right(CborNull));
 }
 
 #[when(expr = "I update the token as {id}")]

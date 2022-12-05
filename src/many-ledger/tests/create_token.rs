@@ -9,6 +9,7 @@ use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenCreateArgs};
+use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfo, TokenMaybeOwner};
 use std::path::Path;
 
@@ -98,7 +99,7 @@ fn given_token_owner_none(w: &mut CreateWorld) {
 
 #[given(expr = "removing the owner")]
 fn given_token_rm_owner(w: &mut CreateWorld) {
-    w.args.owner = Some(TokenMaybeOwner::Right(()));
+    w.args.owner = Some(TokenMaybeOwner::Right(CborNull));
 }
 
 #[given(expr = "id {int} has {int} initial tokens")]
