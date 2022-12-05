@@ -425,8 +425,7 @@ fn expires() {
         assert_eq!(
             i.state,
             multisig::MultisigTransactionState::Pending,
-            "State: {:#?}",
-            i
+            "State: {i:#?}"
         );
     });
 

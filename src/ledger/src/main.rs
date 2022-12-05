@@ -204,8 +204,7 @@ fn balance(
                             Ok(*i)
                         } else {
                             Err(ManyError::unknown(format!(
-                                "Could not resolve symbol '{}'",
-                                x
+                                "Could not resolve symbol '{x}'"
                             )))
                         }
                     })
