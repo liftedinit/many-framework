@@ -138,12 +138,7 @@ impl Setup {
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
-
-        // In tests we cannot log using the trace crate as there's no subscriber.
-        // Instead we just allow this single `eprintln` which is actually useful
-        // when debugging.
-        #[allow(clippy::print_stderr)]
-        eprintln!("Store path: {:?}", store_path.path());
+        tracing::debug!("Store path: {:?}", store_path.path());
 
         Self {
             module_impl: LedgerModuleImpl::new(
