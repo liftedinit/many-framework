@@ -1,26 +1,29 @@
 use crate::json::SymbolMetaJson;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
-use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol};
+use crate::storage::iterator::LedgerIterator;
+use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol, SYMBOL_ROOT};
 use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
-use many_types::Timestamp;
+use many_types::{SortOrder, Timestamp};
 use merk::{BatchEntry, Op};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use std::str::FromStr;
 
 mod abci;
 mod account;
 pub mod data;
 pub mod event;
 mod idstore;
+pub mod iterator;
 mod ledger;
 mod ledger_commands;
-mod ledger_tokens;
+pub mod ledger_tokens;
 pub mod multisig;
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
@@ -28,7 +31,6 @@ pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> 
 }
 
 pub struct LedgerStorage {
-    symbols: BTreeMap<Symbol, String>,
     persistent_store: merk::Merk,
 
     /// When this is true, we do not commit every transactions as they come,
@@ -55,7 +57,10 @@ impl LedgerStorage {
         amount: u64,
         symbol: Address,
     ) {
-        assert!(self.symbols.contains_key(&symbol));
+        assert!(self
+            .get_symbols()
+            .expect("Error while loading symbols")
+            .contains(&symbol));
         // Make sure we don't run this function when the store has started.
         assert_eq!(self.current_hash, None);
 
@@ -74,7 +79,6 @@ impl LedgerStorage {
 impl std::fmt::Debug for LedgerStorage {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.debug_struct("LedgerStorage")
-            .field("symbols", &self.symbols)
             .field("migrations", &self.migrations)
             .finish()
     }
@@ -116,12 +120,6 @@ impl LedgerStorage {
     ) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let symbols = persistent_store
-            .get(b"/config/symbols")
-            .map_err(|e| e.to_string())?;
-        let symbols: BTreeMap<Symbol, String> = symbols
-            .map_or_else(|| Ok(Default::default()), |bytes| minicbor::decode(&bytes))
-            .map_err(|e| e.to_string())?;
         let next_subresource =
             persistent_store
                 .get(b"/config/account_id")
@@ -160,7 +158,6 @@ impl LedgerStorage {
         })?;
 
         Ok(Self {
-            symbols,
             persistent_store,
             blockchain,
             latest_tid,
@@ -270,7 +267,6 @@ impl LedgerStorage {
         })?;
 
         Ok(Self {
-            symbols,
             persistent_store,
             blockchain,
             latest_tid: EventId::from(vec![0]),
@@ -286,8 +282,31 @@ impl LedgerStorage {
         self.persistent_store.commit(&[]).map_err(|e| e.to_string())
     }
 
-    pub fn get_symbols(&self) -> BTreeMap<Symbol, String> {
-        self.symbols.clone()
+    /// Fetch symbol and ticker from '/config/symbols/.
+    pub fn get_symbols_and_tickers(&self) -> Result<BTreeMap<Symbol, String>, ManyError> {
+        minicbor::decode::<BTreeMap<Symbol, String>>(
+            &self
+                .persistent_store
+                .get(b"/config/symbols")
+                .map_err(ManyError::unknown)? // TODO: Custom error
+                .ok_or_else(|| ManyError::unknown("No symbol data found"))?, // TODO: Custom error
+        )
+        .map_err(ManyError::deserialization_error)
+    }
+
+    /// Fetch symbols from `/config/symbols/{symbol}`.
+    /// No CBOR decoding needed.
+    pub fn get_symbols(&self) -> Result<BTreeSet<Symbol>, ManyError> {
+        let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
+        let mut symbols = BTreeSet::new();
+        for item in it {
+            let (k, _) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+            symbols.insert(Symbol::from_str(
+                std::str::from_utf8(&k.as_ref()[SYMBOL_ROOT.len()..])
+                    .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
+            )?);
+        }
+        Ok(symbols)
     }
 
     fn inc_height(&mut self) -> u64 {

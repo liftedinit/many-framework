@@ -1,5 +1,5 @@
 use crate::migration::MIGRATIONS;
-use crate::storage::event::LedgerIterator;
+use crate::storage::iterator::LedgerIterator;
 use crate::storage::multisig::MultisigTransactionStorage;
 use linkme::distributed_slice;
 use many_error::ManyError;

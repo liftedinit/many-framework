@@ -12,6 +12,8 @@ use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSupply};
 use many_types::{AttributeRelatedIndex, Either};
 use merk::{BatchEntry, Op};
 
+pub const SYMBOL_ROOT: &[u8] = b"/config/symbols/";
+
 pub fn key_for_symbol(symbol: &Symbol) -> Vec<u8> {
     format!("/config/symbols/{symbol}").into_bytes()
 }
@@ -38,6 +40,20 @@ impl LedgerStorage {
         Ok(info.owner)
     }
 
+    fn update_symbols(&mut self, symbol: Symbol, ticker: String) -> Result<(), ManyError> {
+        let mut symbols = self.get_symbols_and_tickers()?;
+        symbols.insert(symbol, ticker);
+
+        self.persistent_store
+            .apply(&[(
+                b"/config/symbols".to_vec(),
+                Op::Put(minicbor::to_vec(&symbols).map_err(ManyError::serialization_error)?),
+            )])
+            .map_err(ManyError::unknown)?; // TODO: Custom error
+
+        Ok(())
+    }
+
     pub fn create_token(
         &mut self,
         sender: &Address,
@@ -53,17 +69,7 @@ impl LedgerStorage {
 
         // Create a new token symbol and store in memory and in the persistent store
         let symbol = self.new_subresource_id();
-
-        // TODO: I don't like having a memory cache of this kind. Things should be atomic...
-        //       We get an inconsistent state if persistent storage ops fail.
-        // Get rid of self.symbols and lookup symbol key in DB, maybe?
-        self.symbols.insert(symbol, summary.ticker.clone());
-        self.persistent_store
-            .apply(&[(
-                b"/config/symbols".to_vec(),
-                Op::Put(minicbor::to_vec(&self.symbols).map_err(ManyError::serialization_error)?),
-            )])
-            .map_err(ManyError::unknown)?; // TODO: Custom error
+        self.update_symbols(symbol, summary.ticker.clone())?;
 
         // Initialize the total supply following the initial token distribution, if any
         let mut batch: Vec<BatchEntry> = Vec::new();
@@ -203,6 +209,7 @@ impl LedgerStorage {
                 info.summary.name = name.clone();
             }
             if let Some(ticker) = ticker.as_ref() {
+                self.update_symbols(symbol, ticker.clone())?;
                 info.summary.ticker = ticker.clone();
             }
             if let Some(decimals) = decimals {
