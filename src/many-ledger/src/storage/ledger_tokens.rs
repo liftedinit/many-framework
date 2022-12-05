@@ -29,9 +29,9 @@ impl LedgerStorage {
             .get(&key_for_symbol(symbol))
             .map_err(ManyError::unknown)?
             .ok_or_else(|| {
-                ManyError::unknown(
-                    "Symbol {symbol} token information not found in persistent storage",
-                )
+                ManyError::unknown(format!(
+                    "Symbol {symbol} token information not found in persistent storage"
+                ))
             })?; // TODO: Custom error
 
         let info: TokenInfo =
@@ -150,9 +150,9 @@ impl LedgerStorage {
             .get(&key_for_symbol(&symbol))
             .map_err(ManyError::unknown)?
             .ok_or_else(|| {
-                ManyError::unknown(
-                    "Symbol {symbol} token information not found in persistent storage",
-                )
+                ManyError::unknown(format!(
+                    "Symbol {symbol} token information not found in persistent storage"
+                ))
             })?; // TODO: Custom error
 
         let ext_info_enc = self
@@ -160,7 +160,7 @@ impl LedgerStorage {
             .get(&key_for_ext_info(&symbol))
             .map_err(ManyError::unknown)? // TODO: Custom error
             .ok_or_else(|| {
-                ManyError::unknown("Unable to fetch extended info for symbol {symbol}")
+                ManyError::unknown(format!("Unable to fetch extended info for symbol {symbol}"))
             })?; // TODO: Custom error
 
         let mut ext_info: TokenExtendedInfo =
@@ -243,9 +243,9 @@ impl LedgerStorage {
                 self.persistent_store.commit(&[]).unwrap();
             }
         } else {
-            return Err(ManyError::unknown(
-                "Symbol {symbol} not found in persistent storage",
-            ));
+            return Err(ManyError::unknown(format!(
+                "Symbol {symbol} not found in persistent storage"
+            )));
         }
         Ok(TokenUpdateReturns {})
     }
@@ -314,7 +314,9 @@ impl LedgerStorage {
             .persistent_store
             .get(&key_for_ext_info(&symbol))
             .map_err(ManyError::unknown)? // TODO: Custom error
-            .ok_or_else(|| ManyError::unknown("Unable to remove non-existing extended info"))?; // TODO: Custom error
+            .ok_or_else(|| {
+                ManyError::unknown(format!("No extended info. found for symbol {symbol}"))
+            })?; // TODO: Custom error
 
         let mut ext_info: TokenExtendedInfo =
             minicbor::decode(&ext_info_enc).map_err(ManyError::deserialization_error)?;
