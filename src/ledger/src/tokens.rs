@@ -65,6 +65,7 @@ struct CreateTokenOpt {
     #[clap(long)]
     owner: Option<TokenMaybeOwner>,
 
+    // TODO: How to make this better?
     #[clap(long, action = clap::ArgAction::Append, number_of_values = 2, value_names = &["IDENTITY", "AMOUNT"])]
     initial_distribution: Option<Vec<String>>,
 

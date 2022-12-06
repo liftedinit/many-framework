@@ -104,6 +104,10 @@ impl LedgerStorage {
             supply,
             owner: maybe_owner,
         };
+        batch.push((
+            key_for_symbol(&symbol),
+            Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
+        ));
 
         let ext_info = extended_info
             .clone()
@@ -111,11 +115,6 @@ impl LedgerStorage {
         batch.push((
             key_for_ext_info(&symbol),
             Op::Put(minicbor::to_vec(&ext_info).map_err(ManyError::serialization_error)?),
-        ));
-
-        batch.push((
-            key_for_symbol(&symbol),
-            Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
         ));
 
         self.log_event(EventInfo::TokenCreate {
@@ -126,6 +125,8 @@ impl LedgerStorage {
             maximum_supply,
             extended_info,
         });
+
+        batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
 
         self.persistent_store
             .apply(batch.as_slice())
