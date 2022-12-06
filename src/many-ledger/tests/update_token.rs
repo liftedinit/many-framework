@@ -154,12 +154,9 @@ fn then_memo(w: &mut UpdateWorld, memo: String) {
     .expect("Unable to list TokenUpdate event");
     let memo = Memo::try_from(memo).unwrap();
     assert!(res.nb_events >= 1);
-    // TODO: INVESTIGATE THE FAIL
-    for event in res.events {
-        dbg!(&event.content);
-        assert!(event.content.memo().is_some());
-        assert_eq!(event.content.memo().unwrap(), &memo);
-    }
+    let event = res.events.into_iter().next().expect("Expected an event");
+    assert!(event.content.memo().is_some());
+    assert_eq!(event.content.memo().unwrap(), &memo);
 }
 
 #[then(expr = "the token new owner is {id}")]

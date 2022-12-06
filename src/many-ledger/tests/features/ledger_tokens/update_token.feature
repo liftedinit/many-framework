@@ -7,15 +7,14 @@ Scenario: Updating a token's ticker as myself
 	When I update the token as myself
 	Then the token new ticker is ABC
 
-# TODO: Investigate
-#@tokens
-#Scenario: Updating a token's ticker as myself, with memo
-#	Given a default token owned by myself
-#	And a new ticker ABC
-#	And a memo "Some memo"
-#	When I update the token as myself
-#	Then the token new ticker is ABC
-#	And the memo is "Some memo"
+@tokens
+Scenario: Updating a token's ticker as myself, with memo
+	Given a default token owned by myself
+	And a new ticker ABC
+	And a memo "Some memo"
+	When I update the token as myself
+	Then the token new ticker is ABC
+	And the memo is "Some memo"
 
 @tokens
 Scenario: Updating a token's name as myself
