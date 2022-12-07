@@ -22,30 +22,81 @@ function teardown() {
     stop_background_run
 }
 
+# Creates a token
+# The global variable `SYMBOL` will be set to the new token symbol
 function create_token() {
+    local ext_info_type
     local pem_arg
     local port
+    local error
 
     while (( $# > 0 )); do
        case "$1" in
-         --pem=*) pem_arg=${1}; shift ;;
-         --port=*) port=${1}; shift ;;
+         --pem=*) pem_arg=${1}; shift ;;                                    # Identity to create the token with
+         --port=*) port=${1}; shift ;;                                      # Port of the ledger server
+         --ext_info_type=*) ext_info_type=${1#--ext_info_type=}; shift ;;   # Extended info to add at token creation
+         --error) error=true; shift ;;                                      # If this is set, token creation is expected to fail
          --) shift; break ;;
          *) break ;;
        esac
      done
 
-    call_ledger ${pem_arg} ${port} token create "Foobar" "FBR" 9 "$@"
-    assert_output --partial "name: \"Foobar\""
-    assert_output --partial "ticker: \"FBR\""
-    assert_output --partial "decimals: 9"
-    assert_output --regexp "owner:.*$(identity ${pem_arg#--pem=}).*)"
+    if [ "${ext_info_type}" = "image" ]; then
+        ext_args='logo image "png" "\"hello\""'
+    elif [ "${ext_info_type}" = "unicode" ]; then
+        ext_args='logo unicode "'∑'"'
+    elif [ "$ext_info_type" = "memo" ]; then
+        ext_args='memo "My memo"'
+    fi
+
+    call_ledger ${pem_arg} ${port} token create "Foobar" "FBR" 9 "$ext_args" "$@"
+
+    if [[ $error ]]; then
+        assert_output --partial "Invalid Identity; the sender cannot be anonymous."
+    else
+        assert_output --partial "name: \"Foobar\""
+        assert_output --partial "ticker: \"FBR\""
+        assert_output --partial "decimals: 9"
+        assert_output --regexp "owner:.*$(identity ${pem_arg#--pem=}).*)"
+
+        SYMBOL=$(run echo $output | grep -oE '"m[a-z0-9]+"' | head -n 1)
+        assert [ ${#SYMBOL} -eq 57 ]     # Check the account ID has the right length (55 chars + "")
+
+        call_ledger --port=8000 token info "${SYMBOL}"
+        if [ "${ext_info_type}" = "image" ]; then
+            assert_output --partial "png"
+            assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+        elif [ "${ext_info_type}" = "unicode" ]; then
+            assert_output --partial "'∑'"
+        elif [ "$ext_info_type" = "memo" ]; then
+            assert_output --partial "\"My memo\""
+        fi
+    fi
 }
 
-function get_symbol() {
-    symbol=$(run echo $output | grep -oE '"m[a-z0-9]+"' | head -n 1)
-    assert [ ${#symbol} -eq 57 ]     # Check the account ID has the right length (55 chars + "")
-    echo ${symbol}
+# Create a new token and assign a new account as the token owner
+# `identity(2)` will be assigned the permission given by `--perm`
+function token_account() {
+    local ext_info_type
+    local perm
+
+    while (( $# > 0 )); do
+       case "$1" in
+         --perm=*) perm=${1#--perm=}; shift ;;                              # Identity to create the token with
+         --ext_info_type=*) ext_info_type=${1#--ext_info_type=}; shift ;;   # Extended info to add at token creation
+         --) shift; break ;;
+         *) break ;;
+       esac
+     done
+
+    create_token --pem=1 --port=8000 --ext_info_type=${ext_info_type}
+
+    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["'${perm}'"] }, 2: [3] }')
+
+    # Account is the new token owner
+    call_ledger --pem=1 --port=8000 token update --owner "${account_id}" "${SYMBOL}"
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --regexp "owner:.*${account_id}.*)"
 }
 
 @test "$SUITE: can create new token" {
@@ -57,42 +108,32 @@ function get_symbol() {
 }
 
 @test "$SUITE: can create new token with memo" {
-    create_token --pem=1 --port=8000 memo "\"Some memo\""
-    call_ledger --port=8000 token info "$(get_symbol)"
-    assert_output --partial "Some memo"
+    create_token --pem=1 --port=8000 --ext_info_type="memo"
 }
 
 @test "$SUITE: can create new token with unicode logo" {
-    create_token --pem=1 --port=8000 logo unicode "'∑'"
-    call_ledger --port=8000 token info "$(get_symbol)"
-    assert_output --partial "'∑'"
+    create_token --pem=1 --port=8000 --ext_info_type="unicode"
 }
 
 @test "$SUITE: can create new token with image logo" {
-    create_token --pem=1 --port=8000 logo image "png" "\"hello\""
-    call_ledger --port=8000 token info "$(get_symbol)"
-    assert_output --partial "png"
-    assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+    create_token --pem=1 --port=8000 --ext_info_type="image"
 }
 
 @test "$SUITE: can't create as anonymous" {
-    call_ledger --port=8000 token create "Foobar" "FBR" 9 "$@"
-    assert_output --partial "Invalid Identity; the sender cannot be anonymous."
+    create_token --error --port=8000
 }
 
 @test "$SUITE: can update token" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
 
     call_ledger --pem=1 --port=8000 token update --name "\"New name\"" \
         --ticker "LLT" \
         --decimals "42" \
         --memo "\"Update memo\"" \
         --owner "$(identity 2)" \
-        "${symbol}"
+        "${SYMBOL}"
 
-    call_ledger --port=8000 token info "${symbol}"
+    call_ledger --port=8000 token info "${SYMBOL}"
     assert_output --partial "name: \"New name\""
     assert_output --partial "ticker: \"LLT\""
     assert_output --partial "decimals: 42"
@@ -101,184 +142,249 @@ function get_symbol() {
 
 @test "$SUITE: can't update as non-owner" {
     create_token --pem=1 --port=8000
-    call_ledger --pem=2 --port=8000 token update --owner "$(identity 2)" "$(get_symbol)"
+    call_ledger --pem=2 --port=8000 token update --owner "$(identity 2)" "${SYMBOL}"
     assert_output --partial "Unauthorized to do this operation."
 }
 
 @test "$SUITE: can't update as anonymous" {
     create_token --pem=1 --port=8000
-    call_ledger --port=8000 token update --owner "$(identity 2)" "$(get_symbol)"
+    call_ledger --port=8000 token update --owner "$(identity 2)" "${SYMBOL}"
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 }
 
 @test "$SUITE: can add extended info (memo)" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
-    call_ledger --pem=1 --port=8000 token add-ext-info "${symbol}" memo "\"My memo\""
-
-    call_ledger --port=8000 token info "${symbol}"
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
+    call_ledger --port=8000 token info "${SYMBOL}"
     assert_output --partial "My memo"
 }
 
 @test "$SUITE: can add extended info (logo - unicode)" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
-    call_ledger --pem=1 --port=8000 token add-ext-info "${symbol}" logo unicode  "'∑'"
-
-    call_ledger --port=8000 token info "${symbol}"
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo unicode  "'∑'"
+    call_ledger --port=8000 token info "${SYMBOL}"
     assert_output --partial "'∑'"
 }
 
 @test "$SUITE: can add extended info (logo - image)" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
-    call_ledger --pem=1 --port=8000 token add-ext-info "${symbol}" logo image "png" "\"hello\""
-
-    call_ledger --port=8000 token info "${symbol}"
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --port=8000 token info "${SYMBOL}"
     assert_output --partial "png"
     assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 
 @test "$SUITE: can't add extended info as anonymous" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
 
     # Memo
-    call_ledger --port=8000 token add-ext-info "${symbol}" memo "\"My memo\""
+    call_ledger --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 
     # Logo - unicode
-    call_ledger --port=8000 token add-ext-info "${symbol}" logo unicode  "'∑'"
+    call_ledger --port=8000 token add-ext-info "${SYMBOL}" logo unicode  "'∑'"
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 
     # Logo - image
-    call_ledger --port=8000 token add-ext-info "${symbol}" logo image "png" "\"hello\""
+    call_ledger --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 }
 
 @test "$SUITE: can't add extended info as non-owner" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
 
     # Memo
-    call_ledger --pem=2 --port=8000 token add-ext-info "${symbol}" memo "\"My memo\""
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
     assert_output --partial "Unauthorized to do this operation."
 
     # Logo - unicode
-    call_ledger --pem=2 --port=8000 token add-ext-info "${symbol}" logo unicode  "'∑'"
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo unicode  "'∑'"
     assert_output --partial "Unauthorized to do this operation."
 
     # Logo - image
-    call_ledger --pem=2 --port=8000 token add-ext-info "${symbol}" logo image "png" "\"hello\""
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
     assert_output --partial "Unauthorized to do this operation."
 }
 
 @test "$SUITE: can remove extended info (memo)" {
-    local symbol
-    create_token --pem=1 --port=8000 memo "\"Some memo\""
-    symbol=$(get_symbol)
-
-    call_ledger --port=8000 token info "${symbol}"
-    assert_output --partial "Some memo"
-
+    create_token --pem=1 --port=8000 --ext_info_type="memo"
     # Remove memo
-    call_ledger --pem=1 --port=8000 token remove-ext-info "${symbol}" 0
+    call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 0
     refute_output --partial "Some memo"
 }
 
-@test "$SUITE: can remove extended info (logo)" {
-    local symbol
-    create_token --pem=1 --port=8000 logo unicode "'∑'"
-    symbol=$(get_symbol)
-
-    call_ledger --port=8000 token info "${symbol}"
-    assert_output --partial "'∑'"
-
+@test "$SUITE: can remove extended info (logo - unicode)" {
+    create_token --pem=1 --port=8000 --ext_info_type="unicode"
     # Remove logo
-    call_ledger --pem=1 --port=8000 token remove-ext-info "${symbol}" 1
+    call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 1
     refute_output --partial "'∑'"
 }
 
+@test "$SUITE: can remove extended info (logo - image)" {
+    create_token --pem=1 --port=8000 --ext_info_type="image"
+    # Remove logo
+    call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    refute_output --partial "png"
+    refute_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+}
+
 @test "$SUITE: can't remove extended info as non-owner" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
     # Memo. We don't care that the token doesn't have one
-    call_ledger --pem=2 --port=8000 token remove-ext-info "${symbol}" 0
+    call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 0
     assert_output --partial "Unauthorized to do this operation."
-
     # Logo. We don't care that the token doesn't have one
-    call_ledger --pem=2 --port=8000 token remove-ext-info "${symbol}" 1
+    call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 1
     assert_output --partial "Unauthorized to do this operation."
 }
 
 @test "$SUITE: can't remove extended info as anonymous" {
-    local symbol
     create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
     # Memo. We don't care that the token doesn't have one
-    call_ledger --port=8000 token remove-ext-info "${symbol}" 0
+    call_ledger --port=8000 token remove-ext-info "${SYMBOL}" 0
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 }
 
 @test "$SUITE: can update token, token owner is account, caller is account owner" {
-    local symbol
-    create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
-    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canTokensUpdate"] }, 2: [3] }')
-
-    # Account is the new token owner
-    call_ledger --pem=1 --port=8000 token update --owner "${account_id}" "${symbol}"
-    call_ledger --port=8000 token info "${symbol}"
-    assert_output --regexp "owner:.*${account_id}.*)"
-
-    call_ledger --pem=1 --port=8000 token update --name "\"New name\"" "${symbol}"
-
-    call_ledger --port=8000 token info "${symbol}"
+    token_account --perm="canTokensUpdate"
+    call_ledger --pem=1 --port=8000 token update --name "\"New name\"" "${SYMBOL}"
+    call_ledger --port=8000 token info "${SYMBOL}"
     assert_output --partial "name: \"New name\""
 }
 
 @test "$SUITE: can update token, token owner is account, caller have update permission" {
-    local symbol
-    create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
-    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canTokensUpdate"] }, 2: [3] }')
-
-    # Account is the new token owner
-    call_ledger --pem=1 --port=8000 token update --owner "${account_id}" "${symbol}"
-    call_ledger --port=8000 token info "${symbol}"
-    assert_output --regexp "owner:.*${account_id}.*)"
-
-    call_ledger --pem=2 --port=8000 token update --name "\"New name\"" "${symbol}"
-
-    call_ledger --port=8000 token info "${symbol}"
+    token_account --perm="canTokensUpdate"
+    call_ledger --pem=2 --port=8000 token update --name "\"New name\"" "${SYMBOL}"
+    call_ledger --port=8000 token info "${SYMBOL}"
     assert_output --partial "name: \"New name\""
 }
 
-@test "$SUITE: can't update token, token owner is account, caller does't have update permission" {
-    local symbol
-    create_token --pem=1 --port=8000
-    symbol=$(get_symbol)
-
-    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["canTokensUpdate"] }, 2: [3] }')
-
-    # Account is the new token owner
-    call_ledger --pem=1 --port=8000 token update --owner "${account_id}" "${symbol}"
-    call_ledger --port=8000 token info "${symbol}"
-    assert_output --regexp "owner:.*${account_id}.*)"
-
-    call_ledger --pem=3 --port=8000 token update --name "\"New name\"" "${symbol}"
+@test "$SUITE: can't update token, token owner is account, caller doesn't have update permission" {
+    token_account --perm="canTokensUpdate"
+    call_ledger --pem=3 --port=8000 token update --name "\"New name\"" "${SYMBOL}"
     assert_output --partial "Sender needs role 'canTokensUpdate' to perform this operation."
+}
+
+@test "$SUITE: can add extended info (memo), token owner is account, caller is account owner" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="memo"
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --partial "My memo"
+}
+
+@test "$SUITE: can add extended info (logo - unicode), token owner is account, caller is account owner" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="unicode"
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo unicode "'∑'"
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --partial "'∑'"
+}
+
+@test "$SUITE: can add extended info (logo - image), token owner is account, caller is account owner" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="image"
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --partial "png"
+    assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+}
+
+@test "$SUITE: can add extended info (memo), token owner is account, caller has add extended info permissions" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="memo"
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --partial "My memo"
+}
+
+@test "$SUITE: can add extended info (logo - unicode), token owner is account, caller has add extended info permissions" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="unicode"
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo unicode "'∑'"
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --partial "'∑'"
+}
+
+@test "$SUITE: can add extended info (logo - image), token owner is account, caller has add extended info permission" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="image"
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --port=8000 token info "${SYMBOL}"
+    assert_output --partial "png"
+    assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+}
+
+@test "$SUITE: can't add extended info (memo), token owner is account, caller doesn't have add extended info permissions" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="memo"
+    call_ledger --pem=3 --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
+    assert_output --partial "Sender needs role 'canTokensAddExtendedInfo' to perform this operation."
+}
+
+@test "$SUITE: can't add extended info (logo - unicode), token owner is account, caller doesn't have add extended info permissions" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="unicode"
+    call_ledger --pem=3 --port=8000 token add-ext-info "${SYMBOL}" logo unicode "'∑'"
+    assert_output --partial "Sender needs role 'canTokensAddExtendedInfo' to perform this operation."
+}
+
+@test "$SUITE: can't add extended info (logo - image), token owner is account, caller doesn't have add extended info permission" {
+    token_account --perm="canTokensAddExtendedInfo" --ext_info_type="image"
+    call_ledger --pem=3 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    assert_output --partial "Sender needs role 'canTokensAddExtendedInfo' to perform this operation."
+}
+
+@test "$SUITE: can remove extended info (memo), token owner is account, caller is account owner" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="memo"
+    call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 0
+    call_ledger --port=8000 token info "${SYMBOL}"
+    refute_output --partial "My memo"
+}
+
+@test "$SUITE: can remove extended info (logo - unicode), token owner is account, caller is account owner" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="unicode"
+    call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    call_ledger --port=8000 token info "${SYMBOL}"
+    refute_output --partial "'∑'"
+}
+
+@test "$SUITE: can remove extended info (logo - image), token owner is account, caller is account owner" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="image"
+    call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    call_ledger --port=8000 token info "${SYMBOL}"
+    refute_output --partial "png"
+    refute_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+}
+
+@test "$SUITE: can remove extended info (memo), token owner is account, caller has remove extended into permission" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="memo"
+    call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 0
+    call_ledger --port=8000 token info "${SYMBOL}"
+    refute_output --partial "My memo"
+}
+
+@test "$SUITE: can remove extended info (logo - unicode), token owner is account, caller has remove extended info permission" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="unicode"
+    call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    call_ledger --port=8000 token info "${SYMBOL}"
+    refute_output --partial "'∑'"
+}
+
+@test "$SUITE: can remove extended info (logo - image), token owner is account, caller has remove extended info permission" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="image"
+    call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    call_ledger --port=8000 token info "${SYMBOL}"
+    refute_output --partial "png"
+    refute_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
+}
+
+@test "$SUITE: can't remove extended info (memo), token owner is account, caller doesn't have remove extended into permission" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="memo"
+    call_ledger --pem=3 --port=8000 token remove-ext-info "${SYMBOL}" 0
+    assert_output --partial "Sender needs role 'canTokensRemoveExtendedInfo' to perform this operation."
+}
+
+@test "$SUITE: can't remove extended info (logo - unicode), token owner is account, caller doesn't have remove extended info permission" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="unicode"
+    call_ledger --pem=3 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    assert_output --partial "Sender needs role 'canTokensRemoveExtendedInfo' to perform this operation."
+}
+
+@test "$SUITE: can't remove extended info (logo - image), token owner is account, caller doesn't have remove extended info permission" {
+    token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="image"
+    call_ledger --pem=3 --port=8000 token remove-ext-info "${SYMBOL}" 1
+    assert_output --partial "Sender needs role 'canTokensRemoveExtendedInfo' to perform this operation."
 }
