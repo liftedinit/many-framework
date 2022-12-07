@@ -1,4 +1,5 @@
 GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
+MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
 
 load '../../test_helper/load'
 load '../../test_helper/ledger'
@@ -54,13 +55,13 @@ function create_token() {
     if [[ $error ]]; then
         assert_output --partial "Invalid Identity; the sender cannot be anonymous."
     else
+        SYMBOL=$(echo $output | grep -oE '"m[a-z0-9]+"' | head -n 1)
+        assert [ ${#SYMBOL} -eq 57 ]     # Check the account ID has the right length (55 chars + "")
+
         assert_output --partial "name: \"Foobar\""
         assert_output --partial "ticker: \"FBR\""
         assert_output --partial "decimals: 9"
         assert_output --regexp "owner:.*$(identity ${pem_arg#--pem=}).*)"
-
-        SYMBOL=$(run echo $output | grep -oE '"m[a-z0-9]+"' | head -n 1)
-        assert [ ${#SYMBOL} -eq 57 ]     # Check the account ID has the right length (55 chars + "")
 
         call_ledger --port=8000 token info "${SYMBOL}"
         if [ "${ext_info_type}" = "image" ]; then
@@ -387,4 +388,11 @@ function token_account() {
     token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="image"
     call_ledger --pem=3 --port=8000 token remove-ext-info "${SYMBOL}" 1
     assert_output --partial "Sender needs role 'canTokensRemoveExtendedInfo' to perform this operation."
+}
+
+@test "$SUITE: MFX metadata" {
+    call_ledger --port=8000 token info "${MFX_ADDRESS}"
+    assert_output --partial "name: \"Manifest Network Token\""
+    assert_output --partial "ticker: \"MFX\""
+    assert_output --partial "decimals: 9"
 }
