@@ -7,7 +7,8 @@ use many_modules::data::{DataIndex, DataInfo, DataValue};
 use many_types::ledger::TokenAmount;
 use merk::rocksdb::ReadOptions;
 use merk::{rocksdb, Op};
-use std::collections::BTreeMap;
+use serde_json::Value;
+use std::collections::{BTreeMap, HashMap};
 
 pub static ACCOUNT_TOTAL_COUNT_INDEX: DataIndex = DataIndex::new(0).with_index(2).with_index(0);
 pub static NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
@@ -75,7 +76,7 @@ fn data_value(
 }
 
 /// Initialize the account count data attribute
-fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
+fn initialize(storage: &mut merk::Merk, _: &HashMap<String, Value>) -> Result<(), ManyError> {
     let (num_unique_accounts, num_non_zero_account) = get_data_from_db(storage);
 
     storage

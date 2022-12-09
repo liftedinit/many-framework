@@ -24,6 +24,8 @@
   },
 
   // List of symbols metadata
+  // Ignored by default.
+  // Triggered by the "Token Migration"
   // TODO: Unify initial, symbols and symbols_meta
   symbols_meta: {
    "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": {
@@ -80,5 +82,6 @@
   ],
 
   // Hash calculated after the initial state is created.
-  hash: "eb43613fadbe019cd6dd3a24a631e85b0b13a24c8a5741cc311e2dd6181805fb"
+  // Note: This will change depending on the migration activated at load
+  hash: "fc0041ca4f7d959fe9e5a337e175bd8a68942cad76745711a3daf820a159f7eb"
 }

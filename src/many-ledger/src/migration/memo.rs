@@ -8,6 +8,8 @@ use many_modules::account::features::multisig::InfoReturn;
 use many_modules::events::{EventInfo, EventLog};
 use many_types::{Memo, SortOrder};
 use merk::Op;
+use serde_json::Value;
+use std::collections::HashMap;
 
 fn iter_through_events(
     storage: &merk::Merk,
@@ -162,7 +164,7 @@ fn update_multisig_storage(storage: &mut merk::Merk) -> Result<(), ManyError> {
     Ok(())
 }
 
-fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
+fn initialize(storage: &mut merk::Merk, _: &HashMap<String, Value>) -> Result<(), ManyError> {
     update_multisig_submit_events(storage)?;
     update_multisig_storage(storage)?;
     Ok(())

@@ -7,6 +7,7 @@ use cucumber::{given, then, when, World};
 use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::Address;
+use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenCreateArgs};
 use many_types::cbor::CborNull;
@@ -14,12 +15,22 @@ use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfo, TokenMa
 use std::path::Path;
 
 #[derive(World, Debug, Default)]
+#[world(init = Self::new)]
 struct CreateWorld {
     setup: Setup,
     args: TokenCreateArgs,
     info: TokenInfo,
     account: Address,
     error: Option<ManyError>,
+}
+
+impl CreateWorld {
+    fn new() -> Self {
+        Self {
+            setup: Setup::new_with_migrations(false, [(0, &TOKEN_MIGRATION)], true),
+            ..Default::default()
+        }
+    }
 }
 
 // TODO: Macro

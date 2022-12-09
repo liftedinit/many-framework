@@ -7,57 +7,146 @@ use many_migration::InnerMigration;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
 use merk::Op;
+use serde_json::Value;
+use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
 
-fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
-    // Move legacy subresource counter to new schema
-    // Get the old counter
+/// Migrate the subresource counter from "/config/account_id" to "/config/subresource_id"
+fn migrate_subresource_counter(storage: &mut merk::Merk) -> Result<(), ManyError> {
+    // Is the old counter present in the DB?
     let old_counter = storage
         .get(b"/config/account_id")
-        .map_err(|_| ManyError::unknown("Unable to retrieve old counter"))?
-        .ok_or_else(|| ManyError::unknown("Old counter doesn't exists"))?;
+        .map_err(|_| ManyError::unknown("Unable to retrieve old counter"))?;
 
-    // Migrate the old counter to the new location in the database
-    storage
-        .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(old_counter))])
-        .unwrap();
+    // Is the new counter present in the DB?
+    let new_counter = storage
+        .get(b"/config/subresource_id")
+        .map_err(|_| ManyError::unknown("Unable to retrieve new counter"))?;
 
-    let mfx = Symbol::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz")
-        .map_err(ManyError::unknown)?; // mfx
+    match (old_counter, new_counter) {
+        // Old counter is present, new counter is not. First time running the migration.
+        (Some(x), None) => {
+            // Migrate the old counter to the new location in the database
+            storage
+                .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(x))])
+                .map_err(ManyError::unknown)?; // TODO: Custom
 
+            // Delete the old counter from the DB
+            storage
+                .apply(&[(b"/config/account_id".to_vec(), Op::Delete)])
+                .map_err(ManyError::unknown)?;
+        }
+        // No counter found. Set the new counter to 0.
+        (None, None) => {
+            storage
+                .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(vec![0u8; 4]))])
+                .map_err(ManyError::unknown)?; // TODO: Custom
+        }
+        // Old counter is not present, new counter is present.
+        // The migration did run in the past.
+        // Skip this step
+        (None, Some(_)) => {}
+        // Both counters are present in the DB.
+        // Something wrong is happening
+        (Some(_), Some(_)) => {
+            return Err(ManyError::unknown(
+                "Two subresource counters found in the store; aborting",
+            ))
+        }
+    }
+    Ok(())
+}
+
+fn migrate_token_metadata(
+    storage: &mut merk::Merk,
+    extra: &HashMap<String, Value>,
+) -> Result<(), ManyError> {
+    // Make sure we have all the parameters we need for this migration
+    let params = [
+        "symbol",
+        "symbol_name",
+        "symbol_decimals",
+        "symbol_total",       // TODO: This field could be calculated from the storage
+        "symbol_circulating", // TODO: This field could be calculated from the storage
+        "symbol_maximum",
+        "symbol_owner",
+    ];
+    for param in params {
+        if !extra.contains_key(param) {
+            return Err(ManyError::unknown(format!(
+                "Missing extra parameter '{param}' for Token Migration"
+            )));
+        }
+    }
+
+    let symbol: String = serde_json::from_value(extra["symbol"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let symbol = Symbol::from_str(&symbol).map_err(ManyError::unknown)?; // TODO: Custom
+
+    // Get symbol list from DB
+    let symbol_and_ticker_enc = storage
+        .get(b"/config/symbols")
+        .map_err(|_| ManyError::unknown(format!("Unable to retrieve symbol {symbol}")))?
+        .ok_or_else(|| ManyError::unknown(format!("Symbol {symbol} not found in storage")))?;
+    let symbol_and_ticker: BTreeMap<Address, String> =
+        minicbor::decode(&symbol_and_ticker_enc).map_err(ManyError::deserialization_error)?;
+
+    // Get the symbol ticker from symbol list
+    let ticker = symbol_and_ticker
+        .get(&symbol)
+        .ok_or_else(|| ManyError::unknown(format!("Symbol {symbol} not found in DB")))
+        .cloned()?;
+
+    let owner: Option<Address> = serde_json::from_value(extra["symbol_owner"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let maximum: Option<TokenAmount> = serde_json::from_value(extra["symbol_maximum"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let name: String = serde_json::from_value(extra["symbol_name"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let decimals: u64 = serde_json::from_value(extra["symbol_decimals"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let total: TokenAmount = serde_json::from_value(extra["symbol_total"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let circulating: TokenAmount = serde_json::from_value(extra["symbol_circulating"].clone())
+        .map_err(ManyError::deserialization_error)?;
     let info = TokenInfo {
-        symbol: mfx,
+        symbol,
         summary: TokenInfoSummary {
-            name: "Manifest Network Token".to_string(),
-            ticker: "mfx".to_string(),
-            decimals: 9,
+            name,
+            ticker,
+            decimals,
         },
         supply: TokenInfoSupply {
-            total: TokenAmount::from(100_000_000_000_000_000u64),
-            circulating: TokenAmount::from(100_000_000_000_000_000u64),
-            maximum: None,
+            total,
+            circulating,
+            maximum,
         },
-        owner: Some(Address::from_str(
-            "mqbh742x4s356ddaryrxaowt4wxtlocekzpufodvowrirfrqaaaaa3l",
-        )?),
+        owner,
     };
 
-    // Add MFX token metadata
+    // Add token metadata to the DB
     storage
         .apply(&[(
-            key_for_symbol(&mfx),
+            key_for_symbol(&symbol),
             Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
         )])
         .map_err(ManyError::unknown)?;
     storage
         .apply(&[(
-            key_for_ext_info(&mfx),
+            key_for_ext_info(&symbol),
             Op::Put(
                 minicbor::to_vec(TokenExtendedInfo::default())
                     .map_err(ManyError::serialization_error)?,
             ),
         )])
         .map_err(ManyError::unknown)?;
+
+    Ok(())
+}
+
+fn initialize(storage: &mut merk::Merk, extra: &HashMap<String, Value>) -> Result<(), ManyError> {
+    migrate_subresource_counter(storage)?;
+    migrate_token_metadata(storage, extra)?;
 
     Ok(())
 }

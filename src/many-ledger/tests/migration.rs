@@ -68,7 +68,7 @@ fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) 
 #[test]
 fn migration() {
     // Setup starts with 2 accounts because of staging/ledger_state.json5
-    let mut harness = Setup::new_with_migrations(true, [(2, &ACCOUNT_COUNT_DATA_ATTRIBUTE)]);
+    let mut harness = Setup::new_with_migrations(true, [(2, &ACCOUNT_COUNT_DATA_ATTRIBUTE)], false);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let (_height, a1) = harness.block(|h| {
@@ -121,7 +121,7 @@ fn migration() {
 
 #[test]
 fn migration_stress() {
-    let mut harness = Setup::new_with_migrations(true, [(2, &ACCOUNT_COUNT_DATA_ATTRIBUTE)]);
+    let mut harness = Setup::new_with_migrations(true, [(2, &ACCOUNT_COUNT_DATA_ATTRIBUTE)], false);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
 
     let _ = harness.block(|h| {

@@ -1997,9 +1997,9 @@ dependencies = [
 
 [[package]]
 name = "ipnet"
-version = "2.5.1"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f88c5561171189e69df9d98bcf18fd5f9558300f7ea7b801eb8a0fd748bd8745"
+checksum = "ec947b7a4ce12e3b87e353abae7ce124d025b6c7d6c5aea5cc0bcf92e9510ded"
 
 [[package]]
 name = "is-terminal"
@@ -2287,7 +2287,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2330,7 +2330,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2340,7 +2340,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2351,7 +2351,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "base32",
  "coset",
@@ -2371,7 +2371,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2399,7 +2399,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2419,7 +2419,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2523,7 +2523,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2536,7 +2536,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2549,7 +2549,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "async-trait",
  "coset",
@@ -2570,7 +2570,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2594,7 +2594,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2643,7 +2643,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 dependencies = [
  "coset",
  "fixed",
@@ -5029,9 +5029,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#fafe0ecafd778e2d1c9e19af42cef6619a6390ba"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-tokens-with-memo#f8a34c4a65c24d898319016021ba1e57d5929edc"

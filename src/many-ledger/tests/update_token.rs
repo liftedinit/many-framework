@@ -6,6 +6,7 @@ use common::*;
 use cucumber::{given, then, when, World};
 use many_error::ManyError;
 use many_identity::Address;
+use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenUpdateArgs};
@@ -15,12 +16,22 @@ use many_types::Memo;
 use std::path::Path;
 
 #[derive(World, Debug, Default)]
+#[world(init = Self::new)]
 struct UpdateWorld {
     setup: Setup,
     args: TokenUpdateArgs,
     info: TokenInfo,
     account: Address,
     error: Option<ManyError>,
+}
+
+impl UpdateWorld {
+    fn new() -> Self {
+        Self {
+            setup: Setup::new_with_migrations(false, [(0, &TOKEN_MIGRATION)], true),
+            ..Default::default()
+        }
+    }
 }
 
 // TODO: Macro

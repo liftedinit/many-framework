@@ -150,7 +150,7 @@ fn memo_migration_works() {
     }
 
     // Setup starts with 2 accounts because of staging/ledger_state.json5
-    let mut harness = Setup::new_with_migrations(true, [(8, &MEMO_MIGRATION)]);
+    let mut harness = Setup::new_with_migrations(true, [(8, &MEMO_MIGRATION)], false);
     harness.set_balance(harness.id, 1_000_000, *MFX_SYMBOL);
     let (_, account_id) = harness.block(|h| {
         // Create an account.

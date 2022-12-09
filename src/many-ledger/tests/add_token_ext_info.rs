@@ -7,6 +7,7 @@ use std::path::Path;
 use cucumber::{given, then, when, World};
 use many_error::ManyError;
 use many_identity::Address;
+use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
@@ -15,6 +16,7 @@ use many_types::ledger::TokenInfo;
 use many_types::Memo;
 
 #[derive(World, Debug, Default)]
+#[world(init = Self::new)]
 struct AddExtInfoWorld {
     setup: Setup,
     args: TokenAddExtendedInfoArgs,
@@ -22,6 +24,15 @@ struct AddExtInfoWorld {
     ext_info: TokenExtendedInfo,
     account: Address,
     error: Option<ManyError>,
+}
+
+impl AddExtInfoWorld {
+    fn new() -> Self {
+        Self {
+            setup: Setup::new_with_migrations(false, [(0, &TOKEN_MIGRATION)], true),
+            ..Default::default()
+        }
+    }
 }
 
 // TODO: Macro

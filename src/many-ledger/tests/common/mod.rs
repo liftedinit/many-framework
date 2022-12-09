@@ -168,23 +168,27 @@ impl Default for Setup {
 }
 
 impl Setup {
-    fn _new(blockchain: bool, migration_config: Option<MigrationConfig>) -> Self {
+    fn _new(
+        blockchain: bool,
+        migration_config: Option<MigrationConfig>,
+        skip_hash_check: bool, // If true, skip the staging file hash check
+    ) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
         tracing::debug!("Store path: {:?}", store_path.path());
+        let mut state = InitialStateJson::read("../../staging/ledger_state.json5")
+            .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
+            .expect("Could not read initial state.");
+
+        if skip_hash_check {
+            state.hash = None;
+        }
 
         Self {
-            module_impl: LedgerModuleImpl::new(
-                InitialStateJson::read("../../staging/ledger_state.json5")
-                    .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
-                    .expect("Could not read initial state."),
-                migration_config,
-                store_path,
-                blockchain,
-            )
-            .unwrap(),
+            module_impl: LedgerModuleImpl::new(state, migration_config, store_path, blockchain)
+                .unwrap(),
             id: id.address(),
             cred_id: CredentialId(vec![1; 16].into()),
             public_key,
@@ -193,12 +197,13 @@ impl Setup {
     }
 
     pub fn new(blockchain: bool) -> Self {
-        Setup::_new(blockchain, None)
+        Setup::_new(blockchain, None, false)
     }
 
     pub fn new_with_migrations(
         blockchain: bool,
         migrations: impl IntoIterator<Item = impl Into<MigrationHarness>>,
+        skip_hash_check: bool,
     ) -> Self {
         let migrations = format!(
             r#"{{ "migrations": [{}] }}"#,
@@ -208,7 +213,11 @@ impl Setup {
                 .join(",")
         );
 
-        Setup::_new(blockchain, Some(serde_json::from_str(&migrations).unwrap()))
+        Setup::_new(
+            blockchain,
+            Some(serde_json::from_str(&migrations).unwrap()),
+            skip_hash_check,
+        )
     }
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {

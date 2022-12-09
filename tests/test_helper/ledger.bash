@@ -1,6 +1,8 @@
 PEM_ROOT="$(mktemp -d)"
 CONFIG_ROOT="$(mktemp -d)"
 
+source "$(dirname "${BASH_SOURCE[0]}")/token.bash"
+
 function start_ledger() {
     local persistent
     local state

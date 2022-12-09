@@ -27,6 +27,11 @@ function setup() {
       {
         "name": "Memo Migration",
         "block_height": 30
+      },
+      {
+        "name": "Token Migration",
+        "block_height": 0,
+        "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 

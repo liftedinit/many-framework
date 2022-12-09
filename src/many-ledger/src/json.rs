@@ -140,7 +140,7 @@ pub struct InitialStateJson {
     pub identity: Address,
     pub initial: BTreeMap<Address, BTreeMap<String, TokenAmount>>,
     pub symbols: BTreeMap<Address, String>,
-    pub symbols_meta: BTreeMap<Address, SymbolMetaJson>,
+    pub symbols_meta: Option<BTreeMap<Address, SymbolMetaJson>>,
     pub accounts: Option<Vec<AccountJson>>,
     pub id_store_seed: Option<u64>,
     pub id_store_keys: Option<BTreeMap<String, String>>,
@@ -159,22 +159,6 @@ impl InitialStateJson {
     }
 
     pub fn balances(&self) -> Result<BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>, ManyError> {
-        // let mut res: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>> = BTreeMap::new();
-        // for (&symbol, token) in &self.tokens {
-        //     for (addr, amount) in token
-        //         .initial_distribution
-        //         .as_ref()
-        //         .map_or(&BTreeMap::new(), |d| d)
-        //         .iter()
-        //     {
-        //         if let Some(entry) = res.get_mut(&addr) {
-        //             entry.insert(symbol, amount.clone());
-        //         } else {
-        //             res.insert(*addr, BTreeMap::from([(symbol, amount.clone())]));
-        //         }
-        //     }
-        // }
-        // Ok(res)
         self.initial
             .iter()
             .map(|(id, b)| {

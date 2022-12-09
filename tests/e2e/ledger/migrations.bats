@@ -43,6 +43,11 @@ function teardown() {
         "name": "Memo Migration",
         "block_height": 0,
         "disabled": true
+      },
+      {
+        "name": "Token Migration",
+        "block_height": 0,
+        "disabled": true
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
@@ -153,6 +158,11 @@ function teardown() {
       },
       {
         "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Token Migration",
         "block_height": 0,
         "disabled": true
       }

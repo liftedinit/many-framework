@@ -76,15 +76,14 @@ impl KvStoreStorage {
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let next_subresource =
-            persistent_store
-                .get(b"/config/account_id")
-                .unwrap()
-                .map_or(0, |x| {
-                    let mut bytes = [0u8; 4];
-                    bytes.copy_from_slice(x.as_slice());
-                    u32::from_be_bytes(bytes)
-                });
+        let next_subresource = persistent_store
+            .get(b"/config/subresource_id")
+            .unwrap()
+            .map_or(0, |x| {
+                let mut bytes = [0u8; 4];
+                bytes.copy_from_slice(x.as_slice());
+                u32::from_be_bytes(bytes)
+            });
 
         let root_identity: Address = Address::from_bytes(
             &persistent_store

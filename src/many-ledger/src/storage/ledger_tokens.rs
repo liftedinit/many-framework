@@ -126,6 +126,7 @@ impl LedgerStorage {
             extended_info,
         });
 
+        // TODO: Get rid of sort
         batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
 
         self.persistent_store

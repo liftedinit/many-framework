@@ -30,7 +30,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "a6131d2d1e24e7bbf52a19ede4673884423357b1e5ebed6399d4ce08e27ad4b5";
+  nixifiedLockHash = "0a78f38a2a58f5f28724077d8312e5ad8b788425130357b6631a4740cd62899f";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -2816,11 +2816,11 @@ in
     };
   });
   
-  "registry+https://github.com/rust-lang/crates.io-index".ipnet."2.5.1" = overridableMkRustCrate (profileName: rec {
+  "registry+https://github.com/rust-lang/crates.io-index".ipnet."2.6.0" = overridableMkRustCrate (profileName: rec {
     name = "ipnet";
-    version = "2.5.1";
+    version = "2.6.0";
     registry = "registry+https://github.com/rust-lang/crates.io-index";
-    src = fetchCratesIo { inherit name version; sha256 = "f88c5561171189e69df9d98bcf18fd5f9558300f7ea7b801eb8a0fd748bd8745"; };
+    src = fetchCratesIo { inherit name version; sha256 = "ec947b7a4ce12e3b87e353abae7ce124d025b6c7d6c5aea5cc0bcf92e9510ded"; };
     features = builtins.concatLists [
       [ "default" ]
     ];
@@ -3192,7 +3192,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-client";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "default" ]
@@ -3245,7 +3245,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-client-macros";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     dependencies = {
       proc_macro2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.47" { inherit profileName; }).out;
@@ -3262,7 +3262,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-error";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "default" ]
@@ -3284,7 +3284,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "coset" ]
@@ -3319,7 +3319,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-dsa";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "coset" ]
@@ -3362,7 +3362,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-hsm";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     dependencies = {
       asn1 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".asn1."0.10.0" { inherit profileName; }).out;
@@ -3389,7 +3389,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-identity-webauthn";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
@@ -3525,7 +3525,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-macros";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     dependencies = {
       inflections = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".inflections."1.1.1" { inherit profileName; }).out;
@@ -3545,7 +3545,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-migration";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     dependencies = {
       many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
@@ -3565,7 +3565,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-modules";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "cucumber" ]
@@ -3596,7 +3596,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-protocol";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
@@ -3627,7 +3627,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-server";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "default" ]
@@ -3686,7 +3686,7 @@ in
       url = https://github.com/fmorency/many-rs.git;
       name = "many-types";
       version = "0.1.0";
-      rev = "fafe0ecafd778e2d1c9e19af42cef6619a6390ba";
+      rev = "f8a34c4a65c24d898319016021ba1e57d5929edc";
       ref = "ledger-tokens-with-memo";};
     features = builtins.concatLists [
       [ "cucumber" ]
@@ -4899,7 +4899,7 @@ in
       ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "http_body" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".http-body."0.4.5" { inherit profileName; }).out;
       ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "hyper" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hyper."0.14.23" { inherit profileName; }).out;
       ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "hyper_tls" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hyper-tls."0.5.0" { inherit profileName; }).out;
-      ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "ipnet" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".ipnet."2.5.1" { inherit profileName; }).out;
+      ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "ipnet" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".ipnet."2.6.0" { inherit profileName; }).out;
       ${ if hostPlatform.parsed.cpu.name == "wasm32" then "js_sys" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".js-sys."0.3.60" { inherit profileName; }).out;
       ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "log" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; }).out;
       ${ if !(hostPlatform.parsed.cpu.name == "wasm32") then "mime" else null } = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".mime."0.3.16" { inherit profileName; }).out;

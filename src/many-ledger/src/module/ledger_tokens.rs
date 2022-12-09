@@ -1,4 +1,5 @@
 use crate::error;
+use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::module::account::verify_account_role;
 use crate::module::LedgerModuleImpl;
 use crate::storage::LedgerStorage;
@@ -42,6 +43,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: TokenCreateArgs,
     ) -> Result<TokenCreateReturns, ManyError> {
+        if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
+            return Err(ManyError::unknown(
+                "Token Migration needs to be active to use this endpoint",
+            ));
+        }
+
         // TODO: Limit token creation to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
@@ -66,6 +73,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
 
     fn info(&self, _sender: &Address, args: TokenInfoArgs) -> Result<TokenInfoReturns, ManyError> {
         // Check the memory symbol cache for requested symbol
+        if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
+            return Err(ManyError::unknown(
+                "Token Migration needs to be active to use this endpoint",
+            ));
+        }
+
         let symbol = &args.symbol;
         if !self.storage.get_symbols()?.contains(symbol) {
             return Err(ManyError::unknown(format!(
@@ -83,6 +96,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // TODO: Limit token update to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+
+        if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
+            return Err(ManyError::unknown(
+                "Token Migration needs to be active to use this endpoint",
+            ));
+        }
 
         // Get the current owner and check if we're allowed to update this token
         let current_owner = self.storage.get_owner(&args.symbol)?;
@@ -116,6 +135,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // TODO: Limit adding extended info to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+        if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
+            return Err(ManyError::unknown(
+                "Token Migration needs to be active to use this endpoint",
+            ));
+        }
+
         let current_owner = self.storage.get_owner(&args.symbol)?;
         match current_owner {
             Some(addr) => {
@@ -144,6 +169,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // TODO: Limit adding extended info to given sender
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+        if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
+            return Err(ManyError::unknown(
+                "Token Migration needs to be active to use this endpoint",
+            ));
+        }
+
         let current_owner = self.storage.get_owner(&args.symbol)?;
         match current_owner {
             Some(addr) => {

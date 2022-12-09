@@ -207,7 +207,6 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    // TODO: Refactor this piece.
     info!("Loading migrations from {migrations_config:?}");
     let maybe_migrations = migrations_config.map(|file| {
         let content = std::fs::read_to_string(file)

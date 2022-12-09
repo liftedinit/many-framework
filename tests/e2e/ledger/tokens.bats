@@ -1,3 +1,6 @@
+# e2e tests for the token feature set
+# The Token Migration needs to be active for this feature set to be enabled.
+
 GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
 
@@ -16,88 +19,48 @@ function setup() {
         )
     fi
 
-    start_ledger --pem "$(pem 0)"
+    echo '
+    { "migrations": [
+      {
+        "name": "Account Count Data Attribute",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Dummy Hotfix",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Block 9400",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Token Migration",
+        "block_height": 0
+      }
+    ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
+
+    # Activating the Token Migration from block 0 will modify the ledger staging hash
+    # The symbol metadata will be stored in the DB
+    cp "$GIT_ROOT/staging/ledger_state.json5" "$BATS_TEST_ROOTDIR/ledger_state.json5"
+
+    # Skip hash check
+    sed -i 's/hash/\/\/hash/' "$BATS_TEST_ROOTDIR/ledger_state.json5"
+
+    start_ledger --state="$BATS_TEST_ROOTDIR/ledger_state.json5" \
+        --pem "$(pem 0)" \
+        --migrations-config "$BATS_TEST_ROOTDIR/migrations.json"
 }
 
 function teardown() {
     stop_background_run
-}
-
-# Creates a token
-# The global variable `SYMBOL` will be set to the new token symbol
-function create_token() {
-    local ext_info_type
-    local pem_arg
-    local port
-    local error
-
-    while (( $# > 0 )); do
-       case "$1" in
-         --pem=*) pem_arg=${1}; shift ;;                                    # Identity to create the token with
-         --port=*) port=${1}; shift ;;                                      # Port of the ledger server
-         --ext_info_type=*) ext_info_type=${1#--ext_info_type=}; shift ;;   # Extended info to add at token creation
-         --error) error=true; shift ;;                                      # If this is set, token creation is expected to fail
-         --) shift; break ;;
-         *) break ;;
-       esac
-     done
-
-    if [ "${ext_info_type}" = "image" ]; then
-        ext_args='logo image "png" "\"hello\""'
-    elif [ "${ext_info_type}" = "unicode" ]; then
-        ext_args='logo unicode "'∑'"'
-    elif [ "$ext_info_type" = "memo" ]; then
-        ext_args='memo "My memo"'
-    fi
-
-    call_ledger ${pem_arg} ${port} token create "Foobar" "FBR" 9 "$ext_args" "$@"
-
-    if [[ $error ]]; then
-        assert_output --partial "Invalid Identity; the sender cannot be anonymous."
-    else
-        SYMBOL=$(echo $output | grep -oE '"m[a-z0-9]+"' | head -n 1)
-        assert [ ${#SYMBOL} -eq 57 ]     # Check the account ID has the right length (55 chars + "")
-
-        assert_output --partial "name: \"Foobar\""
-        assert_output --partial "ticker: \"FBR\""
-        assert_output --partial "decimals: 9"
-        assert_output --regexp "owner:.*$(identity ${pem_arg#--pem=}).*)"
-
-        call_ledger --port=8000 token info "${SYMBOL}"
-        if [ "${ext_info_type}" = "image" ]; then
-            assert_output --partial "png"
-            assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
-        elif [ "${ext_info_type}" = "unicode" ]; then
-            assert_output --partial "'∑'"
-        elif [ "$ext_info_type" = "memo" ]; then
-            assert_output --partial "\"My memo\""
-        fi
-    fi
-}
-
-# Create a new token and assign a new account as the token owner
-# `identity(2)` will be assigned the permission given by `--perm`
-function token_account() {
-    local ext_info_type
-    local perm
-
-    while (( $# > 0 )); do
-       case "$1" in
-         --perm=*) perm=${1#--perm=}; shift ;;                              # Identity to create the token with
-         --ext_info_type=*) ext_info_type=${1#--ext_info_type=}; shift ;;   # Extended info to add at token creation
-         --) shift; break ;;
-         *) break ;;
-       esac
-     done
-
-    create_token --pem=1 --port=8000 --ext_info_type=${ext_info_type}
-
-    account_id=$(account_create --pem=1 '{ 1: { "'"$(identity 2)"'": ["'${perm}'"] }, 2: [3] }')
-
-    # Account is the new token owner
-    call_ledger --pem=1 --port=8000 token update --owner "${account_id}" "${SYMBOL}"
-    call_ledger --port=8000 token info "${SYMBOL}"
-    assert_output --regexp "owner:.*${account_id}.*)"
 }
 
 @test "$SUITE: can create new token" {
