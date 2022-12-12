@@ -15,7 +15,7 @@ itertools = "0.10.3"
 many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7", features = ["default", "serde", "testing"] }
 many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7", features = ["ed25519", "ecdsa", "testing"]  }
-many-ledger = { path = ".." }
+many-ledger = { path = "..", features = ["balance_testing"] }
 many-migration = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7", features = ["cucumber"] }
 many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
