@@ -1,5 +1,7 @@
+use crate::error;
 use crate::migration::MIGRATIONS;
 use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol};
+use crate::storage::{SYMBOLS, SYMBOLS_BYTES};
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_identity::Address;
@@ -29,18 +31,18 @@ fn migrate_subresource_counter(storage: &mut merk::Merk) -> Result<(), ManyError
             // Migrate the old counter to the new location in the database
             storage
                 .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(x))])
-                .map_err(ManyError::unknown)?; // TODO: Custom
+                .map_err(error::storage_apply_failed)?;
 
             // Delete the old counter from the DB
             storage
                 .apply(&[(b"/config/account_id".to_vec(), Op::Delete)])
-                .map_err(ManyError::unknown)?;
+                .map_err(error::storage_apply_failed)?;
         }
         // No counter found. Set the new counter to 0.
         (None, None) => {
             storage
                 .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(vec![0u8; 4]))])
-                .map_err(ManyError::unknown)?; // TODO: Custom
+                .map_err(error::storage_apply_failed)?;
         }
         // Old counter is not present, new counter is present.
         // The migration did run in the past.
@@ -81,13 +83,14 @@ fn migrate_token_metadata(
 
     let symbol: String = serde_json::from_value(extra["symbol"].clone())
         .map_err(ManyError::deserialization_error)?;
-    let symbol = Symbol::from_str(&symbol).map_err(ManyError::unknown)?; // TODO: Custom
+    let symbol = Symbol::from_str(&symbol)?;
 
     // Get symbol list from DB
     let symbol_and_ticker_enc = storage
-        .get(b"/config/symbols")
-        .map_err(|_| ManyError::unknown(format!("Unable to retrieve symbol {symbol}")))?
-        .ok_or_else(|| ManyError::unknown(format!("Symbol {symbol} not found in storage")))?;
+        .get(SYMBOLS_BYTES)
+        .map_err(error::storage_get_failed)?
+        .ok_or_else(|| error::storage_key_not_found(SYMBOLS))?;
+
     let symbol_and_ticker: BTreeMap<Address, String> =
         minicbor::decode(&symbol_and_ticker_enc).map_err(ManyError::deserialization_error)?;
 

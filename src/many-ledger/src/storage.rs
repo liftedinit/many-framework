@@ -1,9 +1,10 @@
+use crate::error;
 use crate::json::SymbolMetaJson;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use crate::storage::iterator::LedgerIterator;
-use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol, SYMBOL_ROOT};
+use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol, SYMBOLS_ROOT_BYTES};
 use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
@@ -26,6 +27,9 @@ mod ledger;
 mod ledger_commands;
 pub mod ledger_tokens;
 pub mod multisig;
+
+pub const SYMBOLS: &str = "/config/symbols";
+pub const SYMBOLS_BYTES: &[u8] = SYMBOLS.as_bytes();
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
@@ -203,10 +207,11 @@ impl LedgerStorage {
         let mut total_supply = BTreeMap::new();
         for (k, v) in initial_balances.into_iter() {
             for (symbol, tokens) in v.into_iter() {
+                let token_vec = tokens.to_vec();
                 if let Some(x) = total_supply.get_mut(&symbol) {
-                    *x += tokens.clone(); // TODO: Remove clone
+                    *x += tokens;
                 } else {
-                    total_supply.insert(symbol, tokens.clone());
+                    total_supply.insert(symbol, tokens);
                 }
 
                 if !symbols.contains_key(&symbol) {
@@ -214,13 +219,13 @@ impl LedgerStorage {
                 }
 
                 let key = key_for_account_balance(&k, &symbol);
-                batch.push((key, Op::Put(tokens.to_vec())));
+                batch.push((key, Op::Put(token_vec)));
             }
         }
 
         batch.push((b"/config/identity".to_vec(), Op::Put(identity.to_vec())));
         batch.push((
-            b"/config/symbols".to_vec(),
+            SYMBOLS_BYTES.to_vec(),
             Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
         ));
 
@@ -302,15 +307,35 @@ impl LedgerStorage {
         self.persistent_store.commit(&[]).map_err(|e| e.to_string())
     }
 
+    pub fn get_token_info(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
+        let mut info = BTreeMap::new();
+        if self.migrations.is_active(&TOKEN_MIGRATION) {
+            let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
+            for item in it {
+                let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+                info.insert(
+                    Symbol::from_str(
+                        std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
+                            .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
+                    )?,
+                    minicbor::decode(&v).map_err(ManyError::deserialization_error)?,
+                );
+            }
+        } else {
+            tracing::warn!("`get_token_info()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
+        }
+        Ok(info)
+    }
+
     /// Fetch symbol and ticker from '/config/symbols/.
     /// Kept for backward compatibility
     pub fn get_symbols_and_tickers(&self) -> Result<BTreeMap<Symbol, String>, ManyError> {
         minicbor::decode::<BTreeMap<Symbol, String>>(
             &self
                 .persistent_store
-                .get(b"/config/symbols")
-                .map_err(ManyError::unknown)? // TODO: Custom error
-                .ok_or_else(|| ManyError::unknown("No symbol data found"))?, // TODO: Custom error
+                .get(SYMBOLS_BYTES)
+                .map_err(error::storage_get_failed)?
+                .ok_or_else(|| error::storage_key_not_found(SYMBOLS))?,
         )
         .map_err(ManyError::deserialization_error)
     }
@@ -325,7 +350,7 @@ impl LedgerStorage {
             for item in it {
                 let (k, _) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
                 symbols.insert(Symbol::from_str(
-                    std::str::from_utf8(&k.as_ref()[SYMBOL_ROOT.len()..])
+                    std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
                         .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
                 )?);
             }

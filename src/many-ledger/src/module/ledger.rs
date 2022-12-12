@@ -2,7 +2,7 @@ use crate::module::LedgerModuleImpl;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::ledger;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use tracing::info;
 
 impl ledger::LedgerModuleBackend for LedgerModuleImpl {
@@ -27,7 +27,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
             symbols: symbols.keys().copied().collect(),
             hash: hash.into(),
             local_names: symbols,
-            tokens: BTreeMap::default(), // TODO: Fix
+            tokens: storage.get_token_info()?,
         })
     }
 

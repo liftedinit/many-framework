@@ -31,11 +31,10 @@ impl<'a> LedgerIterator<'a> {
     }
 
     pub fn all_symbols(merk: &'a merk::Merk, order: SortOrder) -> Self {
-        use crate::storage::ledger_tokens::SYMBOL_ROOT;
+        use crate::storage::ledger_tokens::SYMBOLS_ROOT_BYTES;
 
-        // Set the iterator bounds to iterate all multisig transactions.
         let mut options = ReadOptions::default();
-        options.set_iterate_range(rocksdb::PrefixRange(SYMBOL_ROOT));
+        options.set_iterate_range(rocksdb::PrefixRange(SYMBOLS_ROOT_BYTES));
 
         let it_mode = match order {
             SortOrder::Indeterminate | SortOrder::Ascending => IteratorMode::Start,

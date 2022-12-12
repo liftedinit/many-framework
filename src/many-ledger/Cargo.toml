@@ -22,6 +22,7 @@ base64 = "0.20.0-alpha.1"
 bip39-dict = "0.1"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"
+const_format = "0.2.30"
 fixed = "1.11.0"
 merk = { git = "https://github.com/liftedinit/merk.git", rev = "da0b660abbfd58abd4a942773f205d2c079f3b27" }
 hex = "0.4.3"

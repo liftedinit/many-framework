@@ -1,4 +1,5 @@
-use crate::storage::{key_for_account_balance, LedgerStorage};
+use crate::error;
+use crate::storage::{key_for_account_balance, LedgerStorage, SYMBOLS};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -12,7 +13,8 @@ use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSupply};
 use many_types::{AttributeRelatedIndex, Either};
 use merk::{BatchEntry, Op};
 
-pub const SYMBOL_ROOT: &[u8] = b"/config/symbols/";
+const SYMBOLS_ROOT: &str = const_format::concatcp!(SYMBOLS, "/");
+pub const SYMBOLS_ROOT_BYTES: &[u8] = SYMBOLS_ROOT.as_bytes();
 
 pub fn key_for_symbol(symbol: &Symbol) -> Vec<u8> {
     format!("/config/symbols/{symbol}").into_bytes()
@@ -28,11 +30,7 @@ impl LedgerStorage {
             .persistent_store
             .get(&key_for_symbol(symbol))
             .map_err(ManyError::unknown)?
-            .ok_or_else(|| {
-                ManyError::unknown(format!(
-                    "Symbol {symbol} token information not found in persistent storage"
-                ))
-            })?; // TODO: Custom error
+            .ok_or_else(|| error::token_info_not_found(symbol))?;
 
         let info: TokenInfo =
             minicbor::decode(&token_info_enc).map_err(ManyError::deserialization_error)?;
@@ -49,7 +47,7 @@ impl LedgerStorage {
                 b"/config/symbols".to_vec(),
                 Op::Put(minicbor::to_vec(&symbols).map_err(ManyError::serialization_error)?),
             )])
-            .map_err(ManyError::unknown)?; // TODO: Custom error
+            .map_err(error::storage_apply_failed)?;
 
         Ok(())
     }
@@ -126,12 +124,10 @@ impl LedgerStorage {
             extended_info,
         });
 
-        // TODO: Get rid of sort
         batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
-
         self.persistent_store
             .apply(batch.as_slice())
-            .map_err(ManyError::unknown)?; // TODO: Custom
+            .map_err(error::storage_apply_failed)?;
 
         if !self.blockchain {
             self.persistent_store.commit(&[]).unwrap();
@@ -151,19 +147,13 @@ impl LedgerStorage {
             .persistent_store
             .get(&key_for_symbol(&symbol))
             .map_err(ManyError::unknown)?
-            .ok_or_else(|| {
-                ManyError::unknown(format!(
-                    "Symbol {symbol} token information not found in persistent storage"
-                ))
-            })?; // TODO: Custom error
+            .ok_or_else(|| error::token_info_not_found(symbol))?;
 
         let ext_info_enc = self
             .persistent_store
             .get(&key_for_ext_info(&symbol))
-            .map_err(ManyError::unknown)? // TODO: Custom error
-            .ok_or_else(|| {
-                ManyError::unknown(format!("Unable to fetch extended info for symbol {symbol}"))
-            })?; // TODO: Custom error
+            .map_err(error::storage_get_failed)?
+            .ok_or_else(|| error::ext_info_not_found(symbol))?;
 
         let mut ext_info: TokenExtendedInfo =
             minicbor::decode(&ext_info_enc).map_err(ManyError::deserialization_error)?;
@@ -206,7 +196,6 @@ impl LedgerStorage {
         {
             let mut info: TokenInfo = minicbor::decode(&enc).unwrap();
 
-            // TODO: Check if we can simplify this
             if let Some(name) = name.as_ref() {
                 info.summary.name = name.clone();
             }
@@ -230,7 +219,7 @@ impl LedgerStorage {
                     key_for_symbol(&symbol),
                     Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
                 )])
-                .map_err(ManyError::unknown)?; // TODO: Custom error
+                .map_err(error::storage_apply_failed)?;
 
             self.log_event(EventInfo::TokenUpdate {
                 symbol,
@@ -265,8 +254,7 @@ impl LedgerStorage {
         let mut ext_info = if let Some(ext_info_enc) = self
             .persistent_store
             .get(&key_for_ext_info(&symbol))
-            .map_err(ManyError::unknown)?
-        // TODO: Custom error
+            .map_err(error::storage_get_failed)?
         {
             minicbor::decode(&ext_info_enc).map_err(ManyError::deserialization_error)?
         } else {
@@ -288,7 +276,7 @@ impl LedgerStorage {
                 key_for_ext_info(&symbol),
                 Op::Put(minicbor::to_vec(&ext_info).map_err(ManyError::serialization_error)?),
             )])
-            .map_err(ManyError::unknown)?; // TODO: Custom error
+            .map_err(error::storage_apply_failed)?;
 
         self.log_event(EventInfo::TokenAddExtendedInfo {
             symbol,
@@ -315,10 +303,8 @@ impl LedgerStorage {
         let ext_info_enc = self
             .persistent_store
             .get(&key_for_ext_info(&symbol))
-            .map_err(ManyError::unknown)? // TODO: Custom error
-            .ok_or_else(|| {
-                ManyError::unknown(format!("No extended info. found for symbol {symbol}"))
-            })?; // TODO: Custom error
+            .map_err(error::storage_get_failed)?
+            .ok_or_else(|| error::ext_info_not_found(symbol))?;
 
         let mut ext_info: TokenExtendedInfo =
             minicbor::decode(&ext_info_enc).map_err(ManyError::deserialization_error)?;
@@ -334,7 +320,7 @@ impl LedgerStorage {
                 key_for_ext_info(&symbol),
                 Op::Put(minicbor::to_vec(&ext_info).map_err(ManyError::serialization_error)?),
             )])
-            .map_err(ManyError::unknown)?; // TODO: Custom error
+            .map_err(error::storage_apply_failed)?;
 
         self.log_event(EventInfo::TokenRemoveExtendedInfo {
             symbol,
