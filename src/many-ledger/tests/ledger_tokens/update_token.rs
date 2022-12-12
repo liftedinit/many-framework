@@ -1,4 +1,7 @@
-use test_utils::cucumber::{SomeError, SomeId, SomePermission, TokenWorld};
+use test_macros::*;
+use test_utils::cucumber::{
+    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+};
 use test_utils::Setup;
 
 use cucumber::{given, then, when, World};
@@ -13,7 +16,7 @@ use many_types::ledger::{TokenInfo, TokenMaybeOwner};
 use many_types::Memo;
 use std::path::Path;
 
-#[derive(World, Debug, Default)]
+#[derive(World, Debug, Default, LedgerWorld, TokenWorld, AccountWorld)]
 #[world(init = Self::new)]
 struct UpdateWorld {
     setup: Setup,
@@ -29,29 +32,6 @@ impl UpdateWorld {
             setup: Setup::new_with_migrations(false, [(0, &TOKEN_MIGRATION)], true),
             ..Default::default()
         }
-    }
-}
-
-// TODO: Macro
-impl TokenWorld for UpdateWorld {
-    fn setup_id(&self) -> Address {
-        self.setup.id
-    }
-
-    fn account(&self) -> Address {
-        self.account
-    }
-
-    fn info_mut(&mut self) -> &mut TokenInfo {
-        &mut self.info
-    }
-
-    fn account_mut(&mut self) -> &mut Address {
-        &mut self.account
-    }
-
-    fn module_impl(&mut self) -> &mut LedgerModuleImpl {
-        &mut self.setup.module_impl
     }
 }
 

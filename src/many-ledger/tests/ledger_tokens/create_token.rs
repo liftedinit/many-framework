@@ -1,4 +1,7 @@
-use test_utils::cucumber::{SomeError, SomeId, SomePermission, TokenWorld};
+use test_macros::*;
+use test_utils::cucumber::{
+    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+};
 use test_utils::Setup;
 
 use cucumber::{given, then, when, World};
@@ -12,7 +15,7 @@ use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfo, TokenMaybeOwner};
 use std::path::Path;
 
-#[derive(World, Debug, Default)]
+#[derive(World, Debug, Default, LedgerWorld, TokenWorld, AccountWorld)]
 #[world(init = Self::new)]
 struct CreateWorld {
     setup: Setup,
@@ -31,28 +34,28 @@ impl CreateWorld {
     }
 }
 
-// TODO: Macro
-impl TokenWorld for CreateWorld {
-    fn setup_id(&self) -> Address {
-        self.setup.id
-    }
-
-    fn account(&self) -> Address {
-        self.account
-    }
-
-    fn info_mut(&mut self) -> &mut TokenInfo {
-        &mut self.info
-    }
-
-    fn account_mut(&mut self) -> &mut Address {
-        &mut self.account
-    }
-
-    fn module_impl(&mut self) -> &mut LedgerModuleImpl {
-        &mut self.setup.module_impl
-    }
-}
+// // TODO: Macro
+// impl TokenWorld for CreateWorld {
+//     fn setup_id(&self) -> Address {
+//         self.setup.id
+//     }
+//
+//     fn account(&self) -> Address {
+//         self.account
+//     }
+//
+//     fn info_mut(&mut self) -> &mut TokenInfo {
+//         &mut self.info
+//     }
+//
+//     fn account_mut(&mut self) -> &mut Address {
+//         &mut self.account
+//     }
+//
+//     fn module_impl(&mut self) -> &mut LedgerModuleImpl {
+//         &mut self.setup.module_impl
+//     }
+// }
 
 fn create_token(w: &mut CreateWorld, sender: &Address) {
     w.info = LedgerTokensModuleBackend::create(&mut w.setup.module_impl, sender, w.args.clone())

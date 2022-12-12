@@ -67,6 +67,7 @@ proptest = "1"
 tempfile = "3.3.0"
 tokio = "1.13.0"
 test-utils = { path = "test-utils" }
+test-macros = { path = "test-macros" }
 
 [[test]]
 name = "create_token"

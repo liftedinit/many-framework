@@ -16,12 +16,18 @@ use many_types::ledger::{TokenInfo, TokenMaybeOwner};
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
-pub trait TokenWorld {
+pub trait LedgerWorld {
     fn setup_id(&self) -> Address;
-    fn account(&self) -> Address;
-    fn info_mut(&mut self) -> &mut TokenInfo;
-    fn account_mut(&mut self) -> &mut Address;
     fn module_impl(&mut self) -> &mut LedgerModuleImpl;
+}
+
+pub trait AccountWorld {
+    fn account(&self) -> Address;
+    fn account_mut(&mut self) -> &mut Address;
+}
+
+pub trait TokenWorld {
+    fn info_mut(&mut self) -> &mut TokenInfo;
 }
 
 #[derive(Debug, Default, Eq, Parameter, PartialEq)]
@@ -55,7 +61,7 @@ impl FromStr for SomeId {
 }
 
 impl SomeId {
-    pub fn as_address(&self, w: &dyn TokenWorld) -> Address {
+    pub fn as_address<T: LedgerWorld + AccountWorld>(&self, w: &T) -> Address {
         match self {
             SomeId::Myself => w.setup_id(),
             SomeId::Id(seed) => identity(*seed),
@@ -66,7 +72,7 @@ impl SomeId {
         }
     }
 
-    pub fn as_maybe_address(&self, w: &dyn TokenWorld) -> Option<Address> {
+    pub fn as_maybe_address<T: LedgerWorld + AccountWorld>(&self, w: &T) -> Option<Address> {
         match self {
             SomeId::NoOne => None,
             _ => Some(self.as_address(w)),
@@ -153,7 +159,7 @@ impl SomePermission {
     }
 }
 
-pub fn given_token_account(w: &mut dyn TokenWorld) {
+pub fn given_token_account<T: LedgerWorld + AccountWorld>(w: &mut T) {
     let sender = w.setup_id();
     let account = AccountModuleBackend::create(
         w.module_impl(),
@@ -170,7 +176,7 @@ pub fn given_token_account(w: &mut dyn TokenWorld) {
     *w.account_mut() = account.id
 }
 
-pub fn given_account_id_owner(w: &mut dyn TokenWorld, id: SomeId) {
+pub fn given_account_id_owner<T: LedgerWorld + AccountWorld>(w: &mut T, id: SomeId) {
     let id = id.as_address(w);
     let sender = w.setup_id();
     let account = w.account();
@@ -198,8 +204,8 @@ pub fn given_account_id_owner(w: &mut dyn TokenWorld, id: SomeId) {
     }
 }
 
-pub fn given_account_part_of_can_create(
-    w: &mut dyn TokenWorld,
+pub fn given_account_part_of_can_create<T: LedgerWorld + AccountWorld>(
+    w: &mut T,
     id: SomeId,
     permission: SomePermission,
 ) {
@@ -217,7 +223,7 @@ pub fn given_account_part_of_can_create(
     .expect("Unable to add role to account");
 }
 
-pub fn create_default_token(w: &mut dyn TokenWorld, id: SomeId) {
+pub fn create_default_token<T: TokenWorld + LedgerWorld + AccountWorld>(w: &mut T, id: SomeId) {
     let (id, owner) = if let Some(id) = id.as_maybe_address(w) {
         (id, TokenMaybeOwner::Left(id))
     } else {

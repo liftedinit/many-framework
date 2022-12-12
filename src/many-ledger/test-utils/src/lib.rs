@@ -1,4 +1,5 @@
 pub mod cucumber;
+pub mod tokens;
 
 use coset::CborSerializable;
 use itertools::Itertools;
@@ -139,6 +140,16 @@ pub fn create_account_args(account_type: AccountType) -> account::CreateArgs {
             )]));
             let features = account::features::FeatureSet::from_iter([
                 account::features::ledger::AccountLedger.as_feature(),
+            ]);
+            (roles, features)
+        }
+        AccountType::Tokens => {
+            let roles = Some(BTreeMap::from_iter([(
+                identity(2),
+                BTreeSet::from_iter([account::Role::CanTokensCreate]),
+            )]));
+            let features = account::features::FeatureSet::from_iter([
+                account::features::tokens::TokenAccountLedger.as_feature(),
             ]);
             (roles, features)
         }
@@ -487,6 +498,7 @@ pub struct SetupWithArgs {
 pub enum AccountType {
     Multisig,
     Ledger,
+    Tokens,
 }
 
 pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
