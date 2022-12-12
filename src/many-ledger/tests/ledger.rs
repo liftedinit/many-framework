@@ -1,9 +1,7 @@
-pub mod common;
-
-use common::*;
 use many_modules::ledger;
 use many_modules::ledger::LedgerModuleBackend;
 use proptest::prelude::*;
+use test_utils::*;
 
 #[test]
 fn info() {

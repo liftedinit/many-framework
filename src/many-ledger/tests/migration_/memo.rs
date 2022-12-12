@@ -1,4 +1,3 @@
-use crate::common::{AccountType, Setup, MFX_SYMBOL};
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::migration::memo::MEMO_MIGRATION;
@@ -8,6 +7,7 @@ use many_modules::{events, ledger};
 use many_types::ledger::TokenAmount;
 use many_types::memo::MemoLegacy;
 use many_types::Memo;
+use test_utils::*;
 
 #[test]
 fn memo_migration_works() {

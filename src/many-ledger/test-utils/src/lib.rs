@@ -1,4 +1,4 @@
-pub mod many_cucumber;
+pub mod cucumber;
 
 use coset::CborSerializable;
 use itertools::Itertools;

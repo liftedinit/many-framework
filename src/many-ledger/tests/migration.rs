@@ -1,6 +1,3 @@
-pub mod common;
-use common::*;
-
 pub mod migration_;
 
 use many_identity::testing::identity;
@@ -13,6 +10,7 @@ use many_modules::{
 };
 use many_types::{ledger::TokenAmount, VecOrSingle};
 use num_bigint::BigInt;
+use test_utils::*;
 
 fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) {
     assert_eq!(

@@ -1,11 +1,9 @@
-pub mod common;
-
-use crate::common::{setup, Setup};
 use many_error::ManyError;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::idstore;
 use many_modules::idstore::{CredentialId, IdStoreModuleBackend, PublicKey};
+use test_utils::*;
 
 pub struct SetupWithArgs {
     pub module_impl: LedgerModuleImpl,

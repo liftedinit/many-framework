@@ -1,4 +1,3 @@
-use crate::common;
 use cucumber::Parameter;
 use many_error::ManyError;
 use many_identity::testing::identity;
@@ -227,7 +226,7 @@ pub fn create_default_token(w: &mut dyn TokenWorld, id: SomeId) {
     let result = LedgerTokensModuleBackend::create(
         w.module_impl(),
         &id,
-        common::default_token_create_args(Some(owner)),
+        crate::default_token_create_args(Some(owner)),
     )
     .expect("Unable to create default token");
     *w.info_mut() = result.info;

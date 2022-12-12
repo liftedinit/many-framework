@@ -1,6 +1,3 @@
-pub mod common;
-
-use common::*;
 use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::Address;
@@ -12,6 +9,7 @@ use many_types::ledger::TokenAmount;
 use proptest::prelude::*;
 use proptest::test_runner::Config;
 use std::collections::{BTreeMap, BTreeSet};
+use test_utils::*;
 
 /// Returns informations about the given account
 fn account_info(

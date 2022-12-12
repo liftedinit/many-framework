@@ -2,6 +2,10 @@ load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test", "rust_test_suite")
 load("@rules_rust//cargo:cargo_build_script.bzl", "cargo_build_script")
 
+package(default_visibility = [
+    "//src/many-ledger/test-utils:__pkg__",
+])
+
 cargo_build_script(
     name = "build_script",
     srcs = ["build.rs"],
@@ -64,15 +68,10 @@ rust_test_suite(
     srcs = glob(
         include = ["tests/*.rs"],
         exclude = [
-            "tests/add_token_ext_info.rs",
-            "tests/create_token.rs",
-            "tests/remove_token_ext_info.rs",
-            "tests/update_token.rs",
+            "tests/ledger_tokens/*.rs",
         ],
     ),
     compile_data = [
-        "tests/common/mod.rs",
-        "tests/common/many_cucumber.rs",
         "tests/migration_/mod.rs",
         "tests/migration_/memo.rs",
     ],
@@ -87,6 +86,7 @@ rust_test_suite(
         normal_dev = True,
     ) + [
         ":many-ledger-lib-for-test",
+        "//src/many-ledger/test-utils:many-ledger-test-utils-lib",
     ],
 )
 
@@ -94,16 +94,9 @@ rust_test_suite(
     name = "many-ledger-test-cucumber-suite",
     srcs = glob(
         include = [
-            "tests/add_token_ext_info.rs",
-            "tests/create_token.rs",
-            "tests/remove_token_ext_info.rs",
-            "tests/update_token.rs",
+            "tests/ledger_tokens/*.rs",
         ],
     ),
-    compile_data = [
-        "tests/common/mod.rs",
-        "tests/common/many_cucumber.rs",
-    ],
     crate_features = ["balance_testing"],
     data = [
         "//:staging/ledger_state.json5",
@@ -118,5 +111,6 @@ rust_test_suite(
         normal_dev = True,
     ) + [
         ":many-ledger-lib-for-test",
+        "//src/many-ledger/test-utils:many-ledger-test-utils-lib",
     ],
 )

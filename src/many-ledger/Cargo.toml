@@ -66,21 +66,26 @@ many-ledger = { path = ".", features = ["balance_testing", "migration_testing"]}
 proptest = "1"
 tempfile = "3.3.0"
 tokio = "1.13.0"
+test-utils = { path = "test-utils" }
 
 [[test]]
 name = "create_token"
+path = "tests/ledger_tokens/create_token.rs"
 harness = false
 
 [[test]]
 name = "update_token"
+path = "tests/ledger_tokens/update_token.rs"
 harness = false
 
 [[test]]
 name = "add_token_ext_info"
+path = "tests/ledger_tokens/add_token_ext_info.rs"
 harness = false
 
 [[test]]
 name = "remove_token_ext_info"
+path = "tests/ledger_tokens/remove_token_ext_info.rs"
 harness = false
 
 [build-dependencies]

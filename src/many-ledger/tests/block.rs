@@ -1,8 +1,6 @@
 //! Tests regarding blockchain behaviour.
-pub mod common;
-
-use common::*;
 use many_identity::testing::identity;
+use test_utils::*;
 
 /// Test that out of order keys at commit in a blockchain don't cause a problem.
 #[test]

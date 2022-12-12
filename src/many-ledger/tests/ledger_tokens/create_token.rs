@@ -1,7 +1,5 @@
-pub mod common;
-
-use common::many_cucumber::*;
-use common::*;
+use test_utils::cucumber::{SomeError, SomeId, SomePermission, TokenWorld};
+use test_utils::Setup;
 
 use cucumber::{given, then, when, World};
 use many_error::ManyError;
@@ -70,17 +68,17 @@ fn fail_create_token(w: &mut CreateWorld, sender: &Address) {
 }
 #[given(expr = "a token account")]
 fn given_token_account(w: &mut CreateWorld) {
-    many_cucumber::given_token_account(w);
+    test_utils::cucumber::given_token_account(w);
 }
 
 #[given(expr = "{id} as the account owner")]
 fn given_account_id_owner(w: &mut CreateWorld, id: SomeId) {
-    many_cucumber::given_account_id_owner(w, id);
+    test_utils::cucumber::given_account_id_owner(w, id);
 }
 
 #[given(expr = "{id} has {permission} permission")]
 fn given_account_part_of_can_create(w: &mut CreateWorld, id: SomeId, permission: SomePermission) {
-    many_cucumber::given_account_part_of_can_create(w, id, permission);
+    test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
 }
 
 #[given(expr = "a name {word}")]

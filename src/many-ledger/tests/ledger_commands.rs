@@ -1,11 +1,9 @@
-pub mod common;
-
-use common::*;
 use many_identity::testing::identity;
 use many_ledger::error;
 use many_modules::ledger;
 use many_modules::ledger::LedgerCommandsModuleBackend;
 use proptest::prelude::*;
+use test_utils::*;
 
 proptest! {
     #[test]

@@ -1,8 +1,6 @@
-pub mod common;
-
-use common::many_cucumber::*;
-use common::*;
 use std::path::Path;
+use test_utils::cucumber::{SomeError, SomeId, SomePermission, TokenWorld};
+use test_utils::Setup;
 
 use cucumber::{given, then, when, World};
 use many_error::ManyError;
@@ -84,12 +82,12 @@ fn fail_add_ext_info_token(w: &mut AddExtInfoWorld, sender: &Address) {
 }
 #[given(expr = "a token account")]
 fn given_token_account(w: &mut AddExtInfoWorld) {
-    many_cucumber::given_token_account(w);
+    test_utils::cucumber::given_token_account(w);
 }
 
 #[given(expr = "{id} as the account owner")]
 fn given_account_id_owner(w: &mut AddExtInfoWorld, id: SomeId) {
-    many_cucumber::given_account_id_owner(w, id);
+    test_utils::cucumber::given_account_id_owner(w, id);
 }
 
 #[given(expr = "{id} has {permission} permission")]
@@ -98,12 +96,12 @@ fn given_account_part_of_can_create(
     id: SomeId,
     permission: SomePermission,
 ) {
-    many_cucumber::given_account_part_of_can_create(w, id, permission);
+    test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
 }
 
 #[given(expr = "a default token owned by {id}")]
 fn create_default_token(w: &mut AddExtInfoWorld, id: SomeId) {
-    many_cucumber::create_default_token(w, id);
+    test_utils::cucumber::create_default_token(w, id);
     w.args.symbol = w.info.symbol;
     refresh_token_info(w);
 }

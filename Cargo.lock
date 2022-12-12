@@ -2512,6 +2512,7 @@ dependencies = [
  "strum",
  "syslog-tracing",
  "tempfile",
+ "test-utils",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -4281,6 +4282,30 @@ checksum = "cb20089a8ba2b69debd491f8d2d023761cbf196e999218c591fa1e7e15a21907"
 dependencies = [
  "rustix",
  "windows-sys 0.42.0",
+]
+
+[[package]]
+name = "test-utils"
+version = "0.1.0"
+dependencies = [
+ "coset",
+ "cucumber",
+ "itertools",
+ "many-error",
+ "many-identity",
+ "many-identity-dsa",
+ "many-ledger",
+ "many-migration",
+ "many-modules",
+ "many-protocol",
+ "many-types",
+ "merk",
+ "minicbor",
+ "once_cell",
+ "proptest",
+ "serde_json",
+ "tempfile",
+ "tracing",
 ]
 
 [[package]]

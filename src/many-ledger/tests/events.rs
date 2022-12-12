@@ -1,6 +1,3 @@
-pub mod common;
-
-use common::*;
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
@@ -17,6 +14,7 @@ use proptest::prelude::*;
 use proptest::test_runner::Config;
 use std::collections::BTreeMap;
 use std::ops::Bound;
+use test_utils::*;
 
 fn send(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
     module_impl.set_balance_only_for_testing(from, 1000, *MFX_SYMBOL);
