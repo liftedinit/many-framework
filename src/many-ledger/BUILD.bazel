@@ -104,7 +104,9 @@ rust_test_suite(
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
         proc_macro_dev = True,
-    ),
+    ) + [
+        "//src/many-ledger/test-macros:many-ledger-test-macros-lib",
+    ],
     use_libtest_harness = False,
     deps = all_crate_deps(
         normal = True,

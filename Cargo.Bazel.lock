@@ -2512,6 +2512,7 @@ dependencies = [
  "strum",
  "syslog-tracing",
  "tempfile",
+ "test-macros",
  "test-utils",
  "tokio",
  "tracing",
@@ -4285,6 +4286,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "test-utils"
 version = "0.1.0"
 dependencies = [
@@ -4305,6 +4314,7 @@ dependencies = [
  "proptest",
  "serde_json",
  "tempfile",
+ "test-macros",
  "tracing",
 ]
 

@@ -1,5 +1,5 @@
 {
-  "checksum": "b373b863dd40b9ddf63b378d118f7dba674c1e21ac857a1b1172683d9b8ff087",
+  "checksum": "9065bfdb6e16b0dd31e771507491a03acda545816bd2b29c52dda02d0523b700",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -23191,6 +23191,47 @@
       },
       "license": "MIT OR Apache-2.0"
     },
+    "test-macros 0.1.0": {
+      "name": "test-macros",
+      "version": "0.1.0",
+      "repository": null,
+      "targets": [
+        {
+          "ProcMacro": {
+            "crate_name": "test_macros",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "test_macros",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "quote 1.0.21",
+              "target": "quote"
+            },
+            {
+              "id": "syn 1.0.105",
+              "target": "syn"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.1.0"
+      },
+      "license": "Apache-2.0"
+    },
     "test-utils 0.1.0": {
       "name": "test-utils",
       "version": "0.1.0",
@@ -28024,6 +28065,7 @@
     "many-abci 0.1.0": "src/many-abci",
     "many-kvstore 0.1.0": "src/many-kvstore",
     "many-ledger 0.1.0": "src/many-ledger",
+    "test-macros 0.1.0": "src/many-ledger/test-macros",
     "test-utils 0.1.0": "src/many-ledger/test-utils"
   },
   "conditions": {

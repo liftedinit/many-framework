@@ -9,6 +9,7 @@ rust_proc_macro(
     name = "many-ledger-test-macros-lib",
     srcs = glob(include = ["src/**/*.rs"]),
     aliases = aliases(),
+    crate_name = "test_macros",
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
     ),
