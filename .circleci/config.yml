@@ -322,7 +322,7 @@ commands:
                 name: installing << parameters.os >> dependencies
                 command: |
                   sudo DEBIAN_FRONTEND=noninteractive apt -y update
-                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev
+                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev libudev-dev libusb-1.0-0-dev
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
