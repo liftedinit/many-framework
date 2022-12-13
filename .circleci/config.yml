@@ -103,10 +103,10 @@ jobs:
       - run: mkdir -p artifacts
       - run:
           name: creating release archive
-          command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_${CIRCLE_BRANCH}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
+          command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
       - run:
           name: creating release shasum
-          command: shasum artifacts/many-framework_${CIRCLE_BRANCH}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_${CIRCLE_BRANCH}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
+          command: shasum artifacts/many-framework_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
       - store_artifacts:
           path: artifacts
   coverage:
