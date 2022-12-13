@@ -1,5 +1,5 @@
 {
-  "checksum": "9065bfdb6e16b0dd31e771507491a03acda545816bd2b29c52dda02d0523b700",
+  "checksum": "fbfff580342eef6e1484f5df95ce6d103467773411551aeadde25c0d13baa001",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -3878,6 +3878,104 @@
         "version": "0.7.1"
       },
       "license": "Apache-2.0 OR MIT"
+    },
+    "const_format 0.2.30": {
+      "name": "const_format",
+      "version": "0.2.30",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/const_format/0.2.30/download",
+          "sha256": "7309d9b4d3d2c0641e018d449232f2e28f1b22933c137f157d3dbc14228b8c0e"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "const_format",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "const_format",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": [
+          "default"
+        ],
+        "edition": "2018",
+        "proc_macro_deps": {
+          "common": [
+            {
+              "id": "const_format_proc_macros 0.2.29",
+              "target": "const_format_proc_macros"
+            }
+          ],
+          "selects": {}
+        },
+        "version": "0.2.30"
+      },
+      "license": "Zlib"
+    },
+    "const_format_proc_macros 0.2.29": {
+      "name": "const_format_proc_macros",
+      "version": "0.2.29",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/const_format_proc_macros/0.2.29/download",
+          "sha256": "d897f47bf7270cf70d370f8f98c1abb6d2d4cf60a6845d30e05bfb90c6568650"
+        }
+      },
+      "targets": [
+        {
+          "ProcMacro": {
+            "crate_name": "const_format_proc_macros",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "const_format_proc_macros",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": [
+          "default"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "proc-macro2 1.0.47",
+              "target": "proc_macro2"
+            },
+            {
+              "id": "quote 1.0.21",
+              "target": "quote"
+            },
+            {
+              "id": "unicode-xid 0.2.4",
+              "target": "unicode_xid"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2018",
+        "version": "0.2.29"
+      },
+      "license": "Zlib"
     },
     "constant_time_eq 0.1.5": {
       "name": "constant_time_eq",
@@ -13424,6 +13522,10 @@
             {
               "id": "clap 3.2.23",
               "target": "clap"
+            },
+            {
+              "id": "const_format 0.2.30",
+              "target": "const_format"
             },
             {
               "id": "coset 0.3.3",
