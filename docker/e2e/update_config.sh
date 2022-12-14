@@ -112,10 +112,14 @@ for node in $(seq 0 "$NB_NODES"); do
     update_toml_key "$config_toml_path" '' proxy-app "\"tcp:\\/\\/abci-${node}:26658\\/\""
     update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
     update_toml_key "$config_toml_path" p2p persistent-peers "\"$peers\""
+    update_toml_key "$config_toml_path" consensus timeout-commit "\"2s\""
+    update_toml_key "$config_toml_path" consensus timeout-precommit "\"2s\""
   else
     update_toml_key "$config_toml_path" '' proxy_app "\"tcp:\\/\\/abci-${node}:26658\\/\""
     update_toml_key "$config_toml_path" '' moniker "\"many-tendermint-${node}\""
     update_toml_key "$config_toml_path" p2p persistent_peers "\"$peers\""
+    update_toml_key "$config_toml_path" consensus timeout_commit "\"2s\""
+    update_toml_key "$config_toml_path" consensus timeout_precommit "\"2s\""
     update_toml_key "$config_toml_path" p2p max_packet_msg_payload_size "1400"
   fi
 done

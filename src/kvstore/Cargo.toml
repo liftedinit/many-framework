@@ -20,14 +20,14 @@ clap = { version = "3.0.0", features = ["derive"] }
 hex = "0.4.3"
 indicatif = "0.16.2"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14", features = ["ed25519", "ecdsa"] }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "4a4de79e2e90a55b128584bc1d6e43b3415f8f14" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7", features = ["ed25519", "ecdsa"] }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
+syslog-tracing = "0.1"
 tracing = "0.1.29"
 tracing-subscriber = "0.3"
-tracing-syslog = { git = "https://github.com/max-heller/tracing-syslog.git", rev = "6ff222831d7a78f1068d4c8af94dea215b07f114" }
 tokio = { version = "1.12.0", features = [ "full" ] }

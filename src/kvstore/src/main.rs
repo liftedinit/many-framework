@@ -20,14 +20,16 @@ enum LogStrategy {
     Syslog,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     /// Many server URL to connect to.
     #[clap(default_value = "http://localhost:8000")]
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Address>,
+    #[clap(default_value_t)]
+    #[clap(long)]
+    server_id: Address,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -53,7 +55,7 @@ struct Opts {
     subcommand: SubCommand,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 enum SubCommand {
     /// Get a value from the key-value store.
     Get(GetOpt),
@@ -68,7 +70,7 @@ enum SubCommand {
     Disable(DisableOpt),
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct GetOpt {
     /// The key to get.
     key: String,
@@ -82,7 +84,7 @@ struct GetOpt {
     hex: bool,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct QueryOpt {
     /// The key to get.
     key: String,
@@ -92,7 +94,7 @@ struct QueryOpt {
     hex_key: bool,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct PutOpt {
     /// The key to set.
     key: String,
@@ -110,7 +112,7 @@ struct PutOpt {
     stdin: bool,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct DisableOpt {
     /// The key to disable.
     key: String,
@@ -144,7 +146,7 @@ fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), M
                 std::io::Write::write_all(&mut std::io::stdout(), &value).unwrap();
             }
         } else {
-            println!("{:?}", value);
+            println!("{value:?}");
         }
 
         Ok(())
@@ -170,9 +172,9 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
         };
 
         match result.disabled {
-            Some(Either::Left(true)) => println!("{}, disabled", owner),
-            Some(Either::Right(reason)) => println!("{}, disabled ({})", owner, reason),
-            _ => println!("{}", owner),
+            Some(Either::Left(true)) => println!("{owner}, disabled"),
+            Some(Either::Right(reason)) => println!("{owner}, disabled ({reason})"),
+            _ => println!("{owner}"),
         }
 
         Ok(())
@@ -253,7 +255,14 @@ pub(crate) fn wait_response(
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();
-                    return wait_response(client, *response);
+                    let response: ResponseMessage =
+                        minicbor::decode(&response.payload.ok_or_else(|| {
+                            ManyError::deserialization_error(
+                                "Empty payload. Expected ResponseMessage.",
+                            )
+                        })?)
+                        .map_err(ManyError::deserialization_error)?;
+                    return wait_response(client, response);
                 }
                 StatusReturn::Expired => {
                     progress.finish();
@@ -305,17 +314,18 @@ fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"kvstore\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_writer(syslog);
             subscriber.init();
         }
     };
 
-    let server_id = server_id.unwrap_or_default();
+    debug!("{:?}", Opts::parse());
+
     let key = pem.map_or_else(
         || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-        |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+        |p| Box::new(CoseKeyIdentity::from_pem(std::fs::read_to_string(p).unwrap()).unwrap()),
     );
 
     let client = ManyClient::new(&server, server_id, key).unwrap();

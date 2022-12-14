@@ -69,7 +69,9 @@ struct Opts {
     server: String,
 
     /// The identity of the server (an identity string), or anonymous if you don't know it.
-    server_id: Option<Address>,
+    #[clap(default_value_t)]
+    #[clap(long)]
+    server_id: Address,
 
     /// A PEM file for the identity. If not specified, anonymous will be used.
     #[clap(long)]
@@ -193,8 +195,7 @@ fn balance(
                             Ok(*i)
                         } else {
                             Err(ManyError::unknown(format!(
-                                "Could not resolve symbol '{}'",
-                                x
+                                "Could not resolve symbol '{x}'"
                             )))
                         }
                     })
@@ -211,9 +212,9 @@ fn balance(
         let balance: ledger::BalanceReturns = minicbor::decode(&payload).unwrap();
         for (symbol, amount) in balance.balances {
             if let Some(symbol_name) = info.local_names.get(&symbol) {
-                println!("{:>12} {} ({})", amount, symbol_name, symbol);
+                println!("{amount:>12} {symbol_name} ({symbol})");
             } else {
-                println!("{:>12} {}", amount, symbol);
+                println!("{amount:>12} {symbol}");
             }
         }
 
@@ -259,7 +260,14 @@ pub(crate) fn wait_response(
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();
-                    return wait_response(client, *response);
+                    let response: ResponseMessage =
+                        minicbor::decode(&response.payload.ok_or_else(|| {
+                            ManyError::deserialization_error(
+                                "Empty payload. Expected ResponseMessage.",
+                            )
+                        })?)
+                        .map_err(ManyError::deserialization_error)?;
+                    return wait_response(client, response);
                 }
                 StatusReturn::Expired => {
                     progress.finish();
@@ -338,14 +346,13 @@ fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"ledger\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_writer(syslog);
             subscriber.init();
         }
     };
 
-    let server_id = server_id.unwrap_or_default();
     let key: Box<dyn Identity> = if let (Some(module), Some(slot), Some(keyid)) =
         (module, slot, keyid)
     {
@@ -373,7 +380,7 @@ fn main() {
     } else {
         pem.map_or_else(
             || Box::new(AnonymousIdentity) as Box<dyn Identity>,
-            |p| Box::new(CoseKeyIdentity::from_pem(&std::fs::read_to_string(&p).unwrap()).unwrap()),
+            |p| Box::new(CoseKeyIdentity::from_pem(std::fs::read_to_string(p).unwrap()).unwrap()),
         )
     };
 
@@ -386,7 +393,7 @@ fn main() {
                     .or_else(|_| {
                         let bytes = std::fs::read_to_string(PathBuf::from(identity))?;
 
-                        Ok(CoseKeyIdentity::from_pem(&bytes).unwrap().address())
+                        Ok(CoseKeyIdentity::from_pem(bytes).unwrap().address())
                     })
                     .map_err(|_: std::io::Error| ())
                     .expect("Unable to decode identity command-line argument")

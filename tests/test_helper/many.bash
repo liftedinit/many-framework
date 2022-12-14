@@ -1,30 +1,3 @@
-function start_ledger() {
-    local persistent
-    local state
-    local clean
-    persistent="$(mktemp -d)"
-    state="$GIT_ROOT/staging/ledger_state.json5"
-    clean="--clean"
-
-    while (( $# > 0 )); do
-        case "$1" in
-            --persistent=*) persistent="${1#--persistent=}"; shift ;;
-            --state=*) state="${1#--state=}"; shift ;;
-            --no-clean) clean=""; shift ;;
-            --) shift; break ;;
-            *) break ;;
-        esac
-    done
-
-    run_in_background "$GIT_ROOT/target/debug/many-ledger" \
-        -v \
-        $clean \
-        --persistent "$persistent" \
-        --state "$state" \
-        "$@"
-    wait_for_background_output "Running accept thread"
-}
-
 function pem() {
     [ -f "$PEM_ROOT/id-$1.pem" ] || ssh-keygen -a 100 -q -P "" -m pkcs8 -t ecdsa -f "$PEM_ROOT/id-$1.pem" >/dev/null
     echo "$PEM_ROOT/id-$1.pem"
@@ -70,4 +43,17 @@ function identity_hex() {
 
 function account() {
     command many id mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow "$1"
+}
+
+function wait_for_block() {
+    local block
+    local current
+    block=$1
+    # Using [0-9] instead of \d for grep 3.8
+    # https://salsa.debian.org/debian/grep/-/blob/debian/master/NEWS
+    current=$(many message --server http://localhost:8000/ blockchain.info | grep -oE '1: [0-9]+' | colrm 1 3)
+    while [ "$current" -lt "$block" ]; do
+      sleep 1
+      current=$(many message --server http://localhost:8000/ blockchain.info | grep -oE '1: [0-9]+' | colrm 1 3)
+    done >/dev/null
 }

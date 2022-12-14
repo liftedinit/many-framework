@@ -85,8 +85,30 @@ jobs:
       - bats/install
       - run:
           name: running BATs tests
-          command: bats .
+          command: bats *
           working_directory: ./tests/e2e/
+  dev_release_artifact:
+    parameters:
+      os:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - detect/init
+      - rust/install:
+          version: nightly
+      - rust/build:
+          release: true
+          with_cache: false
+      - run: mkdir -p artifacts
+      - run:
+          name: creating release archive
+          command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
+      - run:
+          name: creating release shasum
+          command: shasum artifacts/many-framework_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
+      - store_artifacts:
+          path: artifacts
   coverage:
     parameters:
       os:
@@ -131,12 +153,10 @@ jobs:
       - detect/init
       - rust/install:
           version: nightly
+      - run: mkdir -p artifacts
       - rust/build:
           release: true
-          # TODO: Remove this feature for general public releases
-          crate: --features migrate_blocks
           with_cache: false
-      - run: mkdir -p artifacts
       - run:
           name: creating release archive
           command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
@@ -154,8 +174,8 @@ jobs:
         type: boolean
         default: false
     docker:
-      - image: cibuilds/github:0.10
-    resource_class: large
+      - image: cibuilds/github:0.13
+    resource_class: small
     steps:
       - attach_workspace:
           at: ~/project/artifacts
@@ -264,6 +284,27 @@ jobs:
           shell: /bin/bash
           command: bats *
           working_directory: ./tests/resiliency
+  tag:
+    parameters:
+      tag:
+        type: string
+        default: ${CIRCLE_TAG}
+      branch:
+        type: string
+        default: main
+    docker:
+      - image: 'cimg/base:stable'
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: tag
+          command: | 
+            git config credential.helper 'cache --timeout=120'
+            git config user.email "build@liftedinit.org"
+            git config user.name "ll-build"
+            git tag -f << parameters.tag >> << parameters.branch >>
+            git push -f -q https://${GITHUB_TOKEN}@github.com/liftedinit/many-framework.git << parameters.tag >>
 
 # Re-usable commands
 commands:
@@ -281,7 +322,7 @@ commands:
                 name: installing << parameters.os >> dependencies
                 command: |
                   sudo DEBIAN_FRONTEND=noninteractive apt -y update
-                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev
+                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev libudev-dev libusb-1.0-0-dev
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
@@ -301,7 +342,7 @@ workflows:
             - CACHE
           matrix:
             parameters:
-              os: [linux2204, macos]
+              os: [linux2204]
       - bats:
           pre-steps:
             - install-deps:
@@ -311,7 +352,7 @@ workflows:
             - CACHE
           matrix:
             parameters:
-              os: [linux2204, macos]
+              os: [linux2204]
           requires:
             - lint-test-build-v<< matrix.os >>
       - coverage:
@@ -326,6 +367,21 @@ workflows:
               os: [linux2204]
           requires:
             - lint-test-build-v<< matrix.os >>
+      - dev_release_artifact:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
+          name: dev_release_artifact-v<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux2204]
+          requires:
+            - lint-test-build-v<< matrix.os >>
+            - bats-v<< matrix.os >>
+          filters:
+            branches:
+              ignore: main
+              only: /^pull\/[0-9]+$/
   release:
     when:
       not:
@@ -407,4 +463,33 @@ workflows:
                 - main
           requires:
             - publish_nightly_docker
-
+  nightly_macos:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "macOS nightly", << pipeline.schedule.name >> ]
+    jobs:
+      - lint-test-build:
+          name: lint-test-build-v<< matrix.os >>
+          context:
+            - CACHE
+          matrix:
+            parameters:
+              os: [macos]
+      - bats:
+          name: bats-v<< matrix.os >>
+          context:
+            - CACHE
+          matrix:
+            parameters:
+              os: [macos]
+          requires:
+            - lint-test-build-v<< matrix.os >>
+      - tag:
+          name: macos nightly tag
+          tag: macos-green
+          context:
+            - GITHUB_CREDS
+          requires:
+            - lint-test-build-vmacos
+            - bats-vmacos

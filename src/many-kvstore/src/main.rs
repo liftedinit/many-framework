@@ -1,11 +1,13 @@
 use crate::module::account::AccountFeatureModule;
 use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
+use many_identity::Address;
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_modules::account::features::Feature;
 use many_modules::{abci_backend, account, events, kvstore};
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeSet;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -62,6 +64,12 @@ struct Opts {
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
+
+    /// Path to a JSON file containing an array of MANY addresses
+    /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
+    /// Any addresses will be able to execute queries, e.g., balance, get, ...
+    #[clap(long)]
+    allow_addrs: Option<PathBuf>,
 }
 
 fn main() {
@@ -75,6 +83,7 @@ fn main() {
         persistent,
         clean,
         logmode,
+        allow_addrs,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -97,7 +106,7 @@ fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"many-kvstore\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_ansi(false).with_writer(syslog);
             subscriber.init();
@@ -118,17 +127,29 @@ fn main() {
         state = None;
     }
 
-    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&pem).unwrap()).unwrap();
+    let key = CoseKeyIdentity::from_pem(std::fs::read_to_string(pem).unwrap()).unwrap();
 
     let state = state.map(|state| {
-        let content = std::fs::read_to_string(&state).unwrap();
+        let content = std::fs::read_to_string(state).unwrap();
         json5::from_str(&content).unwrap()
     });
 
-    let module = if let Some(state) = state {
+    let module = if persistent.exists() {
+        if state.is_some() {
+            tracing::warn!(
+                r#"
+                An existing persistent store {} was found and a staging file {state:?} was given.
+                Ignoring staging file and loading existing persistent store.
+                "#,
+                persistent.display()
+            );
+        }
+
+        KvStoreModuleImpl::load(persistent, abci).unwrap()
+    } else if let Some(state) = state {
         KvStoreModuleImpl::new(state, persistent, abci).unwrap()
     } else {
-        KvStoreModuleImpl::load(persistent, abci).unwrap()
+        panic!("Persistent store or staging file not found.")
     };
 
     let module = Arc::new(Mutex::new(module));
@@ -143,7 +164,17 @@ fn main() {
     {
         let mut s = many.lock().unwrap();
         s.add_module(kvstore::KvStoreModule::new(module.clone()));
-        s.add_module(kvstore::KvStoreCommandsModule::new(module.clone()));
+        let kvstore_command_module = kvstore::KvStoreCommandsModule::new(module.clone());
+        if let Some(path) = allow_addrs {
+            let allow_addrs: BTreeSet<Address> =
+                json5::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            s.add_module(allow_addrs::AllowAddrsModule {
+                inner: kvstore_command_module,
+                allow_addrs,
+            });
+        } else {
+            s.add_module(kvstore_command_module);
+        }
         s.add_module(events::EventsModule::new(module.clone()));
 
         s.add_module(AccountFeatureModule::new(

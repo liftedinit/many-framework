@@ -8,6 +8,7 @@ use many_modules::{base, blockchain, r#async};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tendermint_abci::ServerBuilder;
@@ -29,7 +30,7 @@ enum LogStrategy {
     Syslog,
 }
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 struct Opts {
     /// Address and port to bind the ABCI server to.
     #[clap(long)]
@@ -72,6 +73,12 @@ struct Opts {
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
+
+    /// Path to a JSON file containing an array of MANY addresses
+    /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
+    /// Any addresses will be able to execute queries, e.g., balance, get, ...
+    #[clap(long)]
+    allow_addrs: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -87,6 +94,7 @@ async fn main() {
         quiet,
         allow_origin,
         logmode,
+        allow_addrs,
     } = Opts::parse();
 
     let verbose_level = 2 + verbose - quiet;
@@ -109,12 +117,18 @@ async fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"many-abci\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_writer(syslog);
             subscriber.init();
         }
     };
+
+    debug!("{:?}", Opts::parse());
+    info!(
+        version = env!("CARGO_PKG_VERSION"),
+        git_sha = env!("VERGEN_GIT_SHA")
+    );
 
     // Try to get the status of the backend MANY app.
     let many_client = ManyClient::new(&many_app, Address::anonymous(), AnonymousIdentity).unwrap();
@@ -172,7 +186,7 @@ async fn main() {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    let key = CoseKeyIdentity::from_pem(&std::fs::read_to_string(&many_pem).unwrap()).unwrap();
+    let key = CoseKeyIdentity::from_pem(std::fs::read_to_string(many_pem).unwrap()).unwrap();
     info!(many_address = key.address().to_string().as_str());
     let server = ManyServer::new(
         format!("AbciModule({})", &status.name),
@@ -180,11 +194,20 @@ async fn main() {
         (
             AnonymousVerifier,
             CoseKeyVerifier,
-            WebAuthnVerifier::new(allow_origin),
+            WebAuthnVerifier::new(allow_origin.clone()),
         ),
         key.public_key(),
     );
-    let backend = AbciModuleMany::new(abci_client.clone(), status, key).await;
+    let allowed_addrs: Option<BTreeSet<Address>> =
+        allow_addrs.map(|path| json5::from_str(&std::fs::read_to_string(path).unwrap()).unwrap());
+    let backend = AbciModuleMany::new(
+        abci_client.clone(),
+        status,
+        key,
+        allowed_addrs,
+        allow_origin,
+    )
+    .await;
     let blockchain_impl = Arc::new(Mutex::new(AbciBlockchainModuleImpl::new(abci_client)));
 
     {
@@ -209,7 +232,7 @@ async fn main() {
         Ok(_) => {}
         Err(error) => {
             error!("{}", error);
-            panic!("Error happened in many: {:?}", error);
+            panic!("Error happened in many: {error:?}");
         }
     }
 

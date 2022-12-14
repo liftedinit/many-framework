@@ -1,13 +1,15 @@
 use coset::CborSerializable;
+use itertools::Itertools;
 use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::{Address, Identity};
 use many_identity_dsa::ed25519::generate_random_ed25519_identity;
 use many_ledger::json::InitialStateJson;
 use many_ledger::module::LedgerModuleImpl;
+use many_migration::{InnerMigration, MigrationConfig};
 use many_modules::abci_backend::{AbciBlock, ManyAbciModuleBackend};
 use many_modules::account::features::multisig::{
-    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn, Memo,
+    AccountMultisigModuleBackend, ExecuteArgs, InfoReturn,
 };
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
@@ -16,6 +18,8 @@ use many_modules::ledger::{BalanceArgs, LedgerCommandsModuleBackend, LedgerModul
 use many_modules::{account, events, ledger};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Memo;
+use merk::Merk;
 use minicbor::bytes::ByteVec;
 use once_cell::sync::Lazy;
 use proptest::prelude::*;
@@ -23,6 +27,50 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
 };
+
+pub struct MigrationHarness {
+    inner: &'static InnerMigration<merk::Merk, ManyError>,
+    block_height: u64,
+    enabled: bool,
+}
+
+impl MigrationHarness {
+    pub fn to_json_str(&self) -> String {
+        let maybe_enabled = if !self.enabled {
+            r#", "disabled": true"#
+        } else {
+            ""
+        };
+
+        format!(
+            r#"{{ "name": "{}", "block_height": {}, "issue": "" {maybe_enabled} }}"#,
+            self.inner.name(),
+            self.block_height
+        )
+    }
+}
+
+impl From<(u64, &'static InnerMigration<merk::Merk, ManyError>)> for MigrationHarness {
+    fn from((block_height, inner): (u64, &'static InnerMigration<Merk, ManyError>)) -> Self {
+        MigrationHarness {
+            inner,
+            block_height,
+            enabled: true,
+        }
+    }
+}
+
+impl From<(u64, &'static InnerMigration<merk::Merk, ManyError>, bool)> for MigrationHarness {
+    fn from(
+        (block_height, inner, enabled): (u64, &'static InnerMigration<Merk, ManyError>, bool),
+    ) -> Self {
+        MigrationHarness {
+            inner,
+            block_height,
+            enabled,
+        }
+    }
+}
 
 pub static MFX_SYMBOL: Lazy<Address> = Lazy::new(|| {
     Address::from_str("mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz").unwrap()
@@ -32,7 +80,7 @@ pub fn assert_many_err<I: std::fmt::Debug + PartialEq>(r: Result<I, ManyError>, 
     assert_eq!(r, Err(err));
 }
 
-fn create_account_args(account_type: AccountType) -> account::CreateArgs {
+pub fn create_account_args(account_type: AccountType) -> account::CreateArgs {
     let (roles, features) = match account_type {
         AccountType::Multisig => {
             let roles = Some(BTreeMap::from_iter([
@@ -85,18 +133,20 @@ impl Default for Setup {
 }
 
 impl Setup {
-    pub fn new(blockchain: bool) -> Self {
+    fn _new(blockchain: bool, migration_config: Option<MigrationConfig>) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
+        let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
+        tracing::debug!("Store path: {:?}", store_path.path());
+
         Self {
             module_impl: LedgerModuleImpl::new(
-                Some(
-                    InitialStateJson::read("../../staging/ledger_state.json5")
-                        .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
-                        .expect("Could not read initial state."),
-                ),
-                tempfile::tempdir().unwrap(),
+                InitialStateJson::read("../../staging/ledger_state.json5")
+                    .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
+                    .expect("Could not read initial state."),
+                migration_config,
+                store_path,
                 blockchain,
             )
             .unwrap(),
@@ -105,6 +155,25 @@ impl Setup {
             public_key,
             time: Some(1_000_000),
         }
+    }
+
+    pub fn new(blockchain: bool) -> Self {
+        Setup::_new(blockchain, None)
+    }
+
+    pub fn new_with_migrations(
+        blockchain: bool,
+        migrations: impl IntoIterator<Item = impl Into<MigrationHarness>>,
+    ) -> Self {
+        let migrations = format!(
+            r#"{{ "migrations": [{}] }}"#,
+            migrations
+                .into_iter()
+                .map(|x| x.into().to_json_str())
+                .join(",")
+        );
+
+        Setup::_new(blockchain, Some(serde_json::from_str(&migrations).unwrap()))
     }
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {
@@ -263,7 +332,8 @@ impl Setup {
                     threshold: None,
                     timeout_in_secs: None,
                     execute_automatically: None,
-                    data: None,
+                    data_: None,
+                    memo_: None,
                 },
             )
             .map(|x| x.token)
@@ -481,7 +551,8 @@ fn event_from_kind(
                     threshold: None,
                     timeout_in_secs: None,
                     execute_automatically: Some(false),
-                    data: None,
+                    data_: None,
+                    memo_: None,
                 },
             )
         }
@@ -496,7 +567,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()
@@ -516,7 +588,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()
@@ -537,7 +610,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()
@@ -564,7 +638,8 @@ fn event_from_kind(
                         threshold: None,
                         timeout_in_secs: None,
                         execute_automatically: Some(false),
-                        data: None,
+                        data_: None,
+                        memo_: None,
                     },
                 )
                 .unwrap()

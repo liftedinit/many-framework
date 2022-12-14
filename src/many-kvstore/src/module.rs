@@ -21,6 +21,7 @@ use std::path::Path;
 use tracing::info;
 
 pub mod account;
+pub mod allow_addrs;
 mod event;
 
 // The initial state schema, loaded from JSON.

@@ -2,14 +2,15 @@ use async_trait::async_trait;
 use coset::{CborSerializable, CoseSign1};
 use many_error::ManyError;
 use many_identity::verifiers::AnonymousVerifier;
-use many_identity::Identity;
+use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity_webauthn::WebAuthnVerifier;
 use many_modules::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
 use many_modules::base;
 use many_protocol::{
     decode_request_from_cose_sign1, decode_response_from_cose_sign1,
-    encode_cose_sign1_from_request, encode_cose_sign1_from_response, RequestMessageBuilder,
-    ResponseMessage,
+    encode_cose_sign1_from_request, encode_cose_sign1_from_response, ManyUrl,
+    RequestMessageBuilder, ResponseMessage,
 };
 use many_server::transport::LowLevelManyRequestHandler;
 use many_types::attributes::Attribute;
@@ -24,10 +25,18 @@ pub struct AbciModuleMany<C: Client> {
     backend_status: base::Status,
     identity: CoseKeyIdentity,
     backend_endpoints: BTreeMap<String, EndpointInfo>,
+    allow_addrs: Option<BTreeSet<Address>>,
+    allow_origin: Option<Vec<ManyUrl>>,
 }
 
 impl<C: Client + Sync> AbciModuleMany<C> {
-    pub async fn new(client: C, backend_status: base::Status, identity: CoseKeyIdentity) -> Self {
+    pub async fn new(
+        client: C,
+        backend_status: base::Status,
+        identity: CoseKeyIdentity,
+        allow_addrs: Option<BTreeSet<Address>>,
+        allow_origin: Option<Vec<ManyUrl>>,
+    ) -> Self {
         let init_message = RequestMessageBuilder::default()
             .from(identity.address())
             .method("abci.init".to_string())
@@ -40,9 +49,16 @@ impl<C: Client + Sync> AbciModuleMany<C> {
 
         let response = client.abci_query(None, data, None, false).await.unwrap();
         let response = CoseSign1::from_slice(&response.value).unwrap();
-        let response =
-            decode_response_from_cose_sign1(&response, None, &(AnonymousVerifier, CoseKeyVerifier))
-                .unwrap();
+        let response = decode_response_from_cose_sign1(
+            &response,
+            None,
+            &(
+                AnonymousVerifier,
+                CoseKeyVerifier,
+                WebAuthnVerifier::new(allow_origin.clone()),
+            ),
+        )
+        .unwrap();
         let init_message: AbciInit = minicbor::decode(&response.data.unwrap()).unwrap();
 
         Self {
@@ -50,12 +66,20 @@ impl<C: Client + Sync> AbciModuleMany<C> {
             backend_status,
             identity,
             backend_endpoints: init_message.endpoints,
+            allow_addrs,
+            allow_origin,
         }
     }
 
     async fn execute_message(&self, envelope: CoseSign1) -> Result<CoseSign1, ManyError> {
-        let message =
-            decode_request_from_cose_sign1(&envelope, &(AnonymousVerifier, CoseKeyVerifier))?;
+        let message = decode_request_from_cose_sign1(
+            &envelope,
+            &(
+                AnonymousVerifier,
+                CoseKeyVerifier,
+                WebAuthnVerifier::new(self.allow_origin.clone()),
+            ),
+        )?;
         if let Some(info) = self.backend_endpoints.get(&message.method) {
             let is_command = info.is_command;
             let data = envelope
@@ -63,6 +87,13 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                 .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
 
             if is_command {
+                // TODO: Refactor this when `is_some_and` and/or `let-chains` are stabilized
+                if self.allow_addrs.is_some()
+                    && !self.allow_addrs.as_ref().unwrap().contains(&message.from())
+                {
+                    return Err(ManyError::invalid_from_identity());
+                }
+
                 let response = self
                     .client
                     .broadcast_tx_sync(tendermint_rpc::abci::Transaction::from(data))

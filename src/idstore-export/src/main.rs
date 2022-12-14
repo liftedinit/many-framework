@@ -23,7 +23,7 @@ struct JsonRoot {
 fn main() {
     let Opts { store } = Opts::parse();
 
-    let merk = merk::Merk::open(&store).expect("Could not open the store.");
+    let merk = merk::Merk::open(store).expect("Could not open the store.");
 
     let mut upper_bound = IDSTORE_ROOT.to_vec();
     *upper_bound.last_mut().expect("Unreachable") += 1;
@@ -38,7 +38,7 @@ fn main() {
         let new_v = Tree::decode(key.to_vec(), value.as_ref());
         let value = new_v.value().to_vec();
 
-        idstore.insert(base64::encode(key.as_ref()), base64::encode(&value));
+        idstore.insert(base64::encode(key.as_ref()), base64::encode(value));
     }
 
     let root = JsonRoot {

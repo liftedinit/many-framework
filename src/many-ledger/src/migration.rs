@@ -1,12 +1,17 @@
-use many_protocol::ResponseMessage;
+use linkme::distributed_slice;
+use many_error::ManyError;
+use many_migration::{InnerMigration, MigrationSet};
 
-#[cfg(feature = "block_9400")]
-mod block_9400;
+pub mod block_9400;
+pub mod data;
+pub mod memo;
 
-pub fn migrate(tx_id: &[u8], response: ResponseMessage) -> ResponseMessage {
-    match hex::encode(tx_id).as_str() {
-        #[cfg(feature = "block_9400")]
-        "241e00000001" => block_9400::migrate(response),
-        _ => response,
-    }
-}
+#[cfg(feature = "migration_testing")]
+pub mod dummy_hotfix;
+
+pub type LedgerMigrations = MigrationSet<'static, merk::Merk>;
+
+// This is the global migration registry
+// Doesn't contain any metadata
+#[distributed_slice]
+pub static MIGRATIONS: [InnerMigration<merk::Merk, ManyError>] = [..];

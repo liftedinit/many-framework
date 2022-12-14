@@ -1,16 +1,24 @@
+use clap::__macro_refs::once_cell;
+use coset::CborSerializable;
+use itertools::Itertools;
 use many_client::client::blocking::block_on;
 use many_error::ManyError;
-use many_identity::Address;
+use many_identity::{Address, AnonymousIdentity};
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{abci_frontend, blockchain, r#async};
-use many_protocol::ResponseMessage;
+use many_protocol::{encode_cose_sign1_from_response, ResponseMessage};
 use many_types::blockchain::{
     Block, BlockIdentifier, SingleBlockQuery, SingleTransactionQuery, Transaction,
     TransactionIdentifier,
 };
-use many_types::Timestamp;
+use many_types::{blockchain::RangeBlockQuery, SortOrder, Timestamp};
+use once_cell::sync::Lazy;
+use std::ops::{Bound, RangeBounds};
 use tendermint::Time;
-use tendermint_rpc::Client;
+use tendermint_rpc::{query::Query, Client};
+
+const MAXIMUM_BLOCK_COUNT: u64 = 100;
+static DEFAULT_BLOCK_LIST_QUERY: Lazy<Query> = Lazy::new(|| Query::gte("block.height", 0));
 
 fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
     let height = block.header.height.value();
@@ -47,12 +55,51 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
                 .time
                 .duration_since(Time::unix_epoch())
                 .unwrap()
-                .as_secs() as u64,
+                .as_secs(),
         )
         .unwrap(),
         txs_count,
         txs,
     }
+}
+
+fn _tm_order_from_many_order(order: SortOrder) -> tendermint_rpc::Order {
+    match order {
+        SortOrder::Ascending => tendermint_rpc::Order::Ascending,
+        SortOrder::Descending => tendermint_rpc::Order::Descending,
+        _ => tendermint_rpc::Order::Ascending,
+    }
+}
+
+fn _tm_query_from_many_filter(
+    filter: RangeBlockQuery,
+) -> Result<tendermint_rpc::query::Query, ManyError> {
+    let mut query = tendermint_rpc::query::Query::default();
+    query = match filter {
+        RangeBlockQuery::Height(range) => {
+            query = match range.start_bound() {
+                Bound::Included(x) => query.and_gte("block.height", *x),
+                Bound::Excluded(x) => query.and_gt("block.height", *x),
+                _ => query,
+            };
+            query = match range.end_bound() {
+                Bound::Included(x) => query.and_lte("block.height", *x),
+                Bound::Excluded(x) => query.and_lt("block.height", *x),
+                _ => query,
+            };
+            query
+        }
+        RangeBlockQuery::Time(_range) => return Err(ManyError::unknown("Unimplemented")),
+    };
+
+    // The default query returns an error (TM 0.35)
+    // Return all blocks
+    // TODO: Test on TM 0.34 and report an issue in TM-rs if reproducible
+    if query.to_string().is_empty() {
+        query = DEFAULT_BLOCK_LIST_QUERY.clone();
+    }
+
+    Ok(query)
 }
 
 pub struct AbciBlockchainModuleImpl<C: Client> {
@@ -86,8 +133,12 @@ impl<C: Client + Send + Sync> r#async::AsyncModuleBackend for AbciBlockchainModu
                         tracing::warn!("result: {}", hex::encode(tx.tx_result.data.value()));
                         Ok(StatusReturn::Done {
                             response: Box::new(
-                                ResponseMessage::from_bytes(tx.tx_result.data.value())
-                                    .map_err(abci_frontend::abci_transport_error)?,
+                                encode_cose_sign1_from_response(
+                                    ResponseMessage::from_bytes(tx.tx_result.data.value())
+                                        .map_err(abci_frontend::abci_transport_error)?,
+                                    &AnonymousIdentity,
+                                )
+                                .map_err(abci_frontend::abci_transport_error)?,
                             ),
                         })
                     }
@@ -184,5 +235,123 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         } else {
             Err(blockchain::unknown_block())
         }
+    }
+
+    fn list(&self, args: blockchain::ListArgs) -> Result<blockchain::ListReturns, ManyError> {
+        let blockchain::ListArgs {
+            count,
+            order,
+            filter,
+        } = args;
+
+        let count = count.map_or(MAXIMUM_BLOCK_COUNT, |c| {
+            std::cmp::min(c, MAXIMUM_BLOCK_COUNT)
+        });
+
+        // We can get maximum u8::MAX blocks per page and a maximum of u32::MAX pages
+        // Find the correct number of pages and count
+        let (pages, count): (u32, u8) = if count > u8::MAX as u64 {
+            (
+                num_integer::div_ceil(count, u8::MAX as u64)
+                    .try_into()
+                    .map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?,
+                u8::MAX,
+            )
+        } else {
+            (1u32, count as u8)
+        };
+
+        let order = order.map_or(tendermint_rpc::Order::Ascending, _tm_order_from_many_order);
+
+        let query = filter.map_or(
+            Ok(DEFAULT_BLOCK_LIST_QUERY.clone()),
+            _tm_query_from_many_filter,
+        )?;
+
+        let (status, block) = block_on(async move {
+            let status = self.client.status().await;
+            let block = self.client.block_search(query, pages, count, order).await;
+            (status, block)
+        });
+
+        let blocks = block
+            .map_err(ManyError::unknown)?
+            .blocks
+            .into_iter()
+            .map(|x| _many_block_from_tendermint_block(x.block))
+            .collect_vec();
+
+        Ok(blockchain::ListReturns {
+            height: status
+                .map_err(ManyError::unknown)?
+                .sync_info
+                .latest_block_height
+                .value(),
+            blocks,
+        })
+    }
+
+    fn request(
+        &self,
+        args: blockchain::RequestArgs,
+    ) -> Result<blockchain::RequestReturns, ManyError> {
+        let tx = block_on(async {
+            match args.query {
+                SingleTransactionQuery::Hash(hash) => {
+                    if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
+                        self.client
+                            .tx(tendermint_rpc::abci::transaction::Hash::new(hash), true)
+                            .await
+                            .map_err(|e| {
+                                tracing::error!("abci transport: {}", e.to_string());
+                                abci_frontend::abci_transport_error(e.to_string())
+                            })
+                    } else {
+                        Err(ManyError::unknown("Invalid transaction hash .".to_string()))
+                    }
+                }
+            }
+        })?;
+
+        tracing::debug!("blockchain.request: {}", hex::encode(tx.tx.as_bytes()));
+
+        Ok(blockchain::RequestReturns {
+            request: tx.tx.as_bytes().to_vec(),
+        })
+    }
+
+    fn response(
+        &self,
+        args: blockchain::ResponseArgs,
+    ) -> Result<blockchain::ResponseReturns, ManyError> {
+        let tx = block_on(async {
+            match args.query {
+                SingleTransactionQuery::Hash(hash) => {
+                    if let Ok(hash) = TryInto::<[u8; 32]>::try_into(hash) {
+                        self.client
+                            .tx(tendermint_rpc::abci::transaction::Hash::new(hash), true)
+                            .await
+                            .map_err(|e| {
+                                tracing::error!("abci transport: {}", e.to_string());
+                                abci_frontend::abci_transport_error(e.to_string())
+                            })
+                    } else {
+                        Err(ManyError::unknown("Invalid transaction hash .".to_string()))
+                    }
+                }
+            }
+        })?;
+
+        tracing::debug!(
+            "blockchain.response: {}",
+            hex::encode(tx.tx_result.data.value())
+        );
+        let response: ResponseMessage = minicbor::decode(tx.tx_result.data.value())
+            .map_err(ManyError::deserialization_error)?;
+        Ok(blockchain::ResponseReturns {
+            response: encode_cose_sign1_from_response(response, &AnonymousIdentity)?
+                .to_vec()
+                .map_err(ManyError::serialization_error)?,
+        })
     }
 }

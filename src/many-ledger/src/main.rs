@@ -1,29 +1,37 @@
+#![feature(used_with_arg)]
+
 use clap::Parser;
 use many_identity::verifiers::AnonymousVerifier;
-#[cfg(feature = "balance_testing")]
-use many_identity::Address;
-use many_identity::Identity;
+use many_identity::{Address, Identity};
 use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
+use many_identity_webauthn::WebAuthnVerifier;
+use many_migration::MigrationConfig;
 use many_modules::account::features::Feature;
-use many_modules::{abci_backend, account, events, idstore, ledger};
+use many_modules::{abci_backend, account, data, events, idstore, ledger};
 use many_protocol::ManyUrl;
 use many_server::transport::http::HttpServer;
 use many_server::ManyServer;
+use std::collections::BTreeSet;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::level_filters::LevelFilter;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
+
+use crate::allow_addrs::AllowAddrsModule;
+
+#[cfg(feature = "webauthn_testing")]
+use crate::idstore_webauthn::IdStoreWebAuthnModule;
+use crate::json::InitialStateJson;
+use crate::migration::MIGRATIONS;
+use crate::module::account::AccountFeatureModule;
+use module::*;
 
 mod error;
 mod json;
-#[cfg(feature = "migrate_blocks")]
 mod migration;
 mod module;
 mod storage;
-
-use crate::json::InitialStateJson;
-use module::*;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
 enum LogStrategy {
@@ -43,8 +51,9 @@ struct Opts {
     quiet: i8,
 
     /// The location of a PEM file for the identity of this server.
-    #[clap(long)]
-    pem: PathBuf,
+    // The field needs to be an Option for the clap derive to work properly.
+    #[clap(long, required = true)]
+    pem: Option<PathBuf>,
 
     /// The address and port to bind to for the MANY Http server.
     #[clap(long, short, default_value = "127.0.0.1:8000")]
@@ -59,8 +68,9 @@ struct Opts {
     state: Option<PathBuf>,
 
     /// Path to a persistent store database (rocksdb).
-    #[clap(long)]
-    persistent: PathBuf,
+    // The field needs to be an Option for the clap derive to work properly.
+    #[clap(long, required = true)]
+    persistent: Option<PathBuf>,
 
     /// Delete the persistent storage to start from a clean state.
     /// If this is not specified the initial state will not be used.
@@ -93,6 +103,22 @@ struct Opts {
     /// Use given logging strategy
     #[clap(long, arg_enum, default_value_t = LogStrategy::Terminal)]
     logmode: LogStrategy,
+
+    /// Path to a JSON file containing the configurations for the
+    /// migrations. Migrations are DISABLED unless this configuration file
+    /// is given.
+    #[clap(long, short)]
+    migrations_config: Option<PathBuf>,
+
+    /// List built-in migrations supported by this binary
+    #[clap(long, exclusive = true)]
+    list_migrations: bool,
+
+    /// Path to a JSON file containing an array of MANY addresses
+    /// Only addresses from this array will be able to execute commands, e.g., send, put, ...
+    /// Any addresses will be able to execute queries, e.g., balance, get, ...
+    #[clap(long)]
+    allow_addrs: Option<PathBuf>,
 }
 
 fn main() {
@@ -106,6 +132,10 @@ fn main() {
         persistent,
         clean,
         logmode,
+        migrations_config,
+        allow_origin,
+        allow_addrs,
+        list_migrations,
         ..
     } = Opts::parse();
 
@@ -129,7 +159,7 @@ fn main() {
         LogStrategy::Syslog => {
             let identity = std::ffi::CStr::from_bytes_with_nul(b"many-ledger\0").unwrap();
             let (options, facility) = Default::default();
-            let syslog = tracing_syslog::Syslog::new(identity, options, facility).unwrap();
+            let syslog = syslog_tracing::Syslog::new(identity, options, facility).unwrap();
 
             let subscriber = subscriber.with_ansi(false).with_writer(syslog);
             subscriber.init();
@@ -142,6 +172,19 @@ fn main() {
         git_sha = env!("VERGEN_GIT_SHA")
     );
 
+    if list_migrations {
+        for migration in MIGRATIONS {
+            println!("Name: {}", migration.name());
+            println!("Description: {}", migration.description());
+        }
+        return;
+    }
+
+    // Safe unwrap.
+    // At this point the Options should contain a value.
+    let pem = pem.unwrap();
+    let persistent = persistent.unwrap();
+
     if clean {
         // Delete the persistent storage.
         // Ignore NotFound errors.
@@ -149,7 +192,7 @@ fn main() {
             Ok(_) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => {
-                panic!("Error: {}", e)
+                panic!("Error: {e}")
             }
         }
     } else if persistent.exists() {
@@ -157,53 +200,107 @@ fn main() {
         state = None;
     }
 
-    let pem = std::fs::read_to_string(&pem).expect("Could not read PEM file.");
-    let key = CoseKeyIdentity::from_pem(&pem).expect("Could not generate identity from PEM file.");
+    let pem = std::fs::read_to_string(pem).expect("Could not read PEM file.");
+    let key = CoseKeyIdentity::from_pem(pem).expect("Could not generate identity from PEM file.");
     info!(address = key.address().to_string().as_str());
 
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    let module_impl = LedgerModuleImpl::new(state, persistent, abci).unwrap();
-    let module_impl = Arc::new(Mutex::new(module_impl));
+    // TODO: Refactor this piece.
+    info!("Loading migrations from {migrations_config:?}");
+    let maybe_migrations = migrations_config.map(|file| {
+        let content = std::fs::read_to_string(file)
+            .expect("Could not read file passed to --migrations_config");
+        let config: MigrationConfig = serde_json::from_str(&content).unwrap();
+        config.strict()
+    });
 
-    #[cfg(feature = "balance_testing")]
-    {
-        use std::str::FromStr;
-
-        let mut module_impl = module_impl.lock().unwrap();
-
-        let Opts {
-            balance_only_for_testing,
-            ..
-        } = Opts::parse();
-        for balance in balance_only_for_testing.unwrap_or_default() {
-            let args: Vec<&str> = balance.splitn(3, ':').collect();
-            let (identity, amount, symbol) = (
-                args.first().unwrap(),
-                args.get(1).expect("No amount."),
-                args.get(2).expect("No symbol."),
+    let module_impl = if persistent.exists() {
+        if state.is_some() {
+            warn!(
+                r#"
+                An existing persistent store {} was found and a staging file {state:?} was given.
+                Ignoring staging file and loading existing persistent store.
+                "#,
+                persistent.display()
             );
-
-            module_impl.set_balance_only_for_testing(
-                Address::from_str(identity).expect("Invalid identity."),
-                amount.parse::<u64>().expect("Invalid amount."),
-                Address::from_str(symbol).expect("Invalid symbol."),
-            )
         }
-    }
+
+        #[cfg(feature = "balance_testing")]
+        {
+            let Opts {
+                balance_only_for_testing,
+                ..
+            } = Opts::parse();
+            if balance_only_for_testing.is_some() {
+                warn!("Loading existing persistent store, ignoring --balance_only_for_testing");
+            }
+        }
+
+        LedgerModuleImpl::load(maybe_migrations, persistent, abci).unwrap()
+    } else if let Some(state) = state {
+        #[cfg(feature = "balance_testing")]
+        {
+            let mut module_impl =
+                LedgerModuleImpl::new(state, maybe_migrations, persistent, abci).unwrap();
+
+            use std::str::FromStr;
+
+            let Opts {
+                balance_only_for_testing,
+                ..
+            } = Opts::parse();
+
+            for balance in balance_only_for_testing.unwrap_or_default() {
+                let args: Vec<&str> = balance.splitn(3, ':').collect();
+                let (identity, amount, symbol) = (
+                    args.first().unwrap(),
+                    args.get(1).expect("No amount."),
+                    args.get(2).expect("No symbol."),
+                );
+
+                module_impl.set_balance_only_for_testing(
+                    Address::from_str(identity).expect("Invalid identity."),
+                    amount.parse::<u64>().expect("Invalid amount."),
+                    Address::from_str(symbol).expect("Invalid symbol."),
+                )
+            }
+            module_impl
+        }
+
+        #[cfg(not(feature = "balance_testing"))]
+        LedgerModuleImpl::new(state, maybe_migrations, persistent, abci).unwrap()
+    } else {
+        panic!("Persistent store or staging file not found.")
+    };
+    let module_impl = Arc::new(Mutex::new(module_impl));
 
     let many = ManyServer::simple(
         "many-ledger",
         key,
-        (AnonymousVerifier, CoseKeyVerifier),
+        (
+            AnonymousVerifier,
+            CoseKeyVerifier,
+            WebAuthnVerifier::new(allow_origin),
+        ),
         Some(env!("CARGO_PKG_VERSION").to_string()),
     );
 
     {
         let mut s = many.lock().unwrap();
         s.add_module(ledger::LedgerModule::new(module_impl.clone()));
-        s.add_module(ledger::LedgerCommandsModule::new(module_impl.clone()));
+        let ledger_command_module = ledger::LedgerCommandsModule::new(module_impl.clone());
+        if let Some(path) = allow_addrs {
+            let allow_addrs: BTreeSet<Address> =
+                json5::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            s.add_module(AllowAddrsModule {
+                inner: ledger_command_module,
+                allow_addrs,
+            });
+        } else {
+            s.add_module(ledger_command_module);
+        }
         s.add_module(events::EventsModule::new(module_impl.clone()));
 
         let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
@@ -233,6 +330,7 @@ fn main() {
         s.add_module(account::features::multisig::AccountMultisigModule::new(
             module_impl.clone(),
         ));
+        s.add_module(data::DataModule::new(module_impl.clone()));
         if abci {
             s.set_timeout(u64::MAX);
             s.add_module(abci_backend::AbciModule::new(module_impl));

@@ -4,15 +4,26 @@ use common::*;
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
-use many_modules::events;
-use many_modules::events::EventsModuleBackend;
+use many_modules::account::features::multisig::{
+    self, AccountMultisigModuleBackend, MultisigTransactionState,
+};
+use many_modules::events::{
+    self, EventFilterAttributeSpecific, EventFilterAttributeSpecificIndex, EventsModuleBackend,
+};
 use many_modules::ledger;
 use many_modules::ledger::LedgerCommandsModuleBackend;
-use many_types::{CborRange, Timestamp};
+use many_types::{CborRange, Memo, Timestamp};
+use proptest::prelude::*;
+use proptest::test_runner::Config;
+use std::collections::BTreeMap;
 use std::ops::Bound;
 
 fn send(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
     module_impl.set_balance_only_for_testing(from, 1000, *MFX_SYMBOL);
+    send_(module_impl, from, to);
+}
+
+fn send_(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
     let result = module_impl.send(
         &from,
         ledger::SendArgs {
@@ -58,6 +69,103 @@ fn list() {
     let list_return = result.unwrap();
     assert_eq!(list_return.nb_events, 1);
     assert_eq!(list_return.events.len(), 1);
+}
+
+#[test]
+fn list_many() {
+    let Setup {
+        mut module_impl,
+        id,
+        ..
+    } = setup();
+
+    send(&mut module_impl, id, identity(1));
+    let result = module_impl.list(events::ListArgs {
+        count: None,
+        order: None,
+        filter: None,
+    });
+    assert!(result.is_ok());
+    let list_return = result.unwrap();
+    assert_eq!(list_return.nb_events, 1);
+    assert_eq!(list_return.events.len(), 1);
+
+    send(&mut module_impl, id, identity(1));
+    let list_return = module_impl
+        .list(events::ListArgs {
+            count: None,
+            order: None,
+            filter: None,
+        })
+        .unwrap();
+    assert_eq!(list_return.nb_events, 2);
+    assert_eq!(list_return.events.len(), 2);
+
+    send(&mut module_impl, identity(1), identity(2));
+    let list_return = module_impl
+        .list(events::ListArgs {
+            count: None,
+            order: None,
+            filter: None,
+        })
+        .unwrap();
+    assert_eq!(list_return.nb_events, 3);
+    assert_eq!(list_return.events.len(), 3);
+
+    let list_return = module_impl
+        .list(events::ListArgs {
+            count: Some(2),
+            order: None,
+            filter: None,
+        })
+        .unwrap();
+    assert_eq!(list_return.nb_events, 3);
+    assert_eq!(list_return.events.len(), 2);
+}
+
+#[test]
+fn list_blockchain() {
+    let mut setup = Setup::new(true);
+    let id = setup.id;
+    setup.set_balance(id, 1000, *MFX_SYMBOL);
+    setup.block(|_| {});
+
+    let result = setup.module_impl.list(events::ListArgs {
+        count: None,
+        order: None,
+        filter: None,
+    });
+    assert!(result.is_ok());
+    let list_return = result.unwrap();
+    assert_eq!(list_return.nb_events, 0);
+    assert_eq!(list_return.events.len(), 0);
+
+    for i in 1..=3 {
+        setup.block(|setup| {
+            send_(&mut setup.module_impl, id, identity(1));
+        });
+        let list_return = setup
+            .module_impl
+            .list(events::ListArgs {
+                count: None,
+                order: None,
+                filter: None,
+            })
+            .unwrap();
+        assert_eq!(list_return.nb_events, i);
+        assert_eq!(list_return.events.len(), i as usize);
+    }
+
+    let list_return = setup
+        .module_impl
+        .list(events::ListArgs {
+            count: Some(2),
+            order: None,
+            filter: None,
+        })
+        .unwrap();
+    assert_eq!(list_return.nb_events, 3);
+    assert_eq!(list_return.events.len(), 2);
 }
 
 #[test]
@@ -206,4 +314,66 @@ fn list_filter_date() {
     assert!(result.is_ok());
     let list_return = result.unwrap();
     assert_eq!(list_return.events.len(), 0);
+}
+
+fn submit_args(
+    account_id: Address,
+    transaction: events::AccountMultisigTransaction,
+    execute_automatically: Option<bool>,
+) -> multisig::SubmitTransactionArgs {
+    multisig::SubmitTransactionArgs {
+        account: account_id,
+        memo: Some(Memo::try_from("Foo".to_string()).unwrap()),
+        transaction: Box::new(transaction),
+        threshold: None,
+        timeout_in_secs: None,
+        execute_automatically,
+        data_: None,
+        memo_: None,
+    }
+}
+
+proptest! {
+    #![proptest_config(Config {cases: 200, source_file: Some("tests/events"), .. Config::default()})]
+
+    // TODO test more MultiSigTransactionState variants
+    #[test]
+    fn list_filter_attribute_specific(SetupWithAccountAndTx {
+        mut module_impl,
+        id,
+        account_id,
+        tx,
+    } in setup_with_account_and_tx(AccountType::Multisig)) {
+        let submit_args = submit_args(account_id, tx, None);
+        module_impl
+            .multisig_submit_transaction(&id, submit_args)
+            .expect("Multisig transaction should be sent");
+
+        let result = module_impl.list(events::ListArgs {
+            count: None,
+            order: None,
+            filter: Some(events::EventFilter{
+                events_filter_attribute_specific: BTreeMap::from([
+                    (EventFilterAttributeSpecificIndex::MultisigTransactionState,
+                     EventFilterAttributeSpecific::MultisigTransactionState(vec![MultisigTransactionState::Pending].into()))
+                ]),
+                ..events::EventFilter::default()
+            })
+        }).expect("List should return a value");
+
+        assert!(!result.events.is_empty());
+
+        let result = module_impl.list(events::ListArgs {
+            count: None,
+            order: None,
+            filter: Some(events::EventFilter{
+                events_filter_attribute_specific: BTreeMap::from([
+                    (EventFilterAttributeSpecificIndex::MultisigTransactionState,
+                     EventFilterAttributeSpecific::MultisigTransactionState(vec![MultisigTransactionState::Withdrawn].into()))
+                ]),
+                ..events::EventFilter::default()
+            })
+        }).expect("List should return a value");
+        assert!(result.events.is_empty());
+    }
 }

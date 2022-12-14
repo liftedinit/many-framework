@@ -62,7 +62,11 @@ rust_test(
 rust_test_suite(
     name = "many-ledger-test-suite",
     srcs = glob(include = ["tests/*.rs"]),
-    compile_data = ["tests/common/mod.rs"],
+    compile_data = [
+        "tests/common/mod.rs",
+        "tests/migration_/mod.rs",
+        "tests/migration_/memo.rs",
+    ],
     crate_features = ["balance_testing"],
     data = ["//:staging/ledger_state.json5"],
     proc_macro_deps = all_crate_deps(
