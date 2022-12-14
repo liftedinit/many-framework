@@ -1420,9 +1420,9 @@ checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
 name = "headers"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cff78e5788be1e0ab65b04d306b2ed5092c815ec97ec70f4ebd5aee158aa55d"
+checksum = "f3e372db8e5c0d213e0cd0b9be18be2aca3d44cf2fe30a9d46a65581cd454584"
 dependencies = [
  "base64 0.13.0",
  "bitflags",
@@ -1431,7 +1431,7 @@ dependencies = [
  "http",
  "httpdate",
  "mime",
- "sha-1 0.10.0",
+ "sha1",
 ]
 
 [[package]]
@@ -2624,7 +2624,7 @@ checksum = "54be6e404f5317079812fc8f9f5279de376d8856929e21c184ecf6bbd692a11d"
 dependencies = [
  "maplit",
  "pest",
- "sha-1 0.8.2",
+ "sha-1",
 ]
 
 [[package]]
@@ -3272,10 +3272,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha-1"
-version = "0.10.0"
+name = "sha1"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "028f48d513f9678cda28f6e4064755b3fbb2af6acd672f2c209b62323f7aea0f"
+checksum = "006769ba83e921b3085caa8334186b00cf92b4cb1a6cf4632fbccc8eff5c7549"
 dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures",
@@ -3570,7 +3570,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?rev=ab896a6971b1782ecf45e0c2dae553bce798c39b#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3598,7 +3598,7 @@ dependencies = [
 [[package]]
 name = "tendermint-abci"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?rev=ab896a6971b1782ecf45e0c2dae553bce798c39b#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3610,7 +3610,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?rev=ab896a6971b1782ecf45e0c2dae553bce798c39b#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "flex-error",
  "serde",
@@ -3623,7 +3623,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?rev=ab896a6971b1782ecf45e0c2dae553bce798c39b#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3640,7 +3640,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.24.0-pre.2"
-source = "git+https://github.com/informalsystems/tendermint-rs.git#ab896a6971b1782ecf45e0c2dae553bce798c39b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?rev=ab896a6971b1782ecf45e0c2dae553bce798c39b#ab896a6971b1782ecf45e0c2dae553bce798c39b"
 dependencies = [
  "async-trait",
  "bytes",
