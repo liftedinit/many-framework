@@ -6,12 +6,14 @@ use many_error::ManyError;
 use many_identity::{Address, AnonymousIdentity};
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{abci_frontend, blockchain, r#async};
-use many_protocol::{encode_cose_sign1_from_response, ResponseMessage};
-use many_types::blockchain::{
-    Block, BlockIdentifier, SingleBlockQuery, SingleTransactionQuery, Transaction,
-    TransactionIdentifier,
-};
 use many_types::{blockchain::RangeBlockQuery, SortOrder, Timestamp};
+use many_types::{
+    blockchain::{
+        Block, BlockIdentifier, SingleBlockQuery, SingleTransactionQuery, Transaction,
+        TransactionIdentifier,
+    },
+    encode_cose_sign1_from_response, ResponseMessage,
+};
 use once_cell::sync::Lazy;
 use std::ops::{Bound, RangeBounds};
 use tendermint::Time;
@@ -34,7 +36,8 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
                 id: TransactionIdentifier {
                     hash: hasher.finalize().to_vec(),
                 },
-                content: Some(b),
+                request: minicbor::decode(b.as_ref()).ok(),
+                response: None,
             }
         })
         .collect();
@@ -195,7 +198,8 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         Ok(blockchain::TransactionReturns {
             txn: Transaction {
                 id: TransactionIdentifier { hash: tx_hash },
-                content: None,
+                request: None,
+                response: None,
             },
         })
     }

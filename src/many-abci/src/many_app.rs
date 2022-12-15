@@ -7,14 +7,14 @@ use many_identity_dsa::{CoseKeyIdentity, CoseKeyVerifier};
 use many_identity_webauthn::WebAuthnVerifier;
 use many_modules::abci_backend::{AbciInit, EndpointInfo, ABCI_MODULE_ATTRIBUTE};
 use many_modules::base;
-use many_protocol::{
+use many_server::transport::LowLevelManyRequestHandler;
+use many_types::attributes::Attribute;
+use many_types::cbor::CborAny;
+use many_types::{
     decode_request_from_cose_sign1, decode_response_from_cose_sign1,
     encode_cose_sign1_from_request, encode_cose_sign1_from_response, ManyUrl,
     RequestMessageBuilder, ResponseMessage,
 };
-use many_server::transport::LowLevelManyRequestHandler;
-use many_types::attributes::Attribute;
-use many_types::cbor::CborAny;
 use std::collections::{BTreeMap, BTreeSet};
 use std::default::Default;
 use std::fmt::{Debug, Formatter};

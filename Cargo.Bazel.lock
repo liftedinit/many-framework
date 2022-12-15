@@ -252,9 +252,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.20.0-alpha.1"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "149ea5dc24cb11513350770afebba32b68e3d2e356f9221351a2a1ee89112a82"
+checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
 
 [[package]]
 name = "base64ct"
@@ -1681,7 +1681,7 @@ dependencies = [
 name = "idstore-export"
 version = "0.1.0"
 dependencies = [
- "base64 0.20.0-alpha.1",
+ "base64 0.20.0",
  "clap 3.2.23",
  "merk",
  "serde",
@@ -1744,9 +1744,9 @@ dependencies = [
 
 [[package]]
 name = "ipnet"
-version = "2.5.1"
+version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f88c5561171189e69df9d98bcf18fd5f9558300f7ea7b801eb8a0fd748bd8745"
+checksum = "11b0d96e660696543b251e58030cf9787df56da39dab19ad60eae7353040917e"
 
 [[package]]
 name = "itertools"
@@ -1877,9 +1877,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.137"
+version = "0.2.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
+checksum = "db6d7e329c562c5dfab7a46a2afabc8b987ab9a4834c9d1ca04dc54c1546cef8"
 
 [[package]]
 name = "libgit2-sys"
@@ -2009,7 +2009,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2028,7 +2028,6 @@ dependencies = [
  "many-identity",
  "many-identity-dsa",
  "many-modules",
- "many-protocol",
  "many-server",
  "many-types",
  "minicbor",
@@ -2052,7 +2051,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2062,7 +2061,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2073,7 +2072,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "base32",
  "coset",
@@ -2093,7 +2092,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2105,6 +2104,7 @@ dependencies = [
  "hex",
  "many-error",
  "many-identity",
+ "many-types",
  "minicbor",
  "once_cell",
  "p256",
@@ -2121,7 +2121,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2130,7 +2130,6 @@ dependencies = [
  "many-error",
  "many-identity",
  "many-identity-dsa",
- "many-protocol",
  "once_cell",
  "p256",
  "sha2 0.10.6",
@@ -2141,14 +2140,14 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "base64 0.13.1",
  "coset",
  "many-error",
  "many-identity",
  "many-identity-dsa",
- "many-protocol",
+ "many-types",
  "minicbor",
  "once_cell",
  "serde",
@@ -2198,7 +2197,7 @@ name = "many-ledger"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "base64 0.20.0-alpha.1",
+ "base64 0.20.0",
  "bip39-dict",
  "clap 3.2.23",
  "coset",
@@ -2244,7 +2243,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2257,7 +2256,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2270,7 +2269,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "async-trait",
  "coset",
@@ -2279,7 +2278,6 @@ dependencies = [
  "many-error",
  "many-identity",
  "many-macros",
- "many-protocol",
  "many-types",
  "minicbor",
  "num-bigint",
@@ -2314,7 +2312,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2335,7 +2333,6 @@ dependencies = [
  "many-identity",
  "many-macros",
  "many-modules",
- "many-protocol",
  "many-types",
  "minicbor",
  "num-bigint",
@@ -2363,9 +2360,10 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=ab09727a574d3abe734a374cd02e31aa6b3388f7#ab09727a574d3abe734a374cd02e31aa6b3388f7"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
 dependencies = [
  "coset",
+ "derive_builder 0.10.2",
  "fixed",
  "hex",
  "many-error",
@@ -2375,6 +2373,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "serde",
+ "url",
 ]
 
 [[package]]
@@ -2572,9 +2571,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openssl"
-version = "0.10.43"
+version = "0.10.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "020433887e44c27ff16365eaa2d380547a94544ad509aff6eb5b6e3e0b27b376"
+checksum = "29d971fd5722fec23977260f6e81aa67d2f22cadbdc2aa049f1022d9a3be1566"
 dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
@@ -2604,9 +2603,9 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.78"
+version = "0.9.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07d5c8cb6e57b3a3612064d7b18b117912b4ce70955c2504d4b741c9e244b132"
+checksum = "5454462c0eced1e97f2ec09036abc8da362e66802f66fd20f86854d9d8cbcbc4"
 dependencies = [
  "autocfg",
  "cc",
@@ -2750,9 +2749,9 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "pest"
-version = "2.5.0"
+version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f400b0f7905bf702f9f3dc3df5a121b16c54e9e8012c082905fdf09a931861a"
+checksum = "cc8bed3549e0f9b0a2a78bf7c0018237a2cdf085eecbbc048e52612438e4e9d0"
 dependencies = [
  "thiserror",
  "ucd-trie",
@@ -2760,9 +2759,9 @@ dependencies = [
 
 [[package]]
 name = "pest_derive"
-version = "2.5.0"
+version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "423c2ba011d6e27b02b482a3707c773d19aec65cc024637aec44e19652e66f63"
+checksum = "cdc078600d06ff90d4ed238f0119d84ab5d43dbaad278b0e33a8820293b32344"
 dependencies = [
  "pest",
  "pest_generator",
@@ -2770,9 +2769,9 @@ dependencies = [
 
 [[package]]
 name = "pest_generator"
-version = "2.5.0"
+version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e64e6c2c85031c02fdbd9e5c72845445ca0a724d419aa0bc068ac620c9935c1"
+checksum = "28a1af60b1c4148bb269006a750cff8e2ea36aff34d2d96cf7be0b14d1bed23c"
 dependencies = [
  "pest",
  "pest_meta",
@@ -2783,9 +2782,9 @@ dependencies = [
 
 [[package]]
 name = "pest_meta"
-version = "2.5.0"
+version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57959b91f0a133f89a68be874a5c88ed689c19cd729ecdb5d762ebf16c64d662"
+checksum = "fec8605d59fc2ae0c6c1aefc0c7c7a9769732017c0ce07f7a9cfffa7b4404f20"
 dependencies = [
  "once_cell",
  "pest",
@@ -3338,9 +3337,9 @@ checksum = "e25dfac463d778e353db5be2449d1cce89bd6fd23c9f1ea21310ce6e5a1b29c4"
 
 [[package]]
 name = "serde"
-version = "1.0.148"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e53f64bb4ba0191d6d0676e1b141ca55047d83b74f5607e6d8eb88126c52c2dc"
+checksum = "e326c9ec8042f1b5da33252c8a37e9ffbd2c9bef0155215b6e6c80c790e05f91"
 dependencies = [
  "serde_derive",
 ]
@@ -3356,9 +3355,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.148"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a55492425aa53521babf6137309e7d34c20bbfbbfcfe2c7f3a047fd1f6b92c0c"
+checksum = "42a3df25b0713732468deadad63ab9da1f1fd75a48a15024b50363f128db627e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3653,9 +3652,9 @@ checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "syn"
-version = "1.0.104"
+version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ae548ec36cf198c0ef7710d3c230987c2d6d7bd98ad6edc0274462724c585ce"
+checksum = "60b9b43d45702de4c839cb9b51d9f529c5dd26a4aff255b42b1ebc03e88ee908"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3947,9 +3946,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.22.0"
+version = "1.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d76ce4a75fb488c605c54bf610f221cea8b0dafb53333c1a67e8ee199dcd2ae3"
+checksum = "eab6d665857cc6ca78d6e80303a02cea7a7851e85dfbd77cbdc09bd129f1ef46"
 dependencies = [
  "autocfg",
  "bytes",
@@ -3962,7 +3961,7 @@ dependencies = [
  "signal-hook-registry",
  "socket2",
  "tokio-macros",
- "winapi",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]
@@ -4092,9 +4091,9 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
 name = "typenum"
-version = "1.15.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
+checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
 
 [[package]]
 name = "typetag"
@@ -4547,12 +4546,24 @@ dependencies = [
 
 [[package]]
 name = "zeroize_derive"
-version = "1.3.2"
+version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f8f187641dad4f680d25c4bfc4225b418165984179f26ca76ec4fb6441d3a17"
+checksum = "44bf07cb3e50ea2003396695d58bf46bc9887a1f362260446fad6bc4e79bd36c"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "many"
+version = "0.1.0"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
+
+
+[[patch.unused]]
+name = "many-mock"
+version = "0.1.0"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec#38f57fb1245e20b0cffeffd503bede3fbe091e51"
+

@@ -5,8 +5,7 @@ use many_identity::Address;
 use many_modules::account::features::{FeatureInfo, TryCreateFeature};
 use many_modules::account::{AccountModuleBackend, Role};
 use many_modules::{account, EmptyReturn, ManyModule, ManyModuleInfo};
-use many_protocol::{RequestMessage, ResponseMessage};
-use many_types::cbor::CborAny;
+use many_types::{cbor::CborAny, RequestMessage, ResponseMessage};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Debug, Formatter};
 

@@ -3,7 +3,7 @@ use many_client::client::blocking::{block_on, ManyClient};
 use many_error::ManyError;
 use many_identity::{Address, AnonymousIdentity};
 use many_modules::abci_backend::{AbciBlock, AbciCommitInfo, AbciInfo};
-use many_protocol::ResponseMessage;
+use many_types::ResponseMessage;
 use reqwest::{IntoUrl, Url};
 use tendermint_abci::Application;
 use tendermint_proto::abci::*;

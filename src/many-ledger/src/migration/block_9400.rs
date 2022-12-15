@@ -4,8 +4,7 @@ use crate::migration::MIGRATIONS;
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_migration::InnerMigration;
-use many_protocol::ResponseMessage;
-use many_types::Timestamp;
+use many_types::{ResponseMessage, Timestamp};
 use minicbor::{Decode, Encode};
 
 #[derive(Decode, Encode)]

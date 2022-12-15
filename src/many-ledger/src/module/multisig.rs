@@ -3,7 +3,7 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_modules::account::features::multisig;
 use many_modules::EmptyReturn;
-use many_protocol::ResponseMessage;
+use many_types::ResponseMessage;
 use minicbor::bytes::ByteVec;
 
 impl multisig::AccountMultisigModuleBackend for LedgerModuleImpl {

@@ -37,6 +37,21 @@ incremental = false
 #many-protocol = { path = "../many-rs/src/many-protocol" }
 #many-server = { path = "../many-rs/src/many-server" }
 #many-types = { path = "../many-rs/src/many-types" }
+[patch."https://github.com/liftedinit/many-rs.git"]
+many = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-client = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-client-macros = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-error = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-identity = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-identity-dsa = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-identity-hsm = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-identity-webauthn = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-macros = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-migration = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-mock = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-modules = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-server = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-types = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
 
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }

@@ -1,7 +1,7 @@
 use coset::CoseSign1;
 use many_error::ManyError;
 use many_modules::{idstore, ManyModule, ManyModuleInfo};
-use many_protocol::{RequestMessage, ResponseMessage};
+use many_types::{RequestMessage, ResponseMessage};
 use std::fmt::{Debug, Formatter};
 
 pub struct IdStoreWebAuthnModule<T: idstore::IdStoreModuleBackend> {

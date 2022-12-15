@@ -6,8 +6,10 @@ use many_identity_dsa::CoseKeyIdentity;
 use many_identity_hsm::{Hsm, HsmIdentity, HsmMechanismType, HsmSessionType, HsmUserType};
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{ledger, r#async};
-use many_protocol::ResponseMessage;
-use many_types::ledger::{Symbol, TokenAmount};
+use many_types::{
+    ledger::{Symbol, TokenAmount},
+    ResponseMessage,
+};
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};

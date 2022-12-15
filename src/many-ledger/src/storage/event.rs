@@ -7,6 +7,7 @@ use merk::tree::Tree;
 use merk::{rocksdb, Op};
 use std::ops::{Bound, RangeBounds};
 
+pub(crate) const BLOCKS_ROOT: &[u8] = b"/blocks/";
 pub(crate) const EVENTS_ROOT: &[u8] = b"/events/";
 
 // Left-shift the height by this amount of bits
@@ -149,6 +150,16 @@ impl<'a> LedgerIterator<'a> {
 
     pub fn all_events(merk: &'a merk::Merk) -> Self {
         Self::events_scoped_by_id(merk, CborRange::default(), SortOrder::Indeterminate)
+    }
+
+    pub fn all_blocks(merk: &'a merk::Merk) -> Self {
+        Self {
+            inner: merk.iter_opt(rocksdb::IteratorMode::Start, {
+                let mut options = ReadOptions::default();
+                options.set_iterate_range(rocksdb::PrefixRange(BLOCKS_ROOT));
+                options
+            }),
+        }
     }
 
     pub fn events_scoped_by_id(
