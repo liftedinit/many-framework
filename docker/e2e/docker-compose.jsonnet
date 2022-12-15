@@ -48,10 +48,9 @@ local ledger(i, user, id_with_balances) = {
 local tendermint(i, user, tendermint_tag) = {
     image: "tendermint/tendermint:v" + tendermint_tag,
     command: [
-        "--log-level", "info",
         "start",
         "--rpc.laddr", "tcp://0.0.0.0:26657",
-        "--proxy-app", "tcp://abci-" + i + ":26658",
+        "--proxy_app", "tcp://abci-" + i + ":26658",
     ],
     user: "" + user,
     volumes: [
@@ -60,7 +59,7 @@ local tendermint(i, user, tendermint_tag) = {
     ports: [ "" + (26600 + i) + ":26600" ],
 };
 
-function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.35.4") {
+function(nb_nodes=4, user=1000, id_with_balances="", tendermint_tag="0.34.24") {
     version: '3',
     services: {
         ["abci-" + i]: abci(i, user) for i in std.range(0, nb_nodes - 1)

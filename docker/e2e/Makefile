@@ -1,6 +1,6 @@
 NB_NODES ?= 4
 ID_WITH_BALANCES ?=
-TENDERMINT_VERSION ?= 0.35.4
+TENDERMINT_VERSION ?= 0.34.24
 
 .PHONY: clean
 clean:
@@ -65,7 +65,7 @@ genfiles/generate-tendermint-e2e-config:
 		make genfiles/node$$I; \
 		(( I = I + 1 )); \
 	done
-	sh update_config.sh -c "genfiles/node%/tendermint/config" -i tendermint-% $(NB_NODES)
+	sh update_config.sh -c "genfiles/node%/tendermint/config" -r "$$PWD/genfiles/node%/tendermint" -i tendermint-% $(NB_NODES)
 	mkdir -p $(dir $@) && touch $@
 
 .PHONY: start-all-nodes stop-node start-ledger-local

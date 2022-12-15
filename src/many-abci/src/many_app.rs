@@ -60,7 +60,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
             if is_command {
                 let response = self
                     .client
-                    .broadcast_tx_sync(tendermint_rpc::abci::Transaction::from(data))
+                    .broadcast_tx_sync(data)
                     .await
                     .map_err(ManyError::unexpected_transport_error)?;
 
