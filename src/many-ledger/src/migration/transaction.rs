@@ -6,7 +6,7 @@ use many_error::ManyError;
 use many_migration::InnerMigration;
 use many_modules::account::features::multisig::InfoReturn;
 use many_modules::events::{EventInfo, EventLog};
-use many_types::{blockchain::Block, Memo, SortOrder};
+use many_types::{blockchain::{Block, Transaction}, Memo, SortOrder};
 use merk::Op;
 
 fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
@@ -15,7 +15,31 @@ fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
             block.map_err(ManyError::unknown).map(|(key, value)| {
                 minicbor::decode::<Block>(value.as_slice())
                     .map_err(ManyError::deserialization_error)
-                    .map(|entry| (key, entry))
+                    .map(|Block {
+                        id,
+                        parent,
+                        app_hash,
+                        timestamp,
+                        txs_count,
+                        txs,
+                    }| (key, Block {
+                        id,
+                        parent,
+                        app_hash,
+                        timestamp,
+                        txs_count,
+                        txs: txs.into_iter().map(|Transaction {
+                            id,
+                            content_,
+                            request,
+                            response
+                        }| Transaction {
+                            id,
+                            content_: None,
+                            request: content_.and_then(|bytes| minicbor::decode(bytes.as_ref()).ok()),
+                            response
+                        }).collect(),
+                    }))
             })
         })
         .for_each(|_| ());
