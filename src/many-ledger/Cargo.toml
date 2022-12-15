@@ -39,8 +39,7 @@ many-migration = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab0
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
-#many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
-many-types = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 rand = "0.8"
 serde = "1.0.130"
 serde_json = "1.0.72"

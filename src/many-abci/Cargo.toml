@@ -34,8 +34,7 @@ many-identity-webauthn = { git = "https://github.com/liftedinit/many-rs.git", re
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
-#many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
-many-types = { git = "https://github.com/MavenRain/many-rs.git", branch = "transaction-impl-to-spec" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ab09727a574d3abe734a374cd02e31aa6b3388f7" }
 num-integer = "0.1.45"
 reqwest = "0.11.11"
 sha2 = "0.10.1"
