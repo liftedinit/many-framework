@@ -1,5 +1,5 @@
 {
-  "checksum": "202596ea5e1d6a6a000654fc5639c69a512d0758ec76881977bef54ed5d0566d",
+  "checksum": "1d6408be37668f666e6a67c1eaaf4159e1073bf8423f894468125c94758d72e3",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -769,7 +769,7 @@
               "target": "parking"
             },
             {
-              "id": "polling 2.5.1",
+              "id": "polling 2.5.2",
               "target": "polling"
             },
             {
@@ -1996,7 +1996,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             }
           ],
@@ -2457,7 +2457,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             },
             {
@@ -2471,13 +2471,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "cc 1.0.77": {
+    "cc 1.0.78": {
       "name": "cc",
-      "version": "1.0.77",
+      "version": "1.0.78",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/cc/1.0.77/download",
-          "sha256": "e9f73505338f7d905b19d18738976aae232eb46b8efc15554ffc56deb5d9ebe4"
+          "url": "https://crates.io/api/v1/crates/cc/1.0.78/download",
+          "sha256": "a20104e2335ce8a659d6dd92a51a767a0c062599c73b343fd152cb401e828c3d"
         }
       },
       "targets": [
@@ -2525,7 +2525,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.77"
+        "version": "1.0.78"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -6564,7 +6564,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "paste 1.0.9",
+              "id": "paste 1.0.10",
               "target": "paste"
             }
           ],
@@ -10233,7 +10233,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             },
             {
@@ -10376,7 +10376,7 @@
               "target": "bindgen"
             },
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             },
             {
@@ -10463,7 +10463,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             },
             {
@@ -11266,10 +11266,7 @@
         "crate_features": [
           "coset",
           "default",
-          "minicbor",
-          "raw",
-          "serde",
-          "testing"
+          "minicbor"
         ],
         "deps": {
           "common": [
@@ -14228,7 +14225,7 @@
               "target": "autocfg"
             },
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             },
             {
@@ -14550,13 +14547,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "paste 1.0.9": {
+    "paste 1.0.10": {
       "name": "paste",
-      "version": "1.0.9",
+      "version": "1.0.10",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/paste/1.0.9/download",
-          "sha256": "b1de2e551fb905ac83f73f7aedf2f0cb4a0da7e35efa24a202a936269f1f18e1"
+          "url": "https://crates.io/api/v1/crates/paste/1.0.10/download",
+          "sha256": "cf1c2c742266c2f1041c914ba65355a83ae8747b05f208319784083583494b4b"
         }
       },
       "targets": [
@@ -14571,6 +14568,18 @@
               "exclude": []
             }
           }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
         }
       ],
       "library_target_name": "paste",
@@ -14578,8 +14587,22 @@
         "compile_data_glob": [
           "**"
         ],
+        "deps": {
+          "common": [
+            {
+              "id": "paste 1.0.10",
+              "target": "build_script_build"
+            }
+          ],
+          "selects": {}
+        },
         "edition": "2018",
-        "version": "1.0.9"
+        "version": "1.0.10"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ]
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -15579,13 +15602,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "polling 2.5.1": {
+    "polling 2.5.2": {
       "name": "polling",
-      "version": "2.5.1",
+      "version": "2.5.2",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/polling/2.5.1/download",
-          "sha256": "166ca89eb77fd403230b9c156612965a81e094ec6ec3aa13663d4c8b113fa748"
+          "url": "https://crates.io/api/v1/crates/polling/2.5.2/download",
+          "sha256": "22122d5ec4f9fe1b3916419b76be1e80bcb93f618d071d2edf841b137b2a2bd6"
         }
       },
       "targets": [
@@ -15634,7 +15657,7 @@
               "target": "log"
             },
             {
-              "id": "polling 2.5.1",
+              "id": "polling 2.5.2",
               "target": "build_script_build"
             }
           ],
@@ -15658,7 +15681,7 @@
           }
         },
         "edition": "2018",
-        "version": "2.5.1"
+        "version": "2.5.2"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -17227,7 +17250,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             }
           ],
@@ -20487,7 +20510,7 @@
               "target": "tendermint"
             },
             {
-              "id": "toml 0.5.9",
+              "id": "toml 0.5.10",
               "target": "toml"
             },
             {
@@ -21740,13 +21763,13 @@
       },
       "license": "MIT"
     },
-    "toml 0.5.9": {
+    "toml 0.5.10": {
       "name": "toml",
-      "version": "0.5.9",
+      "version": "0.5.10",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/toml/0.5.9/download",
-          "sha256": "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
+          "url": "https://crates.io/api/v1/crates/toml/0.5.10/download",
+          "sha256": "1333c76748e868a4d9d1017b5ab53171dfd095f70c712fdb4653a406547f598f"
         }
       },
       "targets": [
@@ -21781,7 +21804,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.5.9"
+        "version": "0.5.10"
       },
       "license": "MIT/Apache-2.0"
     },
@@ -23922,7 +23945,7 @@
         "deps": {
           "common": [
             {
-              "id": "cc 1.0.77",
+              "id": "cc 1.0.78",
               "target": "cc"
             }
           ],
@@ -25383,7 +25406,7 @@
   "binary_crates": [
     "bindgen 0.59.2",
     "bindgen 0.60.1",
-    "cc 1.0.77",
+    "cc 1.0.78",
     "clap 3.2.23",
     "minicbor 0.18.0",
     "peg-macros 0.7.0",

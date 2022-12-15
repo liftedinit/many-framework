@@ -36,6 +36,7 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
                 id: TransactionIdentifier {
                     hash: hasher.finalize().to_vec(),
                 },
+                content_: None,
                 request: minicbor::decode(b.as_ref()).ok(),
                 response: None,
             }
@@ -198,6 +199,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         Ok(blockchain::TransactionReturns {
             txn: Transaction {
                 id: TransactionIdentifier { hash: tx_hash },
+                content_: None,
                 request: None,
                 response: None,
             },
