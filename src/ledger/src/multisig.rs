@@ -7,8 +7,7 @@ use many_modules::account::features::multisig;
 use many_modules::{events, ledger};
 use many_types::ledger::TokenAmount;
 use many_types::memo::MemoLegacy;
-use many_types::Memo;
-use many_types::ResponseMessage;
+use many_types::{Memo, ResponseMessage};
 use minicbor::bytes::ByteVec;
 use tracing::info;
 
