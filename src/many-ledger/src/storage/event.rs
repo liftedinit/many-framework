@@ -7,7 +7,6 @@ use merk::tree::Tree;
 use merk::{rocksdb, Op};
 use std::ops::{Bound, RangeBounds};
 
-pub(crate) const BLOCKS_ROOT: &[u8] = b"/blocks/";
 pub(crate) const EVENTS_ROOT: &[u8] = b"/events/";
 
 // Left-shift the height by this amount of bits
