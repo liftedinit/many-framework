@@ -87,6 +87,28 @@ jobs:
           name: running BATs tests
           command: bats *
           working_directory: ./tests/e2e/
+  dev_release_artifact:
+    parameters:
+      os:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - detect/init
+      - rust/install:
+          version: nightly
+      - rust/build:
+          release: true
+          with_cache: false
+      - run: mkdir -p artifacts
+      - run:
+          name: creating release archive
+          command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
+      - run:
+          name: creating release shasum
+          command: shasum artifacts/many-framework_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_PR_${CIRCLE_PR_NUMBER}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
+      - store_artifacts:
+          path: artifacts
   coverage:
     parameters:
       os:
@@ -131,26 +153,15 @@ jobs:
       - detect/init
       - rust/install:
           version: nightly
-      # Build a version with migrations activated. Lifted production network only
-      - rust/build:
-          release: true
-          crate: --features migrate_blocks
-          with_cache: false
       - run: mkdir -p artifacts
-      - run:
-          name: creating release archive (w/ block migrations)
-          command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
-      - run:
-          name: creating release shasum (w/ block migrations)
-          command: shasum artifacts/many-framework_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_with_block_migrations_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
       - rust/build:
           release: true
           with_cache: false
       - run:
-          name: creating release archive (w/o block migrations)
+          name: creating release archive
           command: file target/release/* | grep 'executable\|shared object' | cut -d ':' -f 1 | xargs tar czvf artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz
       - run:
-          name: creating release shasum (w/o block migrations)
+          name: creating release shasum
           command: shasum artifacts/many-framework_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.tar.gz > artifacts/shasum_${CIRCLE_TAG}_${CIRCLE_SHA1}_${OSD_ID}_${OSD_VERSION}.txt
       - persist_to_workspace:
           root: artifacts
@@ -311,7 +322,7 @@ commands:
                 name: installing << parameters.os >> dependencies
                 command: |
                   sudo DEBIAN_FRONTEND=noninteractive apt -y update
-                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev
+                  sudo DEBIAN_FRONTEND=noninteractive apt -y install build-essential pkg-config clang libssl-dev libudev-dev libusb-1.0-0-dev
             - run:
                 name: installing grcov
                 command: wget https://github.com/mozilla/grcov/releases/download/v0.8.11/grcov-x86_64-unknown-linux-gnu.tar.bz2 -O - | sudo tar -xj -C /usr/local/bin
@@ -356,6 +367,21 @@ workflows:
               os: [linux2204]
           requires:
             - lint-test-build-v<< matrix.os >>
+      - dev_release_artifact:
+          pre-steps:
+            - install-deps:
+                os: << matrix.os >>
+          name: dev_release_artifact-v<< matrix.os >>
+          matrix:
+            parameters:
+              os: [linux2204]
+          requires:
+            - lint-test-build-v<< matrix.os >>
+            - bats-v<< matrix.os >>
+          filters:
+            branches:
+              ignore: main
+              only: /^pull\/[0-9]+$/
   release:
     when:
       not:
