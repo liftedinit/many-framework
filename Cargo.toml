@@ -37,6 +37,22 @@ incremental = false
 #many-protocol = { path = "../many-rs/src/many-protocol" }
 #many-server = { path = "../many-rs/src/many-server" }
 #many-types = { path = "../many-rs/src/many-types" }
+#[patch."https://github.com/liftedinit/many-rs.git"]
+many = { path = "https://github.com/MavenRain/many-rs/src/many", branch = "transaction-impl-to-spec-2" }
+many-client = { path = "https://github.com/MavenRain/many-rs/src/many-client", branch = "transaction-impl-to-spec-2" }
+many-client-macros = { path = "https://github.com/MavenRain/many-rs/src/many-client-macros", branch = "transaction-impl-to-spec-2" }
+many-error = { path = "https://github.com/MavenRain/many-rs/src/many-error", branch = "transaction-impl-to-spec-2" }
+many-identity = { path = "https://github.com/MavenRain/many-rs/src/many-identity", branch = "transaction-impl-to-spec-2" }
+many-identity-dsa = { path = "https://github.com/MavenRain/many-rs/src/many-identity-dsa", branch = "transaction-impl-to-spec-2" }
+many-identity-hsm = { path = "https://github.com/MavenRain/many-rs/src/many-identity-hsm", branch = "transaction-impl-to-spec-2" }
+many-identity-webauthn = { path = "https://github.com/MavenRain/many-rs/src/many-identity-webauthn", branch = "transaction-impl-to-spec-2" }
+many-macros = { path = "https://github.com/MavenRain/many-rs/src/many-macros", branch = "transaction-impl-to-spec-2" }
+many-migration = { path = "https://github.com/MavenRain/many-rs/src/many-migration", branch = "transaction-impl-to-spec-2" }
+many-mock = { path = "https://github.com/MavenRain/many-rs/src/many-mock", branch = "transaction-impl-to-spec-2" }
+many-modules = { path = "https://github.com/MavenRain/many-rs/src/many-modules", branch = "transaction-impl-to-spec-2" }
+many-protocol = { path = "https://github.com/MavenRain/many-rs/src/many-protocol", branch = "transaction-impl-to-spec-2" }
+many-server = { path = "https://github.com/MavenRain/many-rs/src/many-server", branch = "transaction-impl-to-spec-2" }
+many-types = { path = "https://github.com/MavenRain/many-rs/src/many-types", branch = "transaction-impl-to-spec-2" }
 
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
