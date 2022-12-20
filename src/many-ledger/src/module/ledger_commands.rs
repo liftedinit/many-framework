@@ -16,6 +16,12 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
         } = args;
 
         let from = from.as_ref().unwrap_or(sender);
+        // We check here to make sure there isn't a code path that might ends up here without
+        // proper validation (e.g. multisig or delayed execution). This should normally
+        // not be a problem unless you have an instance of the module directly.
+        if from.is_illegal() {
+            return Err(error::unauthorized());
+        }
         if from != sender {
             if let Some(account) = self.storage.get_account(from) {
                 verify_account_role(&account, sender, [Role::CanLedgerTransact])?;

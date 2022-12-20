@@ -162,3 +162,20 @@ fn query_disabled() {
     assert_eq!(query_value.disabled, Some(Either::Left(true)));
     assert_eq!(query_value.owner, id);
 }
+
+#[test]
+fn put_put_illegal() {
+    let mut setup = setup();
+    let id = setup.id;
+    let put = setup.put(&id, vec![1], vec![2], None);
+    assert!(put.is_ok());
+
+    let get_value = setup.get(&id, vec![1]).unwrap().value.unwrap();
+    assert_eq!(ByteVec::from(vec![2]), get_value);
+
+    setup.
+
+    let put = setup.put(&identity(1), vec![1], vec![3], None);
+    assert!(put.is_err());
+    assert_eq!(put.unwrap_err().code(), error::permission_denied().code());
+}
