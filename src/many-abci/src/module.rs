@@ -19,6 +19,7 @@ use tendermint_rpc::{query::Query, Client};
 
 const MAXIMUM_BLOCK_COUNT: u64 = 100;
 static DEFAULT_BLOCK_LIST_QUERY: Lazy<Query> = Lazy::new(|| Query::gte("block.height", 0));
+const MAXIMUM_TRANSACTION_COUNT: u64 = 100;
 
 fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
     let height = block.header.height.value();
@@ -237,6 +238,29 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         } else {
             Err(blockchain::unknown_block())
         }
+    }
+
+    fn tx_results(&self, _: blockchain::ListArgs) -> Result<blockchain::TransactionResultsReturns, ManyError> {
+        use futures_util::future::TryFutureExt;
+        let count = MAXIMUM_TRANSACTION_COUNT;
+        // We can get maximum u8::MAX blocks per page and a maximum of u32::MAX pages
+        // Find the correct number of pages and count
+        let maximum_8_bit_integer: u64 = u8::MAX.into();
+        let (pages, count): (u64, u64) = (num_integer::div_ceil(count, maximum_8_bit_integer), std::cmp::max(count, maximum_8_bit_integer));
+        let query = tendermint_rpc::query::Query::default();
+        let order = _tm_order_from_many_order(SortOrder::Ascending);
+        block_on(async  {
+            let pages: u32 = pages.try_into().map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?;
+            let count: u8 = count.try_into().map_err(|_| ManyError::unknown("Unable to cast u64 to u8"))?;
+            Ok((pages, count))
+        }.and_then(|(pages, count)| self.client.tx_search(query, true, pages, count, order).map_err(|_| ManyError::unknown("Transaction search query returned an error")))
+        .and_then(|response|
+            async {
+                Ok(blockchain::TransactionResultsReturns {
+                    txn_results: response.txs.iter().map(|tx| tx.tx_result.data.value()).collect()
+                })
+            }
+        ))
     }
 
     fn list(&self, args: blockchain::ListArgs) -> Result<blockchain::ListReturns, ManyError> {
