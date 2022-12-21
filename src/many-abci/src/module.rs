@@ -13,7 +13,10 @@ use many_types::blockchain::{
 use many_types::{blockchain::RangeBlockQuery, SortOrder, Timestamp};
 use once_cell::sync::Lazy;
 use sha2::Digest;
-use std::ops::{Bound, RangeBounds};
+use std::{
+    borrow::Borrow,
+    ops::{Bound, RangeBounds},
+};
 use tendermint::Time;
 use tendermint_rpc::{query::Query, Client, Order};
 
@@ -22,10 +25,10 @@ static DEFAULT_BLOCK_LIST_QUERY: Lazy<Query> = Lazy::new(|| Query::gte("block.he
 
 fn _many_block_from_tendermint_block<C: Client + Sync>(
     block: tendermint::Block,
-    args: blockchain::ListArgs,
+    args: impl Borrow<blockchain::ListArgs>,
     client: &C,
 ) -> Result<Block, ManyError> {
-    let (count, order, query) = transform_list_args(args)?;
+    let (count, order, query) = transform_list_args(args.borrow())?;
     let transaction_results_by_id = tx_results(client, count, order, query)?;
     let height = block.header.height.value();
     let txs_count = block.data.len() as u64;
@@ -76,8 +79,8 @@ fn hash_tx(tx: impl AsRef<[u8]>) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
-fn _tm_order_from_many_order(order: SortOrder) -> tendermint_rpc::Order {
-    match order {
+fn _tm_order_from_many_order(order: impl Borrow<SortOrder>) -> tendermint_rpc::Order {
+    match order.borrow() {
         SortOrder::Ascending => tendermint_rpc::Order::Ascending,
         SortOrder::Descending => tendermint_rpc::Order::Descending,
         _ => tendermint_rpc::Order::Ascending,
@@ -85,10 +88,10 @@ fn _tm_order_from_many_order(order: SortOrder) -> tendermint_rpc::Order {
 }
 
 fn _tm_query_from_many_filter(
-    filter: RangeBlockQuery,
+    filter: impl Borrow<RangeBlockQuery>,
 ) -> Result<tendermint_rpc::query::Query, ManyError> {
     let mut query = tendermint_rpc::query::Query::default();
-    query = match filter {
+    query = match filter.borrow() {
         RangeBlockQuery::Height(range) => {
             query = match range.start_bound() {
                 Bound::Included(x) => query.and_gte("block.height", *x),
@@ -120,9 +123,10 @@ fn transform_list_args(
         count,
         order,
         filter,
-    }: blockchain::ListArgs,
+    }: &blockchain::ListArgs,
 ) -> Result<(u64, Order, Query), ManyError> {
     filter
+        .as_ref()
         .map_or(
             Ok(DEFAULT_BLOCK_LIST_QUERY.clone()),
             _tm_query_from_many_filter,
@@ -132,7 +136,9 @@ fn transform_list_args(
                 count.map_or(MAXIMUM_BLOCK_COUNT, |c| {
                     std::cmp::min(c, MAXIMUM_BLOCK_COUNT)
                 }),
-                order.map_or(tendermint_rpc::Order::Ascending, _tm_order_from_many_order),
+                order
+                    .as_ref()
+                    .map_or(tendermint_rpc::Order::Ascending, _tm_order_from_many_order),
                 filter,
             )
         })
@@ -357,11 +363,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             .blocks
             .into_iter()
             .map(|x| {
-                _many_block_from_tendermint_block(
-                    x.block,
-                    args_for_transactions.clone(),
-                    &self.client,
-                )
+                _many_block_from_tendermint_block(x.block, &args_for_transactions, &self.client)
             })
             .collect::<Result<_, _>>()?;
 
