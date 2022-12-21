@@ -2187,7 +2187,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2230,7 +2230,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2240,7 +2240,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2251,7 +2251,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "base32",
  "coset",
@@ -2271,7 +2271,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2299,7 +2299,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2319,7 +2319,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
@@ -2432,7 +2432,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2445,7 +2445,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2458,7 +2458,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "async-trait",
  "coset",
@@ -2478,7 +2478,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2502,7 +2502,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2551,7 +2551,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 dependencies = [
  "base64 0.20.0",
  "coset",
@@ -4912,9 +4912,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#b3137a7527b56f32cd2690e74860f1fb53ed7484"
+source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-2#1d90221ee1c223a3b18cb04d6d36cf4691bc3777"
