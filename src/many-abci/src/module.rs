@@ -1,5 +1,6 @@
 use clap::__macro_refs::once_cell;
 use coset::CborSerializable;
+use itertools::Itertools;
 use many_client::client::blocking::block_on;
 use many_error::ManyError;
 use many_identity::{Address, AnonymousIdentity};
@@ -12,43 +13,33 @@ use many_types::blockchain::{
 };
 use many_types::{blockchain::RangeBlockQuery, SortOrder, Timestamp};
 use once_cell::sync::Lazy;
-use sha2::Digest;
-use std::{
-    borrow::Borrow,
-    ops::{Bound, RangeBounds},
-};
+use std::ops::{Bound, RangeBounds};
 use tendermint::Time;
-use tendermint_rpc::{query::Query, Client, Order};
+use tendermint_rpc::{query::Query, Client};
 
 const MAXIMUM_BLOCK_COUNT: u64 = 100;
 static DEFAULT_BLOCK_LIST_QUERY: Lazy<Query> = Lazy::new(|| Query::gte("block.height", 0));
 
-fn _many_block_from_tendermint_block<C: Client + Sync>(
-    block: tendermint::Block,
-    args: impl Borrow<blockchain::ListArgs>,
-    client: &C,
-) -> Result<Block, ManyError> {
-    let (count, order, query) = transform_list_args(args.borrow())?;
-    let transaction_results_by_id = tx_results(client, count, order, query)?;
+fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
     let height = block.header.height.value();
     let txs_count = block.data.len() as u64;
     let txs = block
         .data
         .into_iter()
         .map(|b| {
-            let id = TransactionIdentifier { hash: hash_tx(&b) };
+            use sha2::Digest;
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(&b);
             Transaction {
-                id: id.clone(),
-                request: Some(b),
-                response: transaction_results_by_id
-                    .iter()
-                    .find(|(txn_id, _)| *txn_id == id)
-                    .map(|(_, result)| result)
-                    .cloned(),
+                id: TransactionIdentifier {
+                    hash: hasher.finalize().to_vec(),
+                },
+                request: None,
+                response: None
             }
         })
         .collect();
-    Ok(Block {
+    Block {
         id: BlockIdentifier {
             hash: block.header.hash().into(),
             height,
@@ -70,17 +61,11 @@ fn _many_block_from_tendermint_block<C: Client + Sync>(
         .unwrap(),
         txs_count,
         txs,
-    })
+    }
 }
 
-fn hash_tx(tx: impl AsRef<[u8]>) -> Vec<u8> {
-    let mut hasher = sha2::Sha256::new();
-    hasher.update(tx.as_ref());
-    hasher.finalize().to_vec()
-}
-
-fn _tm_order_from_many_order(order: impl Borrow<SortOrder>) -> tendermint_rpc::Order {
-    match order.borrow() {
+fn _tm_order_from_many_order(order: SortOrder) -> tendermint_rpc::Order {
+    match order {
         SortOrder::Ascending => tendermint_rpc::Order::Ascending,
         SortOrder::Descending => tendermint_rpc::Order::Descending,
         _ => tendermint_rpc::Order::Ascending,
@@ -88,10 +73,10 @@ fn _tm_order_from_many_order(order: impl Borrow<SortOrder>) -> tendermint_rpc::O
 }
 
 fn _tm_query_from_many_filter(
-    filter: impl Borrow<RangeBlockQuery>,
+    filter: RangeBlockQuery,
 ) -> Result<tendermint_rpc::query::Query, ManyError> {
     let mut query = tendermint_rpc::query::Query::default();
-    query = match filter.borrow() {
+    query = match filter {
         RangeBlockQuery::Height(range) => {
             query = match range.start_bound() {
                 Bound::Included(x) => query.and_gte("block.height", *x),
@@ -116,75 +101,6 @@ fn _tm_query_from_many_filter(
     }
 
     Ok(query)
-}
-
-fn transform_list_args(
-    blockchain::ListArgs {
-        count,
-        order,
-        filter,
-    }: &blockchain::ListArgs,
-) -> Result<(u64, Order, Query), ManyError> {
-    filter
-        .as_ref()
-        .map_or(
-            Ok(DEFAULT_BLOCK_LIST_QUERY.clone()),
-            _tm_query_from_many_filter,
-        )
-        .map(|filter| {
-            (
-                count.map_or(MAXIMUM_BLOCK_COUNT, |c| {
-                    std::cmp::min(c, MAXIMUM_BLOCK_COUNT)
-                }),
-                order
-                    .as_ref()
-                    .map_or(tendermint_rpc::Order::Ascending, _tm_order_from_many_order),
-                filter,
-            )
-        })
-}
-
-fn create_pagination(count: u64) -> Result<(u32, u8), ManyError> {
-    // We can get maximum u8::MAX blocks per page and a maximum of u32::MAX pages
-    // Find the correct number of pages and count
-    let maximum_8_bit_integer: u64 = u8::MAX.into();
-    Ok((
-        num_integer::div_ceil(count, maximum_8_bit_integer)
-            .try_into()
-            .map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?,
-        std::cmp::max(count, maximum_8_bit_integer)
-            .try_into()
-            .map_err(|_| ManyError::unknown("Unable to cast u64 to u8"))?,
-    ))
-}
-
-fn tx_results<C: Client + Sync>(
-    client: &C,
-    count: u64,
-    order: Order,
-    query: Query,
-) -> Result<Vec<(TransactionIdentifier, Vec<u8>)>, ManyError> {
-    use futures_util::future::TryFutureExt;
-    let (pages, count) = create_pagination(count)?;
-    block_on(
-        client
-            .tx_search(query, true, pages, count, order)
-            .map_err(|_| ManyError::unknown("Transaction search query returned an error"))
-            .and_then(|response| async move {
-                Ok(response
-                    .txs
-                    .iter()
-                    .map(|tx| {
-                        (
-                            TransactionIdentifier {
-                                hash: hash_tx(&tx.tx),
-                            },
-                            tx.tx_result.data.value().clone(),
-                        )
-                    })
-                    .collect())
-            }),
-    )
 }
 
 pub struct AbciBlockchainModuleImpl<C: Client> {
@@ -281,7 +197,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             txn: Transaction {
                 id: TransactionIdentifier { hash: tx_hash },
                 request: None,
-                response: None,
+                response: None
             },
         })
     }
@@ -316,15 +232,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         })?;
 
         if let Some(block) = block {
-            let block = _many_block_from_tendermint_block(
-                block,
-                blockchain::ListArgs {
-                    count: None,
-                    order: None,
-                    filter: None,
-                },
-                &self.client,
-            )?;
+            let block = _many_block_from_tendermint_block(block);
             Ok(blockchain::BlockReturns { block })
         } else {
             Err(blockchain::unknown_block())
@@ -332,7 +240,6 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
     }
 
     fn list(&self, args: blockchain::ListArgs) -> Result<blockchain::ListReturns, ManyError> {
-        let args_for_transactions = args.clone();
         let blockchain::ListArgs {
             count,
             order,
@@ -343,7 +250,18 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             std::cmp::min(c, MAXIMUM_BLOCK_COUNT)
         });
 
-        let (pages, count) = create_pagination(count)?;
+        // We can get maximum u8::MAX blocks per page and a maximum of u32::MAX pages
+        // Find the correct number of pages and count
+        let (pages, count): (u32, u8) = if count > u8::MAX as u64 {
+            (
+                num_integer::div_ceil(count, u8::MAX as u64)
+                    .try_into()
+                    .map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?,
+                u8::MAX,
+            )
+        } else {
+            (1u32, count as u8)
+        };
 
         let order = order.map_or(tendermint_rpc::Order::Ascending, _tm_order_from_many_order);
 
@@ -362,10 +280,8 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             .map_err(ManyError::unknown)?
             .blocks
             .into_iter()
-            .map(|x| {
-                _many_block_from_tendermint_block(x.block, &args_for_transactions, &self.client)
-            })
-            .collect::<Result<_, _>>()?;
+            .map(|x| _many_block_from_tendermint_block(x.block))
+            .collect_vec();
 
         Ok(blockchain::ListReturns {
             height: status

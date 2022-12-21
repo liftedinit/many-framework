@@ -21,7 +21,6 @@ async-trait = "0.1.51"
 ciborium = "0.2.0"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"
-futures-util = "0.3"
 hex = "0.4.3"
 itertools = "0.10.5"
 json5 = "0.4.1"
