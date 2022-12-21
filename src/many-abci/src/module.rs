@@ -138,14 +138,18 @@ fn transform_list_args(
         })
 }
 
-fn create_pagination(count: u64) -> (u64, u64) {
+fn create_pagination(count: u64) -> Result<(u32, u8), ManyError> {
     // We can get maximum u8::MAX blocks per page and a maximum of u32::MAX pages
     // Find the correct number of pages and count
     let maximum_8_bit_integer: u64 = u8::MAX.into();
-    (
-        num_integer::div_ceil(count, maximum_8_bit_integer),
-        std::cmp::max(count, maximum_8_bit_integer),
-    )
+    Ok((
+        num_integer::div_ceil(count, maximum_8_bit_integer)
+            .try_into()
+            .map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?,
+        std::cmp::max(count, maximum_8_bit_integer)
+            .try_into()
+            .map_err(|_| ManyError::unknown("Unable to cast u64 to u8"))?,
+    ))
 }
 
 fn tx_results<C: Client + Sync>(
@@ -155,36 +159,25 @@ fn tx_results<C: Client + Sync>(
     query: Query,
 ) -> Result<Vec<(TransactionIdentifier, Vec<u8>)>, ManyError> {
     use futures_util::future::TryFutureExt;
-    let (pages, count) = create_pagination(count);
+    let (pages, count) = create_pagination(count)?;
     block_on(
-        async {
-            let pages: u32 = pages
-                .try_into()
-                .map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?;
-            let count: u8 = count
-                .try_into()
-                .map_err(|_| ManyError::unknown("Unable to cast u64 to u8"))?;
-            Ok((pages, count))
-        }
-        .and_then(|(pages, count)| {
-            client
-                .tx_search(query, true, pages, count, order)
-                .map_err(|_| ManyError::unknown("Transaction search query returned an error"))
-        })
-        .and_then(|response| async move {
-            Ok(response
-                .txs
-                .iter()
-                .map(|tx| {
-                    (
-                        TransactionIdentifier {
-                            hash: hash_tx(&tx.tx),
-                        },
-                        tx.tx_result.data.value().clone(),
-                    )
-                })
-                .collect())
-        }),
+        client
+            .tx_search(query, true, pages, count, order)
+            .map_err(|_| ManyError::unknown("Transaction search query returned an error"))
+            .and_then(|response| async move {
+                Ok(response
+                    .txs
+                    .iter()
+                    .map(|tx| {
+                        (
+                            TransactionIdentifier {
+                                hash: hash_tx(&tx.tx),
+                            },
+                            tx.tx_result.data.value().clone(),
+                        )
+                    })
+                    .collect())
+            }),
     )
 }
 
@@ -344,15 +337,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             std::cmp::min(c, MAXIMUM_BLOCK_COUNT)
         });
 
-        let (pages, count) = create_pagination(count);
-        let (pages, count): (u32, u8) = (
-            pages
-                .try_into()
-                .map_err(|_| ManyError::unknown("Unable to cast u64 to u32"))?,
-            count
-                .try_into()
-                .map_err(|_| ManyError::unknown("Unable to cast u64 to u8"))?,
-        );
+        let (pages, count) = create_pagination(count)?;
 
         let order = order.map_or(tendermint_rpc::Order::Ascending, _tm_order_from_many_order);
 
