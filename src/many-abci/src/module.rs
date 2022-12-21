@@ -28,11 +28,7 @@ fn _many_block_from_tendermint_block<C: Client + Sync>(
     let (count, order, query) = transform_list_args(args)?;
     let transaction_results_by_id = tx_results(client, count, order, query)?;
     let height = block.header.height.value();
-    let txs_count: u64 = block
-        .data
-        .len()
-        .try_into()
-        .map_err(|_| ManyError::unknown("Unable to cast usize to u64"))?;
+    let txs_count = block.data.len() as u64;
     let txs = block
         .data
         .into_iter()
