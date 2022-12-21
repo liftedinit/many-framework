@@ -11865,7 +11865,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-client"
         }
@@ -12058,7 +12062,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -12111,7 +12119,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-error"
         }
@@ -12177,7 +12189,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-identity"
         }
@@ -12278,7 +12294,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -12412,7 +12432,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -12505,7 +12529,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -13088,7 +13116,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-macros"
         }
@@ -13153,7 +13185,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-migration"
         }
@@ -13218,7 +13254,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-modules"
         }
@@ -13316,7 +13356,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -13430,7 +13474,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-server"
         }
@@ -13647,7 +13695,11 @@
         "Git": {
           "remote": "https://github.com/MavenRain/many-rs.git",
           "commitish": {
+<<<<<<< HEAD
             "Branch": "transaction-impl-to-spec-3"
+=======
+            "Rev": "cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
           },
           "strip_prefix": "src/many-types"
         }

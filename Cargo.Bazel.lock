@@ -2187,7 +2187,11 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2230,7 +2234,11 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2240,7 +2248,11 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2251,7 +2263,11 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "base32",
  "coset",
@@ -2271,7 +2287,11 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2299,7 +2319,11 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2319,7 +2343,11 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
@@ -2432,7 +2460,11 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2445,7 +2477,11 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "many-error",
  "minicbor",
@@ -2458,7 +2494,11 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "async-trait",
  "coset",
@@ -2478,7 +2518,11 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2502,7 +2546,11 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2551,7 +2599,11 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/MavenRain/many-rs.git?branch=transaction-impl-to-spec-3#ee620c13754ed0e17a7b1db97d5090e2316ffa99"
+=======
+source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+>>>>>>> 59a27a40d943e91dd9d10097deb04a594e9f5e9c
 dependencies = [
  "base64 0.20.0",
  "coset",
