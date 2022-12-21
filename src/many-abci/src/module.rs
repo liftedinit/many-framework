@@ -35,7 +35,7 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
                     hash: hasher.finalize().to_vec(),
                 },
                 request: None,
-                response: None
+                response: None,
             }
         })
         .collect();
@@ -197,7 +197,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             txn: Transaction {
                 id: TransactionIdentifier { hash: tx_hash },
                 request: None,
-                response: None
+                response: None,
             },
         })
     }
