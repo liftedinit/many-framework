@@ -26,15 +26,15 @@ itertools = "0.10.5"
 json5 = "0.4.1"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-identity-webauthn = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "cfabad4a057d56a9fb6e48e8f37de6a865227e1f" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-identity-webauthn = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "b649ee3709197dae3fdff883146d9ea6a13551c7" }
 num-integer = "0.1.45"
 reqwest = "0.11.11"
 sha2 = "0.10.1"
