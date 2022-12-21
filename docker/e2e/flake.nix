@@ -92,6 +92,14 @@
                   ];
                 };
               })
+              (pkgs.rustBuilder.rustLib.makeOverride {
+                name = "hidapi";
+                overrideAttrs = drv: {
+                    nativeBuildInputs = [
+                        pkgs.libusb1
+                    ];
+                };
+              })
             ];
           };
 
