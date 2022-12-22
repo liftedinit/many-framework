@@ -2144,6 +2144,7 @@ dependencies = [
  "ciborium",
  "clap 3.2.23",
  "coset",
+ "futures-util",
  "hex",
  "itertools",
  "json5",

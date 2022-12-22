@@ -1,6 +1,6 @@
 use clap::__macro_refs::once_cell;
 use coset::CborSerializable;
-use itertools::Itertools;
+use futures_util::TryFutureExt;
 use many_client::client::blocking::block_on;
 use many_error::ManyError;
 use many_identity::{Address, AnonymousIdentity};
@@ -15,31 +15,27 @@ use many_types::{blockchain::RangeBlockQuery, SortOrder, Timestamp};
 use once_cell::sync::Lazy;
 use std::ops::{Bound, RangeBounds};
 use tendermint::Time;
-use tendermint_rpc::{query::Query, Client};
+use tendermint_rpc::{
+    query::{EventType, Query},
+    Client,
+};
 
 const MAXIMUM_BLOCK_COUNT: u64 = 100;
+// From tendermint-rs config
+const MAXIMUM_TRANSACTION_COUNT: u32 = 5000;
 static DEFAULT_BLOCK_LIST_QUERY: Lazy<Query> = Lazy::new(|| Query::gte("block.height", 0));
 
-fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
+fn _many_block_from_tendermint_block<C: Client + Sync>(
+    block: tendermint::Block,
+    client: &C,
+) -> Result<Block, ManyError> {
     let height = block.header.height.value();
-    let txs_count = block.data.len() as u64;
-    let txs = block
+    let txs_count: u32 = block
         .data
-        .into_iter()
-        .map(|b| {
-            use sha2::Digest;
-            let mut hasher = sha2::Sha256::new();
-            hasher.update(&b);
-            Transaction {
-                id: TransactionIdentifier {
-                    hash: hasher.finalize().to_vec(),
-                },
-                request: None,
-                response: None,
-            }
-        })
-        .collect();
-    Block {
+        .len()
+        .try_into()
+        .map_err(|_| ManyError::unknown("Cannot guarantee conversion from usize to u32"))?;
+    Ok(Block {
         id: BlockIdentifier {
             hash: block.header.hash().into(),
             height,
@@ -59,9 +55,35 @@ fn _many_block_from_tendermint_block(block: tendermint::Block) -> Block {
                 .as_secs(),
         )
         .unwrap(),
-        txs_count,
-        txs,
-    }
+        txs_count: txs_count.into(),
+        txs: block_on(
+            client
+                .tx_search(
+                    Query::from(EventType::Tx).and_eq("tx.height", height),
+                    true,
+                    num_integer::div_ceil(
+                        std::cmp::min(txs_count, MAXIMUM_TRANSACTION_COUNT),
+                        u8::MAX.into(),
+                    ),
+                    u8::MAX,
+                    tendermint_rpc::Order::Ascending,
+                )
+                .and_then(|response| async move {
+                    Ok(response
+                        .txs
+                        .into_iter()
+                        .map(|transaction| Transaction {
+                            id: TransactionIdentifier {
+                                hash: transaction.hash.as_bytes().to_vec(),
+                            },
+                            request: Some(transaction.tx.into()),
+                            response: Some(transaction.tx_result.data.into()),
+                        })
+                        .collect())
+                }),
+        )
+        .map_err(ManyError::unknown)?,
+    })
 }
 
 fn _tm_order_from_many_order(order: SortOrder) -> tendermint_rpc::Order {
@@ -232,7 +254,7 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
         })?;
 
         if let Some(block) = block {
-            let block = _many_block_from_tendermint_block(block);
+            let block = _many_block_from_tendermint_block(block, &self.client)?;
             Ok(blockchain::BlockReturns { block })
         } else {
             Err(blockchain::unknown_block())
@@ -280,8 +302,8 @@ impl<C: Client + Send + Sync> blockchain::BlockchainModuleBackend for AbciBlockc
             .map_err(ManyError::unknown)?
             .blocks
             .into_iter()
-            .map(|x| _many_block_from_tendermint_block(x.block))
-            .collect_vec();
+            .map(|x| _many_block_from_tendermint_block(x.block, &self.client))
+            .collect::<Result<_, _>>()?;
 
         Ok(blockchain::ListReturns {
             height: status
