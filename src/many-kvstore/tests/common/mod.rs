@@ -136,6 +136,8 @@ fn create_account_args(account_type: AccountType) -> account::CreateArgs {
             let roles = Some(BTreeMap::from_iter([
                 (identity(2), [Role::CanKvStorePut].into()),
                 (identity(3), [Role::CanKvStoreDisable].into()),
+                // 4 is used in tests, so we skip a few.
+                (identity(0x1000), [Role::CanKvStoreTransfer].into()),
             ]));
             let features = account::features::FeatureSet::from_iter([
                 account::features::kvstore::AccountKvStore.as_feature(),

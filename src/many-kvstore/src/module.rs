@@ -283,7 +283,7 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
             self.validate_alternative_owner(
                 sender,
                 alternative_owner,
-                [Role::CanKvStoreDisable, Role::Owner],
+                [Role::CanKvStoreTransfer, Role::Owner],
             )?;
             alternative_owner
         } else {
