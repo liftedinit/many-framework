@@ -2,8 +2,11 @@ pub mod common;
 
 use crate::common::{setup, Setup};
 use many_identity::testing::identity;
+use many_identity::Address;
 use many_kvstore::error;
-use many_modules::kvstore::{InfoArg, KvStoreModuleBackend};
+use many_modules::kvstore::{
+    InfoArg, KvStoreCommandsModuleBackend, KvStoreModuleBackend, TransferArgs,
+};
 use many_types::Either;
 use minicbor::bytes::ByteVec;
 
@@ -173,9 +176,23 @@ fn put_put_illegal() {
     let get_value = setup.get(&id, vec![1]).unwrap().value.unwrap();
     assert_eq!(ByteVec::from(vec![2]), get_value);
 
-    setup.
+    setup
+        .module_impl
+        .transfer(
+            &id,
+            TransferArgs {
+                key: vec![1].into(),
+                alternative_owner: None,
+                new_owner: Address::illegal(),
+            },
+        )
+        .unwrap();
 
     let put = setup.put(&identity(1), vec![1], vec![3], None);
+    assert!(put.is_err());
+    assert_eq!(put.unwrap_err().code(), error::permission_denied().code());
+
+    let put = setup.put(&identity(1), vec![1], vec![3], Some(Address::illegal()));
     assert!(put.is_err());
     assert_eq!(put.unwrap_err().code(), error::permission_denied().code());
 }

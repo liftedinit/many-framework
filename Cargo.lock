@@ -2186,7 +2186,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2229,7 +2229,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2239,7 +2239,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2250,7 +2250,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "base32",
  "coset",
@@ -2270,7 +2270,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2298,7 +2298,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2318,7 +2318,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
@@ -2431,7 +2431,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2444,7 +2444,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2457,7 +2457,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "async-trait",
  "coset",
@@ -2477,7 +2477,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2501,7 +2501,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2550,7 +2550,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=cfabad4a057d56a9fb6e48e8f37de6a865227e1f#cfabad4a057d56a9fb6e48e8f37de6a865227e1f"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
 dependencies = [
  "base64 0.20.0",
  "coset",
@@ -4907,3 +4907,13 @@ dependencies = [
  "syn",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "many"
+version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"
+
+[[patch.unused]]
+name = "many-mock"
+version = "0.1.0"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#1280c329ee678c8d076041f6ad7f23c7072b5629"

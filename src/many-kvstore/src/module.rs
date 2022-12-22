@@ -12,7 +12,7 @@ use many_modules::account::Role;
 use many_modules::kvstore::{
     DisableArgs, DisableReturn, GetArgs, GetReturns, InfoArg, InfoReturns,
     KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturn, QueryArgs,
-    QueryReturns,
+    QueryReturns, TransferArgs, TransferReturn,
 };
 use many_types::{Either, Timestamp};
 use std::collections::BTreeMap;
@@ -44,7 +44,7 @@ pub struct KvStoreModuleImpl {
 #[cbor(map)]
 pub struct KvStoreMetadata {
     #[n(0)]
-    pub owner: Option<Address>,
+    pub owner: Address,
 
     #[n(1)]
     #[serde(skip_deserializing)]
@@ -208,21 +208,21 @@ impl KvStoreModuleBackend for KvStoreModuleImpl {
 impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
     fn put(&mut self, sender: &Address, args: PutArgs) -> Result<PutReturn, ManyError> {
         let key: Vec<u8> = args.key.into();
-        let owner = if let Some(ref alternative_owner) = args.alternative_owner {
+        let owner = if let Some(alternative_owner) = args.alternative_owner {
             self.validate_alternative_owner(
                 sender,
-                alternative_owner,
+                &alternative_owner,
                 [Role::CanKvStorePut, Role::Owner],
             )?;
             alternative_owner
         } else {
-            sender
+            *sender
         };
 
-        self.verify_acl(owner, key.clone())?;
+        self.verify_acl(&owner, key.clone())?;
 
         let meta = KvStoreMetadata {
-            owner: Some(*owner),
+            owner,
             disabled: Some(Either::Left(false)),
         };
         self.storage.put(&meta, &key, args.value.into())?;
@@ -254,11 +254,55 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
         };
 
         let meta = KvStoreMetadata {
-            owner: Some(*owner),
+            owner: *owner,
             disabled: Some(maybe_reason),
         };
 
         self.storage.disable(&meta, &key)?;
         Ok(DisableReturn {})
+    }
+
+    fn transfer(
+        &mut self,
+        sender: &Address,
+        args: TransferArgs,
+    ) -> Result<TransferReturn, ManyError> {
+        if self.storage.get(&args.key)?.is_none() {
+            return Err(error::key_not_found());
+        }
+        let key: Vec<u8> = args.key.into();
+        let metadata: KvStoreMetadata = minicbor::decode(
+            &self
+                .storage
+                .get_metadata(&key)?
+                .ok_or_else(error::key_not_found)?,
+        )
+        .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+        let owner = if let Some(ref alternative_owner) = args.alternative_owner {
+            self.validate_alternative_owner(
+                sender,
+                alternative_owner,
+                [Role::CanKvStoreDisable, Role::Owner],
+            )?;
+            alternative_owner
+        } else {
+            sender
+        };
+
+        if args.new_owner.is_anonymous() {
+            return Err(error::anon_alt_denied());
+        }
+
+        self.verify_acl(owner, key.clone())?;
+
+        // We allow transferring a disabled key, and keep the same reason.
+        let meta = KvStoreMetadata {
+            owner: args.new_owner,
+            disabled: metadata.disabled,
+        };
+        self.storage.transfer(&key, *owner, meta)?;
+
+        Ok(TransferReturn {})
     }
 }

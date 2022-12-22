@@ -165,11 +165,7 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
         let result: kvstore::QueryReturns = minicbor::decode(&payload)
             .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
 
-        let owner = if let Some(owner) = result.owner {
-            owner.to_string()
-        } else {
-            "None".to_string()
-        };
+        let owner = result.owner.to_string();
 
         match result.disabled {
             Some(Either::Left(true)) => println!("{owner}, disabled"),
