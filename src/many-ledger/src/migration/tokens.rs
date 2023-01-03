@@ -68,8 +68,8 @@ fn migrate_token_metadata(
         "symbol",
         "symbol_name",
         "symbol_decimals",
-        "symbol_total",       // TODO: This field could be calculated from the storage
-        "symbol_circulating", // TODO: This field could be calculated from the storage
+        "symbol_total",
+        "symbol_circulating",
         "symbol_maximum",
         "symbol_owner",
     ];
