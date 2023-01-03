@@ -385,7 +385,7 @@ fn main() {
     };
 
     let client_address = key.address();
-    let client = ManyClient::new(&server, server_id, key).unwrap();
+    let client = ManyClient::new(server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Balance(BalanceOpt { identity, symbols }) => {
             let identity = identity.map(|identity| {
