@@ -44,9 +44,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         args: TokenCreateArgs,
     ) -> Result<TokenCreateReturns, ManyError> {
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
-            return Err(ManyError::unknown(
-                "Token Migration needs to be active to use this endpoint",
-            ));
+            return Err(ManyError::invalid_method_name("tokens.create"));
         }
 
         // TODO: Limit token creation to given sender
@@ -74,9 +72,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
     fn info(&self, _sender: &Address, args: TokenInfoArgs) -> Result<TokenInfoReturns, ManyError> {
         // Check the memory symbol cache for requested symbol
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
-            return Err(ManyError::unknown(
-                "Token Migration needs to be active to use this endpoint",
-            ));
+            return Err(ManyError::invalid_method_name("tokens.info"));
         }
 
         let symbol = &args.symbol;
@@ -98,9 +94,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
 
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
-            return Err(ManyError::unknown(
-                "Token Migration needs to be active to use this endpoint",
-            ));
+            return Err(ManyError::invalid_method_name("tokens.update"));
         }
 
         // Get the current owner and check if we're allowed to update this token
@@ -136,9 +130,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
-            return Err(ManyError::unknown(
-                "Token Migration needs to be active to use this endpoint",
-            ));
+            return Err(ManyError::invalid_method_name("tokens.addExtendedInfo"));
         }
 
         let current_owner = self.storage.get_owner(&args.symbol)?;
@@ -170,9 +162,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
         // | For example, endpoints SHOULD error if the sender isn't from a certain address.
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
-            return Err(ManyError::unknown(
-                "Token Migration needs to be active to use this endpoint",
-            ));
+            return Err(ManyError::invalid_method_name("tokens.removeExtendedInfo"));
         }
 
         let current_owner = self.storage.get_owner(&args.symbol)?;
