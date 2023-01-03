@@ -10,6 +10,7 @@ use many_modules::ledger::{
     TokenInfoArgs, TokenInfoReturns, TokenRemoveExtendedInfoArgs, TokenRemoveExtendedInfoReturns,
     TokenUpdateArgs, TokenUpdateReturns,
 };
+use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfoSummary, TokenMaybeOwner};
 use many_types::{AttributeRelatedIndex, Memo};
 use std::str::FromStr;
@@ -63,6 +64,7 @@ struct CreateTokenOpt {
     decimals: u64,
 
     #[clap(long)]
+    #[clap(value_parser = token_maybe_owner)]
     owner: Option<TokenMaybeOwner>,
 
     // TODO: How to make this better?
@@ -90,6 +92,7 @@ struct UpdateTokenOpt {
     decimals: Option<u64>,
 
     #[clap(long)]
+    #[clap(value_parser = token_maybe_owner)]
     owner: Option<TokenMaybeOwner>,
 
     #[clap(long)]
@@ -145,6 +148,16 @@ struct RemoveExtInfoOpt {
     symbol: Address,
 
     indices: Vec<u32>, // TODO: Use Index
+}
+
+/// Create `TokenMaybeOwner` from CLI `str`
+fn token_maybe_owner(s: &str) -> Result<Option<TokenMaybeOwner>, String> {
+    match s {
+        "null" => Ok(Some(TokenMaybeOwner::Right(CborNull))),
+        _ => Ok(Some(TokenMaybeOwner::Left(
+            Address::try_from(s.to_string()).map_err(|e| e.to_string())?,
+        ))),
+    }
 }
 
 fn create_ext_info(opts: CreateExtInfoOpt) -> TokenExtendedInfo {
