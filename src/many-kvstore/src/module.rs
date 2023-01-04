@@ -11,8 +11,8 @@ use many_modules::abci_backend::{
 use many_modules::account::Role;
 use many_modules::kvstore::{
     DisableArgs, DisableReturn, GetArgs, GetReturns, InfoArg, InfoReturns,
-    KvStoreCommandsModuleBackend, KvStoreModuleBackend, PutArgs, PutReturn, QueryArgs,
-    QueryReturns, TransferArgs, TransferReturn,
+    KvStoreCommandsModuleBackend, KvStoreModuleBackend, KvStoreTransferModuleBackend, PutArgs,
+    PutReturn, QueryArgs, QueryReturns, TransferArgs, TransferReturn,
 };
 use many_types::{Either, Timestamp};
 use std::collections::BTreeMap;
@@ -261,7 +261,9 @@ impl KvStoreCommandsModuleBackend for KvStoreModuleImpl {
         self.storage.disable(&meta, &key)?;
         Ok(DisableReturn {})
     }
+}
 
+impl KvStoreTransferModuleBackend for KvStoreModuleImpl {
     fn transfer(
         &mut self,
         sender: &Address,

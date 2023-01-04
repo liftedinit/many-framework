@@ -5,7 +5,7 @@ use many_identity::testing::identity;
 use many_identity::Address;
 use many_kvstore::error;
 use many_modules::kvstore::{
-    InfoArg, KvStoreCommandsModuleBackend, KvStoreModuleBackend, TransferArgs,
+    InfoArg, KvStoreModuleBackend, KvStoreTransferModuleBackend, TransferArgs,
 };
 use many_types::Either;
 use minicbor::bytes::ByteVec;

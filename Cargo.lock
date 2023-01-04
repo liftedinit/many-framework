@@ -556,9 +556,9 @@ dependencies = [
 
 [[package]]
 name = "chunked_transfer"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"
+checksum = "cca491388666e04d7248af3f60f0c40cfb0991c72205595d7c396e3510207d1a"
 
 [[package]]
 name = "ciborium"
@@ -697,15 +697,14 @@ dependencies = [
 
 [[package]]
 name = "console"
-version = "0.15.2"
+version = "0.15.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c050367d967ced717c04b65d8c619d863ef9292ce0c5760028655a2fb298718c"
+checksum = "c9b6515d269224923b26b5febea2ed42b2d5f2ce37284a4dd670fedd6cb8347a"
 dependencies = [
  "encode_unicode",
  "lazy_static",
  "libc",
- "terminal_size",
- "winapi",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]
@@ -1314,13 +1313,13 @@ dependencies = [
 
 [[package]]
 name = "fixed"
-version = "1.20.0"
+version = "1.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "418922d2c280b8c68f82699494cc8c48f392233233a9a8b9a48a57a36c0ad0ef"
+checksum = "f1965703169d4c3581f1d853e6a0bacf2ad9ba5d161f58ac331de95b37584a50"
 dependencies = [
  "az",
  "bytemuck",
- "half 2.1.0",
+ "half 2.2.0",
  "typenum",
 ]
 
@@ -1582,9 +1581,9 @@ checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "half"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad6a9459c9c30b177b925162351f97e7d967c7ea8bab3b8352805327daf45554"
+checksum = "6c467d36af040b7b2681f5fddd27427f6da8d3d072f575a265e181d2f8e8d157"
 dependencies = [
  "crunchy",
 ]
@@ -2186,7 +2185,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2229,7 +2228,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2239,7 +2238,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2250,7 +2249,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "base32",
  "coset",
@@ -2270,7 +2269,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2298,7 +2297,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2318,7 +2317,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
@@ -2431,7 +2430,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2444,7 +2443,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2457,7 +2456,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "async-trait",
  "coset",
@@ -2477,7 +2476,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2501,7 +2500,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2550,7 +2549,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 dependencies = [
  "base64 0.20.0",
  "coset",
@@ -2671,9 +2670,9 @@ dependencies = [
 
 [[package]]
 name = "nom"
-version = "7.1.1"
+version = "7.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36"
+checksum = "e5507769c4919c998e69e49c839d9dc6e693ede4cc4290d6ad8b41d4f09c548c"
 dependencies = [
  "memchr",
  "minimal-lexical",
@@ -2766,9 +2765,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.16.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
+checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "opaque-debug"
@@ -2956,9 +2955,9 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "pest"
-version = "2.5.1"
+version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc8bed3549e0f9b0a2a78bf7c0018237a2cdf085eecbbc048e52612438e4e9d0"
+checksum = "0f6e86fb9e7026527a0d46bc308b841d73170ef8f443e1807f6ef88526a816d4"
 dependencies = [
  "thiserror",
  "ucd-trie",
@@ -2966,9 +2965,9 @@ dependencies = [
 
 [[package]]
 name = "pest_derive"
-version = "2.5.1"
+version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdc078600d06ff90d4ed238f0119d84ab5d43dbaad278b0e33a8820293b32344"
+checksum = "96504449aa860c8dcde14f9fba5c58dc6658688ca1fe363589d6327b8662c603"
 dependencies = [
  "pest",
  "pest_generator",
@@ -2976,9 +2975,9 @@ dependencies = [
 
 [[package]]
 name = "pest_generator"
-version = "2.5.1"
+version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28a1af60b1c4148bb269006a750cff8e2ea36aff34d2d96cf7be0b14d1bed23c"
+checksum = "798e0220d1111ae63d66cb66a5dcb3fc2d986d520b98e49e1852bfdb11d7c5e7"
 dependencies = [
  "pest",
  "pest_meta",
@@ -2989,9 +2988,9 @@ dependencies = [
 
 [[package]]
 name = "pest_meta"
-version = "2.5.1"
+version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fec8605d59fc2ae0c6c1aefc0c7c7a9769732017c0ce07f7a9cfffa7b4404f20"
+checksum = "984298b75898e30a843e278a9f2452c31e349a073a0ce6fd950a12a74464e065"
 dependencies = [
  "once_cell",
  "pest",
@@ -3569,9 +3568,9 @@ checksum = "58bc9567378fc7690d6b2addae4e60ac2eeea07becb2c64b9f218b53865cba2a"
 
 [[package]]
 name = "serde"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
+checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
 dependencies = [
  "serde_derive",
 ]
@@ -3607,9 +3606,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "255abe9a125a985c05190d687b320c12f9b1f0b99445e608c21ba0782c719ad8"
+checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3927,9 +3926,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccb297c0afb439440834b4bcf02c5c9da8ec2e808e70f36b0d8e815ff403bd24"
+checksum = "17351d0e9eb8841897b14e9669378f3c69fb57779cc04f8ca9a9d512edfb2563"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",
@@ -4085,16 +4084,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "terminal_size"
-version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
-dependencies = [
- "libc",
- "winapi",
 ]
 
 [[package]]
@@ -4911,9 +4900,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#b3076b568c3915385592d8fdfd70253454856690"
+source = "git+https://github.com/hansl/many-rs.git?branch=kvstore-transfer#7891defb9b73f634c18cfffde9e782831e59060e"
