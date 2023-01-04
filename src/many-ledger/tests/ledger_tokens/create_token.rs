@@ -34,29 +34,6 @@ impl CreateWorld {
     }
 }
 
-// // TODO: Macro
-// impl TokenWorld for CreateWorld {
-//     fn setup_id(&self) -> Address {
-//         self.setup.id
-//     }
-//
-//     fn account(&self) -> Address {
-//         self.account
-//     }
-//
-//     fn info_mut(&mut self) -> &mut TokenInfo {
-//         &mut self.info
-//     }
-//
-//     fn account_mut(&mut self) -> &mut Address {
-//         &mut self.account
-//     }
-//
-//     fn module_impl(&mut self) -> &mut LedgerModuleImpl {
-//         &mut self.setup.module_impl
-//     }
-// }
-
 fn create_token(w: &mut CreateWorld, sender: &Address) {
     w.info = LedgerTokensModuleBackend::create(&mut w.setup.module_impl, sender, w.args.clone())
         .expect("Could not create token")

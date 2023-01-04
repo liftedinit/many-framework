@@ -63,7 +63,7 @@ many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea0
 many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf", features = [ "ed25519", "testing" ] }
 many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf", features = ["cucumber"] }
 many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf", features = ["cucumber"] }
-many-ledger = { path = ".", features = ["balance_testing", "migration_testing"]}
+many-ledger = { path = ".", features = ["balance_testing", "migration_testing", "token_testing"]}
 proptest = "1"
 tempfile = "3.3.0"
 tokio = "1.13.0"
@@ -97,3 +97,4 @@ vergen = "7"
 balance_testing=[]
 migration_testing=[]
 webauthn_testing=[]
+token_testing=[]        # Disable token endpoint sender validation

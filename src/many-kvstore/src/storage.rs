@@ -58,7 +58,7 @@ impl KvStoreStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
-    pub fn new_subresource_id(&mut self) -> Address {
+    pub fn new_subresource_id(&mut self) -> Result<Address, ManyError> {
         let current_id = self.next_subresource;
         self.next_subresource += 1;
         self.persistent_store
@@ -66,11 +66,9 @@ impl KvStoreStorage {
                 b"/config/subresource_id".to_vec(),
                 Op::Put(self.next_subresource.to_be_bytes().to_vec()),
             )])
-            .unwrap();
+            .map_err(error::storage_apply_failed)?;
 
-        self.root_identity
-            .with_subresource_id(current_id)
-            .expect("Too many subresources")
+        self.root_identity.with_subresource_id(current_id)
     }
 
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {

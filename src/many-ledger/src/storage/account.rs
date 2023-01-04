@@ -21,7 +21,7 @@ impl LedgerStorage {
         mut account: account::Account,
         add_event: bool,
     ) -> Result<Address, ManyError> {
-        let id = self.new_subresource_id();
+        let id = self.new_subresource_id()?;
 
         // The account MUST own itself.
         account.add_role(&id, account::Role::Owner);

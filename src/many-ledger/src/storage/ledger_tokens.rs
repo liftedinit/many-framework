@@ -16,6 +16,11 @@ use merk::{BatchEntry, Op};
 const SYMBOLS_ROOT: &str = const_format::concatcp!(SYMBOLS, "/");
 pub const SYMBOLS_ROOT_BYTES: &[u8] = SYMBOLS_ROOT.as_bytes();
 
+pub const TOKEN_IDENTITY: &str = "/config/token_identity";
+pub const TOKEN_IDENTITY_BYTES: &[u8] = TOKEN_IDENTITY.as_bytes();
+pub const TOKEN_SUBRESOURCE_COUNTER: &str = "/config/token_subresource_id";
+pub const TOKEN_SUBRESOURCE_COUNTER_BYTES: &[u8] = TOKEN_SUBRESOURCE_COUNTER.as_bytes();
+
 pub fn key_for_symbol(symbol: &Symbol) -> Vec<u8> {
     format!("/config/symbols/{symbol}").into_bytes()
 }
@@ -36,6 +41,25 @@ impl LedgerStorage {
             minicbor::decode(&token_info_enc).map_err(ManyError::deserialization_error)?;
 
         Ok(info.owner)
+    }
+
+    #[cfg(not(feature = "token_testing"))]
+    pub fn token_identity(&self) -> &Address {
+        &self.token_identity
+    }
+
+    /// Create new token symbol derived from the token identity
+    fn new_token_subresource(&mut self) -> Result<Address, ManyError> {
+        let current_id = self.token_next_subresource;
+        self.token_next_subresource += 1;
+        self.persistent_store
+            .apply(&[(
+                TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+                Op::Put(self.token_next_subresource.to_be_bytes().to_vec()),
+            )])
+            .map_err(error::storage_apply_failed)?;
+
+        self.token_identity.with_subresource_id(current_id)
     }
 
     fn update_symbols(&mut self, symbol: Symbol, ticker: String) -> Result<(), ManyError> {
@@ -66,7 +90,7 @@ impl LedgerStorage {
         } = args;
 
         // Create a new token symbol and store in memory and in the persistent store
-        let symbol = self.new_subresource_id();
+        let symbol = self.new_token_subresource()?;
         self.update_symbols(symbol, summary.ticker.clone())?;
 
         // Initialize the total supply following the initial token distribution, if any

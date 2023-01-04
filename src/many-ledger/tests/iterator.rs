@@ -21,6 +21,8 @@ fn setup() -> LedgerStorage {
     let mut storage = LedgerStorage::new(
         symbols,
         symbols_meta,
+        None,
+        None,
         balances,
         persistent_path,
         id2,

@@ -1,6 +1,8 @@
 use crate::error;
 use crate::migration::MIGRATIONS;
-use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol};
+use crate::storage::ledger_tokens::{
+    key_for_ext_info, key_for_symbol, TOKEN_IDENTITY_BYTES, TOKEN_SUBRESOURCE_COUNTER_BYTES,
+};
 use crate::storage::{SYMBOLS, SYMBOLS_BYTES};
 use linkme::distributed_slice;
 use many_error::ManyError;
@@ -18,12 +20,12 @@ fn migrate_subresource_counter(storage: &mut merk::Merk) -> Result<(), ManyError
     // Is the old counter present in the DB?
     let old_counter = storage
         .get(b"/config/account_id")
-        .map_err(|_| ManyError::unknown("Unable to retrieve old counter"))?;
+        .map_err(error::storage_get_failed)?;
 
     // Is the new counter present in the DB?
     let new_counter = storage
         .get(b"/config/subresource_id")
-        .map_err(|_| ManyError::unknown("Unable to retrieve new counter"))?;
+        .map_err(error::storage_get_failed)?;
 
     match (old_counter, new_counter) {
         // Old counter is present, new counter is not. First time running the migration.
@@ -59,12 +61,14 @@ fn migrate_subresource_counter(storage: &mut merk::Merk) -> Result<(), ManyError
     Ok(())
 }
 
-fn migrate_token_metadata(
+fn migrate_token(
     storage: &mut merk::Merk,
     extra: &HashMap<String, Value>,
 ) -> Result<(), ManyError> {
     // Make sure we have all the parameters we need for this migration
     let params = [
+        "token_identity",
+        "token_next_subresource",
         "symbol",
         "symbol_name",
         "symbol_decimals",
@@ -80,6 +84,14 @@ fn migrate_token_metadata(
             )));
         }
     }
+
+    let token_identity: String = serde_json::from_value(extra["token_identity"].clone())
+        .map_err(ManyError::deserialization_error)?;
+    let token_identity = Address::from_str(&token_identity)?;
+
+    let token_next_subresource: u32 =
+        serde_json::from_value(extra["token_next_subresource"].clone())
+            .map_err(ManyError::deserialization_error)?;
 
     let symbol: String = serde_json::from_value(extra["symbol"].clone())
         .map_err(ManyError::deserialization_error)?;
@@ -127,13 +139,25 @@ fn migrate_token_metadata(
         owner,
     };
 
-    // Add token metadata to the DB
+    // Add token data to the DB
+    storage
+        .apply(&[(
+            TOKEN_IDENTITY_BYTES.to_vec(),
+            Op::Put(token_identity.to_vec()),
+        )])
+        .map_err(error::storage_apply_failed)?;
+    storage
+        .apply(&[(
+            TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+            Op::Put(token_next_subresource.to_be_bytes().to_vec()),
+        )])
+        .map_err(error::storage_apply_failed)?;
     storage
         .apply(&[(
             key_for_symbol(&symbol),
             Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
         )])
-        .map_err(ManyError::unknown)?;
+        .map_err(error::storage_apply_failed)?;
     storage
         .apply(&[(
             key_for_ext_info(&symbol),
@@ -142,14 +166,14 @@ fn migrate_token_metadata(
                     .map_err(ManyError::serialization_error)?,
             ),
         )])
-        .map_err(ManyError::unknown)?;
+        .map_err(error::storage_apply_failed)?;
 
     Ok(())
 }
 
 fn initialize(storage: &mut merk::Merk, extra: &HashMap<String, Value>) -> Result<(), ManyError> {
     migrate_subresource_counter(storage)?;
-    migrate_token_metadata(storage, extra)?;
+    migrate_token(storage, extra)?;
 
     Ok(())
 }

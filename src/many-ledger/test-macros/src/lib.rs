@@ -41,6 +41,10 @@ fn impl_token_world_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
         impl TokenWorld for #name {
+            fn info(&self) -> &TokenInfo {
+                &self.info
+            }
+
             fn info_mut(&mut self) -> &mut TokenInfo {
                 &mut self.info
             }

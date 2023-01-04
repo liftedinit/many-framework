@@ -15,7 +15,7 @@ function setup() {
     if ! [ $CI ]; then
         (
           cd "$GIT_ROOT"
-          cargo build --all-features
+          cargo build
         )
     fi
 
@@ -23,11 +23,6 @@ function setup() {
     { "migrations": [
       {
         "name": "Account Count Data Attribute",
-        "block_height": 0,
-        "disabled": true
-      },
-      {
-        "name": "Dummy Hotfix",
         "block_height": 0,
         "disabled": true
       },
@@ -50,6 +45,12 @@ function setup() {
     # Activating the Token Migration from block 0 will modify the ledger staging hash
     # The symbol metadata will be stored in the DB
     cp "$GIT_ROOT/staging/ledger_state.json5" "$BATS_TEST_ROOTDIR/ledger_state.json5"
+
+    # Make `identity 1` the token identity
+    sed -i 's/token_identity: ".*"/token_identity: "'"$(identity 1)"'"/' "$BATS_TEST_ROOTDIR/ledger_state.json5"
+
+    # Use token identity subresource 0 as the first token symbol
+    sed -i 's/token_next_subresource: 2/token_next_subresource: 0/' "$BATS_TEST_ROOTDIR/ledger_state.json5"
 
     # Skip hash check
     sed -i 's/hash/\/\/hash/' "$BATS_TEST_ROOTDIR/ledger_state.json5"
@@ -84,7 +85,11 @@ function teardown() {
 }
 
 @test "$SUITE: can't create as anonymous" {
-    create_token --error --port=8000
+    create_token --error=anon --port=8000
+}
+
+@test "$SUITE: can't create as identity 2" {
+    create_token --pem=2 --error=invalid_sender --port=8000
 }
 
 @test "$SUITE: can update token" {

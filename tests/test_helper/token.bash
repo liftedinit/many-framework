@@ -11,7 +11,7 @@ function create_token() {
          --pem=*) pem_arg=${1}; shift ;;                                    # Identity to create the token with
          --port=*) port=${1}; shift ;;                                      # Port of the ledger server
          --ext_info_type=*) ext_info_type=${1#--ext_info_type=}; shift ;;   # Extended info to add at token creation
-         --error) error=true; shift ;;                                      # If this is set, token creation is expected to fail
+         --error=*) error=${1#--error=}; shift ;;                           # If this is set, token creation is expected to fail
          --) shift; break ;;
          *) break ;;
        esac
@@ -27,8 +27,10 @@ function create_token() {
 
     call_ledger ${pem_arg} ${port} token create "Foobar" "FBR" 9 "$ext_args" "$@"
 
-    if [[ $error ]]; then
+    if [[ $error = "anon" ]]; then
         assert_output --partial "Invalid Identity; the sender cannot be anonymous."
+    elif [[ $error = "invalid_sender" ]]; then
+        assert_output --partial "Unauthorised Token endpoints sender."
     else
         SYMBOL=$(echo $output | grep -oE '"m[a-z0-9]+"' | head -n 1)
         assert [ ${#SYMBOL} -eq 57 ]     # Check the account ID has the right length (55 chars + "")

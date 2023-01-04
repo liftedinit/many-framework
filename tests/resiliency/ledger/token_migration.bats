@@ -37,6 +37,8 @@ function setup() {
       {
         "name": "Token Migration",
         "block_height": 30,
+        "token_identity": "'$(identity 1)'",
+        "token_next_subresource": 0,
         "symbol": "'${MFX_ADDRESS}'",
         "symbol_name": "Manifest Network Token",
         "symbol_decimals": 9,
@@ -83,7 +85,7 @@ function teardown() {
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
     call_ledger --pem=1 --port=8000 token info ${MFX_ADDRESS}
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 
     wait_for_block 30
 
@@ -103,27 +105,30 @@ function teardown() {
     check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
 
     call_ledger --pem=1 --port=8000 token info ${MFX_ADDRESS}
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 
     call_ledger --pem=1 --port=8000 token create "Foobar" "FBR" 9
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 
     call_ledger --pem=1 --port=8000 token update --name "Foobar2" maa
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 
     call_ledger --pem=1 --port=8000 token add-ext-info maa memo "\"My memo\""
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 
     call_ledger --pem=1 --port=8000 token remove-ext-info maa 0
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 
     wait_for_block 30
 
+    # Make sure MFX token info are present
     call_ledger --pem=1 --port=8000 token info ${MFX_ADDRESS}
     assert_output --partial "name: \"Manifest Network Token\""
     assert_output --partial "ticker: \"MFX\""
     assert_output --partial "decimals: 9"
 
+    # Test token update
+    # Change the token owner to `identity 2`
     create_token --pem=1 --port=8000
     call_ledger --pem=1 --port=8000 token update --name "\"New name\"" \
         --ticker "LLT" \
@@ -131,6 +136,8 @@ function teardown() {
         --memo "\"Update memo\"" \
         --owner "$(identity 2)" \
         "${SYMBOL}"
+
+    # And add a memo to the token
     call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" memo "\"My memo\""
 
     for port in 8000 8001 8002 8003; do
@@ -142,9 +149,24 @@ function teardown() {
         assert_output --partial "My memo"
     done
 
+    # Remove the memo from the token
     call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 0
     for port in 8000 8001 8002 8003; do
         call_ledger --port=${port} token info "${SYMBOL}"
         refute_output --partial "Some memo"
     done
+}
+
+@test "$SUITE: Token creation sender is limited to token identity" {
+    skip "cargo2nix (#200) doesn't supports Cargo resolver=2"
+
+    check_consistency --pem=1 --balance=1000000 --id="$(identity 1)" 8000 8001 8002 8003
+    wait_for_block 30
+
+    # Creation fails
+    create_token --pem=2 --error=invalid_sender --port=8000
+    create_token --error=anon --port=8000
+
+    # Creation successful
+    create_token --pem=1 --port=8000
 }

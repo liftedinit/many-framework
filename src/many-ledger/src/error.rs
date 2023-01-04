@@ -24,6 +24,7 @@ define_attribute_many_error!(
     attribute 11 => {
         1: pub fn token_info_not_found(symbol) => "Token information not found in persistent storage: {symbol}.",
         2: pub fn ext_info_not_found(symbol) => "Token extended information not found in persistent storage: {symbol}.",
+        3: pub fn invalid_sender() => "Unauthorised Token endpoints sender.",
     }
 );
 

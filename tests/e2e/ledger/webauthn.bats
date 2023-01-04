@@ -27,7 +27,7 @@ function setup() {
     if ! [ $CI ]; then
         (
           cd "$GIT_ROOT"
-          cargo build --all-features
+          cargo build --features webauthn_testing
         )
     fi
 }

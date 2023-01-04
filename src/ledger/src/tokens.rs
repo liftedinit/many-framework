@@ -151,12 +151,12 @@ struct RemoveExtInfoOpt {
 }
 
 /// Create `TokenMaybeOwner` from CLI `str`
-fn token_maybe_owner(s: &str) -> Result<Option<TokenMaybeOwner>, String> {
+fn token_maybe_owner(s: &str) -> Result<TokenMaybeOwner, String> {
     match s {
-        "null" => Ok(Some(TokenMaybeOwner::Right(CborNull))),
-        _ => Ok(Some(TokenMaybeOwner::Left(
+        "null" => Ok(TokenMaybeOwner::Right(CborNull)),
+        _ => Ok(TokenMaybeOwner::Left(
             Address::try_from(s.to_string()).map_err(|e| e.to_string())?,
-        ))),
+        )),
     }
 }
 

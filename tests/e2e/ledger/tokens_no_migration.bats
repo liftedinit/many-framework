@@ -14,7 +14,7 @@ function setup() {
     if ! [ $CI ]; then
     (
     cd "$GIT_ROOT"
-    cargo build --all-features
+    cargo build
     )
     fi
 
@@ -27,25 +27,25 @@ function teardown() {
 
 @test "$SUITE: tokens.create is disabled" {
     call_ledger --pem=1 --port=8000 token create "Foobar" "FBR" 9
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 }
 
 @test "$SUITE: tokens.update is disabled" {
     call_ledger --pem=1 --port=8000 token update --name "Foobar2" maa
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 }
 
 @test "$SUITE: tokens.info is disabled" {
     call_ledger --pem=1 --port=8000 token info maa
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 }
 
 @test "$SUITE: tokens.addExtendedInfo is disabled" {
     call_ledger --pem=1 --port=8000 token add-ext-info maa memo "\"My memo\""
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 }
 
 @test "$SUITE: tokens.removeExtendedInfo is disabled" {
     call_ledger --pem=1 --port=8000 token remove-ext-info maa 0
-    assert_output --partial "Token Migration needs to be active to use this endpoint"
+    assert_output --partial "Invalid method name"
 }

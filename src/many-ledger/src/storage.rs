@@ -4,7 +4,10 @@ use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use crate::storage::iterator::LedgerIterator;
-use crate::storage::ledger_tokens::{key_for_ext_info, key_for_symbol, SYMBOLS_ROOT_BYTES};
+use crate::storage::ledger_tokens::{
+    key_for_ext_info, key_for_symbol, SYMBOLS_ROOT_BYTES, TOKEN_IDENTITY, TOKEN_IDENTITY_BYTES,
+    TOKEN_SUBRESOURCE_COUNTER, TOKEN_SUBRESOURCE_COUNTER_BYTES,
+};
 use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
@@ -48,8 +51,11 @@ pub struct LedgerStorage {
     current_time: Option<Timestamp>,
     current_hash: Option<Vec<u8>>,
 
-    next_subresource: u32,
-    root_identity: Address,
+    next_subresource: u32,  // Subresource based on the server identity
+    root_identity: Address, // Server identity
+
+    token_identity: Address,     // Token identity
+    token_next_subresource: u32, // Token symbols subresource counter
 
     migrations: LedgerMigrations,
 }
@@ -111,7 +117,7 @@ impl LedgerStorage {
         }
     }
 
-    pub fn new_subresource_id(&mut self) -> Address {
+    pub fn new_subresource_id(&mut self) -> Result<Address, ManyError> {
         let current_id = self.next_subresource;
         self.next_subresource += 1;
         self.persistent_store
@@ -119,11 +125,9 @@ impl LedgerStorage {
                 LedgerStorage::subresource_db_key(self.migrations.is_active(&TOKEN_MIGRATION)),
                 Op::Put(self.next_subresource.to_be_bytes().to_vec()),
             )])
-            .unwrap();
+            .map_err(error::storage_apply_failed)?;
 
-        self.root_identity
-            .with_subresource_id(current_id)
-            .expect("Too many subresources")
+        self.root_identity.with_subresource_id(current_id)
     }
 
     pub fn load<P: AsRef<Path>>(
@@ -171,6 +175,28 @@ impl LedgerStorage {
                 u32::from_be_bytes(bytes)
             });
 
+        let mut token_next_subresource = 0;
+        let mut token_identity = root_identity;
+
+        // Load the token-related data if the token migration is active.
+        if migrations.is_active(&TOKEN_MIGRATION) {
+            token_identity = Address::from_bytes(
+                &persistent_store
+                    .get(TOKEN_IDENTITY_BYTES)
+                    .map_err(|_| error::storage_get_failed(TOKEN_IDENTITY).to_string())?
+                    .ok_or_else(|| "Unable to read Token identity from DB")?,
+            )
+            .map_err(|e| e.to_string())?;
+
+            let x = persistent_store
+                .get(TOKEN_SUBRESOURCE_COUNTER_BYTES)
+                .map_err(|_| error::storage_get_failed(TOKEN_SUBRESOURCE_COUNTER).to_string())?
+                .ok_or_else(|| "Unable to read Token subresource counter from DB")?;
+            let mut bytes = [0u8; 4];
+            bytes.copy_from_slice(x.as_slice());
+            token_next_subresource = u32::from_be_bytes(bytes);
+        }
+
         Ok(Self {
             persistent_store,
             blockchain,
@@ -179,6 +205,8 @@ impl LedgerStorage {
             current_hash: None,
             next_subresource,
             root_identity,
+            token_identity,
+            token_next_subresource,
             migrations,
         })
     }
@@ -186,7 +214,9 @@ impl LedgerStorage {
     #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
         symbols: BTreeMap<Symbol, String>,
-        symbols_meta: Option<BTreeMap<Symbol, SymbolMetaJson>>, // TODO: This is dumb, don't do that
+        symbols_meta: Option<BTreeMap<Symbol, SymbolMetaJson>>,
+        token_identity: Option<Address>,
+        token_next_subresource: Option<u32>,
         initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
         persistent_path: P,
         identity: Address,
@@ -229,9 +259,22 @@ impl LedgerStorage {
             Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
         ));
 
-        // If the Token Migration is active and some symbol metadata were provided, we can add those to the storage
+        let token_identity = token_identity.unwrap_or(identity);
+        let token_next_subresource = token_next_subresource.unwrap_or(0);
+
+        // Add token-related config to the persistent storage if the Token Migration is active
         // Note: This will change storage hash
         if migrations.is_active(&TOKEN_MIGRATION) {
+            batch.push((
+                TOKEN_IDENTITY_BYTES.to_vec(),
+                Op::Put(token_identity.to_vec()),
+            ));
+
+            batch.push((
+                TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+                Op::Put(token_next_subresource.to_be_bytes().to_vec()),
+            ));
+
             if let Some(symbols_meta) = symbols_meta {
                 for ((s1, ticker), (s2, meta)) in symbols.iter().zip(symbols_meta.into_iter()) {
                     if s1 != &s2 {
@@ -299,6 +342,8 @@ impl LedgerStorage {
             current_hash: None,
             next_subresource: 0,
             root_identity: identity,
+            token_identity,
+            token_next_subresource,
             migrations,
         })
     }

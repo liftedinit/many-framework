@@ -139,6 +139,8 @@ pub struct SymbolMetaJson {
 pub struct InitialStateJson {
     pub identity: Address,
     pub initial: BTreeMap<Address, BTreeMap<String, TokenAmount>>,
+    pub token_identity: Option<Address>,
+    pub token_next_subresource: Option<u32>,
     pub symbols: BTreeMap<Address, String>,
     pub symbols_meta: Option<BTreeMap<Address, SymbolMetaJson>>,
     pub accounts: Option<Vec<AccountJson>>,

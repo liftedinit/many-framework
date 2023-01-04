@@ -37,6 +37,14 @@ fn verify_tokens_acl(
     Ok(())
 }
 
+#[cfg(not(feature = "token_testing"))]
+fn verify_tokens_sender(sender: &Address, token_identity: &Address) -> Result<(), ManyError> {
+    if sender != token_identity {
+        return Err(error::invalid_sender());
+    }
+    Ok(())
+}
+
 impl LedgerTokensModuleBackend for LedgerModuleImpl {
     fn create(
         &mut self,
@@ -47,9 +55,8 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
             return Err(ManyError::invalid_method_name("tokens.create"));
         }
 
-        // TODO: Limit token creation to given sender
-        // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
-        // | For example, endpoints SHOULD error if the sender isn't from a certain address.
+        #[cfg(not(feature = "token_testing"))]
+        verify_tokens_sender(sender, self.storage.token_identity())?;
 
         if let Some(Either::Left(addr)) = &args.owner {
             verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensCreate])?;
@@ -89,10 +96,6 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: TokenUpdateArgs,
     ) -> Result<TokenUpdateReturns, ManyError> {
-        // TODO: Limit token update to given sender
-        // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
-        // | For example, endpoints SHOULD error if the sender isn't from a certain address.
-
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
             return Err(ManyError::invalid_method_name("tokens.update"));
         }
@@ -126,9 +129,6 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: TokenAddExtendedInfoArgs,
     ) -> Result<TokenAddExtendedInfoReturns, ManyError> {
-        // TODO: Limit adding extended info to given sender
-        // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
-        // | For example, endpoints SHOULD error if the sender isn't from a certain address.
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
             return Err(ManyError::invalid_method_name("tokens.addExtendedInfo"));
         }
@@ -158,9 +158,6 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         sender: &Address,
         args: TokenRemoveExtendedInfoArgs,
     ) -> Result<TokenRemoveExtendedInfoReturns, ManyError> {
-        // TODO: Limit adding extended info to given sender
-        // | A server implementing this attribute SHOULD protect the endpoints described in this form in some way.
-        // | For example, endpoints SHOULD error if the sender isn't from a certain address.
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
             return Err(ManyError::invalid_method_name("tokens.removeExtendedInfo"));
         }

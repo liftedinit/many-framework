@@ -35,6 +35,8 @@ impl LedgerModuleImpl {
         let mut storage = LedgerStorage::new(
             state.symbols(),
             state.symbols_meta.clone(), // TODO: Remove clone
+            state.token_identity,
+            state.token_next_subresource,
             state.balances()?,
             persistence_store_path,
             state.identity,

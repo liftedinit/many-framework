@@ -27,6 +27,7 @@ pub trait AccountWorld {
 }
 
 pub trait TokenWorld {
+    fn info(&self) -> &TokenInfo;
     fn info_mut(&mut self) -> &mut TokenInfo;
 }
 

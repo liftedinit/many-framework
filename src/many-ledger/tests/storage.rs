@@ -21,6 +21,8 @@ fn load() {
         let _ = LedgerStorage::new(
             BTreeMap::from([(identity(1000), "MF0".to_string())]),
             None,
+            None,
+            None,
             BTreeMap::from([(
                 identity(5),
                 BTreeMap::from([(identity(1000), 10000000u64.into())]),
@@ -112,6 +114,8 @@ fn load_symbol_meta() {
                     maximum: None,
                 },
             )])),
+            None,
+            None,
             BTreeMap::from([(
                 identity(5),
                 BTreeMap::from([(identity(1000), 10000000u64.into())]),
