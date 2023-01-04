@@ -184,14 +184,14 @@ impl LedgerStorage {
                 &persistent_store
                     .get(TOKEN_IDENTITY_BYTES)
                     .map_err(|_| error::storage_get_failed(TOKEN_IDENTITY).to_string())?
-                    .ok_or_else(|| "Unable to read Token identity from DB")?,
+                    .ok_or("Unable to read Token identity from DB")?,
             )
             .map_err(|e| e.to_string())?;
 
             let x = persistent_store
                 .get(TOKEN_SUBRESOURCE_COUNTER_BYTES)
                 .map_err(|_| error::storage_get_failed(TOKEN_SUBRESOURCE_COUNTER).to_string())?
-                .ok_or_else(|| "Unable to read Token subresource counter from DB")?;
+                .ok_or("Unable to read Token subresource counter from DB")?;
             let mut bytes = [0u8; 4];
             bytes.copy_from_slice(x.as_slice());
             token_next_subresource = u32::from_be_bytes(bytes);
