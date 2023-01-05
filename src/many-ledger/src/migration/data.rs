@@ -1,3 +1,4 @@
+use crate::error;
 use crate::migration::MIGRATIONS;
 use crate::storage::data::{DATA_ATTRIBUTES_KEY, DATA_INFO_KEY};
 use linkme::distributed_slice;
@@ -93,7 +94,7 @@ fn initialize(storage: &mut merk::Merk, _: &HashMap<String, Value>) -> Result<()
                 Op::Put(minicbor::to_vec(data_info()).unwrap()),
             ),
         ])
-        .map_err(ManyError::unknown)?; // TODO: Custom error
+        .map_err(error::storage_apply_failed)?;
     Ok(())
 }
 

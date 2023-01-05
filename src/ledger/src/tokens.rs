@@ -45,7 +45,8 @@ struct InfoOpt {
     symbol: Address,
 
     #[clap(long)]
-    indices: Option<Vec<u32>>, // TODO: Use Index
+    #[clap(value_parser = attribute_related_index)]
+    indices: Option<Vec<AttributeRelatedIndex>>,
 }
 
 #[derive(Args)]
@@ -147,7 +148,8 @@ struct AddExtInfoOpt {
 struct RemoveExtInfoOpt {
     symbol: Address,
 
-    indices: Vec<u32>, // TODO: Use Index
+    #[clap(value_parser = attribute_related_index)]
+    indices: Vec<AttributeRelatedIndex>,
 }
 
 /// Create `TokenMaybeOwner` from CLI `str`
@@ -158,6 +160,12 @@ fn token_maybe_owner(s: &str) -> Result<TokenMaybeOwner, String> {
             Address::try_from(s.to_string()).map_err(|e| e.to_string())?,
         )),
     }
+}
+
+fn attribute_related_index(s: &str) -> Result<AttributeRelatedIndex, String> {
+    Ok(AttributeRelatedIndex::new(
+        s.parse::<u32>().map_err(|e| e.to_string())?,
+    ))
 }
 
 fn create_ext_info(opts: CreateExtInfoOpt) -> TokenExtendedInfo {
@@ -252,11 +260,7 @@ fn remove_ext_info(
 ) -> Result<(), ManyError> {
     let args = TokenRemoveExtendedInfoArgs {
         symbol: opts.symbol,
-        extended_info: opts
-            .indices
-            .into_iter()
-            .map(AttributeRelatedIndex::new)
-            .collect(),
+        extended_info: opts.indices,
     };
     let response = client.call("tokens.removeExtendedInfo", args)?;
     let payload = crate::wait_response(client, response)?;
@@ -268,9 +272,7 @@ fn remove_ext_info(
 fn info_token(client: ManyClient<impl Identity>, opts: InfoOpt) -> Result<(), ManyError> {
     let args = TokenInfoArgs {
         symbol: opts.symbol,
-        extended_info: opts
-            .indices
-            .map(|v| v.into_iter().map(AttributeRelatedIndex::new).collect_vec()),
+        extended_info: opts.indices,
     };
     let response = client.call("tokens.info", args)?;
     let payload = crate::wait_response(client, response)?;

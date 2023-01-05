@@ -32,12 +32,14 @@ impl LedgerModuleImpl {
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
+        let symbols = state.symbols();
+        let balances = state.balances()?;
         let mut storage = LedgerStorage::new(
-            state.symbols(),
-            state.symbols_meta.clone(), // TODO: Remove clone
+            symbols,
+            state.symbols_meta,
             state.token_identity,
             state.token_next_subresource,
-            state.balances()?,
+            balances,
             persistence_store_path,
             state.identity,
             blockchain,
