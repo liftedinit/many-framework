@@ -45,7 +45,11 @@ rust_library(
     name = "many-ledger-lib-for-test",
     srcs = glob(include = ["src/**/*.rs"]),
     aliases = aliases(),
-    crate_features = ["balance_testing"],
+    crate_features = [
+        "balance_testing",
+        "migration_testing",
+        "disable_token_sender_check",
+    ],
     crate_name = "many_ledger",
     proc_macro_deps = all_crate_deps(
         proc_macro = True,

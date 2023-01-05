@@ -1,5 +1,5 @@
 {
-  "checksum": "060397c62f49b43f5ca81420a70121c90644fc6a5c2eafb5feaa2a8e8f32ce58",
+  "checksum": "f62665c8237b3e4c503c7e6b8abd496b8f2d0013133ba67a062873d0ba49f153",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -14433,8 +14433,8 @@
         ],
         "crate_features": [
           "balance_testing",
-          "migration_testing",
-          "token_testing"
+          "disable_token_sender_check",
+          "migration_testing"
         ],
         "deps": {
           "common": [

@@ -43,7 +43,7 @@ impl LedgerStorage {
         Ok(info.owner)
     }
 
-    #[cfg(not(feature = "token_testing"))]
+    #[cfg(not(feature = "disable_token_sender_check"))]
     pub fn token_identity(&self) -> &Address {
         &self.token_identity
     }

@@ -10,12 +10,10 @@ function setup() {
 
     skip_if_missing_background_utilities
 
-    if ! [ $CI ]; then
-        (
-          cd "$GIT_ROOT"
-          cargo build --features balance_testing
-        )
-    fi
+    (
+      cd "$GIT_ROOT"
+      cargo build --features balance_testing
+    )
 
     local ALLOW_ADDRS_CONFIG=$(generate_allow_addrs_config 1 2)
 

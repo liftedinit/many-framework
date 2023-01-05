@@ -8,13 +8,10 @@ function setup() {
 
     skip_if_missing_background_utilities
 
-    if ! [ $CI ]; then
-        (
-          cd "$GIT_ROOT"
-          cargo build --features migration_testing
-        )
-    fi
-
+    (
+      cd "$GIT_ROOT"
+      cargo build --features migration_testing
+    )
 }
 
 function teardown() {

@@ -37,7 +37,7 @@ fn verify_tokens_acl(
     Ok(())
 }
 
-#[cfg(not(feature = "token_testing"))]
+#[cfg(not(feature = "disable_token_sender_check"))]
 fn verify_tokens_sender(sender: &Address, token_identity: &Address) -> Result<(), ManyError> {
     if sender != token_identity {
         return Err(error::invalid_sender());
@@ -55,7 +55,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
             return Err(ManyError::invalid_method_name("tokens.create"));
         }
 
-        #[cfg(not(feature = "token_testing"))]
+        #[cfg(not(feature = "disable_token_sender_check"))]
         verify_tokens_sender(sender, self.storage.token_identity())?;
 
         if let Some(Either::Left(addr)) = &args.owner {

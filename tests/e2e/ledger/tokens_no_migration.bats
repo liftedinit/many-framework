@@ -11,12 +11,10 @@ function setup() {
 
     skip_if_missing_background_utilities
 
-    if ! [ $CI ]; then
     (
-    cd "$GIT_ROOT"
-    cargo build
+      cd "$GIT_ROOT"
+      cargo build
     )
-    fi
 
     start_ledger --pem "$(pem 0)"
 }
