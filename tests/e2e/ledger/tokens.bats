@@ -32,6 +32,11 @@ function setup() {
         "disabled": true
       },
       {
+        "name": "Dummy Hotfix",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
         "name": "Memo Migration",
         "block_height": 0,
         "disabled": true
