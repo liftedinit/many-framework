@@ -452,7 +452,6 @@ fn multiple_multisig() {
     let mut setup = Setup::new(true);
     setup.set_balance(setup.id, 1_000_000, *MFX_SYMBOL);
     let account_ids: Vec<Address> = (0..5)
-        .into_iter()
         .map(|_| setup.create_account_(AccountType::Multisig))
         .collect();
 

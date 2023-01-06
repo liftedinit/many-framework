@@ -324,7 +324,7 @@ fn main() {
         |p| Box::new(CoseKeyIdentity::from_pem(std::fs::read_to_string(p).unwrap()).unwrap()),
     );
 
-    let client = ManyClient::new(&server, server_id, key).unwrap();
+    let client = ManyClient::new(server, server_id, key).unwrap();
     let result = match subcommand {
         SubCommand::Get(GetOpt { key, hex_key, hex }) => {
             let key = if hex_key {
