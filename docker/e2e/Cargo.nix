@@ -30,7 +30,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "49203e2924afeb592081af1d85c5f55183d308891991509ad2a442c01473aed3";
+  nixifiedLockHash = "e273e01042737afccbfd3095ed16de4bf27ab2c3191b027eb650f63433be8eda";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash

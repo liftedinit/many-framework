@@ -3,6 +3,7 @@ use many_client::client::blocking::ManyClient;
 use many_error::{ManyError, Reason};
 use many_identity::{Address, AnonymousIdentity, Identity};
 use many_identity_dsa::CoseKeyIdentity;
+use many_modules::kvstore::TransferArgs;
 use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{kvstore, r#async};
 use many_protocol::ResponseMessage;
@@ -68,6 +69,9 @@ enum SubCommand {
 
     /// Disable a value from the store.
     Disable(DisableOpt),
+
+    /// Transfer ownership of a key.
+    Transfer(TransferOpt),
 }
 
 #[derive(Debug, Parser)]
@@ -124,6 +128,19 @@ struct DisableOpt {
     /// Reason for disabling the key
     #[clap(long)]
     reason: Option<String>,
+}
+
+#[derive(Debug, Parser)]
+struct TransferOpt {
+    /// The key to disable.
+    key: String,
+
+    /// If the key is passed as an hexadecimal string, pass this key.
+    #[clap(long)]
+    hex_key: bool,
+
+    /// The new owner of the key to transfer to.
+    new_owner: Address,
 }
 
 fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), ManyError> {
@@ -208,6 +225,24 @@ fn disable(
     };
 
     let response = client.call("kvstore.disable", arguments)?;
+    let payload = wait_response(client, response)?;
+    println!("{}", minicbor::display(&payload));
+    Ok(())
+}
+
+fn transfer(
+    client: ManyClient<impl Identity>,
+    alt_owner: Option<Address>,
+    key: Vec<u8>,
+    new_owner: Address,
+) -> Result<(), ManyError> {
+    let args = TransferArgs {
+        key: key.into(),
+        alternative_owner: alt_owner,
+        new_owner,
+    };
+
+    let response = client.call("kvstore.transfer", args)?;
     let payload = wait_response(client, response)?;
     println!("{}", minicbor::display(&payload));
     Ok(())
@@ -374,6 +409,18 @@ fn main() {
             };
             let reason = reason.map(|reason| Reason::new(123456, Some(reason), BTreeMap::new()));
             disable(client, alt_owner, &key, reason)
+        }
+        SubCommand::Transfer(TransferOpt {
+            key,
+            hex_key,
+            new_owner,
+        }) => {
+            let key = if hex_key {
+                hex::decode(&key).unwrap()
+            } else {
+                key.into_bytes()
+            };
+            transfer(client, alt_owner, key, new_owner)
         }
     };
 
