@@ -169,19 +169,20 @@ impl LedgerStorage {
         Ok(info.owner)
     }
 
-    pub fn load_token_storage(persistent_store: &InnerStorage) -> Result<(Address, u32), String> {
+    pub fn load_token_storage(
+        persistent_store: &InnerStorage,
+    ) -> Result<(Address, u32), ManyError> {
         let token_identity = Address::from_bytes(
             &persistent_store
                 .get(TOKEN_IDENTITY_BYTES)
-                .map_err(|_| error::storage_get_failed(TOKEN_IDENTITY).to_string())?
-                .ok_or("Unable to read Token identity from DB")?,
-        )
-        .map_err(|e| e.to_string())?;
+                .map_err(error::storage_get_failed)?
+                .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY))?,
+        )?;
 
         let x = persistent_store
             .get(TOKEN_SUBRESOURCE_COUNTER_BYTES)
-            .map_err(|_| error::storage_get_failed(TOKEN_SUBRESOURCE_COUNTER).to_string())?
-            .ok_or("Unable to read Token subresource counter from DB")?;
+            .map_err(error::storage_get_failed)?
+            .ok_or_else(|| error::storage_key_not_found(TOKEN_SUBRESOURCE_COUNTER))?;
         let mut bytes = [0u8; 4];
         bytes.copy_from_slice(x.as_slice());
         let token_next_subresource = u32::from_be_bytes(bytes);

@@ -149,22 +149,25 @@ impl LedgerStorage {
         persistent_path: P,
         blockchain: bool,
         migration_config: Option<MigrationConfig>,
-    ) -> Result<Self, String> {
-        let persistent_store = InnerStorage::open(persistent_path).map_err(|e| e.to_string())?;
+    ) -> Result<Self, ManyError> {
+        let persistent_store =
+            InnerStorage::open(persistent_path).map_err(error::storage_open_failed)?;
 
         let root_identity: Address = Address::from_bytes(
             &persistent_store
                 .get(IDENTITY_BYTES)
-                .expect("Could not open storage.")
-                .unwrap_or_else(|| panic!("Could not find key '{IDENTITY}' in storage.")),
-        )
-        .map_err(|e| e.to_string())?;
+                .map_err(error::storage_get_failed)?
+                .ok_or_else(|| error::storage_key_not_found(IDENTITY))?,
+        )?;
 
-        let height = persistent_store.get(b"/height").unwrap().map_or(0u64, |x| {
-            let mut bytes = [0u8; 8];
-            bytes.copy_from_slice(x.as_slice());
-            u64::from_be_bytes(bytes)
-        });
+        let height = persistent_store
+            .get(b"/height")
+            .map_err(error::storage_get_failed)?
+            .map_or(0u64, |x| {
+                let mut bytes = [0u8; 8];
+                bytes.copy_from_slice(x.as_slice());
+                u64::from_be_bytes(bytes)
+            });
 
         // The call to `saturating_sub()` is required to fix
         // https://github.com/liftedinit/many-framework/issues/289
@@ -175,15 +178,17 @@ impl LedgerStorage {
         // The discrepancy will lead to an application hash mismatch if the block following the `load()` contains
         // a transaction.
         let latest_tid = EventId::from(height.saturating_sub(1) << HEIGHT_EVENTID_SHIFT);
-        let migrations = migration_config.map_or_else(MigrationSet::empty, |config| {
-            LedgerMigrations::load(&MIGRATIONS, config, height)
-        })?;
+        let migrations = migration_config
+            .map_or_else(MigrationSet::empty, |config| {
+                LedgerMigrations::load(&MIGRATIONS, config, height)
+            })
+            .map_err(error::unable_to_load_migrations)?;
 
         let next_subresource = persistent_store
             .get(&LedgerStorage::subresource_db_key(
                 migrations.is_active(&TOKEN_MIGRATION),
             ))
-            .unwrap()
+            .map_err(error::storage_get_failed)?
             .map_or(0, |x| {
                 let mut bytes = [0u8; 4];
                 bytes.copy_from_slice(x.as_slice());
