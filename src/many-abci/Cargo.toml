@@ -26,15 +26,15 @@ itertools = "0.10.5"
 json5 = "0.4.1"
 lazy_static = "1.4.0"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-identity-webauthn = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-identity-webauthn = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-server = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
 num-integer = "0.1.45"
 reqwest = "0.11.11"
 sha2 = "0.10.1"
@@ -45,7 +45,7 @@ tendermint = "0.24.0-pre.2"
 tendermint-abci = "0.24.0-pre.2"
 tendermint-rpc = { version = "0.24.0-pre.2", features = [ "http-client" ] }
 tendermint-proto = "0.24.0-pre.2"
-tokio = { version = "1.13.0", features = [ "full" ] }
+tokio = { version = "1.24.1", features = [ "full" ] }
 tracing = "0.1.28"
 tracing-subscriber = "0.3"
 
