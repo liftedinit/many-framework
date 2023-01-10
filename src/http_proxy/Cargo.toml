@@ -19,11 +19,11 @@ doc = false
 clap = { version = "3.0.0", features = ["derive"] }
 hex = "0.4.3"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
 many-kvstore = { path = "../many-kvstore" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "dea01257edc567cf27d0194bb344f1822952cecf" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
 new_mime_guess = "4.0.0"
 syslog-tracing = "0.1"
 tiny_http = "0.11.0"
