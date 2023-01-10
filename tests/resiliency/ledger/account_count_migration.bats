@@ -78,8 +78,7 @@ function teardown() {
     check_consistency --pem=1 --balance=999000 --id="$(identity 1)" 8000 8001 8002 8003
     check_consistency --pem=2 --balance=1000 --id="$(identity 2)" 8000 8001 8002 8003
 
-    # Wait for some blocks to be built
-    sleep 15
+    wait_for_block 20
 
     # Test the new commands
     run many_message --pem=0 data.info
