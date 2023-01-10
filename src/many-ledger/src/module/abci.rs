@@ -73,7 +73,7 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
         info!(
             "abci.block_begin(): time={:?} curr_height={}",
             time,
-            self.storage.get_height()
+            self.storage.get_height()?
         );
 
         if let Some(time) = time {
@@ -86,14 +86,15 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 
     fn info(&self) -> Result<AbciInfo, ManyError> {
         let storage = &self.storage;
+        let height = storage.get_height()?;
 
         info!(
             "abci.info(): height={} hash={}",
-            storage.get_height(),
+            height,
             hex::encode(storage.hash()).as_str()
         );
         Ok(AbciInfo {
-            height: storage.get_height(),
+            height,
             hash: storage.hash().into(),
         })
     }

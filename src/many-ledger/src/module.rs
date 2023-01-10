@@ -65,7 +65,7 @@ impl LedgerModuleImpl {
         }
 
         info!(
-            height = storage.get_height(),
+            height = storage.get_height()?,
             hash = hex::encode(storage.hash()).as_str()
         );
 

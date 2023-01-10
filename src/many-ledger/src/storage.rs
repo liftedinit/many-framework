@@ -28,6 +28,8 @@ pub const SYMBOLS: &str = "/config/symbols";
 pub const SYMBOLS_BYTES: &[u8] = SYMBOLS.as_bytes();
 pub const IDENTITY: &str = "/config/identity";
 pub const IDENTITY_BYTES: &[u8] = IDENTITY.as_bytes();
+pub const HEIGHT: &str = "/height";
+pub const HEIGHT_BYTES: &[u8] = HEIGHT.as_bytes();
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
@@ -277,28 +279,29 @@ impl LedgerStorage {
         Ok(symbols)
     }
 
-    fn inc_height(&mut self) -> u64 {
-        let current_height = self.get_height();
+    fn inc_height(&mut self) -> Result<u64, ManyError> {
+        let current_height = self.get_height()?;
         self.persistent_store
             .apply(&[(
-                b"/height".to_vec(),
+                HEIGHT_BYTES.to_vec(),
                 Op::Put((current_height + 1).to_be_bytes().to_vec()),
             )])
-            .unwrap();
-        current_height
+            .map_err(error::storage_apply_failed)?;
+        Ok(current_height)
     }
 
     /// Return the current height of the blockchain.
     /// The current height correspond to finished, committed blocks.
-    pub fn get_height(&self) -> u64 {
-        self.persistent_store
-            .get(b"/height")
-            .unwrap()
+    pub fn get_height(&self) -> Result<u64, ManyError> {
+        Ok(self
+            .persistent_store
+            .get(HEIGHT_BYTES)
+            .map_err(error::storage_get_failed)?
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];
                 bytes.copy_from_slice(x.as_slice());
                 u64::from_be_bytes(bytes)
-            })
+            }))
     }
 
     pub fn hash(&self) -> Vec<u8> {
@@ -320,7 +323,7 @@ impl LedgerStorage {
 
         if let Some(data) = self
             .migrations
-            .hotfix(name, &data_enc, self.get_height() + 1)?
+            .hotfix(name, &data_enc, self.get_height()? + 1)?
         {
             let dec_data = minicbor::decode(&data).map_err(ManyError::deserialization_error)?;
             Ok(Some(dec_data))
