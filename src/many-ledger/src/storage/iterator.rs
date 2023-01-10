@@ -32,10 +32,10 @@ impl<'a> LedgerIterator<'a> {
     }
 
     pub fn all_symbols(merk: &'a InnerStorage, order: SortOrder) -> Self {
-        use crate::storage::ledger_tokens::SYMBOLS_ROOT_BYTES;
+        use crate::storage::ledger_tokens::SYMBOLS_ROOT_DASH;
 
         let mut options = ReadOptions::default();
-        options.set_iterate_range(rocksdb::PrefixRange(SYMBOLS_ROOT_BYTES));
+        options.set_iterate_range(rocksdb::PrefixRange(SYMBOLS_ROOT_DASH.as_bytes()));
 
         let it_mode = match order {
             SortOrder::Indeterminate | SortOrder::Ascending => IteratorMode::Start,

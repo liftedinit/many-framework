@@ -7,6 +7,7 @@ use merk::{BatchEntry, Op};
 use std::collections::BTreeMap;
 
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
+pub(crate) const IDSTORE_SEED_ROOT: &[u8] = b"/config/idstore_seed";
 
 #[derive(Clone, minicbor::Encode, minicbor::Decode)]
 #[cbor(map)]
@@ -52,7 +53,7 @@ impl LedgerStorage {
         // Apply keys and seed.
         if let Some(seed) = maybe_seed {
             batch.push((
-                b"/config/idstore_seed".to_vec(),
+                IDSTORE_SEED_ROOT.to_vec(),
                 Op::Put(seed.to_be_bytes().to_vec()),
             ));
         }
@@ -72,7 +73,7 @@ impl LedgerStorage {
     pub(crate) fn inc_idstore_seed(&mut self) -> Result<u64, ManyError> {
         let idstore_seed = self
             .persistent_store
-            .get(b"/config/idstore_seed")
+            .get(IDSTORE_SEED_ROOT)
             .map_err(error::storage_get_failed)?
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];
@@ -82,7 +83,7 @@ impl LedgerStorage {
 
         self.persistent_store
             .apply(&[(
-                b"/config/idstore_seed".to_vec(),
+                IDSTORE_SEED_ROOT.to_vec(),
                 Op::Put((idstore_seed + 1).to_be_bytes().to_vec()),
             )])
             .map_err(error::storage_apply_failed)?;
@@ -197,7 +198,7 @@ pub mod tests {
         pub fn set_idstore_seed(&mut self, seed: u64) -> Result<(), ManyError> {
             self.persistent_store
                 .apply(&[(
-                    b"/config/idstore_seed".to_vec(),
+                    IDSTORE_SEED_ROOT.to_vec(),
                     Op::Put(seed.to_be_bytes().to_vec()),
                 )])
                 .map_err(error::storage_apply_failed)?;

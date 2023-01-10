@@ -1,7 +1,7 @@
 use crate::error;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::storage::iterator::LedgerIterator;
-use crate::storage::{key_for_account_balance, InnerStorage, LedgerStorage, SYMBOLS};
+use crate::storage::{key_for_account_balance, InnerStorage, LedgerStorage, SYMBOLS_ROOT};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -17,13 +17,9 @@ use merk::{BatchEntry, Op};
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
-const SYMBOLS_ROOT: &str = const_format::concatcp!(SYMBOLS, "/");
-pub const SYMBOLS_ROOT_BYTES: &[u8] = SYMBOLS_ROOT.as_bytes();
-
-pub const TOKEN_IDENTITY: &str = "/config/token_identity";
-pub const TOKEN_IDENTITY_BYTES: &[u8] = TOKEN_IDENTITY.as_bytes();
-pub const TOKEN_SUBRESOURCE_COUNTER: &str = "/config/token_subresource_id";
-pub const TOKEN_SUBRESOURCE_COUNTER_BYTES: &[u8] = TOKEN_SUBRESOURCE_COUNTER.as_bytes();
+pub const SYMBOLS_ROOT_DASH: &str = const_format::concatcp!(SYMBOLS_ROOT, "/");
+pub const TOKEN_IDENTITY_ROOT: &str = "/config/token_identity";
+pub const TOKEN_SUBRESOURCE_COUNTER_ROOT: &str = "/config/token_subresource_id";
 
 pub fn key_for_symbol(symbol: &Symbol) -> Vec<u8> {
     format!("/config/symbols/{symbol}").into_bytes()
@@ -134,11 +130,11 @@ impl LedgerStorage {
             }
 
             batch.push((
-                TOKEN_IDENTITY_BYTES.to_vec(),
+                TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
                 Op::Put(token_identity.to_vec()),
             ));
             batch.push((
-                TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+                TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
                 Op::Put(token_next_subresource.to_be_bytes().to_vec()),
             ));
 
@@ -174,15 +170,15 @@ impl LedgerStorage {
     ) -> Result<(Address, u32), ManyError> {
         let token_identity = Address::from_bytes(
             &persistent_store
-                .get(TOKEN_IDENTITY_BYTES)
+                .get(TOKEN_IDENTITY_ROOT.as_bytes())
                 .map_err(error::storage_get_failed)?
-                .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY))?,
+                .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY_ROOT))?,
         )?;
 
         let x = persistent_store
-            .get(TOKEN_SUBRESOURCE_COUNTER_BYTES)
+            .get(TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes())
             .map_err(error::storage_get_failed)?
-            .ok_or_else(|| error::storage_key_not_found(TOKEN_SUBRESOURCE_COUNTER))?;
+            .ok_or_else(|| error::storage_key_not_found(TOKEN_SUBRESOURCE_COUNTER_ROOT))?;
         let mut bytes = [0u8; 4];
         bytes.copy_from_slice(x.as_slice());
         let token_next_subresource = u32::from_be_bytes(bytes);
@@ -195,9 +191,9 @@ impl LedgerStorage {
     pub(crate) fn _get_symbols(&self, symbols: &mut BTreeSet<Symbol>) -> Result<(), ManyError> {
         let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
         for item in it {
-            let (k, _) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+            let (k, _) = item.map_err(ManyError::unknown)?;
             symbols.insert(Symbol::from_str(
-                std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
+                std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_DASH.len()..])
                     .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
             )?);
         }
@@ -209,10 +205,10 @@ impl LedgerStorage {
         if self.migrations.is_active(&TOKEN_MIGRATION) {
             let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
             for item in it {
-                let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+                let (k, v) = item.map_err(ManyError::unknown)?;
                 info.insert(
                     Symbol::from_str(
-                        std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
+                        std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_DASH.len()..])
                             .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
                     )?,
                     minicbor::decode(&v).map_err(ManyError::deserialization_error)?,
@@ -235,7 +231,7 @@ impl LedgerStorage {
         self.token_next_subresource += 1;
         self.persistent_store
             .apply(&[(
-                TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+                TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
                 Op::Put(self.token_next_subresource.to_be_bytes().to_vec()),
             )])
             .map_err(error::storage_apply_failed)?;

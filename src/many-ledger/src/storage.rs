@@ -24,12 +24,11 @@ pub mod ledger_tokens;
 mod migrations;
 pub mod multisig;
 
-pub const SYMBOLS: &str = "/config/symbols";
-pub const SYMBOLS_BYTES: &[u8] = SYMBOLS.as_bytes();
-pub const IDENTITY: &str = "/config/identity";
-pub const IDENTITY_BYTES: &[u8] = IDENTITY.as_bytes();
-pub const HEIGHT: &str = "/height";
-pub const HEIGHT_BYTES: &[u8] = HEIGHT.as_bytes();
+pub const SYMBOLS_ROOT: &str = "/config/symbols";
+pub const IDENTITY_ROOT: &str = "/config/identity";
+pub const HEIGHT_ROOT: &str = "/height";
+pub const SUBRESOURCE_ID_ROOT: &str = "/config/subresource_id";
+pub const ACCOUNT_ID_ROOT: &str = "/config/account_id";
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
@@ -110,9 +109,9 @@ impl LedgerStorage {
 
     fn subresource_db_key(migration_is_active: bool) -> Vec<u8> {
         if migration_is_active {
-            b"/config/subresource_id".to_vec()
+            SUBRESOURCE_ID_ROOT.as_bytes().to_vec()
         } else {
-            b"/config/account_id".to_vec()
+            ACCOUNT_ID_ROOT.as_bytes().to_vec()
         }
     }
 
@@ -155,13 +154,13 @@ impl LedgerStorage {
 
         let root_identity: Address = Address::from_bytes(
             &persistent_store
-                .get(IDENTITY_BYTES)
+                .get(IDENTITY_ROOT.as_bytes())
                 .map_err(error::storage_get_failed)?
-                .ok_or_else(|| error::storage_key_not_found(IDENTITY))?,
+                .ok_or_else(|| error::storage_key_not_found(IDENTITY_ROOT))?,
         )?;
 
         let height = persistent_store
-            .get(b"/height")
+            .get(HEIGHT_ROOT.as_bytes())
             .map_err(error::storage_get_failed)?
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];
@@ -229,9 +228,12 @@ impl LedgerStorage {
 
         persistent_store
             .apply(&[
-                (IDENTITY_BYTES.to_vec(), Op::Put(identity.to_vec())),
                 (
-                    SYMBOLS_BYTES.to_vec(),
+                    IDENTITY_ROOT.as_bytes().to_vec(),
+                    Op::Put(identity.to_vec()),
+                ),
+                (
+                    SYMBOLS_ROOT.as_bytes().to_vec(),
                     Op::Put(minicbor::to_vec(symbols).map_err(ManyError::serialization_error)?),
                 ),
             ])
@@ -263,9 +265,9 @@ impl LedgerStorage {
         minicbor::decode::<BTreeMap<Symbol, String>>(
             &self
                 .persistent_store
-                .get(SYMBOLS_BYTES)
+                .get(SYMBOLS_ROOT.as_bytes())
                 .map_err(error::storage_get_failed)?
-                .ok_or_else(|| error::storage_key_not_found(SYMBOLS))?,
+                .ok_or_else(|| error::storage_key_not_found(SYMBOLS_ROOT))?,
         )
         .map_err(ManyError::deserialization_error)
     }
@@ -288,7 +290,7 @@ impl LedgerStorage {
         let current_height = self.get_height()?;
         self.persistent_store
             .apply(&[(
-                HEIGHT_BYTES.to_vec(),
+                HEIGHT_ROOT.as_bytes().to_vec(),
                 Op::Put((current_height + 1).to_be_bytes().to_vec()),
             )])
             .map_err(error::storage_apply_failed)?;
@@ -300,7 +302,7 @@ impl LedgerStorage {
     pub fn get_height(&self) -> Result<u64, ManyError> {
         Ok(self
             .persistent_store
-            .get(HEIGHT_BYTES)
+            .get(HEIGHT_ROOT.as_bytes())
             .map_err(error::storage_get_failed)?
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];

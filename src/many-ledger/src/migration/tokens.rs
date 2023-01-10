@@ -1,9 +1,9 @@
 use crate::error;
 use crate::migration::MIGRATIONS;
 use crate::storage::ledger_tokens::{
-    key_for_ext_info, key_for_symbol, TOKEN_IDENTITY_BYTES, TOKEN_SUBRESOURCE_COUNTER_BYTES,
+    key_for_ext_info, key_for_symbol, TOKEN_IDENTITY_ROOT, TOKEN_SUBRESOURCE_COUNTER_ROOT,
 };
-use crate::storage::{InnerStorage, SYMBOLS, SYMBOLS_BYTES};
+use crate::storage::{InnerStorage, ACCOUNT_ID_ROOT, SUBRESOURCE_ID_ROOT, SYMBOLS_ROOT};
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_identity::Address;
@@ -19,12 +19,12 @@ use std::str::FromStr;
 fn migrate_subresource_counter(storage: &mut merk::Merk) -> Result<(), ManyError> {
     // Is the old counter present in the DB?
     let old_counter = storage
-        .get(b"/config/account_id")
+        .get(ACCOUNT_ID_ROOT.as_bytes())
         .map_err(error::storage_get_failed)?;
 
     // Is the new counter present in the DB?
     let new_counter = storage
-        .get(b"/config/subresource_id")
+        .get(SUBRESOURCE_ID_ROOT.as_bytes())
         .map_err(error::storage_get_failed)?;
 
     match (old_counter, new_counter) {
@@ -32,18 +32,21 @@ fn migrate_subresource_counter(storage: &mut merk::Merk) -> Result<(), ManyError
         (Some(x), None) => {
             // Migrate the old counter to the new location in the database
             storage
-                .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(x))])
+                .apply(&[(SUBRESOURCE_ID_ROOT.as_bytes().to_vec(), Op::Put(x))])
                 .map_err(error::storage_apply_failed)?;
 
             // Delete the old counter from the DB
             storage
-                .apply(&[(b"/config/account_id".to_vec(), Op::Delete)])
+                .apply(&[(ACCOUNT_ID_ROOT.as_bytes().to_vec(), Op::Delete)])
                 .map_err(error::storage_apply_failed)?;
         }
         // No counter found. Set the new counter to 0.
         (None, None) => {
             storage
-                .apply(&[(b"/config/subresource_id".to_vec(), Op::Put(vec![0u8; 4]))])
+                .apply(&[(
+                    SUBRESOURCE_ID_ROOT.as_bytes().to_vec(),
+                    Op::Put(vec![0u8; 4]),
+                )])
                 .map_err(error::storage_apply_failed)?;
         }
         // Old counter is not present, new counter is present.
@@ -99,9 +102,9 @@ fn migrate_token(
 
     // Get symbol list from DB
     let symbol_and_ticker_enc = storage
-        .get(SYMBOLS_BYTES)
+        .get(SYMBOLS_ROOT.as_bytes())
         .map_err(error::storage_get_failed)?
-        .ok_or_else(|| error::storage_key_not_found(SYMBOLS))?;
+        .ok_or_else(|| error::storage_key_not_found(SYMBOLS_ROOT))?;
 
     let symbol_and_ticker: BTreeMap<Address, String> =
         minicbor::decode(&symbol_and_ticker_enc).map_err(ManyError::deserialization_error)?;
@@ -142,13 +145,13 @@ fn migrate_token(
     // Add token data to the DB
     storage
         .apply(&[(
-            TOKEN_IDENTITY_BYTES.to_vec(),
+            TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
             Op::Put(token_identity.to_vec()),
         )])
         .map_err(error::storage_apply_failed)?;
     storage
         .apply(&[(
-            TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+            TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
             Op::Put(token_next_subresource.to_be_bytes().to_vec()),
         )])
         .map_err(error::storage_apply_failed)?;

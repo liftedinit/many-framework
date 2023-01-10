@@ -8,6 +8,7 @@ use many_types::{CborRange, SortOrder};
 use merk::Op;
 
 pub(crate) const EVENTS_ROOT: &[u8] = b"/events/";
+pub(crate) const EVENT_COUNT_ROOT: &[u8] = b"/events_count";
 
 // Left-shift the height by this amount of bits
 pub(crate) const HEIGHT_EVENTID_SHIFT: u64 = 32;
@@ -39,7 +40,7 @@ impl LedgerStorage {
 
     pub fn nb_events(&self) -> Result<u64, ManyError> {
         self.persistent_store
-            .get(b"/events_count")
+            .get(EVENT_COUNT_ROOT)
             .map_err(error::storage_get_failed)?
             .map_or(Ok(0), |x| {
                 let mut bytes = [0u8; 8];
@@ -63,7 +64,7 @@ impl LedgerStorage {
                     Op::Put(minicbor::to_vec(&event).map_err(ManyError::serialization_error)?),
                 ),
                 (
-                    b"/events_count".to_vec(),
+                    EVENT_COUNT_ROOT.to_vec(),
                     Op::Put((current_nb_events + 1).to_be_bytes().to_vec()),
                 ),
             ])
