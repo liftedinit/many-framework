@@ -272,6 +272,10 @@ impl KvStoreTransferModuleBackend for KvStoreModuleImpl {
         if self.storage.get(&args.key)?.is_none() {
             return Err(error::key_not_found());
         }
+        if args.new_owner.is_anonymous() {
+            return Err(error::anon_alt_denied());
+        }
+
         let key: Vec<u8> = args.key.into();
         let metadata: KvStoreMetadata = minicbor::decode(
             &self
@@ -291,10 +295,6 @@ impl KvStoreTransferModuleBackend for KvStoreModuleImpl {
         } else {
             sender
         };
-
-        if args.new_owner.is_anonymous() {
-            return Err(error::anon_alt_denied());
-        }
 
         self.verify_acl(owner, key.clone())?;
 
