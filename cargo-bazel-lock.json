@@ -1,5 +1,5 @@
 {
-  "checksum": "c2798a4e1fcedd073fe39fabe498c40a9ce50d2c62560a679e613d58554c9819",
+  "checksum": "e78ba57528b097ba607e9cf9722f95da31c793c978ceb2c8e3dd5ae8773ac653",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -1276,13 +1276,13 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "async-trait 0.1.60": {
+    "async-trait 0.1.61": {
       "name": "async-trait",
-      "version": "0.1.60",
+      "version": "0.1.61",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/async-trait/0.1.60/download",
-          "sha256": "677d1d8ab452a3936018a687b20e6f7cf5363d713b732b8884001317b0e48aa3"
+          "url": "https://crates.io/api/v1/crates/async-trait/0.1.61/download",
+          "sha256": "705339e0e4a9690e2908d2b3d049d85682cf19fbd5782494498fbf7003a6a282"
         }
       },
       "targets": [
@@ -1319,7 +1319,7 @@
         "deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "build_script_build"
             },
             {
@@ -1338,7 +1338,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.1.60"
+        "version": "0.1.61"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -1987,7 +1987,7 @@
               "target": "quote"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -2109,7 +2109,7 @@
               "target": "quote"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -6839,7 +6839,7 @@
               "target": "log"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -7171,7 +7171,7 @@
               "target": "build_script_build"
             },
             {
-              "id": "half 2.2.0",
+              "id": "half 2.2.1",
               "target": "half"
             },
             {
@@ -8418,7 +8418,7 @@
               "target": "libc"
             },
             {
-              "id": "libgit2-sys 0.14.0+1.5.0",
+              "id": "libgit2-sys 0.14.1+1.5.0",
               "target": "libgit2_sys"
             },
             {
@@ -8635,13 +8635,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "half 2.2.0": {
+    "half 2.2.1": {
       "name": "half",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/half/2.2.0/download",
-          "sha256": "6c467d36af040b7b2681f5fddd27427f6da8d3d072f575a265e181d2f8e8d157"
+          "url": "https://crates.io/api/v1/crates/half/2.2.1/download",
+          "sha256": "02b4af3693f1b705df946e9fe5631932443781d0aabb423b62fcd4d73f6d2fd0"
         }
       },
       "targets": [
@@ -8675,7 +8675,7 @@
           }
         },
         "edition": "2021",
-        "version": "2.2.0"
+        "version": "2.2.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -10136,7 +10136,7 @@
               "target": "number_prefix"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             }
           ],
@@ -10268,13 +10268,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "ipnet 2.7.0": {
+    "ipnet 2.7.1": {
       "name": "ipnet",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/ipnet/2.7.0/download",
-          "sha256": "11b0d96e660696543b251e58030cf9787df56da39dab19ad60eae7353040917e"
+          "url": "https://crates.io/api/v1/crates/ipnet/2.7.1/download",
+          "sha256": "30e22bd8629359895450b59ea7a776c850561b96a3b1d31321c1949d9e6c9146"
         }
       },
       "targets": [
@@ -10300,7 +10300,7 @@
           "default"
         ],
         "edition": "2018",
-        "version": "2.7.0"
+        "version": "2.7.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -10818,7 +10818,7 @@
               "target": "num_bigint"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -10973,13 +10973,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "libgit2-sys 0.14.0+1.5.0": {
+    "libgit2-sys 0.14.1+1.5.0": {
       "name": "libgit2-sys",
-      "version": "0.14.0+1.5.0",
+      "version": "0.14.1+1.5.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/libgit2-sys/0.14.0+1.5.0/download",
-          "sha256": "47a00859c70c8a4f7218e6d1cc32875c4b55f6799445b842b0d8ed5e4c3d959b"
+          "url": "https://crates.io/api/v1/crates/libgit2-sys/0.14.1+1.5.0/download",
+          "sha256": "4a07fb2692bc3593bda59de45a502bb3071659f2c515e28c71e728306b038e17"
         }
       },
       "targets": [
@@ -11020,7 +11020,7 @@
               "target": "libc"
             },
             {
-              "id": "libgit2-sys 0.14.0+1.5.0",
+              "id": "libgit2-sys 0.14.1+1.5.0",
               "target": "build_script_build"
             },
             {
@@ -11031,7 +11031,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.14.0+1.5.0"
+        "version": "0.14.1+1.5.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -11826,7 +11826,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             }
           ],
@@ -11855,9 +11855,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-client"
         }
@@ -11983,7 +11983,7 @@
               "target": "rand"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -12025,7 +12025,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             },
             {
@@ -12048,9 +12048,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -12101,9 +12101,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-error"
         }
@@ -12142,7 +12142,7 @@
               "target": "num_traits"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             }
           ],
@@ -12167,9 +12167,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-identity"
         }
@@ -12268,9 +12268,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -12402,9 +12402,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -12495,9 +12495,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -12800,7 +12800,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             }
           ],
@@ -13049,7 +13049,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             }
           ],
@@ -13078,9 +13078,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-macros"
         }
@@ -13143,9 +13143,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-migration"
         }
@@ -13208,9 +13208,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-modules"
         }
@@ -13283,7 +13283,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             },
             {
@@ -13306,9 +13306,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -13420,9 +13420,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-server"
         }
@@ -13556,7 +13556,7 @@
               "target": "rand"
             },
             {
-              "id": "regex 1.7.0",
+              "id": "regex 1.7.1",
               "target": "regex"
             },
             {
@@ -13610,7 +13610,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             },
             {
@@ -13637,9 +13637,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/hansl/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "kvstore-transfer"
+            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
           },
           "strip_prefix": "src/many-types"
         }
@@ -14320,7 +14320,7 @@
             ],
             "cfg(target_os = \"windows\")": [
               {
-                "id": "schannel 0.1.20",
+                "id": "schannel 0.1.21",
                 "target": "schannel"
               }
             ]
@@ -17947,13 +17947,13 @@
       },
       "license": "MIT"
     },
-    "regex 1.7.0": {
+    "regex 1.7.1": {
       "name": "regex",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/regex/1.7.0/download",
-          "sha256": "e076559ef8e241f2ae3479e36f97bd5741c0330689e217ad51ce2c76808b868a"
+          "url": "https://crates.io/api/v1/crates/regex/1.7.1/download",
+          "sha256": "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
         }
       },
       "targets": [
@@ -18012,7 +18012,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.7.0"
+        "version": "1.7.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -18203,7 +18203,7 @@
                 "target": "hyper_tls"
               },
               {
-                "id": "ipnet 2.7.0",
+                "id": "ipnet 2.7.1",
                 "target": "ipnet"
               },
               {
@@ -18815,7 +18815,7 @@
             ],
             "cfg(windows)": [
               {
-                "id": "schannel 0.1.20",
+                "id": "schannel 0.1.21",
                 "target": "schannel"
               }
             ]
@@ -19065,13 +19065,13 @@
       },
       "license": "Unlicense/MIT"
     },
-    "schannel 0.1.20": {
+    "schannel 0.1.21": {
       "name": "schannel",
-      "version": "0.1.20",
+      "version": "0.1.21",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/schannel/0.1.20/download",
-          "sha256": "88d6731146462ea25d9244b2ed5fd1d716d25c52e4d54aa4fb0f3c4e9854dbe2"
+          "url": "https://crates.io/api/v1/crates/schannel/0.1.21/download",
+          "sha256": "713cfb06c7059f3588fb8044c0fad1d09e3c01d225e25b9220dbfdcf16dbb1b3"
         }
       },
       "targets": [
@@ -19096,18 +19096,14 @@
         "deps": {
           "common": [
             {
-              "id": "lazy_static 1.4.0",
-              "target": "lazy_static"
-            },
-            {
-              "id": "windows-sys 0.36.1",
+              "id": "windows-sys 0.42.0",
               "target": "windows_sys"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.1.20"
+        "version": "0.1.21"
       },
       "license": "MIT"
     },
@@ -21362,13 +21358,13 @@
       },
       "license": "MIT"
     },
-    "sysinfo 0.27.2": {
+    "sysinfo 0.27.4": {
       "name": "sysinfo",
-      "version": "0.27.2",
+      "version": "0.27.4",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/sysinfo/0.27.2/download",
-          "sha256": "17351d0e9eb8841897b14e9669378f3c69fb57779cc04f8ca9a9d512edfb2563"
+          "url": "https://crates.io/api/v1/crates/sysinfo/0.27.4/download",
+          "sha256": "444c7f371193a054273b0a1bbfe1e617b804b7fd62fd3e2794b4be6b0a872b0c"
         }
       },
       "targets": [
@@ -21429,7 +21425,7 @@
           }
         },
         "edition": "2018",
-        "version": "0.27.2"
+        "version": "0.27.4"
       },
       "license": "MIT"
     },
@@ -21732,7 +21728,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             },
             {
@@ -22125,7 +22121,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.60",
+              "id": "async-trait 0.1.61",
               "target": "async_trait"
             }
           ],
@@ -24326,7 +24322,7 @@
               "target": "rustc_version"
             },
             {
-              "id": "sysinfo 0.27.2",
+              "id": "sysinfo 0.27.4",
               "target": "sysinfo"
             },
             {
@@ -25983,116 +25979,6 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "windows-sys 0.36.1": {
-      "name": "windows-sys",
-      "version": "0.36.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/windows-sys/0.36.1/download",
-          "sha256": "ea04155a16a59f9eab786fe12a4a450e75cdb175f9e0d80da1e17db09f55b8d2"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "windows_sys",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "windows_sys",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": [
-          "Win32",
-          "Win32_Foundation",
-          "Win32_Security",
-          "Win32_Security_Authentication",
-          "Win32_Security_Authentication_Identity",
-          "Win32_Security_Credentials",
-          "Win32_Security_Cryptography",
-          "Win32_System",
-          "Win32_System_Memory",
-          "default"
-        ],
-        "deps": {
-          "common": [],
-          "selects": {
-            "aarch64-pc-windows-msvc": [
-              {
-                "id": "windows_aarch64_msvc 0.36.1",
-                "target": "windows_aarch64_msvc"
-              }
-            ],
-            "aarch64-uwp-windows-msvc": [
-              {
-                "id": "windows_aarch64_msvc 0.36.1",
-                "target": "windows_aarch64_msvc"
-              }
-            ],
-            "i686-pc-windows-gnu": [
-              {
-                "id": "windows_i686_gnu 0.36.1",
-                "target": "windows_i686_gnu"
-              }
-            ],
-            "i686-pc-windows-msvc": [
-              {
-                "id": "windows_i686_msvc 0.36.1",
-                "target": "windows_i686_msvc"
-              }
-            ],
-            "i686-uwp-windows-gnu": [
-              {
-                "id": "windows_i686_gnu 0.36.1",
-                "target": "windows_i686_gnu"
-              }
-            ],
-            "i686-uwp-windows-msvc": [
-              {
-                "id": "windows_i686_msvc 0.36.1",
-                "target": "windows_i686_msvc"
-              }
-            ],
-            "x86_64-pc-windows-gnu": [
-              {
-                "id": "windows_x86_64_gnu 0.36.1",
-                "target": "windows_x86_64_gnu"
-              }
-            ],
-            "x86_64-pc-windows-msvc": [
-              {
-                "id": "windows_x86_64_msvc 0.36.1",
-                "target": "windows_x86_64_msvc"
-              }
-            ],
-            "x86_64-uwp-windows-gnu": [
-              {
-                "id": "windows_x86_64_gnu 0.36.1",
-                "target": "windows_x86_64_gnu"
-              }
-            ],
-            "x86_64-uwp-windows-msvc": [
-              {
-                "id": "windows_x86_64_msvc 0.36.1",
-                "target": "windows_x86_64_msvc"
-              }
-            ]
-          }
-        },
-        "edition": "2018",
-        "version": "0.36.1"
-      },
-      "license": "MIT OR Apache-2.0"
-    },
     "windows-sys 0.42.0": {
       "name": "windows-sys",
       "version": "0.42.0",
@@ -26127,13 +26013,18 @@
           "Win32_Networking",
           "Win32_Networking_WinSock",
           "Win32_Security",
+          "Win32_Security_Authentication",
+          "Win32_Security_Authentication_Identity",
           "Win32_Security_Authorization",
+          "Win32_Security_Credentials",
+          "Win32_Security_Cryptography",
           "Win32_Storage",
           "Win32_Storage_FileSystem",
           "Win32_System",
           "Win32_System_Console",
           "Win32_System_IO",
           "Win32_System_LibraryLoader",
+          "Win32_System_Memory",
           "Win32_System_Pipes",
           "Win32_System_SystemServices",
           "Win32_System_Threading",
@@ -26284,65 +26175,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "windows_aarch64_msvc 0.36.1": {
-      "name": "windows_aarch64_msvc",
-      "version": "0.36.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/windows_aarch64_msvc/0.36.1/download",
-          "sha256": "9bb8c3fd39ade2d67e9874ac4f3db21f0d710bee00fe7cab16949ec184eeaa47"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "windows_aarch64_msvc",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "windows_aarch64_msvc",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "windows_aarch64_msvc 0.36.1",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.36.1"
-      },
-      "build_script_attrs": {
-        "data_glob": [
-          "**"
-        ]
-      },
-      "license": "MIT OR Apache-2.0"
-    },
     "windows_aarch64_msvc 0.42.0": {
       "name": "windows_aarch64_msvc",
       "version": "0.42.0",
@@ -26394,65 +26226,6 @@
         },
         "edition": "2018",
         "version": "0.42.0"
-      },
-      "build_script_attrs": {
-        "data_glob": [
-          "**"
-        ]
-      },
-      "license": "MIT OR Apache-2.0"
-    },
-    "windows_i686_gnu 0.36.1": {
-      "name": "windows_i686_gnu",
-      "version": "0.36.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/windows_i686_gnu/0.36.1/download",
-          "sha256": "180e6ccf01daf4c426b846dfc66db1fc518f074baa793aa7d9b9aaeffad6a3b6"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "windows_i686_gnu",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "windows_i686_gnu",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "windows_i686_gnu 0.36.1",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.36.1"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -26520,65 +26293,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "windows_i686_msvc 0.36.1": {
-      "name": "windows_i686_msvc",
-      "version": "0.36.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/windows_i686_msvc/0.36.1/download",
-          "sha256": "e2e7917148b2812d1eeafaeb22a97e4813dfa60a3f8f78ebe204bcc88f12f024"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "windows_i686_msvc",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "windows_i686_msvc",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "windows_i686_msvc 0.36.1",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.36.1"
-      },
-      "build_script_attrs": {
-        "data_glob": [
-          "**"
-        ]
-      },
-      "license": "MIT OR Apache-2.0"
-    },
     "windows_i686_msvc 0.42.0": {
       "name": "windows_i686_msvc",
       "version": "0.42.0",
@@ -26630,65 +26344,6 @@
         },
         "edition": "2018",
         "version": "0.42.0"
-      },
-      "build_script_attrs": {
-        "data_glob": [
-          "**"
-        ]
-      },
-      "license": "MIT OR Apache-2.0"
-    },
-    "windows_x86_64_gnu 0.36.1": {
-      "name": "windows_x86_64_gnu",
-      "version": "0.36.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/windows_x86_64_gnu/0.36.1/download",
-          "sha256": "4dcd171b8776c41b97521e5da127a2d86ad280114807d0b2ab1e462bc764d9e1"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "windows_x86_64_gnu",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "windows_x86_64_gnu",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "windows_x86_64_gnu 0.36.1",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.36.1"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -26807,65 +26462,6 @@
         },
         "edition": "2018",
         "version": "0.42.0"
-      },
-      "build_script_attrs": {
-        "data_glob": [
-          "**"
-        ]
-      },
-      "license": "MIT OR Apache-2.0"
-    },
-    "windows_x86_64_msvc 0.36.1": {
-      "name": "windows_x86_64_msvc",
-      "version": "0.36.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/windows_x86_64_msvc/0.36.1/download",
-          "sha256": "c811ca4a8c853ef420abd8592ba53ddbbac90410fab6903b3e79972a631f7680"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "windows_x86_64_msvc",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "windows_x86_64_msvc",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "windows_x86_64_msvc 0.36.1",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.36.1"
       },
       "build_script_attrs": {
         "data_glob": [
