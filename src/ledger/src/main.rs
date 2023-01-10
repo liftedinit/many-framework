@@ -264,8 +264,8 @@ pub(crate) fn wait_response(
                     token: attr.token.clone(),
                 },
             )?;
-            let status: StatusReturn = minicbor::decode(&response.data?)
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            let status: StatusReturn =
+                minicbor::decode(&response.data?).map_err(ManyError::deserialization_error)?;
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();

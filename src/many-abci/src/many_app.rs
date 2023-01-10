@@ -84,7 +84,7 @@ impl<C: Client + Sync> AbciModuleMany<C> {
             let is_command = info.is_command;
             let data = envelope
                 .to_vec()
-                .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+                .map_err(ManyError::unexpected_transport_error)?;
 
             if is_command {
                 // TODO: Refactor this when `is_some_and` and/or `let-chains` are stabilized
@@ -114,10 +114,10 @@ impl<C: Client + Sync> AbciModuleMany<C> {
                     .client
                     .abci_query(None, data, None, false)
                     .await
-                    .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))?;
+                    .map_err(ManyError::unexpected_transport_error)?;
 
                 CoseSign1::from_slice(&response.value)
-                    .map_err(|e| ManyError::unexpected_transport_error(e.to_string()))
+                    .map_err(ManyError::unexpected_transport_error)
             }
         } else {
             Err(ManyError::invalid_method_name(message.method))
@@ -175,8 +175,6 @@ impl<C: Client + Sync + Send> base::BaseModuleBackend for AbciModuleMany<C> {
             builder.public_key(pk);
         }
 
-        builder
-            .build()
-            .map_err(|e| ManyError::unknown(e.to_string()))
+        builder.build().map_err(ManyError::unknown)
     }
 }

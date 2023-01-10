@@ -279,10 +279,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 key_for_account(id),
-                Op::Put(
-                    minicbor::to_vec(account)
-                        .map_err(|e| ManyError::serialization_error(e.to_string()))?,
-                ),
+                Op::Put(minicbor::to_vec(account).map_err(ManyError::serialization_error)?),
             )])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 

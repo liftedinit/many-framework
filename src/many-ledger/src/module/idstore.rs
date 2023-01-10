@@ -53,8 +53,8 @@ impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
             return Err(idstore::invalid_credential_id(hex::encode(&*cred_id.0)));
         }
 
-        let _: CoseKey = CoseKey::from_slice(&public_key.0)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let _: CoseKey =
+            CoseKey::from_slice(&public_key.0).map_err(ManyError::deserialization_error)?;
 
         let mut current_try = 1u8;
         let recall_phrase = loop {

@@ -152,7 +152,7 @@ fn _execute_multisig_tx(
 
         _ => return Err(account::features::multisig::errors::transaction_type_unsupported()),
     }
-    .map_err(|e| ManyError::serialization_error(e.to_string()))
+    .map_err(ManyError::serialization_error)
 }
 
 #[derive(minicbor::Encode, minicbor::Decode, Debug)]
@@ -283,10 +283,7 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 key_for_multisig_transaction(tx_id),
-                Op::Put(
-                    minicbor::to_vec(tx)
-                        .map_err(|e| ManyError::serialization_error(e.to_string()))?,
-                ),
+                Op::Put(minicbor::to_vec(tx).map_err(ManyError::serialization_error)?),
             )])
             .map_err(error::storage_apply_failed)?;
 
@@ -406,7 +403,7 @@ impl LedgerStorage {
             .unwrap_or(None)
             .ok_or_else(account::features::multisig::errors::transaction_cannot_be_found)?;
         minicbor::decode::<MultisigTransactionStorage>(&storage_bytes)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))
+            .map_err(ManyError::deserialization_error)
     }
 
     pub fn approve_multisig(&mut self, sender: &Address, tx_id: &[u8]) -> Result<bool, ManyError> {

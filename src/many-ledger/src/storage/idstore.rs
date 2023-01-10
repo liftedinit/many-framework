@@ -99,8 +99,8 @@ impl LedgerStorage {
         cred_id: idstore::CredentialId,
         public_key: idstore::PublicKey,
     ) -> Result<(), ManyError> {
-        let recall_phrase_cbor = minicbor::to_vec(recall_phrase)
-            .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+        let recall_phrase_cbor =
+            minicbor::to_vec(recall_phrase).map_err(ManyError::serialization_error)?;
         if self
             .persistent_store
             .get(&recall_phrase_cbor)
@@ -160,13 +160,13 @@ impl LedgerStorage {
         &self,
         recall_phrase: &idstore::RecallPhrase,
     ) -> Result<(idstore::CredentialId, idstore::PublicKey), ManyError> {
-        let recall_phrase_cbor = minicbor::to_vec(recall_phrase)
-            .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+        let recall_phrase_cbor =
+            minicbor::to_vec(recall_phrase).map_err(ManyError::serialization_error)?;
         if let Some(value) =
             self.get_from_storage(&recall_phrase_cbor, IdStoreRootSeparator::RecallPhrase)?
         {
-            let value: CredentialStorage = minicbor::decode(&value)
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            let value: CredentialStorage =
+                minicbor::decode(&value).map_err(ManyError::deserialization_error)?;
             Ok((value.cred_id, value.public_key))
         } else {
             Err(idstore::entry_not_found(recall_phrase.join(" ")))
@@ -180,8 +180,8 @@ impl LedgerStorage {
         if let Some(value) =
             self.get_from_storage(&address.to_vec(), IdStoreRootSeparator::Address)?
         {
-            let value: CredentialStorage = minicbor::decode(&value)
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            let value: CredentialStorage =
+                minicbor::decode(&value).map_err(ManyError::deserialization_error)?;
             Ok((value.cred_id, value.public_key))
         } else {
             Err(idstore::entry_not_found(address.to_string()))

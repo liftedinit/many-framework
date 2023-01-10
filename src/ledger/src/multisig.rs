@@ -144,7 +144,7 @@ fn submit_send(
 
     let payload = crate::wait_response(client, response)?;
     let result: multisig::SubmitTransactionReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     info!(
         "Transaction Token: {}",
@@ -187,7 +187,7 @@ fn submit_set_defaults(
 
     let payload = crate::wait_response(client, response)?;
     let result: multisig::SubmitTransactionReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     info!(
         "Transaction Token: {}",
@@ -221,7 +221,7 @@ fn approve(client: ManyClient<impl Identity>, opts: TransactionOpt) -> Result<()
 
     let payload = crate::wait_response(client, response)?;
     let _result: multisig::ApproveReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     info!("Approved.");
 
@@ -234,7 +234,7 @@ fn revoke(client: ManyClient<impl Identity>, opts: TransactionOpt) -> Result<(),
 
     let payload = crate::wait_response(client, response)?;
     let _result: multisig::RevokeReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     info!("Revoked.");
 
@@ -247,7 +247,7 @@ fn execute(client: ManyClient<impl Identity>, opts: TransactionOpt) -> Result<()
 
     let payload = crate::wait_response(client, response)?;
     let result: ResponseMessage =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     info!("Executed:");
     println!("{}", minicbor::display(&result.data?));
@@ -260,7 +260,7 @@ fn info(client: ManyClient<impl Identity>, opts: TransactionOpt) -> Result<(), M
 
     let payload = crate::wait_response(client, response)?;
     let result: multisig::InfoReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     println!("{result:#?}");
     Ok(())
@@ -281,7 +281,7 @@ fn set_defaults(
 
     let payload = crate::wait_response(client, response)?;
     let _result: multisig::SetDefaultsReturn =
-        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
     info!("Defaults set.");
     Ok(())
