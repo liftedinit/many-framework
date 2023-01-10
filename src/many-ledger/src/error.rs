@@ -31,6 +31,7 @@ define_attribute_many_error!(
 define_application_many_error!(
     {
         1: pub fn storage_apply_failed(desc) => "Unable to apply change to persistent storage: {desc}.",
-        2: pub fn storage_get_failed(desc) => "Unable to get data from persistent storage: {desc}."
+        2: pub fn storage_get_failed(desc) => "Unable to get data from persistent storage: {desc}.",
+        3: pub fn storage_commit_failed(desc) => "Unable to commit data to persistent storage: {desc}.",
     }
 );

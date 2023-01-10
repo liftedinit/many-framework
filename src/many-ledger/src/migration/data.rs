@@ -1,6 +1,7 @@
 use crate::error;
 use crate::migration::MIGRATIONS;
 use crate::storage::data::{DATA_ATTRIBUTES_KEY, DATA_INFO_KEY};
+use crate::storage::InnerStorage;
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_migration::InnerMigration;
@@ -15,7 +16,7 @@ pub static ACCOUNT_TOTAL_COUNT_INDEX: DataIndex = DataIndex::new(0).with_index(2
 pub static NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX: DataIndex =
     DataIndex::new(0).with_index(2).with_index(1);
 
-fn get_data_from_db(storage: &merk::Merk) -> (u64, u64) {
+fn get_data_from_db(storage: &InnerStorage) -> (u64, u64) {
     let mut num_unique_accounts: u64 = 0;
     let mut num_non_zero_account: u64 = 0;
 
@@ -77,7 +78,7 @@ fn data_value(
 }
 
 /// Initialize the account count data attribute
-fn initialize(storage: &mut merk::Merk, _: &HashMap<String, Value>) -> Result<(), ManyError> {
+fn initialize(storage: &mut InnerStorage, _: &HashMap<String, Value>) -> Result<(), ManyError> {
     let (num_unique_accounts, num_non_zero_account) = get_data_from_db(storage);
 
     storage
@@ -99,7 +100,7 @@ fn initialize(storage: &mut merk::Merk, _: &HashMap<String, Value>) -> Result<()
 }
 
 #[distributed_slice(MIGRATIONS)]
-pub static ACCOUNT_COUNT_DATA_ATTRIBUTE: InnerMigration<merk::Merk, ManyError> =
+pub static ACCOUNT_COUNT_DATA_ATTRIBUTE: InnerMigration<InnerStorage, ManyError> =
     InnerMigration::new_initialize(
         initialize,
         "Account Count Data Attribute",

@@ -1,4 +1,5 @@
 use crate::storage::event::{key_for_event, EVENTS_ROOT};
+use crate::storage::InnerStorage;
 use many_modules::events::EventId;
 use many_types::{CborRange, SortOrder};
 use merk::rocksdb;
@@ -13,7 +14,7 @@ pub struct LedgerIterator<'a> {
 }
 
 impl<'a> LedgerIterator<'a> {
-    pub fn all_multisig(merk: &'a merk::Merk, order: SortOrder) -> Self {
+    pub fn all_multisig(merk: &'a InnerStorage, order: SortOrder) -> Self {
         use crate::storage::multisig::MULTISIG_TRANSACTIONS_ROOT;
 
         // Set the iterator bounds to iterate all multisig transactions.
@@ -30,7 +31,7 @@ impl<'a> LedgerIterator<'a> {
         Self { inner }
     }
 
-    pub fn all_symbols(merk: &'a merk::Merk, order: SortOrder) -> Self {
+    pub fn all_symbols(merk: &'a InnerStorage, order: SortOrder) -> Self {
         use crate::storage::ledger_tokens::SYMBOLS_ROOT_BYTES;
 
         let mut options = ReadOptions::default();
@@ -46,12 +47,12 @@ impl<'a> LedgerIterator<'a> {
         Self { inner }
     }
 
-    pub fn all_events(merk: &'a merk::Merk) -> Self {
+    pub fn all_events(merk: &'a InnerStorage) -> Self {
         Self::events_scoped_by_id(merk, CborRange::default(), SortOrder::Indeterminate)
     }
 
     pub fn events_scoped_by_id(
-        merk: &'a merk::Merk,
+        merk: &'a InnerStorage,
         range: CborRange<EventId>,
         order: SortOrder,
     ) -> Self {

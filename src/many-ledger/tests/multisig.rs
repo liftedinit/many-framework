@@ -297,7 +297,7 @@ proptest! {
             account_id,
             10000,
             *MFX_SYMBOL,
-        );
+        ).expect("Unable to set balance for testing.");
         let result = module_impl.multisig_submit_transaction(&id, submit_args(account_id, tx, Some(execute_automatically)));
         assert!(result.is_ok());
         let token = result.unwrap().token;

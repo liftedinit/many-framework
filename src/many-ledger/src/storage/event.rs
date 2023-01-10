@@ -1,5 +1,7 @@
+use crate::error;
 use crate::storage::iterator::LedgerIterator;
 use crate::storage::LedgerStorage;
+use many_error::ManyError;
 use many_modules::events;
 use many_modules::events::EventId;
 use many_types::{CborRange, SortOrder};
@@ -35,19 +37,19 @@ impl LedgerStorage {
         self.latest_tid.clone()
     }
 
-    pub fn nb_events(&self) -> u64 {
+    pub fn nb_events(&self) -> Result<u64, ManyError> {
         self.persistent_store
             .get(b"/events_count")
-            .unwrap()
-            .map_or(0, |x| {
+            .map_err(error::storage_get_failed)?
+            .map_or(Ok(0), |x| {
                 let mut bytes = [0u8; 8];
                 bytes.copy_from_slice(x.as_slice());
-                u64::from_be_bytes(bytes)
+                Ok(u64::from_be_bytes(bytes))
             })
     }
 
-    pub(crate) fn log_event(&mut self, content: events::EventInfo) {
-        let current_nb_events = self.nb_events();
+    pub(crate) fn log_event(&mut self, content: events::EventInfo) -> Result<(), ManyError> {
+        let current_nb_events = self.nb_events()?;
         let event = events::EventLog {
             id: self.new_event_id(),
             time: self.now(),
@@ -58,18 +60,17 @@ impl LedgerStorage {
             .apply(&[
                 (
                     key_for_event(event.id.clone()),
-                    Op::Put(minicbor::to_vec(&event).unwrap()),
+                    Op::Put(minicbor::to_vec(&event).map_err(ManyError::serialization_error)?),
                 ),
                 (
                     b"/events_count".to_vec(),
                     Op::Put((current_nb_events + 1).to_be_bytes().to_vec()),
                 ),
             ])
-            .unwrap();
+            .map_err(error::storage_apply_failed)?;
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
+        Ok(())
     }
 
     pub fn iter_multisig(&self, order: SortOrder) -> LedgerIterator {

@@ -1,5 +1,7 @@
 use crate::error;
-use crate::storage::{key_for_account_balance, LedgerStorage, SYMBOLS};
+use crate::migration::tokens::TOKEN_MIGRATION;
+use crate::storage::iterator::LedgerIterator;
+use crate::storage::{key_for_account_balance, InnerStorage, LedgerStorage, SYMBOLS};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -9,9 +11,11 @@ use many_modules::ledger::{
     TokenInfoArgs, TokenInfoReturns, TokenRemoveExtendedInfoArgs, TokenRemoveExtendedInfoReturns,
     TokenUpdateArgs, TokenUpdateReturns,
 };
-use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSupply};
-use many_types::{AttributeRelatedIndex, Either};
+use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
+use many_types::{AttributeRelatedIndex, Either, SortOrder};
 use merk::{BatchEntry, Op};
+use std::collections::{BTreeMap, BTreeSet};
+use std::str::FromStr;
 
 const SYMBOLS_ROOT: &str = const_format::concatcp!(SYMBOLS, "/");
 pub const SYMBOLS_ROOT_BYTES: &[u8] = SYMBOLS_ROOT.as_bytes();
@@ -29,18 +33,194 @@ pub fn key_for_ext_info(symbol: &Symbol) -> Vec<u8> {
     format!("/config/ext_info/{symbol}").into_bytes()
 }
 
+pub struct SymbolMeta {
+    pub name: String,
+    pub decimals: u64,
+    pub owner: Option<Address>,
+    pub maximum: Option<TokenAmount>,
+}
+
 impl LedgerStorage {
+    #[inline]
+    fn _total_supply(
+        initial_balance: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
+    ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
+        let mut total_supply = BTreeMap::new();
+        for (_, v) in initial_balance.into_iter() {
+            for (symbol, tokens) in v.into_iter() {
+                if let Some(x) = total_supply.get_mut(&symbol) {
+                    *x += tokens;
+                } else {
+                    total_supply.insert(symbol, tokens);
+                }
+            }
+        }
+        Ok(total_supply)
+    }
+
+    #[inline]
+    fn _token_info(
+        symbol: Symbol,
+        ticker: String,
+        meta: SymbolMeta,
+        total_supply: TokenAmount,
+    ) -> TokenInfo {
+        TokenInfo {
+            symbol,
+            summary: TokenInfoSummary {
+                name: meta.name,
+                ticker,
+                decimals: meta.decimals,
+            },
+            supply: TokenInfoSupply {
+                total: total_supply.clone(),
+                circulating: total_supply,
+                maximum: meta.maximum,
+            },
+            owner: meta.owner,
+        }
+    }
+
+    /// Add token-related config to the persistent storage if the Token Migration is active
+    /// Note: This will change storage hash
+    pub fn with_tokens(
+        mut self,
+        symbols: &BTreeMap<Symbol, String>,
+        symbols_meta: Option<BTreeMap<Symbol, SymbolMeta>>,
+        token_identity: Option<Address>,
+        token_next_subresource: Option<u32>,
+        initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
+    ) -> Result<Self, ManyError> {
+        let token_identity = token_identity.unwrap_or(self.root_identity);
+        let token_next_subresource = token_next_subresource.unwrap_or(0);
+
+        if self.migrations.is_active(&TOKEN_MIGRATION) {
+            let symbols_meta = symbols_meta
+                .ok_or_else(|| ManyError::unknown("Symbols metadata needs to be provided"))?; // TODO: Custom error
+            let total_supply = LedgerStorage::_total_supply(initial_balances)?;
+
+            for symbol in symbols.keys() {
+                if !symbols_meta.contains_key(symbol) {
+                    return Err(ManyError::unknown(format!(
+                        "Symbol {symbol} missing metadata"
+                    ))); // TODO: Custom error
+                }
+
+                if !total_supply.contains_key(symbol) {
+                    return Err(ManyError::unknown(format!(
+                        "Symbol {symbol} missing total supply"
+                    ))); // TODO: Custom error
+                }
+            }
+
+            let mut batch: Vec<BatchEntry> = Vec::new();
+
+            for (k, meta) in symbols_meta.into_iter() {
+                let total_supply = total_supply[&k].clone(); // Safe
+                let ticker = symbols[&k].clone(); // Safe
+                let info = LedgerStorage::_token_info(k, ticker, meta, total_supply.clone());
+
+                batch.push((
+                    key_for_ext_info(&k),
+                    Op::Put(
+                        minicbor::to_vec(TokenExtendedInfo::default())
+                            .map_err(ManyError::serialization_error)?,
+                    ),
+                ));
+                batch.push((
+                    key_for_symbol(&k),
+                    Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
+                ));
+            }
+
+            batch.push((
+                TOKEN_IDENTITY_BYTES.to_vec(),
+                Op::Put(token_identity.to_vec()),
+            ));
+            batch.push((
+                TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
+                Op::Put(token_next_subresource.to_be_bytes().to_vec()),
+            ));
+
+            self.persistent_store
+                .apply(batch.as_slice())
+                .map_err(error::storage_apply_failed)?;
+
+            self.commit_storage()?;
+        }
+
+        Ok(Self {
+            token_identity,
+            token_next_subresource,
+            ..self
+        })
+    }
+
     pub(crate) fn get_owner(&self, symbol: &Symbol) -> Result<Option<Address>, ManyError> {
         let token_info_enc = self
             .persistent_store
             .get(&key_for_symbol(symbol))
-            .map_err(ManyError::unknown)?
+            .map_err(error::storage_get_failed)?
             .ok_or_else(|| error::token_info_not_found(symbol))?;
 
         let info: TokenInfo =
             minicbor::decode(&token_info_enc).map_err(ManyError::deserialization_error)?;
 
         Ok(info.owner)
+    }
+
+    pub fn load_token_storage(persistent_store: &InnerStorage) -> Result<(Address, u32), String> {
+        let token_identity = Address::from_bytes(
+            &persistent_store
+                .get(TOKEN_IDENTITY_BYTES)
+                .map_err(|_| error::storage_get_failed(TOKEN_IDENTITY).to_string())?
+                .ok_or("Unable to read Token identity from DB")?,
+        )
+        .map_err(|e| e.to_string())?;
+
+        let x = persistent_store
+            .get(TOKEN_SUBRESOURCE_COUNTER_BYTES)
+            .map_err(|_| error::storage_get_failed(TOKEN_SUBRESOURCE_COUNTER).to_string())?
+            .ok_or("Unable to read Token subresource counter from DB")?;
+        let mut bytes = [0u8; 4];
+        bytes.copy_from_slice(x.as_slice());
+        let token_next_subresource = u32::from_be_bytes(bytes);
+
+        Ok((token_identity, token_next_subresource))
+    }
+
+    /// Fetch symbols from `/config/symbols/{symbol}`
+    ///     No CBOR decoding needed.
+    pub(crate) fn _get_symbols(&self, symbols: &mut BTreeSet<Symbol>) -> Result<(), ManyError> {
+        let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
+        for item in it {
+            let (k, _) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+            symbols.insert(Symbol::from_str(
+                std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
+                    .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
+            )?);
+        }
+        Ok(())
+    }
+
+    pub fn get_token_info(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
+        let mut info = BTreeMap::new();
+        if self.migrations.is_active(&TOKEN_MIGRATION) {
+            let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
+            for item in it {
+                let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+                info.insert(
+                    Symbol::from_str(
+                        std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
+                            .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
+                    )?,
+                    minicbor::decode(&v).map_err(ManyError::deserialization_error)?,
+                );
+            }
+        } else {
+            tracing::warn!("`get_token_info()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
+        }
+        Ok(info)
     }
 
     #[cfg(not(feature = "disable_token_sender_check"))]
@@ -146,16 +326,14 @@ impl LedgerStorage {
             initial_distribution,
             maximum_supply,
             extended_info,
-        });
+        })?;
 
         batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
         self.persistent_store
             .apply(batch.as_slice())
             .map_err(error::storage_apply_failed)?;
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
 
         Ok(TokenCreateReturns { info })
     }
@@ -252,11 +430,9 @@ impl LedgerStorage {
                 decimals,
                 owner,
                 memo,
-            });
+            })?;
 
-            if !self.blockchain {
-                self.persistent_store.commit(&[]).unwrap();
-            }
+            self.maybe_commit()?;
         } else {
             return Err(ManyError::unknown(format!(
                 "Symbol {symbol} not found in persistent storage"
@@ -305,11 +481,9 @@ impl LedgerStorage {
         self.log_event(EventInfo::TokenAddExtendedInfo {
             symbol,
             extended_info: indices,
-        });
+        })?;
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
 
         Ok(TokenAddExtendedInfoReturns {})
     }
@@ -349,11 +523,9 @@ impl LedgerStorage {
         self.log_event(EventInfo::TokenRemoveExtendedInfo {
             symbol,
             extended_info,
-        });
+        })?;
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
 
         Ok(TokenRemoveExtendedInfoReturns {})
     }

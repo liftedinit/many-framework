@@ -14,24 +14,15 @@ fn setup() -> LedgerStorage {
     let id2 = identity(2);
 
     let symbols = BTreeMap::from_iter(vec![(symbol0, "MFX".to_string())].into_iter());
-    let symbols_meta = None;
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
-    let mut storage = LedgerStorage::new(
-        symbols,
-        symbols_meta,
-        None,
-        None,
-        balances,
-        persistent_path,
-        id2,
-        false,
-        None,
-        None,
-        None,
-    )
-    .unwrap();
+    let mut storage = LedgerStorage::new(&symbols, persistent_path, id2, false)
+        .unwrap()
+        .with_balances(&symbols, &balances)
+        .unwrap()
+        .build()
+        .unwrap();
 
     for _ in 0..5 {
         storage
@@ -40,7 +31,7 @@ fn setup() -> LedgerStorage {
     }
 
     // Check that we have 5 events (5 sends).
-    assert_eq!(storage.nb_events(), 5);
+    assert_eq!(storage.nb_events().unwrap(), 5);
 
     storage
 }

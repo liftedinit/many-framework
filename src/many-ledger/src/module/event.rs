@@ -119,7 +119,7 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
     fn info(&self, _args: events::InfoArgs) -> Result<events::InfoReturn, ManyError> {
         use strum::IntoEnumIterator;
         Ok(events::InfoReturn {
-            total: self.storage.nb_events(),
+            total: self.storage.nb_events()?,
             event_types: events::EventKind::iter().collect(),
         })
     }
@@ -137,7 +137,7 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
         });
 
         let storage = &self.storage;
-        let nb_events = storage.nb_events();
+        let nb_events = storage.nb_events()?;
         let iter = storage.iter_events(
             filter.id_range.unwrap_or_default(),
             order.unwrap_or_default(),

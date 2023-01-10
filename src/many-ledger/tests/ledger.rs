@@ -20,7 +20,7 @@ proptest! {
             id,
             ..
         } = setup();
-        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL);
+        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL).expect("Unable to set balance for testing");
         verify_balance(&module_impl, id, *MFX_SYMBOL, amount.into());
     }
 }

@@ -1,6 +1,7 @@
 //! https://github.com/liftedinit/many-framework/issues/205
 
 use crate::migration::MIGRATIONS;
+use crate::storage::InnerStorage;
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_migration::InnerMigration;
@@ -49,7 +50,7 @@ fn block_9400(b: &[u8]) -> Option<Vec<u8>> {
 }
 
 #[distributed_slice(MIGRATIONS)]
-static B9400: InnerMigration<merk::Merk, ManyError> = InnerMigration::new_hotfix(
+static B9400: InnerMigration<InnerStorage, ManyError> = InnerMigration::new_hotfix(
     block_9400,
     "Block 9400",
     r#"Fix Block 9400 timestamp. Lifted Initiative Ledger network.

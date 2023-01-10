@@ -259,11 +259,13 @@ fn main() {
                     args.get(2).expect("No symbol."),
                 );
 
-                module_impl.set_balance_only_for_testing(
-                    Address::from_str(identity).expect("Invalid identity."),
-                    amount.parse::<u64>().expect("Invalid amount."),
-                    Address::from_str(symbol).expect("Invalid symbol."),
-                )
+                module_impl
+                    .set_balance_only_for_testing(
+                        Address::from_str(identity).expect("Invalid identity."),
+                        amount.parse::<u64>().expect("Invalid amount."),
+                        Address::from_str(symbol).expect("Invalid symbol."),
+                    )
+                    .expect("Unable to set balance for testing.");
             }
             module_impl
         }

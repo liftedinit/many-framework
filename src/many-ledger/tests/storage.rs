@@ -1,7 +1,7 @@
 use many_identity::testing::identity;
 use many_identity::Address;
-use many_ledger::json::SymbolMetaJson;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
+use many_ledger::storage::ledger_tokens::SymbolMeta;
 use many_ledger::{module::LedgerModuleImpl, storage::LedgerStorage};
 use many_migration::{Metadata, MigrationConfig};
 use many_modules::account::features::FeatureInfo;
@@ -18,22 +18,17 @@ fn load() {
     let mut id = Address::anonymous();
     // Storage needs to become out-of-scope so it can be re-opened
     {
-        let _ = LedgerStorage::new(
-            BTreeMap::from([(identity(1000), "MF0".to_string())]),
-            None,
-            None,
-            None,
-            BTreeMap::from([(
-                identity(5),
-                BTreeMap::from([(identity(1000), 10000000u64.into())]),
-            )]),
-            path.clone(),
-            identity(666),
-            false,
-            None,
-            None,
-            None,
-        );
+        let symbols = BTreeMap::from([(identity(1000), "MF0".to_string())]);
+        let balances = BTreeMap::from([(
+            identity(5),
+            BTreeMap::from([(identity(1000), 10000000u64.into())]),
+        )]);
+        let _ = LedgerStorage::new(&symbols, path.clone(), identity(666), false)
+            .unwrap()
+            .with_balances(&symbols, &balances)
+            .unwrap()
+            .build()
+            .unwrap();
         let mut module_impl = LedgerModuleImpl::load(None, path.clone(), false).unwrap();
 
         id = AccountModuleBackend::create(
@@ -102,31 +97,30 @@ fn load_symbol_meta() {
     ));
     // Storage needs to become out-of-scope so it can be re-opened
     {
-        let _ = LedgerStorage::new(
-            BTreeMap::from([(identity(1000), "MF0".to_string())]),
-            Some(BTreeMap::from([(
-                identity(1000),
-                SymbolMetaJson {
-                    // TODO: Don't use JSON here
-                    name: "Foobar".to_string(),
-                    decimals: 9,
-                    owner: None,
-                    maximum: None,
-                },
-            )])),
-            None,
-            None,
-            BTreeMap::from([(
-                identity(5),
-                BTreeMap::from([(identity(1000), 10000000u64.into())]),
-            )]),
-            path.clone(),
-            identity(666),
-            false,
-            None,
-            None,
-            migration_config.clone(),
-        );
+        let symbols = BTreeMap::from([(identity(1000), "MF0".to_string())]);
+        let meta = BTreeMap::from([(
+            identity(1000),
+            SymbolMeta {
+                name: "Foobar".to_string(),
+                decimals: 9,
+                owner: None,
+                maximum: None,
+            },
+        )]);
+        let initial_balance = BTreeMap::from([(
+            identity(5),
+            BTreeMap::from([(identity(1000), 10000000u64.into())]),
+        )]);
+        let _ = LedgerStorage::new(&symbols, path.clone(), identity(666), false)
+            .unwrap()
+            .with_migrations(migration_config.clone())
+            .unwrap()
+            .with_balances(&symbols, &initial_balance)
+            .unwrap()
+            .with_tokens(&symbols, Some(meta), None, None, initial_balance)
+            .unwrap()
+            .build()
+            .unwrap();
         let mut module_impl =
             LedgerModuleImpl::load(migration_config.clone(), path.clone(), false).unwrap();
 

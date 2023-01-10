@@ -23,7 +23,7 @@ fn verify_tokens_acl(
     roles: impl IntoIterator<Item = Role>,
 ) -> Result<(), ManyError> {
     if addr != sender {
-        if let Some(account) = storage.get_account(addr) {
+        if let Some(account) = storage.get_account(addr)? {
             verify_account_role(
                 &account,
                 sender,

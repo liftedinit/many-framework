@@ -19,7 +19,7 @@ impl ledger::LedgerCommandsModuleBackend for LedgerModuleImpl {
 
         let from = from.as_ref().unwrap_or(sender);
         if from != sender {
-            if let Some(account) = self.storage.get_account(from) {
+            if let Some(account) = self.storage.get_account(from)? {
                 verify_account_role(
                     &account,
                     sender,

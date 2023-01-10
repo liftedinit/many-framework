@@ -17,7 +17,9 @@ use std::ops::Bound;
 use test_utils::*;
 
 fn send(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
-    module_impl.set_balance_only_for_testing(from, 1000, *MFX_SYMBOL);
+    module_impl
+        .set_balance_only_for_testing(from, 1000, *MFX_SYMBOL)
+        .expect("Unable to set balance for testing.");
     send_(module_impl, from, to);
 }
 

@@ -3,7 +3,7 @@ use crate::migration::MIGRATIONS;
 use crate::storage::ledger_tokens::{
     key_for_ext_info, key_for_symbol, TOKEN_IDENTITY_BYTES, TOKEN_SUBRESOURCE_COUNTER_BYTES,
 };
-use crate::storage::{SYMBOLS, SYMBOLS_BYTES};
+use crate::storage::{InnerStorage, SYMBOLS, SYMBOLS_BYTES};
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_identity::Address;
@@ -171,7 +171,7 @@ fn migrate_token(
     Ok(())
 }
 
-fn initialize(storage: &mut merk::Merk, extra: &HashMap<String, Value>) -> Result<(), ManyError> {
+fn initialize(storage: &mut InnerStorage, extra: &HashMap<String, Value>) -> Result<(), ManyError> {
     migrate_subresource_counter(storage)?;
     migrate_token(storage, extra)?;
 
@@ -179,8 +179,9 @@ fn initialize(storage: &mut merk::Merk, extra: &HashMap<String, Value>) -> Resul
 }
 
 #[distributed_slice(MIGRATIONS)]
-pub static TOKEN_MIGRATION: InnerMigration<merk::Merk, ManyError> = InnerMigration::new_initialize(
-    initialize,
-    "Token Migration",
-    "Move the database to new subresource counter and new token metadata",
-);
+pub static TOKEN_MIGRATION: InnerMigration<InnerStorage, ManyError> =
+    InnerMigration::new_initialize(
+        initialize,
+        "Token Migration",
+        "Move the database to new subresource counter and new token metadata",
+    );

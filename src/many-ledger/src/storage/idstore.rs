@@ -1,8 +1,10 @@
+use crate::error;
 use crate::storage::LedgerStorage;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::idstore;
-use merk::Op;
+use merk::{BatchEntry, Op};
+use std::collections::BTreeMap;
 
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
 
@@ -31,11 +33,47 @@ impl IdStoreRootSeparator {
 }
 
 impl LedgerStorage {
-    pub(crate) fn inc_idstore_seed(&mut self) -> u64 {
+    pub fn with_idstore(
+        mut self,
+        maybe_seed: Option<u64>,
+        maybe_keys: Option<BTreeMap<String, String>>,
+    ) -> Result<Self, ManyError> {
+        let mut batch: Vec<BatchEntry> = Vec::new();
+        let maybe_keys = maybe_keys.map(|keys| {
+            keys.iter()
+                .map(|(k, v)| {
+                    let k = base64::decode(k).expect("Invalid base64 for key");
+                    let v = base64::decode(v).expect("Invalid base64 for value");
+                    (k, v)
+                })
+                .collect::<BTreeMap<_, _>>()
+        });
+
+        // Apply keys and seed.
+        if let Some(seed) = maybe_seed {
+            batch.push((
+                b"/config/idstore_seed".to_vec(),
+                Op::Put(seed.to_be_bytes().to_vec()),
+            ));
+        }
+        if let Some(keys) = maybe_keys {
+            for (k, v) in keys {
+                batch.push((k, Op::Put(v)));
+            }
+        }
+
+        self.persistent_store
+            .apply(batch.as_slice())
+            .map_err(error::storage_apply_failed)?;
+
+        Ok(self)
+    }
+
+    pub(crate) fn inc_idstore_seed(&mut self) -> Result<u64, ManyError> {
         let idstore_seed = self
             .persistent_store
             .get(b"/config/idstore_seed")
-            .unwrap()
+            .map_err(error::storage_get_failed)?
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];
                 bytes.copy_from_slice(x.as_slice());
@@ -47,13 +85,11 @@ impl LedgerStorage {
                 b"/config/idstore_seed".to_vec(),
                 Op::Put((idstore_seed + 1).to_be_bytes().to_vec()),
             )])
-            .unwrap();
+            .map_err(error::storage_apply_failed)?;
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
 
-        idstore_seed
+        Ok(idstore_seed)
     }
 
     pub fn store(
@@ -68,16 +104,17 @@ impl LedgerStorage {
         if self
             .persistent_store
             .get(&recall_phrase_cbor)
-            .map_err(|e| ManyError::unknown(e.to_string()))?
+            .map_err(error::storage_get_failed)?
             .is_some()
         {
             return Err(idstore::existing_entry());
         }
+
         let value = minicbor::to_vec(CredentialStorage {
             cred_id,
             public_key,
         })
-        .map_err(|e| ManyError::serialization_error(e.to_string()))?;
+        .map_err(ManyError::serialization_error)?;
 
         let batch = vec![
             (
@@ -100,13 +137,11 @@ impl LedgerStorage {
             ),
         ];
 
-        self.persistent_store.apply(&batch).unwrap();
+        self.persistent_store
+            .apply(&batch)
+            .map_err(error::storage_apply_failed)?;
 
-        if !self.blockchain {
-            self.persistent_store
-                .commit(&[])
-                .expect("Could not commit to store.");
-        }
+        self.maybe_commit()?;
 
         Ok(())
     }
@@ -118,7 +153,7 @@ impl LedgerStorage {
     ) -> Result<Option<Vec<u8>>, ManyError> {
         self.persistent_store
             .get(&vec![IDSTORE_ROOT, sep.value(), key].concat())
-            .map_err(|e| ManyError::unknown(e.to_string()))
+            .map_err(error::storage_get_failed)
     }
 
     pub fn get_from_recall_phrase(
@@ -159,15 +194,18 @@ pub mod tests {
     use super::*;
 
     impl LedgerStorage {
-        pub fn set_idstore_seed(&mut self, seed: u64) {
+        pub fn set_idstore_seed(&mut self, seed: u64) -> Result<(), ManyError> {
             self.persistent_store
                 .apply(&[(
                     b"/config/idstore_seed".to_vec(),
                     Op::Put(seed.to_be_bytes().to_vec()),
                 )])
-                .unwrap();
+                .map_err(error::storage_apply_failed)?;
 
-            self.persistent_store.commit(&[]).unwrap();
+            self.persistent_store
+                .commit(&[])
+                .map_err(error::storage_commit_failed)?;
+            Ok(())
         }
     }
 }

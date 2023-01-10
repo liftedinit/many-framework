@@ -1,10 +1,38 @@
+use crate::error;
 use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
 use many_types::ledger::{Symbol, TokenAmount};
+use merk::{BatchEntry, Op};
 use std::collections::{BTreeMap, BTreeSet};
 
 impl LedgerStorage {
+    pub fn with_balances(
+        mut self,
+        symbols: &BTreeMap<Symbol, String>,
+        initial_balances: &BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
+    ) -> Result<Self, ManyError> {
+        let mut batch: Vec<BatchEntry> = Vec::new();
+        for (k, v) in initial_balances.iter() {
+            for (symbol, tokens) in v.iter() {
+                if !symbols.contains_key(symbol) {
+                    return Err(ManyError::unknown(format!(
+                        r#"Unknown symbol "{symbol}" for identity {k}"#
+                    ))); // TODO: Custom error
+                }
+
+                let key = key_for_account_balance(k, symbol);
+                batch.push((key, Op::Put(tokens.to_vec())));
+            }
+        }
+
+        self.persistent_store
+            .apply(batch.as_slice())
+            .map_err(error::storage_apply_failed)?;
+
+        Ok(self)
+    }
+
     fn get_all_balances(
         &self,
         identity: &Address,
@@ -18,12 +46,12 @@ impl LedgerStorage {
                 match self
                     .persistent_store
                     .get(&key_for_account_balance(identity, &symbol))
+                    .map_err(error::storage_get_failed)?
                 {
-                    Ok(None) => {}
-                    Ok(Some(value)) => {
+                    None => {}
+                    Some(value) => {
                         result.insert(symbol, TokenAmount::from(value));
                     }
-                    Err(_) => {}
                 }
             }
 

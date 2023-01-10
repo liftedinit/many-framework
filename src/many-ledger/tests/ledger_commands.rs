@@ -14,7 +14,7 @@ proptest! {
             ..
         } = setup();
         let half = amount / 2;
-        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL);
+        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL).expect("Unable to set balance for testing.");
         let result = module_impl.send(&id, ledger::SendArgs {
             from: Some(id),
             to: identity(1),
@@ -35,7 +35,7 @@ proptest! {
             id,
         } = setup_with_account(AccountType::Ledger);
         let half = amount / 2;
-        module_impl.set_balance_only_for_testing(account_id, amount, *MFX_SYMBOL);
+        module_impl.set_balance_only_for_testing(account_id, amount, *MFX_SYMBOL).expect("Unable to set balance for testing.");
         let result = module_impl.send(&id, ledger::SendArgs {
             from: Some(account_id),
             to: identity(1),

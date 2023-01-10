@@ -1,5 +1,5 @@
-use crate::error;
-use crate::storage::LedgerStorage;
+use crate::storage::account::AccountMeta;
+use crate::storage::ledger_tokens::SymbolMeta;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::account;
@@ -79,50 +79,32 @@ pub struct AccountJson {
     pub features: BTreeSet<FeatureJson>,
 }
 
-impl AccountJson {
-    pub fn create_account(&self, ledger: &mut LedgerStorage) -> Result<(), ManyError> {
-        let id = ledger._add_account(
-            account::Account {
-                description: self.description.clone(),
-                roles: self
-                    .roles
-                    .iter()
-                    .map(|(id, roles)| {
-                        (*id, {
-                            roles
-                                .iter()
-                                .map(|s| std::str::FromStr::from_str(s))
-                                .collect::<Result<BTreeSet<account::Role>, _>>()
-                                .expect("Invalid role.")
-                        })
+/// Converts the JSON Account metadata to our internal representation
+impl From<AccountJson> for AccountMeta {
+    fn from(value: AccountJson) -> Self {
+        Self {
+            id: value.id,
+            subresource_id: value.subresource_id,
+            description: value.description,
+            roles: value
+                .roles
+                .iter()
+                .map(|(id, roles)| {
+                    (*id, {
+                        roles
+                            .iter()
+                            .map(|s| std::str::FromStr::from_str(s))
+                            .collect::<Result<BTreeSet<account::Role>, _>>()
+                            .expect("Invalid role.")
                     })
-                    .collect(),
-                features: self
-                    .features
-                    .iter()
-                    .map(|f| f.try_into_feature().expect("Unsupported feature."))
-                    .collect(),
-                disabled: None,
-            },
-            false,
-        )?;
-
-        if self.subresource_id.is_some()
-            && id.subresource_id().is_some()
-            && id.subresource_id() != self.subresource_id
-        {
-            return Err(error::unexpected_subresource_id(
-                id.subresource_id().unwrap().to_string(),
-                self.subresource_id.unwrap().to_string(),
-            ));
+                })
+                .collect(),
+            features: value
+                .features
+                .iter()
+                .map(|v| v.try_into_feature().expect("Unsupported feature."))
+                .collect(),
         }
-        if let Some(self_id) = self.id {
-            if id != self_id {
-                return Err(error::unexpected_account_id(id, self_id));
-            }
-        }
-
-        Ok(())
     }
 }
 
@@ -132,6 +114,18 @@ pub struct SymbolMetaJson {
     pub decimals: u64,
     pub owner: Option<Address>,
     pub maximum: Option<TokenAmount>,
+}
+
+/// Converts the JSON Symbol metadata to our internal representation
+impl From<SymbolMetaJson> for SymbolMeta {
+    fn from(value: SymbolMetaJson) -> Self {
+        Self {
+            name: value.name,
+            decimals: value.decimals,
+            owner: value.owner,
+            maximum: value.maximum,
+        }
+    }
 }
 
 /// The initial state schema, loaded from JSON.

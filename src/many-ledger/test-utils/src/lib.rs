@@ -232,7 +232,8 @@ impl Setup {
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {
         self.module_impl
-            .set_balance_only_for_testing(id, amount, symbol);
+            .set_balance_only_for_testing(id, amount, symbol)
+            .expect("Unable to set balance for testing.");
     }
 
     pub fn balance(&self, account: Address, symbol: Symbol) -> Result<TokenAmount, ManyError> {

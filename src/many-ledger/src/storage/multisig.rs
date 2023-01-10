@@ -1,3 +1,4 @@
+use crate::error;
 use crate::migration::block_9400::Block9400Tx;
 use crate::migration::memo::MEMO_MIGRATION;
 use crate::module::account::validate_account;
@@ -50,7 +51,7 @@ fn _execute_multisig_tx(
 
             // The account executing the transaction should have the rights to send the funds
             let account = ledger
-                .get_account(&from)
+                .get_account(&from)?
                 .ok_or_else(|| account::errors::unknown_account(from))?;
             account.needs_role(
                 sender,
@@ -71,7 +72,7 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountDisable(args) => {
             let account = ledger
-                .get_account(&args.account)
+                .get_account(&args.account)?
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
             account.needs_role(sender, [account::Role::Owner])?;
@@ -81,7 +82,7 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountSetDescription(args) => {
             let account = ledger
-                .get_account(&args.account)
+                .get_account(&args.account)?
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
             account.needs_role(sender, [account::Role::Owner])?;
@@ -91,7 +92,7 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountAddRoles(args) => {
             let account = ledger
-                .get_account(&args.account)
+                .get_account(&args.account)?
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
             account.needs_role(sender, [account::Role::Owner])?;
             ledger.add_roles(account, args.clone())?;
@@ -100,7 +101,7 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountRemoveRoles(args) => {
             let account = ledger
-                .get_account(&args.account)
+                .get_account(&args.account)?
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
             account.needs_role(sender, [account::Role::Owner])?;
             ledger.remove_roles(account, args.clone())?;
@@ -109,7 +110,7 @@ fn _execute_multisig_tx(
 
         events::AccountMultisigTransaction::AccountAddFeatures(args) => {
             let account = ledger
-                .get_account(&args.account)
+                .get_account(&args.account)?
                 .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
             account.needs_role(sender, [account::Role::Owner])?;
@@ -194,10 +195,10 @@ impl LedgerStorage {
         let mut batch = vec![];
 
         for item in it {
-            let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
+            let (k, v) = item.map_err(ManyError::unknown)?;
 
-            let mut storage: MultisigTransactionStorage = minicbor::decode(v.as_slice())
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            let mut storage: MultisigTransactionStorage =
+                minicbor::decode(v.as_slice()).map_err(ManyError::deserialization_error)?;
             let now = self.now();
 
             if now >= storage.info.timeout {
@@ -220,12 +221,12 @@ impl LedgerStorage {
         if !batch.is_empty() {
             // Reverse the batch so keys are in sorted order.
             batch.reverse();
-            self.persistent_store.apply(&batch).unwrap();
+            self.persistent_store
+                .apply(&batch)
+                .map_err(error::storage_apply_failed)?;
         }
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
 
         Ok(())
     }
@@ -237,7 +238,7 @@ impl LedgerStorage {
     ) -> Result<(), ManyError> {
         // Verify the sender has the rights to the account.
         let mut account = self
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account.to_string()))?;
 
         account.needs_role(sender, [account::Role::Owner])?;
@@ -267,7 +268,7 @@ impl LedgerStorage {
                 threshold: args.threshold,
                 timeout_in_secs,
                 execute_automatically: args.execute_automatically,
-            });
+            })?;
             self.commit_account(&args.account, account)?;
         }
         Ok(())
@@ -287,13 +288,9 @@ impl LedgerStorage {
                         .map_err(|e| ManyError::serialization_error(e.to_string()))?,
                 ),
             )])
-            .unwrap();
+            .map_err(error::storage_apply_failed)?;
 
-        if !self.blockchain {
-            self.persistent_store
-                .commit(&[])
-                .expect("Could not commit to store.");
-        }
+        self.maybe_commit()?;
         Ok(())
     }
 
@@ -306,7 +303,7 @@ impl LedgerStorage {
         let account_id = arg.account;
 
         let account = self
-            .get_account(&account_id)
+            .get_account(&account_id)?
             .ok_or_else(|| account::errors::unknown_account(account_id))?;
 
         let is_owner = account.has_role(sender, "owner");
@@ -397,7 +394,7 @@ impl LedgerStorage {
             execute_automatically,
             data_,
             memo,
-        });
+        })?;
 
         Ok(event_id.into())
     }
@@ -419,7 +416,7 @@ impl LedgerStorage {
         }
 
         let account = self
-            .get_account(&storage.account)
+            .get_account(&storage.account)?
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         // Validate the right.
@@ -438,7 +435,7 @@ impl LedgerStorage {
             account: storage.account,
             token: tx_id.to_vec().into(),
             approver: *sender,
-        });
+        })?;
 
         // If the transaction executes automatically, calculate number of approvers.
         if storage.info.execute_automatically && storage.should_execute() {
@@ -448,7 +445,7 @@ impl LedgerStorage {
                 token: tx_id.to_vec().into(),
                 executer: None,
                 response,
-            });
+            })?;
             return Ok(true);
         }
 
@@ -462,7 +459,7 @@ impl LedgerStorage {
         }
 
         let account = self
-            .get_account(&storage.account)
+            .get_account(&storage.account)?
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         // We make an exception here for people who already approved.
@@ -482,7 +479,7 @@ impl LedgerStorage {
             account: storage.account,
             token: tx_id.to_vec().into(),
             revoker: *sender,
-        });
+        })?;
         Ok(false)
     }
 
@@ -498,7 +495,7 @@ impl LedgerStorage {
 
         // Verify the sender has the rights to the account.
         let account = self
-            .get_account(&storage.account)
+            .get_account(&storage.account)?
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         // TODO: Better error message
@@ -513,7 +510,7 @@ impl LedgerStorage {
                 token: tx_id.to_vec().into(),
                 executer: Some(*sender),
                 response: response.clone(),
-            });
+            })?;
             Ok(response)
         } else {
             Err(account::features::multisig::errors::cannot_execute_transaction())
@@ -528,7 +525,7 @@ impl LedgerStorage {
 
         // Verify the sender has the rights to the account.
         let account = self
-            .get_account(&storage.account)
+            .get_account(&storage.account)?
             .ok_or_else(|| account::errors::unknown_account(storage.account.to_string()))?;
 
         if !(account.has_role(sender, "owner") || storage.info.submitter == *sender) {
@@ -543,7 +540,7 @@ impl LedgerStorage {
             account: storage.account,
             token: tx_id.to_vec().into(),
             withdrawer: *sender,
-        });
+        })?;
         Ok(())
     }
 
@@ -563,12 +560,9 @@ impl LedgerStorage {
 
         self.persistent_store
             .apply(&[(key_for_multisig_transaction(tx_id), Op::Put(v))])
-            .unwrap();
-        if !self.blockchain {
-            self.persistent_store
-                .commit(&[])
-                .expect("Could not commit to store.");
-        }
+            .map_err(error::storage_apply_failed)?;
+
+        self.maybe_commit()?;
         Ok(())
     }
 

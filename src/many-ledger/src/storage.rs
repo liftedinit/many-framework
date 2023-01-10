@@ -1,27 +1,19 @@
 use crate::error;
-use crate::json::SymbolMetaJson;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
-use crate::storage::iterator::LedgerIterator;
-use crate::storage::ledger_tokens::{
-    key_for_ext_info, key_for_symbol, SYMBOLS_ROOT_BYTES, TOKEN_IDENTITY, TOKEN_IDENTITY_BYTES,
-    TOKEN_SUBRESOURCE_COUNTER, TOKEN_SUBRESOURCE_COUNTER_BYTES,
-};
 use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
-use many_modules::ledger::extended_info::TokenExtendedInfo;
-use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
-use many_types::{SortOrder, Timestamp};
-use merk::{BatchEntry, Op};
+use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Timestamp;
+use merk::Op;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use std::str::FromStr;
 
 mod abci;
-mod account;
+pub mod account;
 pub mod data;
 pub mod event;
 mod idstore;
@@ -29,17 +21,22 @@ pub mod iterator;
 mod ledger;
 mod ledger_commands;
 pub mod ledger_tokens;
+mod migrations;
 pub mod multisig;
 
 pub const SYMBOLS: &str = "/config/symbols";
 pub const SYMBOLS_BYTES: &[u8] = SYMBOLS.as_bytes();
+pub const IDENTITY: &str = "/config/identity";
+pub const IDENTITY_BYTES: &[u8] = IDENTITY.as_bytes();
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
 }
 
+pub type InnerStorage = merk::Merk;
+
 pub struct LedgerStorage {
-    persistent_store: merk::Merk,
+    persistent_store: InnerStorage,
 
     /// When this is true, we do not commit every transactions as they come,
     /// but wait for a `commit` call before committing the batch to the
@@ -67,11 +64,8 @@ impl LedgerStorage {
         account: Address,
         amount: u64,
         symbol: Address,
-    ) {
-        assert!(self
-            .get_symbols()
-            .expect("Error while loading symbols")
-            .contains(&symbol));
+    ) -> Result<(), ManyError> {
+        assert!(self.get_symbols()?.contains(&symbol));
         // Make sure we don't run this function when the store has started.
         assert_eq!(self.current_hash, None);
 
@@ -80,10 +74,13 @@ impl LedgerStorage {
 
         self.persistent_store
             .apply(&[(key, Op::Put(amount.to_vec()))])
-            .unwrap();
+            .map_err(error::storage_apply_failed)?;
 
         // Always commit to the store. In blockchain mode this will fail.
-        self.persistent_store.commit(&[]).unwrap();
+        self.persistent_store
+            .commit(&[])
+            .map_err(error::storage_commit_failed)?;
+        Ok(())
     }
 }
 
@@ -117,6 +114,22 @@ impl LedgerStorage {
         }
     }
 
+    #[inline]
+    fn maybe_commit(&mut self) -> Result<(), ManyError> {
+        if !self.blockchain {
+            self.commit_storage()?;
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn commit_storage(&mut self) -> Result<(), ManyError> {
+        self.persistent_store
+            .commit(&[])
+            .map_err(error::storage_commit_failed)?;
+        Ok(())
+    }
+
     pub fn new_subresource_id(&mut self) -> Result<Address, ManyError> {
         let current_id = self.next_subresource;
         self.next_subresource += 1;
@@ -135,13 +148,13 @@ impl LedgerStorage {
         blockchain: bool,
         migration_config: Option<MigrationConfig>,
     ) -> Result<Self, String> {
-        let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
+        let persistent_store = InnerStorage::open(persistent_path).map_err(|e| e.to_string())?;
 
         let root_identity: Address = Address::from_bytes(
             &persistent_store
-                .get(b"/config/identity")
+                .get(IDENTITY_BYTES)
                 .expect("Could not open storage.")
-                .expect("Could not find key '/config/identity' in storage."),
+                .unwrap_or_else(|| panic!("Could not find key '{IDENTITY}' in storage.")),
         )
         .map_err(|e| e.to_string())?;
 
@@ -180,21 +193,8 @@ impl LedgerStorage {
 
         // Load the token-related data if the token migration is active.
         if migrations.is_active(&TOKEN_MIGRATION) {
-            token_identity = Address::from_bytes(
-                &persistent_store
-                    .get(TOKEN_IDENTITY_BYTES)
-                    .map_err(|_| error::storage_get_failed(TOKEN_IDENTITY).to_string())?
-                    .ok_or("Unable to read Token identity from DB")?,
-            )
-            .map_err(|e| e.to_string())?;
-
-            let x = persistent_store
-                .get(TOKEN_SUBRESOURCE_COUNTER_BYTES)
-                .map_err(|_| error::storage_get_failed(TOKEN_SUBRESOURCE_COUNTER).to_string())?
-                .ok_or("Unable to read Token subresource counter from DB")?;
-            let mut bytes = [0u8; 4];
-            bytes.copy_from_slice(x.as_slice());
-            token_next_subresource = u32::from_be_bytes(bytes);
+            (token_identity, token_next_subresource) =
+                LedgerStorage::load_token_storage(&persistent_store)?;
         }
 
         Ok(Self {
@@ -211,128 +211,24 @@ impl LedgerStorage {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
-        symbols: BTreeMap<Symbol, String>,
-        symbols_meta: Option<BTreeMap<Symbol, SymbolMetaJson>>,
-        token_identity: Option<Address>,
-        token_next_subresource: Option<u32>,
-        initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
+        symbols: &BTreeMap<Symbol, String>,
         persistent_path: P,
         identity: Address,
         blockchain: bool,
-        maybe_seed: Option<u64>,
-        maybe_keys: Option<BTreeMap<Vec<u8>, Vec<u8>>>,
-        migration_config: Option<MigrationConfig>,
-    ) -> Result<Self, String> {
-        let mut persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
-
-        // NOTE: Migrations are only applied in blockchain mode when loading an existing DB
-        //       It is currently NOT possible to run new code in non-blockchain mode when loading an existing DB
-        let migrations = migration_config.map_or_else(MigrationSet::empty, |config| {
-            LedgerMigrations::load(&MIGRATIONS, config, 0)
-        })?;
-
-        let mut batch: Vec<BatchEntry> = Vec::new();
-        let mut total_supply = BTreeMap::new();
-        for (k, v) in initial_balances.into_iter() {
-            for (symbol, tokens) in v.into_iter() {
-                let token_vec = tokens.to_vec();
-                if let Some(x) = total_supply.get_mut(&symbol) {
-                    *x += tokens;
-                } else {
-                    total_supply.insert(symbol, tokens);
-                }
-
-                if !symbols.contains_key(&symbol) {
-                    return Err(format!(r#"Unknown symbol "{symbol}" for identity {k}"#));
-                }
-
-                let key = key_for_account_balance(&k, &symbol);
-                batch.push((key, Op::Put(token_vec)));
-            }
-        }
-
-        batch.push((b"/config/identity".to_vec(), Op::Put(identity.to_vec())));
-        batch.push((
-            SYMBOLS_BYTES.to_vec(),
-            Op::Put(minicbor::to_vec(&symbols).map_err(|e| e.to_string())?),
-        ));
-
-        let token_identity = token_identity.unwrap_or(identity);
-        let token_next_subresource = token_next_subresource.unwrap_or(0);
-
-        // Add token-related config to the persistent storage if the Token Migration is active
-        // Note: This will change storage hash
-        if migrations.is_active(&TOKEN_MIGRATION) {
-            batch.push((
-                TOKEN_IDENTITY_BYTES.to_vec(),
-                Op::Put(token_identity.to_vec()),
-            ));
-
-            batch.push((
-                TOKEN_SUBRESOURCE_COUNTER_BYTES.to_vec(),
-                Op::Put(token_next_subresource.to_be_bytes().to_vec()),
-            ));
-
-            if let Some(symbols_meta) = symbols_meta {
-                for ((s1, ticker), (s2, meta)) in symbols.iter().zip(symbols_meta.into_iter()) {
-                    if s1 != &s2 {
-                        return Err("Symbols {s1} and {s2} don't match".to_string());
-                    }
-
-                    let total_supply = total_supply.get(s1).expect("Unable to get total supply");
-                    let info = TokenInfo {
-                        symbol: s2,
-                        summary: TokenInfoSummary {
-                            name: meta.name,
-                            ticker: ticker.clone(),
-                            decimals: meta.decimals,
-                        },
-                        supply: TokenInfoSupply {
-                            total: total_supply.clone(),
-                            circulating: total_supply.clone(),
-                            maximum: meta.maximum,
-                        },
-                        owner: meta.owner,
-                    };
-
-                    batch.push((
-                        key_for_ext_info(s1),
-                        Op::Put(
-                            minicbor::to_vec(TokenExtendedInfo::default())
-                                .map_err(|e| e.to_string())?,
-                        ),
-                    ));
-                    batch.push((
-                        key_for_symbol(s1),
-                        Op::Put(minicbor::to_vec(info).map_err(|e| e.to_string())?),
-                    ));
-                }
-            }
-        }
-
-        // Apply keys and seed.
-        if let Some(seed) = maybe_seed {
-            batch.push((
-                b"/config/idstore_seed".to_vec(),
-                Op::Put(seed.to_be_bytes().to_vec()),
-            ));
-        }
-        if let Some(keys) = maybe_keys {
-            for (k, v) in keys {
-                batch.push((k, Op::Put(v)));
-            }
-        }
-
-        // Batch keys need to be sorted
-        batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
+    ) -> Result<Self, ManyError> {
+        let mut persistent_store =
+            InnerStorage::open(persistent_path).map_err(ManyError::unknown)?; // TODO: Custom error
 
         persistent_store
-            .apply(batch.as_slice())
-            .map_err(|e| e.to_string())?;
-
-        persistent_store.commit(&[]).map_err(|e| e.to_string())?;
+            .apply(&[
+                (IDENTITY_BYTES.to_vec(), Op::Put(identity.to_vec())),
+                (
+                    SYMBOLS_BYTES.to_vec(),
+                    Op::Put(minicbor::to_vec(symbols).map_err(ManyError::serialization_error)?),
+                ),
+            ])
+            .map_err(error::storage_apply_failed)?;
 
         Ok(Self {
             persistent_store,
@@ -342,37 +238,19 @@ impl LedgerStorage {
             current_hash: None,
             next_subresource: 0,
             root_identity: identity,
-            token_identity,
-            token_next_subresource,
-            migrations,
+            token_identity: identity,
+            token_next_subresource: 0,
+            migrations: MigrationSet::empty().map_err(ManyError::unknown)?, // TODO: Custom error
         })
     }
 
-    pub fn commit_persistent_store(&mut self) -> Result<(), String> {
-        self.persistent_store.commit(&[]).map_err(|e| e.to_string())
+    pub fn build(mut self) -> Result<Self, ManyError> {
+        self.persistent_store
+            .commit(&[])
+            .map_err(error::storage_commit_failed)?;
+        Ok(self)
     }
 
-    pub fn get_token_info(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
-        let mut info = BTreeMap::new();
-        if self.migrations.is_active(&TOKEN_MIGRATION) {
-            let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
-            for item in it {
-                let (k, v) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
-                info.insert(
-                    Symbol::from_str(
-                        std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
-                            .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
-                    )?,
-                    minicbor::decode(&v).map_err(ManyError::deserialization_error)?,
-                );
-            }
-        } else {
-            tracing::warn!("`get_token_info()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
-        }
-        Ok(info)
-    }
-
-    /// Fetch symbol and ticker from '/config/symbols/.
     /// Kept for backward compatibility
     pub fn get_symbols_and_tickers(&self) -> Result<BTreeMap<Symbol, String>, ManyError> {
         minicbor::decode::<BTreeMap<Symbol, String>>(
@@ -391,14 +269,7 @@ impl LedgerStorage {
     pub fn get_symbols(&self) -> Result<BTreeSet<Symbol>, ManyError> {
         let mut symbols = BTreeSet::new();
         if self.migrations.is_active(&TOKEN_MIGRATION) {
-            let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
-            for item in it {
-                let (k, _) = item.map_err(|e| ManyError::unknown(e.to_string()))?;
-                symbols.insert(Symbol::from_str(
-                    std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_BYTES.len()..])
-                        .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
-                )?);
-            }
+            self._get_symbols(&mut symbols)?;
         } else {
             let symbols_and_tickers = self.get_symbols_and_tickers()?;
             symbols.extend(symbols_and_tickers.keys())
