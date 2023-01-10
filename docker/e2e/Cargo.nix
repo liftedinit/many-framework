@@ -30,7 +30,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "a6ca23228375b5bb8f14998243f066bd5d93e811edb27fb3cd6eadda1bec995e";
+  nixifiedLockHash = "3aae494eefb28825983b302e1b47c4c53a746bd973ce6521404b2011eb4d12d0";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -2206,7 +2206,7 @@ in
     dependencies = {
       bitflags = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".bitflags."1.3.2" { inherit profileName; }).out;
       libc = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".libc."0.2.139" { inherit profileName; }).out;
-      libgit2_sys = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".libgit2-sys."0.14.0+1.5.0" { inherit profileName; }).out;
+      libgit2_sys = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".libgit2-sys."0.14.1+1.5.0" { inherit profileName; }).out;
       log = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; }).out;
       url = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".url."2.3.1" { inherit profileName; }).out;
     };
@@ -2847,11 +2847,11 @@ in
     ];
   });
   
-  "registry+https://github.com/rust-lang/crates.io-index".libgit2-sys."0.14.0+1.5.0" = overridableMkRustCrate (profileName: rec {
+  "registry+https://github.com/rust-lang/crates.io-index".libgit2-sys."0.14.1+1.5.0" = overridableMkRustCrate (profileName: rec {
     name = "libgit2-sys";
-    version = "0.14.0+1.5.0";
+    version = "0.14.1+1.5.0";
     registry = "registry+https://github.com/rust-lang/crates.io-index";
-    src = fetchCratesIo { inherit name version; sha256 = "47a00859c70c8a4f7218e6d1cc32875c4b55f6799445b842b0d8ed5e4c3d959b"; };
+    src = fetchCratesIo { inherit name version; sha256 = "4a07fb2692bc3593bda59de45a502bb3071659f2c515e28c71e728306b038e17"; };
     dependencies = {
       libc = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".libc."0.2.139" { inherit profileName; }).out;
       libz_sys = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".libz-sys."1.1.8" { inherit profileName; }).out;
@@ -3042,7 +3042,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-client";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     features = builtins.concatLists [
       [ "default" ]
     ];
@@ -3094,7 +3094,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-client-macros";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       proc_macro2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.49" { inherit profileName; }).out;
       quote = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.23" { inherit profileName; }).out;
@@ -3110,7 +3110,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-error";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     features = builtins.concatLists [
       [ "default" ]
       [ "minicbor" ]
@@ -3131,7 +3131,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     features = builtins.concatLists [
       [ "coset" ]
       [ "default" ]
@@ -3165,7 +3165,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity-dsa";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     features = builtins.concatLists [
       [ "coset" ]
       [ "default" ]
@@ -3207,7 +3207,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity-hsm";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       asn1 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".asn1."0.10.0" { inherit profileName; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
@@ -3233,7 +3233,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity-webauthn";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     features = builtins.concatLists [
       [ "default" ]
       [ "identity" ]
@@ -3378,7 +3378,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-macros";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       inflections = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".inflections."1.1.1" { inherit profileName; }).out;
       proc_macro2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.49" { inherit profileName; }).out;
@@ -3397,7 +3397,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-migration";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
@@ -3416,7 +3416,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-modules";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       async_trait = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".async-trait."0.1.61" { profileName = "__noProfile"; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
@@ -3442,7 +3442,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-protocol";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
@@ -3472,7 +3472,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-server";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     features = builtins.concatLists [
       [ "default" ]
     ];
@@ -3530,7 +3530,7 @@ in
       url = https://github.com/liftedinit/many-rs.git;
       name = "many-types";
       version = "0.1.0";
-      rev = "dea01257edc567cf27d0194bb344f1822952cecf";};
+      rev = "b0253a70015f78fccb4774ead049bd123d1397ec";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.20.0" { inherit profileName; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
