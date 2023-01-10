@@ -5,6 +5,7 @@ use many_migration::{InnerMigration, MigrationSet};
 pub mod block_9400;
 pub mod data;
 pub mod memo;
+pub mod nomic;
 
 #[cfg(feature = "migration_testing")]
 pub mod dummy_hotfix;
