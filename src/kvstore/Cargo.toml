@@ -20,13 +20,13 @@ clap = { version = "3.0.0", features = ["derive"] }
 hex = "0.4.3"
 indicatif = "0.16.2"
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
-many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec", features = ["ed25519", "ecdsa"] }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "b0253a70015f78fccb4774ead049bd123d1397ec" }
+many-client = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635", features = ["ed25519", "ecdsa"] }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "591e5b40de75828ea1984780321060cf3da21635" }
 syslog-tracing = "0.1"
 tracing = "0.1.29"
 tracing-subscriber = "0.3"

@@ -273,8 +273,36 @@ impl KvStoreStorage {
 
         self.log_event(EventInfo::KvStoreDisable {
             key: key.to_vec().into(),
-            owner: meta.owner,
             reason: reason.cloned(),
+        });
+
+        if !self.blockchain {
+            self.persistent_store.commit(&[]).unwrap();
+        }
+        Ok(())
+    }
+
+    pub fn transfer(
+        &mut self,
+        key: &[u8],
+        previous_owner: Address,
+        meta: KvStoreMetadata,
+    ) -> Result<(), ManyError> {
+        let new_owner = meta.owner;
+        self.persistent_store
+            .apply(&[(
+                vec![KVSTORE_ACL_ROOT.to_vec(), key.to_vec()].concat(),
+                Op::Put(
+                    minicbor::to_vec(meta)
+                        .map_err(|e| ManyError::serialization_error(e.to_string()))?,
+                ),
+            )])
+            .map_err(|e| ManyError::unknown(e.to_string()))?;
+
+        self.log_event(EventInfo::KvStoreTransfer {
+            key: key.to_vec().into(),
+            owner: previous_owner,
+            new_owner,
         });
 
         if !self.blockchain {

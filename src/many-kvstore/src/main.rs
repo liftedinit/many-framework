@@ -175,6 +175,7 @@ fn main() {
         } else {
             s.add_module(kvstore_command_module);
         }
+        s.add_module(kvstore::KvStoreTransferModule::new(module.clone()));
         s.add_module(events::EventsModule::new(module.clone()));
 
         s.add_module(AccountFeatureModule::new(
