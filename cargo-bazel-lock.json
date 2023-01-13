@@ -1,5 +1,5 @@
 {
-  "checksum": "89e574fd4fa49a87375306d29c29a159baa1b28c8567952dee95d516bd1ce52c",
+  "checksum": "59c00c40e0bfee1a1a528a041730aa229fa6ac83bc5e6b9cc949fce488c1ddc5",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -12312,6 +12312,10 @@
             {
               "id": "rpassword 6.0.1",
               "target": "rpassword"
+            },
+            {
+              "id": "serde_json 1.0.91",
+              "target": "serde_json"
             },
             {
               "id": "syslog-tracing 0.1.0",

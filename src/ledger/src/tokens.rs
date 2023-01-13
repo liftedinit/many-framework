@@ -1,5 +1,4 @@
 use clap::{Args, Parser};
-use itertools::Itertools;
 use many_client::client::blocking::ManyClient;
 use many_error::ManyError;
 use many_identity::{Address, Identity};
@@ -14,7 +13,6 @@ use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfoSummary, TokenMaybeOwner};
 use many_types::{AttributeRelatedIndex, Memo};
 use std::path::PathBuf;
-use std::str::FromStr;
 
 #[derive(Parser)]
 pub struct CommandOpt {
@@ -69,9 +67,8 @@ struct CreateTokenOpt {
     #[clap(value_parser = token_maybe_owner)]
     owner: Option<TokenMaybeOwner>,
 
-    // TODO: How to make this better?
-    #[clap(long, action = clap::ArgAction::Append, number_of_values = 2, value_names = &["IDENTITY", "AMOUNT"])]
-    initial_distribution: Option<Vec<String>>,
+    #[clap(long, parse(try_from_str = serde_json::from_str))]
+    initial_distribution: Option<LedgerTokensAddressMap>,
 
     #[clap(long)]
     maximum_supply: Option<u64>,
@@ -191,20 +188,6 @@ fn create_ext_info(opts: CreateExtInfoOpt) -> TokenExtendedInfo {
 }
 
 fn create_token(client: ManyClient<impl Identity>, opts: CreateTokenOpt) -> Result<(), ManyError> {
-    let initial_distribution = opts.initial_distribution.map(|initial_distribution| {
-        initial_distribution
-            .into_iter()
-            .chunks(2)
-            .into_iter()
-            .map(|mut chunk| {
-                (
-                    Address::from_str(&chunk.next().unwrap()).unwrap(),
-                    TokenAmount::from(chunk.next().unwrap().parse::<u64>().unwrap()),
-                )
-            })
-            .collect::<LedgerTokensAddressMap>()
-    });
-
     let extended_info = opts.extended_info.map(create_ext_info);
 
     let args = TokenCreateArgs {
@@ -214,7 +197,7 @@ fn create_token(client: ManyClient<impl Identity>, opts: CreateTokenOpt) -> Resu
             decimals: opts.decimals,
         },
         owner: opts.owner,
-        initial_distribution,
+        initial_distribution: opts.initial_distribution,
         maximum_supply: opts.maximum_supply.map(TokenAmount::from),
         extended_info,
     };

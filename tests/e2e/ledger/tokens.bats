@@ -72,9 +72,7 @@ function teardown() {
 }
 
 @test "$SUITE: can create new token" {
-    create_token --pem=1 --port=8000 \
-        --initial-distribution "$(identity 1)" 1000 \
-        --initial-distribution "$(identity 2)" 1000
+    create_token --pem=1 --port=8000 --initial-distribution ''\''{"'$(identity 1)'": 1000, "'$(identity 2)'": 1000}'\'''
     assert_output --regexp "total:.*(.*2000,.*)"
     assert_output --regexp "circulating:.*(.*2000,.*)"
 }

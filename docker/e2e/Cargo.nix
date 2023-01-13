@@ -33,7 +33,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "116a69db7c2cfe2353344e6a4e14c0bd851ca9cd2f11987c3227c1da62d6e540";
+  nixifiedLockHash = "cf66c999e35a570f5eb25c7476267789bdbf4ed571f432842ebce937aa015870";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -3193,6 +3193,7 @@ in
       regex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".regex."1.7.1" { inherit profileName; }).out;
       ring = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".ring."0.16.20" { inherit profileName; }).out;
       rpassword = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".rpassword."6.0.1" { inherit profileName; }).out;
+      serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.91" { inherit profileName; }).out;
       syslog_tracing = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".syslog-tracing."0.1.0" { inherit profileName; }).out;
       tokio = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tokio."1.24.1" { inherit profileName; }).out;
       tracing = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tracing."0.1.37" { inherit profileName; }).out;
