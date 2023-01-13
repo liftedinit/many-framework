@@ -2622,8 +2622,9 @@ dependencies = [
 [[package]]
 name = "merk"
 version = "2.0.0"
-source = "git+https://github.com/MavenRainBackup/merk.git?branch=oobi/merge-with-nomic#d696d0305ce7b1bbe21709d1429ee2db66c0332e"
+source = "git+https://github.com/MavenRain/merk.git?branch=oobi/nomic-sync#820a733691ee92dea49a973cbe5d519167e3f307"
 dependencies = [
+ "blake3",
  "byteorder",
  "colored 2.0.0",
  "ed 0.3.0",
@@ -2631,7 +2632,6 @@ dependencies = [
  "num_cpus",
  "rand 0.8.5",
  "rocksdb",
- "sha2 0.10.6",
  "thiserror",
 ]
 

@@ -20,7 +20,7 @@ doc = false
 async-trait = "0.1.51"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"
-merk = { git = "https://github.com/MavenRainBackup/merk.git", branch = "oobi/merge-with-nomic" }
+merk = { git = "https://github.com/MavenRain/merk.git", branch = "oobi/nomic-sync" }
 hex = { version = "0.4.3", features = ["serde"] }
 itertools = "0.10.3"
 json5 = "0.4.1"
