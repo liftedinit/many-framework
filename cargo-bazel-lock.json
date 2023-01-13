@@ -1,5 +1,5 @@
 {
-  "checksum": "e78ba57528b097ba607e9cf9722f95da31c793c978ceb2c8e3dd5ae8773ac653",
+  "checksum": "b1cb184628d4ca4330df1f6c6b70dedc0cbcf92a7e35e78fe8a67e586d0d51ea",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -11857,7 +11857,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-client"
         }
@@ -12050,7 +12050,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -12103,7 +12103,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-error"
         }
@@ -12169,7 +12169,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-identity"
         }
@@ -12270,7 +12270,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -12404,7 +12404,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -12497,7 +12497,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -13080,7 +13080,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-macros"
         }
@@ -13145,7 +13145,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-migration"
         }
@@ -13210,7 +13210,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-modules"
         }
@@ -13308,7 +13308,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -13422,7 +13422,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-server"
         }
@@ -13639,7 +13639,7 @@
         "Git": {
           "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Rev": "591e5b40de75828ea1984780321060cf3da21635"
+            "Rev": "aff83e38877fff6e9e6d10a74d2f29ac768dc156"
           },
           "strip_prefix": "src/many-types"
         }
@@ -24438,8 +24438,8 @@
         },
         {
           "Binary": {
-            "crate_name": "exit",
-            "crate_root": "src/bin/exit.rs",
+            "crate_name": "reader",
+            "crate_root": "src/bin/reader.rs",
             "srcs": {
               "include": [
                 "**/*.rs"
@@ -24462,8 +24462,8 @@
         },
         {
           "Binary": {
-            "crate_name": "reader",
-            "crate_root": "src/bin/reader.rs",
+            "crate_name": "exit",
+            "crate_root": "src/bin/exit.rs",
             "srcs": {
               "include": [
                 "**/*.rs"
