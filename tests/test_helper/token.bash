@@ -2,6 +2,7 @@
 # The global variable `SYMBOL` will be set to the new token symbol
 function create_token() {
     local ext_info_type
+    local ext_args
     local pem_arg
     local port
     local error
@@ -18,7 +19,7 @@ function create_token() {
      done
 
     if [ "${ext_info_type}" = "image" ]; then
-        ext_args='logo image "png" "\"hello\""'
+        ext_args="logo image \"$BATS_TEST_ROOTDIR/image.png\""
     elif [ "${ext_info_type}" = "unicode" ]; then
         ext_args='logo unicode "'∑'"'
     elif [ "$ext_info_type" = "memo" ]; then
@@ -42,7 +43,7 @@ function create_token() {
 
         call_ledger --port=8000 token info "${SYMBOL}"
         if [ "${ext_info_type}" = "image" ]; then
-            assert_output --partial "png"
+            assert_output --partial "image/png"
             assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
         elif [ "${ext_info_type}" = "unicode" ]; then
             assert_output --partial "'∑'"

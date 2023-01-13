@@ -13,6 +13,7 @@ use many_modules::ledger::{
 use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfoSummary, TokenMaybeOwner};
 use many_types::{AttributeRelatedIndex, Memo};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Parser)]
@@ -132,8 +133,7 @@ struct UnicodeLogoOpt {
 
 #[derive(Parser)]
 struct ImageLogoOpt {
-    content_type: String,
-    data: String,
+    image: PathBuf,
 }
 
 #[derive(Parser)]
@@ -178,7 +178,11 @@ fn create_ext_info(opts: CreateExtInfoOpt) -> TokenExtendedInfo {
                     logo.unicode_front(opts.glyph);
                 }
                 CreateLogoOpt::Image(opts) => {
-                    logo.image_front(opts.content_type, opts.data.into_bytes())
+                    let content_type = mime_guess::from_path(&opts.image)
+                        .first_raw()
+                        .expect("Unable to guess the MIME type of image");
+                    let binary = std::fs::read(opts.image).expect("Unable to read image");
+                    logo.image_front(content_type, binary);
                 }
             }
             TokenExtendedInfo::new().with_visual_logo(logo).unwrap()

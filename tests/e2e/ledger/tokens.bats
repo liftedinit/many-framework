@@ -45,6 +45,10 @@ function setup() {
       }
     ] }' > "$BATS_TEST_ROOTDIR/migrations.json"
 
+
+    # Dummy image
+     echo -n -e '\x68\x65\x6c\x6c\x6f' > "$BATS_TEST_ROOTDIR/image.png"
+
     # Activating the Token Migration from block 0 will modify the ledger staging hash
     # The symbol metadata will be stored in the DB
     cp "$GIT_ROOT/staging/ledger_state.json5" "$BATS_TEST_ROOTDIR/ledger_state.json5"
@@ -140,9 +144,9 @@ function teardown() {
 
 @test "$SUITE: can add extended info (logo - image)" {
     create_token --pem=1 --port=8000
-    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo image "\"$BATS_TEST_ROOTDIR/image.png\""
     call_ledger --port=8000 token info "${SYMBOL}"
-    assert_output --partial "png"
+    assert_output --partial "image/png"
     assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 
@@ -158,7 +162,7 @@ function teardown() {
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 
     # Logo - image
-    call_ledger --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --port=8000 token add-ext-info "${SYMBOL}" logo image "\"$BATS_TEST_ROOTDIR/image.png\""
     assert_output --partial "Invalid Identity; the sender cannot be anonymous."
 }
 
@@ -174,7 +178,7 @@ function teardown() {
     assert_output --partial "Unauthorized to do this operation."
 
     # Logo - image
-    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo image "\"$BATS_TEST_ROOTDIR/image.png\""
     assert_output --partial "Unauthorized to do this operation."
 }
 
@@ -196,7 +200,7 @@ function teardown() {
     create_token --pem=1 --port=8000 --ext_info_type="image"
     # Remove logo
     call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 1
-    refute_output --partial "png"
+    refute_output --partial "image/png"
     refute_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 
@@ -253,9 +257,9 @@ function teardown() {
 
 @test "$SUITE: can add extended info (logo - image), token owner is account, caller is account owner" {
     token_account --perm="canTokensAddExtendedInfo" --ext_info_type="image"
-    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --pem=1 --port=8000 token add-ext-info "${SYMBOL}" logo image "\"$BATS_TEST_ROOTDIR/image.png\""
     call_ledger --port=8000 token info "${SYMBOL}"
-    assert_output --partial "png"
+    assert_output --partial "image/png"
     assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 
@@ -275,9 +279,9 @@ function teardown() {
 
 @test "$SUITE: can add extended info (logo - image), token owner is account, caller has add extended info permission" {
     token_account --perm="canTokensAddExtendedInfo" --ext_info_type="image"
-    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --pem=2 --port=8000 token add-ext-info "${SYMBOL}" logo image "\"$BATS_TEST_ROOTDIR/image.png\""
     call_ledger --port=8000 token info "${SYMBOL}"
-    assert_output --partial "png"
+    assert_output --partial "image/png"
     assert_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 
@@ -295,7 +299,7 @@ function teardown() {
 
 @test "$SUITE: can't add extended info (logo - image), token owner is account, caller doesn't have add extended info permission" {
     token_account --perm="canTokensAddExtendedInfo" --ext_info_type="image"
-    call_ledger --pem=3 --port=8000 token add-ext-info "${SYMBOL}" logo image "png" "\"hello\""
+    call_ledger --pem=3 --port=8000 token add-ext-info "${SYMBOL}" logo image "\"$BATS_TEST_ROOTDIR/image.png\""
     assert_output --partial "Sender needs role 'canTokensAddExtendedInfo' to perform this operation."
 }
 
@@ -317,7 +321,7 @@ function teardown() {
     token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="image"
     call_ledger --pem=1 --port=8000 token remove-ext-info "${SYMBOL}" 1
     call_ledger --port=8000 token info "${SYMBOL}"
-    refute_output --partial "png"
+    refute_output --partial "image/png"
     refute_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 
@@ -339,7 +343,7 @@ function teardown() {
     token_account --perm="canTokensRemoveExtendedInfo" --ext_info_type="image"
     call_ledger --pem=2 --port=8000 token remove-ext-info "${SYMBOL}" 1
     call_ledger --port=8000 token info "${SYMBOL}"
-    refute_output --partial "png"
+    refute_output --partial "image/png"
     refute_output --regexp "binary: \[.*104,.*101,.*108,.*108,.*111,.*\]"
 }
 

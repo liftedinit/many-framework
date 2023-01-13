@@ -1,5 +1,5 @@
 {
-  "checksum": "bc00613b237d511add4d9656c73e635f2dcd0e4fd8d82f19d4500263241a11fd",
+  "checksum": "89e574fd4fa49a87375306d29c29a159baa1b28c8567952dee95d516bd1ce52c",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -12290,6 +12290,10 @@
               "target": "many_types"
             },
             {
+              "id": "mime_guess 2.0.4",
+              "target": "mime_guess"
+            },
+            {
               "id": "minicbor 0.18.0",
               "target": "minicbor"
             },
@@ -15550,6 +15554,86 @@
         "version": "0.3.16"
       },
       "license": "MIT/Apache-2.0"
+    },
+    "mime_guess 2.0.4": {
+      "name": "mime_guess",
+      "version": "2.0.4",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/mime_guess/2.0.4/download",
+          "sha256": "4192263c238a5f0d0c6bfd21f336a313a4ce1c450542449ca191bb657b4642ef"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "mime_guess",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": {
+              "include": [
+                "**/*.rs"
+              ],
+              "exclude": []
+            }
+          }
+        }
+      ],
+      "library_target_name": "mime_guess",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": [
+          "default",
+          "rev-mappings"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "mime 0.3.16",
+              "target": "mime"
+            },
+            {
+              "id": "mime_guess 2.0.4",
+              "target": "build_script_build"
+            },
+            {
+              "id": "unicase 2.6.0",
+              "target": "unicase"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2015",
+        "version": "2.0.4"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "unicase 2.6.0",
+              "target": "unicase"
+            }
+          ],
+          "selects": {}
+        }
+      },
+      "license": "MIT"
     },
     "minicbor 0.18.0": {
       "name": "minicbor",
