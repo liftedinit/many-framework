@@ -167,10 +167,10 @@ pub fn given_token_account<T: LedgerWorld + AccountWorld>(w: &mut T) {
         &sender,
         CreateArgs {
             description: Some("Token Account".into()),
+            roles: None,
             features: FeatureSet::from_iter([
                 account::features::tokens::TokenAccountLedger.as_feature()
             ]),
-            ..Default::default()
         },
     )
     .expect("Unable to create account");

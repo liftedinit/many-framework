@@ -77,3 +77,28 @@ function teardown() {
   call_kvstore --pem=1 --port=8000 query "112233"
   assert_output --partial "sad"
 }
+
+@test "$SUITE: can transfer" {
+  call_kvstore --pem=1 --port=8000 put "112233" "foobar"
+  call_kvstore --pem=1 --port=8000 query "112233"
+  assert_output --partial "$(identity 1)"
+
+  call_kvstore --pem=1 --port=8000 transfer "112233" "$(identity 2)"
+  assert_output --partial "null"
+  call_kvstore --pem=1 --port=8000 query "112233"
+  assert_output --partial "$(identity 2)"
+
+  call_kvstore --pem=1 --port=8000 get "112233"
+  assert_output --partial "foobar"
+
+  # PEM 1 should fail.
+  call_kvstore --pem=1 --port=8000 put "112233" "hello"
+  assert_output --partial "You do not have the authorization to modify this key."
+  call_kvstore --pem=1 --port=8000 get "112233"
+  assert_output --partial "foobar"
+
+  # PEM 2 should work.
+  call_kvstore --pem=2 --port=8000 put "112233" "bateau"
+  call_kvstore --pem=1 --port=8000 get "112233"
+  assert_output --partial "bateau"
+}
