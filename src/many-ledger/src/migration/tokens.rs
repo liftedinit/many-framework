@@ -157,7 +157,7 @@ fn migrate_token(
         .map_err(error::storage_apply_failed)?;
     storage
         .apply(&[(
-            key_for_symbol(&symbol),
+            key_for_symbol(&symbol).into(),
             Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
         )])
         .map_err(error::storage_apply_failed)?;

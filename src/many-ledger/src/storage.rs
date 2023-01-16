@@ -20,6 +20,7 @@ mod idstore;
 pub mod iterator;
 mod ledger;
 mod ledger_commands;
+pub mod ledger_mintburn;
 pub mod ledger_tokens;
 mod migrations;
 pub mod multisig;
@@ -105,6 +106,18 @@ impl LedgerStorage {
 
     pub fn migrations(&self) -> &LedgerMigrations {
         &self.migrations
+    }
+
+    // TODO: perms
+    pub fn token_identity(&self) -> &Address {
+        &self.token_identity
+    }
+
+    pub fn verify_tokens_sender(&self, sender: &Address) -> Result<(), ManyError> {
+        if sender != &self.token_identity {
+            return Err(error::invalid_sender());
+        }
+        Ok(())
     }
 
     fn subresource_db_key(migration_is_active: bool) -> Vec<u8> {

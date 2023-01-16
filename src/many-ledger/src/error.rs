@@ -28,6 +28,15 @@ define_attribute_many_error!(
     }
 );
 
+define_attribute_many_error!(
+    attribute 12 => {
+        1: pub fn symbol_not_found(symbol) => "Unable to mint/burn a unknown symbol: {symbol}.",
+        2: pub fn over_maximum_supply(symbol, amount, max) => "Unable to mint over the maximum symbol supply : {amount} > {max} {symbol}.",
+        3: pub fn missing_funds(symbol, amount, balance) => "Unable to burn, missing funds: {amount} > {balance} {symbol}.",
+        4: pub fn unable_to_distribute_zero(symbol) => "The mint/burn distribution contains zero for {symbol}."
+    }
+);
+
 define_application_many_error!(
     {
         1: pub fn storage_apply_failed(desc) => "Unable to apply change to persistent storage: {desc}.",

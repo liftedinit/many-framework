@@ -21,8 +21,8 @@ pub const SYMBOLS_ROOT_DASH: &str = const_format::concatcp!(SYMBOLS_ROOT, "/");
 pub const TOKEN_IDENTITY_ROOT: &str = "/config/token_identity";
 pub const TOKEN_SUBRESOURCE_COUNTER_ROOT: &str = "/config/token_subresource_id";
 
-pub fn key_for_symbol(symbol: &Symbol) -> Vec<u8> {
-    format!("/config/symbols/{symbol}").into_bytes()
+pub fn key_for_symbol(symbol: &Symbol) -> String {
+    format!("/config/symbols/{symbol}")
 }
 
 pub fn key_for_ext_info(symbol: &Symbol) -> Vec<u8> {
@@ -124,7 +124,7 @@ impl LedgerStorage {
                     ),
                 ));
                 batch.push((
-                    key_for_symbol(&k),
+                    key_for_symbol(&k).into(),
                     Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
                 ));
             }
@@ -155,7 +155,7 @@ impl LedgerStorage {
     pub(crate) fn get_owner(&self, symbol: &Symbol) -> Result<Option<Address>, ManyError> {
         let token_info_enc = self
             .persistent_store
-            .get(&key_for_symbol(symbol))
+            .get(key_for_symbol(symbol).as_bytes())
             .map_err(error::storage_get_failed)?
             .ok_or_else(|| error::token_info_not_found(symbol))?;
 
@@ -218,11 +218,6 @@ impl LedgerStorage {
             tracing::warn!("`get_token_info()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
         }
         Ok(info)
-    }
-
-    #[cfg(not(feature = "disable_token_sender_check"))]
-    pub fn token_identity(&self) -> &Address {
-        &self.token_identity
     }
 
     /// Create new token symbol derived from the token identity
@@ -304,7 +299,7 @@ impl LedgerStorage {
             owner: maybe_owner,
         };
         batch.push((
-            key_for_symbol(&symbol),
+            key_for_symbol(&symbol).into(),
             Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
         ));
 
@@ -344,7 +339,7 @@ impl LedgerStorage {
         // Try fetching the token info from the persistent storage
         let token_info_enc = self
             .persistent_store
-            .get(&key_for_symbol(&symbol))
+            .get(key_for_symbol(&symbol).as_bytes())
             .map_err(ManyError::unknown)?
             .ok_or_else(|| error::token_info_not_found(symbol))?;
 
@@ -390,7 +385,7 @@ impl LedgerStorage {
         // Try fetching the token info from the persistent storage
         if let Some(enc) = self
             .persistent_store
-            .get(&key_for_symbol(&symbol))
+            .get(key_for_symbol(&symbol).as_bytes())
             .map_err(ManyError::unknown)?
         {
             let mut info: TokenInfo = minicbor::decode(&enc).unwrap();
@@ -415,7 +410,7 @@ impl LedgerStorage {
 
             self.persistent_store
                 .apply(&[(
-                    key_for_symbol(&symbol),
+                    key_for_symbol(&symbol).into(),
                     Op::Put(minicbor::to_vec(&info).map_err(ManyError::serialization_error)?),
                 )])
                 .map_err(error::storage_apply_failed)?;

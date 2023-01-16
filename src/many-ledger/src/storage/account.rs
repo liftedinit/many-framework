@@ -1,5 +1,5 @@
 use crate::error;
-use crate::module::account::validate_account;
+use crate::module::account::{validate_account, verify_account_role};
 use crate::storage::multisig::{
     MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY, MULTISIG_DEFAULT_TIMEOUT_IN_SECS,
     MULTISIG_MAXIMUM_TIMEOUT_IN_SECS,
@@ -7,7 +7,7 @@ use crate::storage::multisig::{
 use crate::storage::LedgerStorage;
 use many_error::ManyError;
 use many_identity::Address;
-use many_modules::account::features::{FeatureInfo, FeatureSet};
+use many_modules::account::features::{FeatureId, FeatureInfo, FeatureSet};
 use many_modules::account::Role;
 use many_modules::{account, events};
 use many_types::Either;
@@ -26,6 +26,23 @@ pub struct AccountMeta {
 
 pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
     format!("/accounts/{id}").into_bytes()
+}
+
+pub fn verify_acl(
+    storage: &LedgerStorage,
+    sender: &Address,
+    addr: &Address,
+    roles: impl IntoIterator<Item = Role>,
+    feature_id: FeatureId,
+) -> Result<(), ManyError> {
+    if addr != sender {
+        if let Some(account) = storage.get_account(addr)? {
+            verify_account_role(&account, sender, feature_id, roles)?;
+        } else {
+            return Err(error::unauthorized());
+        }
+    }
+    Ok(())
 }
 
 impl LedgerStorage {

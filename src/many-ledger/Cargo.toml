@@ -90,6 +90,16 @@ name = "remove_token_ext_info"
 path = "tests/ledger_tokens/remove_token_ext_info.rs"
 harness = false
 
+[[test]]
+name = "mint"
+path = "tests/ledger_mintburn/mint.rs"
+harness = false
+
+[[test]]
+name = "burn"
+path = "tests/ledger_mintburn/burn.rs"
+harness = false
+
 [build-dependencies]
 vergen = "7"
 

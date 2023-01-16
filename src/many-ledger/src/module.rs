@@ -2,6 +2,7 @@ use crate::error;
 use crate::json::InitialStateJson;
 use crate::storage::LedgerStorage;
 use many_error::ManyError;
+use many_identity::Address;
 use many_migration::MigrationConfig;
 use std::fmt::Debug;
 use std::path::Path;
@@ -16,6 +17,7 @@ mod idstore;
 pub mod idstore_webauthn;
 mod ledger;
 mod ledger_commands;
+mod ledger_mintburn;
 mod ledger_tokens;
 mod multisig;
 
@@ -84,6 +86,11 @@ impl LedgerModuleImpl {
         tracing::debug!("Final migrations: {:?}", storage.migrations());
 
         Ok(Self { storage })
+    }
+
+    // TODO: Feature guard
+    pub fn token_identity(&self) -> &Address {
+        self.storage.token_identity()
     }
 
     #[cfg(feature = "balance_testing")]
