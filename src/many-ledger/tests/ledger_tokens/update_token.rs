@@ -1,6 +1,7 @@
 use test_macros::*;
 use test_utils::cucumber::{
-    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+    verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError, SomeId,
+    SomePermission, TokenWorld,
 };
 use test_utils::Setup;
 
@@ -163,10 +164,12 @@ fn then_rm_owner(w: &mut UpdateWorld) {
 fn then_update_token_fail_acl(w: &mut UpdateWorld, id: SomeId, error: SomeError) {
     let id = id.as_address(w);
     fail_update_token(w, &id);
-    assert_eq!(
-        w.error.as_ref().expect("Expecting an error"),
-        &error.as_many()
-    );
+    verify_error_code(w, error.as_many_code())
+}
+
+#[then(expr = "the error role is {word}")]
+fn then_error_role(w: &mut UpdateWorld, role: String) {
+    verify_error_role(w, role.as_str());
 }
 
 #[tokio::main]

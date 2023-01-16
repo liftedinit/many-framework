@@ -1,6 +1,7 @@
 use test_macros::*;
 use test_utils::cucumber::{
-    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+    verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError, SomeId,
+    SomePermission, TokenWorld,
 };
 use test_utils::Setup;
 
@@ -115,10 +116,12 @@ fn when_create_token(w: &mut CreateWorld, id: SomeId) {
 fn then_create_token_fail_acl(w: &mut CreateWorld, id: SomeId, error: SomeError) {
     let id = id.as_address(w);
     fail_create_token(w, &id);
-    assert_eq!(
-        w.error.as_ref().expect("Expecting an error"),
-        &error.as_many()
-    );
+    verify_error_code(w, error.as_many_code())
+}
+
+#[then(expr = "the error role is {word}")]
+fn then_error_role(w: &mut CreateWorld, role: String) {
+    verify_error_role(w, role.as_str());
 }
 
 #[then(expr = "the token symbol is a subresource")]

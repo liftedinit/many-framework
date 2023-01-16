@@ -19,8 +19,16 @@ fn impl_many_world_macro(ast: &syn::DeriveInput) -> TokenStream {
                 self.setup.id
             }
 
-            fn module_impl(&mut self) -> &mut LedgerModuleImpl {
+            fn module_impl(&self) -> &LedgerModuleImpl {
+                &self.setup.module_impl
+            }
+
+            fn module_impl_mut(&mut self) -> &mut LedgerModuleImpl {
                 &mut self.setup.module_impl
+            }
+
+            fn error(&self) -> &Option<ManyError> {
+                &self.error
             }
         }
     };

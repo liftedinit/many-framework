@@ -57,7 +57,8 @@ Scenario: Remove ext. info to a token, sender is myself, token owner is account 
 	And id 5 as the account owner
 	And a default token owned by the account
 	And the token has a memo
-	Then removing extended info memo as myself fails with missing permission token remove extended info
+	Then removing extended info memo as myself fails with missing permission
+	And the error role is canTokensRemoveExtendedInfo
 
 @tokens
 Scenario: Remove ext. info to a token, sender is myself, token owner is account I'm the owner of
@@ -83,4 +84,5 @@ Scenario: Remove ext. info to a token, sender is some id, token owner is account
 	And id 6 has token mint permission
 	And a default token owned by the account
 	And the token has a logo
-	Then removing extended info logo as id 6 fails with missing permission token remove extended info
+	Then removing extended info logo as id 6 fails with missing permission
+	And the error role is canTokensRemoveExtendedInfo
