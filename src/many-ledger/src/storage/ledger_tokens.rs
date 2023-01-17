@@ -200,24 +200,26 @@ impl LedgerStorage {
         Ok(())
     }
 
-    pub fn get_token_info(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
-        let mut info = BTreeMap::new();
+    pub fn get_token_info_summary(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
+        let mut info_summary = BTreeMap::new();
         if self.migrations.is_active(&TOKEN_MIGRATION) {
             let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
             for item in it {
                 let (k, v) = item.map_err(ManyError::unknown)?;
-                info.insert(
+                let info: TokenInfo =
+                    minicbor::decode(&v).map_err(ManyError::deserialization_error)?;
+                info_summary.insert(
                     Symbol::from_str(
                         std::str::from_utf8(&k.as_ref()[SYMBOLS_ROOT_DASH.len()..])
                             .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
                     )?,
-                    minicbor::decode(&v).map_err(ManyError::deserialization_error)?,
+                    info.summary,
                 );
             }
         } else {
-            tracing::warn!("`get_token_info()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
+            tracing::warn!("`get_token_info_summary()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
         }
-        Ok(info)
+        Ok(info_summary)
     }
 
     /// Create new token symbol derived from the token identity

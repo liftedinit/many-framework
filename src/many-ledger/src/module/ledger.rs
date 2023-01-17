@@ -27,7 +27,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
             symbols: symbols.keys().copied().collect(),
             hash: hash.into(),
             local_names: symbols,
-            tokens: storage.get_token_info()?,
+            tokens: storage.get_token_info_summary()?,
         })
     }
 
