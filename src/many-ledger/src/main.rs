@@ -304,6 +304,7 @@ fn main() {
         }
         s.add_module(events::EventsModule::new(module_impl.clone()));
         s.add_module(ledger::LedgerTokensModule::new(module_impl.clone()));
+        s.add_module(ledger::LedgerMintBurnModule::new(module_impl.clone()));
 
         let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
         #[cfg(feature = "webauthn_testing")]

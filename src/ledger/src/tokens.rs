@@ -5,13 +5,15 @@ use many_identity::{Address, Identity};
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_modules::ledger::{
-    TokenAddExtendedInfoArgs, TokenAddExtendedInfoReturns, TokenCreateArgs, TokenCreateReturns,
-    TokenInfoArgs, TokenInfoReturns, TokenRemoveExtendedInfoArgs, TokenRemoveExtendedInfoReturns,
-    TokenUpdateArgs, TokenUpdateReturns,
+    TokenAddExtendedInfoArgs, TokenAddExtendedInfoReturns, TokenBurnArgs, TokenBurnReturns,
+    TokenCreateArgs, TokenCreateReturns, TokenInfoArgs, TokenInfoReturns, TokenMintArgs,
+    TokenMintReturns, TokenRemoveExtendedInfoArgs, TokenRemoveExtendedInfoReturns, TokenUpdateArgs,
+    TokenUpdateReturns,
 };
 use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfoSummary, TokenMaybeOwner};
 use many_types::{AttributeRelatedIndex, Memo};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -37,6 +39,37 @@ enum SubcommandOpt {
 
     /// Get token info
     Info(InfoOpt),
+
+    /// Mint new tokens
+    Mint(MintOpt),
+
+    /// Burn tokens
+    Burn(BurnOpt),
+}
+
+#[derive(Args)]
+struct MintOpt {
+    symbol: String,
+
+    #[clap(parse(try_from_str = serde_json::from_str))]
+    distribution: LedgerTokensAddressMap,
+
+    #[clap(long, parse(try_from_str = Memo::try_from))]
+    memo: Option<Memo>,
+}
+
+#[derive(Args)]
+struct BurnOpt {
+    symbol: String,
+
+    #[clap(parse(try_from_str = serde_json::from_str))]
+    distribution: LedgerTokensAddressMap,
+
+    #[clap(long, parse(try_from_str = Memo::try_from))]
+    memo: Option<Memo>,
+
+    #[clap(long, action)]
+    error_on_under_burn: bool,
 }
 
 #[derive(Args)]
@@ -270,6 +303,65 @@ fn info_token(client: ManyClient<impl Identity>, opts: InfoOpt) -> Result<(), Ma
     Ok(())
 }
 
+fn mint_token(client: ManyClient<impl Identity>, opts: MintOpt) -> Result<(), ManyError> {
+    let symbol = Address::try_from(opts.symbol.as_str()).or_else(|_| {
+        // Get symbol address from name
+        let info: many_modules::ledger::InfoReturns =
+            minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
+        let local_names: BTreeMap<String, Address> = info
+            .local_names
+            .iter()
+            .map(|(x, y)| (y.clone(), *x))
+            .collect();
+        local_names
+            .get(&opts.symbol)
+            .cloned()
+            .ok_or_else(|| ManyError::unknown("Symbol address not found."))
+    })?;
+    let args = TokenMintArgs {
+        symbol,
+        distribution: opts.distribution,
+        memo: opts.memo,
+    };
+    let response = client.call("tokens.mint", args)?;
+    let payload = crate::wait_response(client, response)?;
+    let result: TokenMintReturns =
+        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+    println!("{result:#?}");
+    Ok(())
+}
+
+fn burn_token(client: ManyClient<impl Identity>, opts: BurnOpt) -> Result<(), ManyError> {
+    let symbol = Address::try_from(opts.symbol.as_str()).or_else(|_| {
+        // Get symbol address from name
+        let info: many_modules::ledger::InfoReturns =
+            minicbor::decode(&client.call_("ledger.info", ())?).unwrap();
+        let local_names: BTreeMap<String, Address> = info
+            .local_names
+            .iter()
+            .map(|(x, y)| (y.clone(), *x))
+            .collect();
+        local_names
+            .get(&opts.symbol)
+            .cloned()
+            .ok_or_else(|| ManyError::unknown("Symbol address not found."))
+    })?;
+    let args = TokenBurnArgs {
+        symbol,
+        distribution: opts.distribution,
+        memo: opts.memo,
+        error_on_under_burn: Some(opts.error_on_under_burn),
+    };
+    let response = client.call("tokens.burn", args)?;
+    let payload = crate::wait_response(client, response)?;
+    let result: TokenBurnReturns =
+        minicbor::decode(&payload).map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+
+    println!("{result:#?}");
+    Ok(())
+}
+
 pub fn tokens(client: ManyClient<impl Identity>, opts: CommandOpt) -> Result<(), ManyError> {
     match opts.subcommand {
         SubcommandOpt::Create(opts) => create_token(client, opts),
@@ -277,5 +369,7 @@ pub fn tokens(client: ManyClient<impl Identity>, opts: CommandOpt) -> Result<(),
         SubcommandOpt::AddExtInfo(opts) => add_ext_info(client, opts),
         SubcommandOpt::RemoveExtInfo(opts) => remove_ext_info(client, opts),
         SubcommandOpt::Info(opts) => info_token(client, opts),
+        SubcommandOpt::Mint(opts) => mint_token(client, opts),
+        SubcommandOpt::Burn(opts) => burn_token(client, opts),
     }
 }

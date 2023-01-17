@@ -10,9 +10,10 @@ use many_modules::account::features::{FeatureInfo, FeatureSet};
 use many_modules::account::{
     AccountModuleBackend, AddRolesArgs, CreateArgs, RemoveRolesArgs, Role,
 };
-use many_modules::ledger::LedgerTokensModuleBackend;
+use many_modules::ledger::extended_info::TokenExtendedInfo;
+use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs};
 use many_types::cbor::CborNull;
-use many_types::ledger::{TokenInfo, TokenMaybeOwner};
+use many_types::ledger::{TokenAmount, TokenInfo, TokenMaybeOwner};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::str::FromStr;
@@ -32,6 +33,7 @@ pub trait AccountWorld {
 pub trait TokenWorld {
     fn info(&self) -> &TokenInfo;
     fn info_mut(&mut self) -> &mut TokenInfo;
+    fn ext_info_mut(&mut self) -> &mut TokenExtendedInfo;
 }
 
 #[derive(Debug, Default, Eq, Parameter, PartialEq)]
@@ -91,7 +93,7 @@ impl SomeId {
 #[derive(Debug, Default, Eq, Parameter, PartialEq)]
 #[param(
     name = "error",
-    regex = "(unauthorized)|(missing permission)|(immutable)|(invalid sender)|(unable to distribute zero)"
+    regex = "(unauthorized)|(missing permission)|(immutable)|(invalid sender)|(unable to distribute zero)|(partial burn disabled)|(missing funds)|(over maximum)"
 )]
 pub enum SomeError {
     #[default]
@@ -100,6 +102,9 @@ pub enum SomeError {
     Immutable,
     InvalidSender,
     UnableToDistributeZero,
+    PartialBurnDisabled,
+    MissingFunds,
+    OverMaximum,
 }
 
 impl FromStr for SomeError {
@@ -112,6 +117,9 @@ impl FromStr for SomeError {
             "immutable" => Self::Immutable,
             "invalid sender" => Self::InvalidSender,
             "unable to distribute zero" => Self::UnableToDistributeZero,
+            "partial burn disabled" => Self::PartialBurnDisabled,
+            "missing funds" => Self::MissingFunds,
+            "over maximum" => Self::OverMaximum,
             _ => unimplemented!(),
         })
     }
@@ -157,6 +165,9 @@ impl SomeError {
             } // TODO: Custom error
             SomeError::InvalidSender => error::invalid_sender().code(),
             SomeError::UnableToDistributeZero => error::unable_to_distribute_zero("").code(),
+            SomeError::PartialBurnDisabled => error::partial_burn_disabled().code(),
+            SomeError::MissingFunds => error::missing_funds(Address::anonymous(), "", "").code(),
+            SomeError::OverMaximum => error::over_maximum_supply("", "", "").code(),
         }
     }
 }
@@ -238,7 +249,11 @@ pub fn given_account_part_of_can_create<T: LedgerWorld + AccountWorld>(
     .expect("Unable to add role to account");
 }
 
-pub fn create_default_token<T: TokenWorld + LedgerWorld + AccountWorld>(w: &mut T, id: SomeId) {
+fn _create_default_token<T: TokenWorld + LedgerWorld + AccountWorld>(
+    w: &mut T,
+    id: SomeId,
+    max_supply: Option<TokenAmount>,
+) {
     let (id, owner) = if let Some(id) = id.as_maybe_address(w) {
         (id, TokenMaybeOwner::Left(id))
     } else {
@@ -247,10 +262,21 @@ pub fn create_default_token<T: TokenWorld + LedgerWorld + AccountWorld>(w: &mut 
     let result = LedgerTokensModuleBackend::create(
         w.module_impl_mut(),
         &id,
-        crate::default_token_create_args(Some(owner)),
+        crate::default_token_create_args(Some(owner), max_supply),
     )
     .expect("Unable to create default token");
     *w.info_mut() = result.info;
+}
+
+pub fn create_default_token_unlimited<T: TokenWorld + LedgerWorld + AccountWorld>(
+    w: &mut T,
+    id: SomeId,
+) {
+    _create_default_token(w, id, None);
+}
+
+pub fn create_default_token<T: TokenWorld + LedgerWorld + AccountWorld>(w: &mut T, id: SomeId) {
+    _create_default_token(w, id, Some(TokenAmount::from(100000000u64)));
 }
 
 pub fn verify_error_role<T: LedgerWorld, U: TryInto<Role>>(w: &mut T, role: U)
@@ -272,4 +298,18 @@ where
 
 pub fn verify_error_code<T: LedgerWorld>(w: &mut T, code: ManyErrorCode) {
     assert_eq!(w.error().as_ref().expect("Expecting an error").code(), code);
+}
+
+pub fn refresh_token_info<T: LedgerWorld + TokenWorld>(w: &mut T) {
+    let result = LedgerTokensModuleBackend::info(
+        w.module_impl(),
+        &w.setup_id(),
+        TokenInfoArgs {
+            symbol: w.info().symbol,
+            ..Default::default()
+        },
+    )
+    .expect("Unable to query token info");
+    *w.info_mut() = result.info;
+    *w.ext_info_mut() = result.extended_info;
 }

@@ -2,7 +2,6 @@ use crate::error;
 use crate::json::InitialStateJson;
 use crate::storage::LedgerStorage;
 use many_error::ManyError;
-use many_identity::Address;
 use many_migration::MigrationConfig;
 use std::fmt::Debug;
 use std::path::Path;
@@ -88,8 +87,7 @@ impl LedgerModuleImpl {
         Ok(Self { storage })
     }
 
-    // TODO: Feature guard
-    pub fn token_identity(&self) -> &Address {
+    pub fn token_identity(&self) -> &many_identity::Address {
         self.storage.token_identity()
     }
 

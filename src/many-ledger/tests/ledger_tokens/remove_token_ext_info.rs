@@ -2,8 +2,8 @@ use std::path::Path;
 use std::str::FromStr;
 use test_macros::*;
 use test_utils::cucumber::{
-    verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError, SomeId,
-    SomePermission, TokenWorld,
+    refresh_token_info, verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError,
+    SomeId, SomePermission, TokenWorld,
 };
 use test_utils::Setup;
 
@@ -13,7 +13,7 @@ use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::ledger::extended_info::{ExtendedInfoKey, TokenExtendedInfo};
-use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenRemoveExtendedInfoArgs};
+use many_modules::ledger::{LedgerTokensModuleBackend, TokenRemoveExtendedInfoArgs};
 use many_types::ledger::TokenInfo;
 use many_types::AttributeRelatedIndex;
 
@@ -94,20 +94,6 @@ fn given_account_part_of_can_create(
     permission: SomePermission,
 ) {
     test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
-}
-
-fn refresh_token_info(w: &mut RemoveExtInfoWorld) {
-    let result = LedgerTokensModuleBackend::info(
-        &w.setup.module_impl,
-        &w.setup.id,
-        TokenInfoArgs {
-            symbol: w.info.symbol,
-            ..Default::default()
-        },
-    )
-    .expect("Unable to query token info");
-    w.info = result.info;
-    w.ext_info = result.extended_info;
 }
 
 #[given(expr = "a default token owned by {id}")]

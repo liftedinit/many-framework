@@ -1,8 +1,8 @@
 use std::path::Path;
 use test_macros::*;
 use test_utils::cucumber::{
-    verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError, SomeId,
-    SomePermission, TokenWorld,
+    refresh_token_info, verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError,
+    SomeId, SomePermission, TokenWorld,
 };
 use test_utils::Setup;
 
@@ -13,7 +13,7 @@ use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
-use many_modules::ledger::{LedgerTokensModuleBackend, TokenAddExtendedInfoArgs, TokenInfoArgs};
+use many_modules::ledger::{LedgerTokensModuleBackend, TokenAddExtendedInfoArgs};
 use many_types::ledger::TokenInfo;
 use many_types::Memo;
 
@@ -35,20 +35,6 @@ impl AddExtInfoWorld {
             ..Default::default()
         }
     }
-}
-
-fn refresh_token_info(w: &mut AddExtInfoWorld) {
-    let result = LedgerTokensModuleBackend::info(
-        &w.setup.module_impl,
-        &w.setup.id,
-        TokenInfoArgs {
-            symbol: w.info.symbol,
-            ..Default::default()
-        },
-    )
-    .expect("Unable to query token info");
-    w.info = result.info;
-    w.ext_info = result.extended_info;
 }
 
 fn fail_add_ext_info_token(w: &mut AddExtInfoWorld, sender: &Address) {

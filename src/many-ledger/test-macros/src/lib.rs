@@ -56,6 +56,10 @@ fn impl_token_world_macro(ast: &syn::DeriveInput) -> TokenStream {
             fn info_mut(&mut self) -> &mut TokenInfo {
                 &mut self.info
             }
+
+            fn ext_info_mut(&mut self) -> &mut TokenExtendedInfo {
+                &mut self.ext_info
+            }
         }
     };
     gen.into()
