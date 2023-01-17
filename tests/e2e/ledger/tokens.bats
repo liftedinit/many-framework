@@ -3,6 +3,7 @@
 
 GIT_ROOT="$BATS_TEST_DIRNAME/../../../"
 MFX_ADDRESS=mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz
+START_BALANCE=100000000000
 
 load '../../test_helper/load'
 load '../../test_helper/ledger'
@@ -14,7 +15,7 @@ function setup() {
 
     (
       cd "$GIT_ROOT"
-      cargo build --features migration_testing
+      cargo build --features migration_testing --features balance_testing
     )
 
     echo '
@@ -64,6 +65,7 @@ function setup() {
 
     start_ledger --state="$BATS_TEST_ROOTDIR/ledger_state.json5" \
         --pem "$(pem 0)" \
+        --balance-only-for-testing="$(identity 8):$START_BALANCE:$MFX_ADDRESS" \
         --migrations-config "$BATS_TEST_ROOTDIR/migrations.json"
 }
 
@@ -72,7 +74,8 @@ function teardown() {
 }
 
 @test "$SUITE: ledger can return balance with token info summary" {
-    call_ledger --port=8000 balance
+    call_ledger --port=8000 balance "$(identity 8)"
+    assert_output --partial "${START_BALANCE} MFX (${MFX_ADDRESS})"
 }
 
 @test "$SUITE: can create new token" {
