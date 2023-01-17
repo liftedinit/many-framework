@@ -82,6 +82,10 @@ function teardown() {
     create_token --pem=1 --port=8000 --initial-distribution ''\''{"'$(identity 1)'": 1000, "'$(identity 2)'": 1000}'\'''
     assert_output --regexp "total:.*(.*2000,.*)"
     assert_output --regexp "circulating:.*(.*2000,.*)"
+    call_ledger --port=8000 balance "$(identity 1)"
+    assert_output --partial "1000 FBR"
+    call_ledger --port=8000 balance "$(identity 2)"
+    assert_output --partial "1000 FBR"
 }
 
 @test "$SUITE: can create new token with memo" {
