@@ -1744,10 +1744,10 @@ dependencies = [
  "clap 3.2.23",
  "hex",
  "many-client",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-identity",
  "many-identity-dsa",
  "many-kvstore",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
  "minicbor",
  "new_mime_guess",
  "syslog-tracing",
@@ -1997,12 +1997,12 @@ dependencies = [
  "hex",
  "indicatif",
  "many-client",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
+ "many-types",
  "minicbor",
  "syslog-tracing",
  "tokio",
@@ -2033,13 +2033,13 @@ dependencies = [
  "indicatif",
  "lazy_static",
  "many-client",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
  "many-identity-hsm",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
+ "many-types",
  "minicbor",
  "num-bigint",
  "regex",
@@ -2057,8 +2057,8 @@ version = "0.1.0"
 dependencies = [
  "clap 3.2.23",
  "hex",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
+ "many-modules",
+ "many-types",
  "merk 2.0.0",
  "minicbor",
 ]
@@ -2189,14 +2189,14 @@ dependencies = [
  "json5",
  "lazy_static",
  "many-client",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
  "many-identity-webauthn",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
  "many-server",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-types",
  "minicbor",
  "num-integer",
  "reqwest",
@@ -2217,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2233,12 +2233,12 @@ dependencies = [
  "hex",
  "lazy_static",
  "many-client-macros",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-identity",
  "many-identity-dsa",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
  "many-server",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-types",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -2260,7 +2260,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2270,18 +2270,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
-dependencies = [
- "minicbor",
- "num-derive",
- "num-traits",
- "regex",
-]
-
-[[package]]
-name = "many-error"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf#dea01257edc567cf27d0194bb344f1822952cecf"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2292,33 +2281,13 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "base32",
  "coset",
  "crc-any",
  "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "minicbor",
- "once_cell",
- "serde",
- "sha2 0.10.6",
- "sha3 0.10.6",
- "signature",
- "static_assertions",
- "tracing",
-]
-
-[[package]]
-name = "many-identity"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf#dea01257edc567cf27d0194bb344f1822952cecf"
-dependencies = [
- "base32",
- "coset",
- "crc-any",
- "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
+ "many-error",
  "minicbor",
  "once_cell",
  "serde",
@@ -2332,7 +2301,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2342,8 +2311,8 @@ dependencies = [
  "ed25519",
  "ed25519-dalek",
  "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "minicbor",
  "once_cell",
  "p256",
@@ -2360,16 +2329,16 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "asn1 0.10.0",
  "coset",
  "cryptoki",
  "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-protocol",
  "once_cell",
  "p256",
  "sha2 0.10.6",
@@ -2380,18 +2349,18 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
  "base64urlsafedata",
  "coset",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
+ "many-types",
  "minicbor",
  "once_cell",
  "rand 0.8.5",
@@ -2417,13 +2386,13 @@ dependencies = [
  "itertools",
  "json5",
  "lazy_static",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
  "many-server",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-types",
  "merk 2.0.0",
  "minicbor",
  "num-bigint",
@@ -2457,16 +2426,16 @@ dependencies = [
  "json5",
  "linkme",
  "many-client",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
  "many-identity-dsa",
  "many-identity-webauthn",
  "many-ledger",
  "many-migration",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-modules",
+ "many-protocol",
  "many-server",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-types",
  "merk 2.0.0",
  "minicbor",
  "num-bigint",
@@ -2493,20 +2462,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
-dependencies = [
- "inflections",
- "proc-macro2",
- "quote",
- "serde",
- "serde_tokenstream",
- "syn",
-]
-
-[[package]]
-name = "many-macros"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf#dea01257edc567cf27d0194bb344f1822952cecf"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2519,9 +2475,9 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
  "minicbor",
  "serde",
  "serde_json",
@@ -2532,37 +2488,17 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "async-trait",
  "coset",
  "derive_builder 0.11.2",
  "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-macros 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "minicbor",
- "num-bigint",
- "strum",
- "strum_macros",
-]
-
-[[package]]
-name = "many-modules"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf#dea01257edc567cf27d0194bb344f1822952cecf"
-dependencies = [
- "async-trait",
- "coset",
- "derive_builder 0.11.2",
- "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-macros 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
+ "many-error",
+ "many-identity",
+ "many-macros",
+ "many-protocol",
+ "many-types",
  "minicbor",
  "num-bigint",
  "strum",
@@ -2572,39 +2508,15 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "base64 0.13.1",
  "coset",
  "derive_builder 0.10.2",
  "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "minicbor",
- "num-bigint",
- "num-derive",
- "num-traits",
- "serde",
- "serde_json",
- "sha2 0.10.6",
- "signature",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "many-protocol"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf#dea01257edc567cf27d0194bb344f1822952cecf"
-dependencies = [
- "base64 0.13.1",
- "coset",
- "derive_builder 0.10.2",
- "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
+ "many-error",
+ "many-identity",
+ "many-types",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -2620,7 +2532,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2637,12 +2549,12 @@ dependencies = [
  "fixed",
  "hex",
  "lazy_static",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-macros 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-modules 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-protocol 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-types 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
+ "many-error",
+ "many-identity",
+ "many-macros",
+ "many-modules",
+ "many-protocol",
+ "many-types",
  "minicbor",
  "num-bigint",
  "num-derive",
@@ -2669,32 +2581,14 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635#591e5b40de75828ea1984780321060cf3da21635"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=aff83e38877fff6e9e6d10a74d2f29ac768dc156#aff83e38877fff6e9e6d10a74d2f29ac768dc156"
 dependencies = [
  "base64 0.20.0",
  "coset",
  "fixed",
  "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=591e5b40de75828ea1984780321060cf3da21635)",
- "minicbor",
- "num-bigint",
- "num-derive",
- "num-traits",
- "serde",
-]
-
-[[package]]
-name = "many-types"
-version = "0.1.0"
-source = "git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf#dea01257edc567cf27d0194bb344f1822952cecf"
-dependencies = [
- "base64 0.20.0",
- "coset",
- "fixed",
- "hex",
- "many-error 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
- "many-identity 0.1.0 (git+https://github.com/liftedinit/many-rs.git?rev=dea01257edc567cf27d0194bb344f1822952cecf)",
+ "many-error",
+ "many-identity",
  "minicbor",
  "num-bigint",
  "num-derive",
