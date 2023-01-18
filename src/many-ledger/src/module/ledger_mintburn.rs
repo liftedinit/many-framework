@@ -40,18 +40,18 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
         // Get current token supply
         let current_supply = self.storage.get_token_supply(&symbol)?;
 
+        // Check if any distribution amount is zero
+        if let Some(index) = distribution.iter().position(|(_, amount)| amount.is_zero()) {
+            return Err(error::unable_to_distribute_zero(
+                distribution.keys().nth(index).unwrap(), // Safe unwrap as we just computed the index
+            ));
+        }
+
         // Check we don't bust the current max and that distribution doesn't contain zero
-        let amount_to_mint =
-            distribution
-                .iter()
-                .try_fold(TokenAmount::zero(), |acc, (addr, x)| {
-                    if x > &TokenAmount::zero() {
-                        Ok(acc + x.clone())
-                    } else {
-                        Err(error::unable_to_distribute_zero(addr))
-                    }
-                })?; // TODO: Remove clone
         if let Some(maximum) = current_supply.maximum {
+            let amount_to_mint = distribution
+                .iter()
+                .fold(TokenAmount::zero(), |ref acc, (_, x)| acc + x);
             let new_amount = amount_to_mint + current_supply.circulating;
             if new_amount > maximum {
                 return Err(error::over_maximum_supply(symbol, new_amount, maximum));
@@ -105,22 +105,20 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
                 return Err(error::unable_to_distribute_zero(address));
             }
 
-            let balance = self
+            let balance_amount = match self
                 .storage
-                .get_multiple_balances(address, &BTreeSet::from_iter([symbol]))?;
-            if !(balance.contains_key(&symbol) && &balance[&symbol] >= amount) {
-                return Err(error::missing_funds(
-                    symbol,
-                    amount,
-                    balance.get(&symbol).unwrap_or(&TokenAmount::zero()),
-                ));
-            }
-            balances.insert(*address, balance[&symbol].clone());
+                .get_multiple_balances(address, &BTreeSet::from_iter([symbol]))?
+                .get(&symbol)
+            {
+                Some(x) if x < amount => Err(error::missing_funds(symbol, amount, x)),
+                Some(x) => Ok(x.clone()),
+                None => Err(error::missing_funds(symbol, amount, TokenAmount::zero())),
+            }?;
+            balances.insert(*address, balance_amount);
         }
 
         // Burn from storage
-        self.storage
-            .burn_token(symbol, distribution.clone(), balances)?;
+        self.storage.burn_token(symbol, &distribution, balances)?;
 
         // Log event
         self.storage.log_event(EventInfo::TokenBurn {

@@ -18,7 +18,6 @@ impl LedgerStorage {
             .supply)
     }
 
-    // TODO: Pass an iterator instead?
     pub fn mint_token(
         &mut self,
         symbol: Symbol,
@@ -27,16 +26,11 @@ impl LedgerStorage {
         let mut batch: Vec<BatchEntry> = Vec::new();
         let mut circulating = TokenAmount::zero();
         for (address, amount) in distribution.iter() {
-            circulating += amount.clone(); // TODO: Remove clone
-
-            // Get current amount, if any
-            let balance = self.get_multiple_balances(address, &BTreeSet::from([symbol]))?;
-            // TODO: Remove clone
-            let new_balance = if balance.contains_key(&symbol) {
-                balance[&symbol].clone() + amount.clone()
-            } else {
-                amount.clone()
-            };
+            circulating += amount;
+            let new_balance = self
+                .get_multiple_balances(address, &BTreeSet::from([symbol]))?
+                .get(&symbol)
+                .map_or(amount.clone(), |b| b + amount);
             let key = key_for_account_balance(address, &symbol);
             batch.push((key, Op::Put(new_balance.to_vec())));
         }
@@ -69,27 +63,19 @@ impl LedgerStorage {
         Ok(())
     }
 
-    // TODO: Pass iterators instead?
     pub fn burn_token(
         &mut self,
         symbol: Symbol,
-        distribution: LedgerTokensAddressMap,
+        distribution: &LedgerTokensAddressMap,
         balances: LedgerTokensAddressMap,
     ) -> Result<(), ManyError> {
         let mut batch: Vec<BatchEntry> = Vec::new();
         let mut circulating = TokenAmount::zero();
-        for ((d_addr, d_amount), (b_addr, b_amount)) in
-            distribution.into_iter().zip(balances.into_iter())
+        for ((d_addr, d_amount), (_, ref b_amount)) in distribution.iter().zip(balances.into_iter())
         {
-            if d_addr != b_addr {
-                return Err(ManyError::unknown(
-                    "Distribution address != balance address.",
-                )); // TODO: Refactor
-            }
-            circulating += d_amount.clone(); // TODO: Remove clone
-
+            circulating += d_amount;
             let new_balance = b_amount - d_amount;
-            let key = key_for_account_balance(&d_addr, &symbol);
+            let key = key_for_account_balance(d_addr, &symbol);
             batch.push((key, Op::Put(new_balance.to_vec())));
         }
 
@@ -100,7 +86,7 @@ impl LedgerStorage {
                 extended_info: None,
             })?
             .info;
-        info.supply.circulating -= circulating.clone();
+        info.supply.circulating -= &circulating;
         info.supply.total -= circulating;
 
         batch.push((

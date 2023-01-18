@@ -39,21 +39,21 @@ incremental = false
 #many-types = { path = "../many-rs/src/many-types" }
 
 [patch."https://github.com/liftedinit/many-rs.git"]
-many = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-client = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-client-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-error = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity-dsa = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity-hsm = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity-webauthn = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-migration = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-mock = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-modules = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-protocol = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-server = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-types = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
+many = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-client = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-client-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-error = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-identity = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-identity-dsa = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-identity-hsm = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-identity-webauthn = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-migration = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-mock = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-modules = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-protocol = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-server = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
+many-types = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-mint-burn" }
 
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
