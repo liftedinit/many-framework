@@ -175,17 +175,6 @@ impl LedgerStorage {
         Ok(())
     }
 
-    pub fn token_identity(&self) -> Result<Address, ManyError> {
-        Ok(self.get_token_identity()?)
-    }
-
-    pub fn verify_tokens_sender(&self, sender: &Address) -> Result<(), ManyError> {
-        if sender != &self.get_token_identity()? {
-            return Err(error::invalid_sender());
-        }
-        Ok(())
-    }
-
     pub fn get_token_next_subresource_counter(&self) -> Result<u32, ManyError> {
         let x = self
             .persistent_store
@@ -198,13 +187,13 @@ impl LedgerStorage {
     }
 
     pub fn get_token_identity(&self) -> Result<Address, ManyError> {
-        Ok(Address::from_bytes(
+        Address::from_bytes(
             &self
                 .persistent_store
                 .get(TOKEN_IDENTITY_ROOT.as_bytes())
                 .map_err(error::storage_get_failed)?
                 .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY_ROOT))?,
-        )?)
+        )
     }
 
     pub fn get_token_info_summary(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
@@ -227,11 +216,6 @@ impl LedgerStorage {
             tracing::warn!("`get_token_info_summary()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
         }
         Ok(info_summary)
-    }
-
-    #[cfg(not(feature = "disable_token_sender_check"))]
-    pub fn token_identity(&self) -> &Address {
-        &self.token_identity
     }
 
     /// Create new token symbol derived from the token identity

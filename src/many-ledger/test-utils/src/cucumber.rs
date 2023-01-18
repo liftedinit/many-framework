@@ -69,7 +69,6 @@ impl SomeId {
             SomeId::Anonymous => Address::anonymous(),
             SomeId::Random => generate_random_ecdsa_identity().address(),
             SomeId::Account => w.account(),
-            SomeId::TokenIdentity => w.module_impl().token_identity().unwrap(),
             _ => unimplemented!(),
         }
     }
