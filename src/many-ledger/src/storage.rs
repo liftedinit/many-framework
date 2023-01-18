@@ -53,9 +53,6 @@ pub struct LedgerStorage {
     next_subresource: u32,  // Subresource based on the server identity
     root_identity: Address, // Server identity
 
-    token_identity: Address,     // Token identity
-    token_next_subresource: u32, // Token symbols subresource counter
-
     migrations: LedgerMigrations,
 }
 
@@ -106,18 +103,6 @@ impl LedgerStorage {
 
     pub fn migrations(&self) -> &LedgerMigrations {
         &self.migrations
-    }
-
-    // TODO: perms
-    pub fn token_identity(&self) -> &Address {
-        &self.token_identity
-    }
-
-    pub fn verify_tokens_sender(&self, sender: &Address) -> Result<(), ManyError> {
-        if sender != &self.token_identity {
-            return Err(error::invalid_sender());
-        }
-        Ok(())
     }
 
     fn subresource_db_key(migration_is_active: bool) -> Vec<u8> {
@@ -207,15 +192,6 @@ impl LedgerStorage {
                 u32::from_be_bytes(bytes)
             });
 
-        let mut token_next_subresource = 0;
-        let mut token_identity = root_identity;
-
-        // Load the token-related data if the token migration is active.
-        if migrations.is_active(&TOKEN_MIGRATION) {
-            (token_identity, token_next_subresource) =
-                LedgerStorage::load_token_storage(&persistent_store)?;
-        }
-
         Ok(Self {
             persistent_store,
             blockchain,
@@ -224,8 +200,6 @@ impl LedgerStorage {
             current_hash: None,
             next_subresource,
             root_identity,
-            token_identity,
-            token_next_subresource,
             migrations,
         })
     }
@@ -260,8 +234,6 @@ impl LedgerStorage {
             current_hash: None,
             next_subresource: 0,
             root_identity: identity,
-            token_identity: identity,
-            token_next_subresource: 0,
             migrations: MigrationSet::empty().map_err(ManyError::unknown)?, // TODO: Custom error
         })
     }

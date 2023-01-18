@@ -87,10 +87,6 @@ impl LedgerModuleImpl {
         Ok(Self { storage })
     }
 
-    pub fn token_identity(&self) -> &many_identity::Address {
-        self.storage.token_identity()
-    }
-
     #[cfg(feature = "balance_testing")]
     pub fn set_balance_only_for_testing(
         &mut self,
