@@ -23,7 +23,7 @@ bip39-dict = "0.1"
 clap = { version = "3.0.0", features = ["derive"] }
 coset = "0.3"
 fixed = "1.11.0"
-merk = { git = "https://github.com/MavenRain/merk.git", branch = "oobi/nomic-sync" }
+merk = { git = "https://github.com/liftedinit/merk.git", rev = "3d509c8efd3a68d85a5769f7fff300e10290d137" }
 hex = "0.4.3"
 itertools = "0.10.3"
 json5 = "0.4.1"

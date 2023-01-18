@@ -1,5 +1,5 @@
 {
-  "checksum": "60c95a4cb2f0b4aea4e64a30cbed844778a1443d113c4d56eac78125ab7cdc62",
+  "checksum": "8cd238896109d2932c76b13da6f6793ae379baf375c8ce7c6870527af3b2636d",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -3672,59 +3672,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "colored 1.9.3": {
-      "name": "colored",
-      "version": "1.9.3",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/colored/1.9.3/download",
-          "sha256": "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "colored",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "colored",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "atty 0.2.14",
-              "target": "atty"
-            },
-            {
-              "id": "lazy_static 1.4.0",
-              "target": "lazy_static"
-            }
-          ],
-          "selects": {
-            "cfg(windows)": [
-              {
-                "id": "winapi 0.3.9",
-                "target": "winapi"
-              }
-            ]
-          }
-        },
-        "edition": "2015",
-        "version": "1.9.3"
-      },
-      "license": "MPL-2.0"
-    },
     "colored 2.0.0": {
       "name": "colored",
       "version": "2.0.0",
@@ -6250,59 +6197,6 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "ed 0.2.2-alpha.0": {
-      "name": "ed",
-      "version": "0.2.2-alpha.0",
-      "repository": {
-        "Git": {
-          "remote": "https://github.com/nomic-io/ed",
-          "commitish": {
-            "Rev": "dd28e9f9e7c97827dde943ee8decfcdf25b3cc83"
-          }
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "ed",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "ed",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "thiserror 1.0.38",
-              "target": "thiserror"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "proc_macro_deps": {
-          "common": [
-            {
-              "id": "ed-derive 0.2.3",
-              "target": "ed_derive"
-            }
-          ],
-          "selects": {}
-        },
-        "version": "0.2.2-alpha.0"
-      },
-      "license": "MIT"
-    },
     "ed 0.3.0": {
       "name": "ed",
       "version": "0.3.0",
@@ -6351,56 +6245,6 @@
           "selects": {}
         },
         "version": "0.3.0"
-      },
-      "license": "MIT"
-    },
-    "ed-derive 0.2.3": {
-      "name": "ed-derive",
-      "version": "0.2.3",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/ed-derive/0.2.3/download",
-          "sha256": "06a91d774f4b861acaa791bc6165e66d72d3a5d1aa85fc8c0956f5580f863161"
-        }
-      },
-      "targets": [
-        {
-          "ProcMacro": {
-            "crate_name": "ed_derive",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "ed_derive",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "proc-macro2 1.0.50",
-              "target": "proc_macro2"
-            },
-            {
-              "id": "quote 1.0.23",
-              "target": "quote"
-            },
-            {
-              "id": "syn 1.0.107",
-              "target": "syn"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.2.3"
       },
       "license": "MIT"
     },
@@ -10105,7 +9949,7 @@
               "target": "clap"
             },
             {
-              "id": "merk 1.0.0",
+              "id": "merk 2.0.0",
               "target": "merk"
             },
             {
@@ -14010,103 +13854,14 @@
       },
       "license": "MIT"
     },
-    "merk 1.0.0": {
-      "name": "merk",
-      "version": "1.0.0",
-      "repository": {
-        "Git": {
-          "remote": "https://github.com/liftedinit/merk.git",
-          "commitish": {
-            "Rev": "da0b660abbfd58abd4a942773f205d2c079f3b27"
-          }
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "merk",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "include": [
-                "**/*.rs"
-              ],
-              "exclude": []
-            }
-          }
-        }
-      ],
-      "library_target_name": "merk",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": [
-          "blake3",
-          "byteorder",
-          "colored",
-          "default",
-          "ed",
-          "full",
-          "hex",
-          "num_cpus",
-          "rand",
-          "rocksdb",
-          "verify"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "blake3 0.3.8",
-              "target": "blake3"
-            },
-            {
-              "id": "byteorder 1.4.3",
-              "target": "byteorder"
-            },
-            {
-              "id": "colored 1.9.3",
-              "target": "colored"
-            },
-            {
-              "id": "ed 0.2.2-alpha.0",
-              "target": "ed"
-            },
-            {
-              "id": "hex 0.4.3",
-              "target": "hex"
-            },
-            {
-              "id": "num_cpus 1.15.0",
-              "target": "num_cpus"
-            },
-            {
-              "id": "rand 0.8.5",
-              "target": "rand"
-            },
-            {
-              "id": "rocksdb 0.19.0",
-              "target": "rocksdb"
-            },
-            {
-              "id": "thiserror 1.0.38",
-              "target": "thiserror"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "1.0.0"
-      },
-      "license": "MIT"
-    },
     "merk 2.0.0": {
       "name": "merk",
       "version": "2.0.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/MavenRain/merk.git",
+          "remote": "https://github.com/liftedinit/merk.git",
           "commitish": {
-            "Branch": "oobi/nomic-sync"
+            "Rev": "3d509c8efd3a68d85a5769f7fff300e10290d137"
           }
         }
       },

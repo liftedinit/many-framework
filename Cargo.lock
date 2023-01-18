@@ -660,17 +660,6 @@ dependencies = [
 
 [[package]]
 name = "colored"
-version = "1.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
-dependencies = [
- "atty",
- "lazy_static",
- "winapi",
-]
-
-[[package]]
-name = "colored"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
@@ -1154,32 +1143,12 @@ dependencies = [
 
 [[package]]
 name = "ed"
-version = "0.2.2-alpha.0"
-source = "git+https://github.com/nomic-io/ed?rev=dd28e9f9e7c97827dde943ee8decfcdf25b3cc83#dd28e9f9e7c97827dde943ee8decfcdf25b3cc83"
-dependencies = [
- "ed-derive 0.2.3",
- "thiserror",
-]
-
-[[package]]
-name = "ed"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f205c65ec89e8fdd41f5a522eb5721818dc84c732634a6e48eb1a7b92e0169d"
 dependencies = [
- "ed-derive 0.3.0",
+ "ed-derive",
  "thiserror",
-]
-
-[[package]]
-name = "ed-derive"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06a91d774f4b861acaa791bc6165e66d72d3a5d1aa85fc8c0956f5580f863161"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -1871,7 +1840,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.20.0",
  "clap 3.2.23",
- "merk 1.0.0",
+ "merk",
  "serde",
  "serde_derive",
  "serde_json",
@@ -2059,7 +2028,7 @@ dependencies = [
  "hex",
  "many-modules",
  "many-types",
- "merk 2.0.0",
+ "merk",
  "minicbor",
 ]
 
@@ -2393,7 +2362,7 @@ dependencies = [
  "many-protocol",
  "many-server",
  "many-types",
- "merk 2.0.0",
+ "merk",
  "minicbor",
  "num-bigint",
  "once_cell",
@@ -2436,7 +2405,7 @@ dependencies = [
  "many-protocol",
  "many-server",
  "many-types",
- "merk 2.0.0",
+ "merk",
  "minicbor",
  "num-bigint",
  "num-traits",
@@ -2613,29 +2582,13 @@ dependencies = [
 
 [[package]]
 name = "merk"
-version = "1.0.0"
-source = "git+https://github.com/liftedinit/merk.git?rev=da0b660abbfd58abd4a942773f205d2c079f3b27#da0b660abbfd58abd4a942773f205d2c079f3b27"
-dependencies = [
- "blake3",
- "byteorder",
- "colored 1.9.3",
- "ed 0.2.2-alpha.0",
- "hex",
- "num_cpus",
- "rand 0.8.5",
- "rocksdb",
- "thiserror",
-]
-
-[[package]]
-name = "merk"
 version = "2.0.0"
-source = "git+https://github.com/MavenRain/merk.git?branch=oobi/nomic-sync#820a733691ee92dea49a973cbe5d519167e3f307"
+source = "git+https://github.com/liftedinit/merk.git?rev=3d509c8efd3a68d85a5769f7fff300e10290d137#3d509c8efd3a68d85a5769f7fff300e10290d137"
 dependencies = [
  "blake3",
  "byteorder",
- "colored 2.0.0",
- "ed 0.3.0",
+ "colored",
+ "ed",
  "hex",
  "num_cpus",
  "rand 0.8.5",
