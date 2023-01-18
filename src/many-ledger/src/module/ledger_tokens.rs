@@ -22,21 +22,6 @@ impl LedgerModuleImpl {
     }
 }
 
-impl LedgerModuleImpl {
-    pub fn token_identity(&self) -> Result<many_identity::Address, ManyError> {
-        Ok(self.storage.token_identity()?)
-    }
-    Ok(())
-}
-
-#[cfg(not(feature = "disable_token_sender_check"))]
-fn verify_tokens_sender(sender: &Address) -> Result<(), ManyError> {
-    if *sender != self.token_identity()? {
-        return Err(error::invalid_sender());
-    }
-    Ok(())
-}
-
 impl LedgerTokensModuleBackend for LedgerModuleImpl {
     fn create(
         &mut self,

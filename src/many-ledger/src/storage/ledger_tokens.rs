@@ -175,10 +175,6 @@ impl LedgerStorage {
         Ok(())
     }
 
-    pub fn token_identity(&self) -> Result<Address, ManyError> {
-        Ok(self.get_token_identity()?)
-    }
-
     pub fn verify_tokens_sender(&self, sender: &Address) -> Result<(), ManyError> {
         if sender != &self.get_token_identity()? {
             return Err(error::invalid_sender());
