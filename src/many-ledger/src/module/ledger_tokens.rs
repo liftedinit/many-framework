@@ -15,9 +15,26 @@ use many_modules::ledger::{
 use many_types::Either;
 
 impl LedgerModuleImpl {
+    #[allow(dead_code)]
+    /// Used only in cucumber tests
+    pub fn token_identity(&self) -> Result<many_identity::Address, ManyError> {
+        self.storage.get_token_identity()
+    }
+}
+
+impl LedgerModuleImpl {
     pub fn token_identity(&self) -> Result<many_identity::Address, ManyError> {
         Ok(self.storage.token_identity()?)
     }
+    Ok(())
+}
+
+#[cfg(not(feature = "disable_token_sender_check"))]
+fn verify_tokens_sender(sender: &Address) -> Result<(), ManyError> {
+    if *sender != self.token_identity()? {
+        return Err(error::invalid_sender());
+    }
+    Ok(())
 }
 
 impl LedgerTokensModuleBackend for LedgerModuleImpl {

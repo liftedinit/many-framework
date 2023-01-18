@@ -198,13 +198,13 @@ impl LedgerStorage {
     }
 
     pub fn get_token_identity(&self) -> Result<Address, ManyError> {
-        Ok(Address::from_bytes(
+        Address::from_bytes(
             &self
                 .persistent_store
                 .get(TOKEN_IDENTITY_ROOT.as_bytes())
                 .map_err(error::storage_get_failed)?
                 .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY_ROOT))?,
-        )?)
+        )
     }
 
     pub fn get_token_info_summary(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
