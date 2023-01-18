@@ -1,7 +1,7 @@
 use crate::error;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::storage::iterator::LedgerIterator;
-use crate::storage::{key_for_account_balance, InnerStorage, LedgerStorage, SYMBOLS_ROOT};
+use crate::storage::{key_for_account_balance, LedgerStorage, SYMBOLS_ROOT};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -145,11 +145,7 @@ impl LedgerStorage {
             self.commit_storage()?;
         }
 
-        Ok(Self {
-            token_identity,
-            token_next_subresource,
-            ..self
-        })
+        Ok(self)
     }
 
     pub(crate) fn get_owner(&self, symbol: &Symbol) -> Result<Option<Address>, ManyError> {
@@ -165,27 +161,6 @@ impl LedgerStorage {
         Ok(info.owner)
     }
 
-    pub fn load_token_storage(
-        persistent_store: &InnerStorage,
-    ) -> Result<(Address, u32), ManyError> {
-        let token_identity = Address::from_bytes(
-            &persistent_store
-                .get(TOKEN_IDENTITY_ROOT.as_bytes())
-                .map_err(error::storage_get_failed)?
-                .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY_ROOT))?,
-        )?;
-
-        let x = persistent_store
-            .get(TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes())
-            .map_err(error::storage_get_failed)?
-            .ok_or_else(|| error::storage_key_not_found(TOKEN_SUBRESOURCE_COUNTER_ROOT))?;
-        let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(x.as_slice());
-        let token_next_subresource = u32::from_be_bytes(bytes);
-
-        Ok((token_identity, token_next_subresource))
-    }
-
     /// Fetch symbols from `/config/symbols/{symbol}`
     ///     No CBOR decoding needed.
     pub(crate) fn _get_symbols(&self, symbols: &mut BTreeSet<Symbol>) -> Result<(), ManyError> {
@@ -198,6 +173,38 @@ impl LedgerStorage {
             )?);
         }
         Ok(())
+    }
+
+    pub fn token_identity(&self) -> Result<Address, ManyError> {
+        Ok(self.get_token_identity()?)
+    }
+
+    pub fn verify_tokens_sender(&self, sender: &Address) -> Result<(), ManyError> {
+        if sender != &self.get_token_identity()? {
+            return Err(error::invalid_sender());
+        }
+        Ok(())
+    }
+
+    pub fn get_token_next_subresource_counter(&self) -> Result<u32, ManyError> {
+        let x = self
+            .persistent_store
+            .get(TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes())
+            .map_err(error::storage_get_failed)?
+            .ok_or_else(|| error::storage_key_not_found(TOKEN_SUBRESOURCE_COUNTER_ROOT))?;
+        let mut bytes = [0u8; 4];
+        bytes.copy_from_slice(x.as_slice());
+        Ok(u32::from_be_bytes(bytes))
+    }
+
+    pub fn get_token_identity(&self) -> Result<Address, ManyError> {
+        Ok(Address::from_bytes(
+            &self
+                .persistent_store
+                .get(TOKEN_IDENTITY_ROOT.as_bytes())
+                .map_err(error::storage_get_failed)?
+                .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY_ROOT))?,
+        )?)
     }
 
     pub fn get_token_info_summary(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
@@ -229,16 +236,16 @@ impl LedgerStorage {
 
     /// Create new token symbol derived from the token identity
     fn new_token_subresource(&mut self) -> Result<Address, ManyError> {
-        let current_id = self.token_next_subresource;
-        self.token_next_subresource += 1;
+        let current_id = self.get_token_next_subresource_counter()?;
+        let new_id = current_id + 1;
         self.persistent_store
             .apply(&[(
                 TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
-                Op::Put(self.token_next_subresource.to_be_bytes().to_vec()),
+                Op::Put(new_id.to_be_bytes().to_vec()),
             )])
             .map_err(error::storage_apply_failed)?;
 
-        self.token_identity.with_subresource_id(current_id)
+        self.get_token_identity()?.with_subresource_id(current_id)
     }
 
     fn update_symbols(&mut self, symbol: Symbol, ticker: String) -> Result<(), ManyError> {

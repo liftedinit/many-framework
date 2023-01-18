@@ -16,6 +16,12 @@ use many_modules::ledger::{
 };
 use many_types::Either;
 
+impl LedgerModuleImpl {
+    pub fn token_identity(&self) -> Result<many_identity::Address, ManyError> {
+        Ok(self.storage.token_identity()?)
+    }
+}
+
 fn verify_tokens_acl(
     storage: &LedgerStorage,
     sender: &Address,
