@@ -1,5 +1,5 @@
 [package]
-name = "test-utils"
+name = "many-ledger-test-utils"
 version = "0.1.0"
 edition = "2021"
 authors = ["The Lifted Initiative"]
