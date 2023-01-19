@@ -285,12 +285,7 @@ impl LedgerStorage {
         };
 
         // Create the token information and store it in the persistent storage
-        let maybe_owner = owner
-            .as_ref()
-            .map_or(Some(*sender), |maybe_owner| match maybe_owner {
-                Either::Left(addr) => Some(*addr),
-                Either::Right(_) => None,
-            });
+        let maybe_owner = owner.clone().map_or(Some(*sender), Either::left);
         let info = TokenInfo {
             symbol,
             summary: summary.clone(),
