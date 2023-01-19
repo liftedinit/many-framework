@@ -42,13 +42,9 @@ impl LedgerStorage {
         initial_balance: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
         let mut total_supply = BTreeMap::new();
-        for (_, v) in initial_balance.into_iter() {
+        for v in initial_balance.into_values() {
             for (symbol, tokens) in v.into_iter() {
-                if let Some(x) = total_supply.get_mut(&symbol) {
-                    *x += tokens;
-                } else {
-                    total_supply.insert(symbol, tokens);
-                }
+                *total_supply.entry(symbol).or_default() += tokens;
             }
         }
         Ok(total_supply)
