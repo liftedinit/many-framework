@@ -10,6 +10,7 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenAddExtendedInfoArgs, TokenInfoArgs};
@@ -111,6 +112,11 @@ fn given_string_logo(w: &mut AddExtInfoWorld, content_type: String, data: String
         .expect("Unable to set extended info logo");
 }
 
+#[given(expr = "an event memo {string}")]
+fn given_event_memo(w: &mut AddExtInfoWorld, memo: String) {
+    w.args.memo = Some(Memo::try_from(memo).unwrap());
+}
+
 #[when(expr = "I add the extended info to the token as {id}")]
 fn add_ext_info(w: &mut AddExtInfoWorld, id: SomeId) {
     let id = id.as_address(w);
@@ -152,6 +158,26 @@ fn then_add_ext_info_token_fail_acl(w: &mut AddExtInfoWorld, id: SomeId, error: 
         w.error.as_ref().expect("Expecting an error"),
         &error.as_many()
     );
+}
+
+#[then(expr = "the event memo is {string}")]
+fn then_memo(w: &mut AddExtInfoWorld, memo: String) {
+    let res = EventsModuleBackend::list(
+        &w.setup.module_impl,
+        ListArgs {
+            filter: Some(EventFilter {
+                kind: Some(vec![EventKind::TokenAddExtendedInfo].into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    )
+    .expect("Unable to list TokenAddExtendedInfo event");
+    let memo = Memo::try_from(memo).unwrap();
+    assert!(res.nb_events >= 1);
+    let event = res.events.into_iter().next().expect("Expected an event");
+    assert!(event.content.memo().is_some());
+    assert_eq!(event.content.memo().unwrap(), &memo);
 }
 
 #[tokio::main]

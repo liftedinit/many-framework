@@ -11,10 +11,11 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::extended_info::{ExtendedInfoKey, TokenExtendedInfo};
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenRemoveExtendedInfoArgs};
 use many_types::ledger::TokenInfo;
-use many_types::AttributeRelatedIndex;
+use many_types::{AttributeRelatedIndex, Memo};
 
 #[derive(World, Debug, Default, LedgerWorld, TokenWorld, AccountWorld)]
 #[world(init = Self::new)]
@@ -126,6 +127,11 @@ fn given_has_logo(w: &mut RemoveExtInfoWorld) {
     assert!(w.ext_info.visual_logo().is_some());
 }
 
+#[given(expr = "an event memo {string}")]
+fn given_event_memo(w: &mut RemoveExtInfoWorld, memo: String) {
+    w.args.memo = Some(Memo::try_from(memo).unwrap());
+}
+
 #[when(expr = "I remove the {ext_info_type} as {id}")]
 fn when_rm_ext_info(w: &mut RemoveExtInfoWorld, ext_info_type: ExtendedInfoType, id: SomeId) {
     w.args.extended_info = vec![AttributeRelatedIndex::from(ExtendedInfoKey::from(
@@ -166,6 +172,26 @@ fn then_rm_ext_info_token_fail_acl(
         w.error.as_ref().expect("Expecting an error"),
         &error.as_many()
     );
+}
+
+#[then(expr = "the event memo is {string}")]
+fn then_memo(w: &mut RemoveExtInfoWorld, memo: String) {
+    let res = EventsModuleBackend::list(
+        &w.setup.module_impl,
+        ListArgs {
+            filter: Some(EventFilter {
+                kind: Some(vec![EventKind::TokenRemoveExtendedInfo].into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    )
+    .expect("Unable to list TokenAddExtendedInfo event");
+    let memo = Memo::try_from(memo).unwrap();
+    assert!(res.nb_events >= 1);
+    let event = res.events.into_iter().next().expect("Expected an event");
+    assert!(event.content.memo().is_some());
+    assert_eq!(event.content.memo().unwrap(), &memo);
 }
 
 #[tokio::main]

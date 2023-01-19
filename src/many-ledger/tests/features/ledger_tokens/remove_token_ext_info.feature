@@ -4,8 +4,10 @@ Feature: Remove token extended info
 Scenario: Remove token memo extended info as myself
 	Given a default token owned by myself
 	And the token has a memo
+	And an event memo "Fun"
 	When I remove the memo as myself
 	Then the token has no memo
+	And the event memo is "Fun"
 
 @token
 Scenario: Remove token logo extended info as myself

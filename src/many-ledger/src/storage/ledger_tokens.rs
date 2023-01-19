@@ -257,6 +257,7 @@ impl LedgerStorage {
             initial_distribution,
             maximum_supply,
             extended_info,
+            memo,
         } = args;
 
         // Create a new token symbol and store in memory and in the persistent store
@@ -316,6 +317,7 @@ impl LedgerStorage {
             initial_distribution,
             maximum_supply,
             extended_info,
+            memo,
         })?;
 
         batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
@@ -438,6 +440,7 @@ impl LedgerStorage {
         let TokenAddExtendedInfoArgs {
             symbol,
             extended_info,
+            memo,
         } = args;
 
         // Fetch existing extended info, if any
@@ -471,6 +474,7 @@ impl LedgerStorage {
         self.log_event(EventInfo::TokenAddExtendedInfo {
             symbol,
             extended_info: indices,
+            memo,
         })?;
 
         self.maybe_commit()?;
@@ -485,6 +489,7 @@ impl LedgerStorage {
         let TokenRemoveExtendedInfoArgs {
             symbol,
             extended_info,
+            memo,
         } = args;
 
         // Fetch existing extended info, if any
@@ -513,6 +518,7 @@ impl LedgerStorage {
         self.log_event(EventInfo::TokenRemoveExtendedInfo {
             symbol,
             extended_info,
+            memo,
         })?;
 
         self.maybe_commit()?;

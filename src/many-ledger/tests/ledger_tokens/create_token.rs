@@ -10,9 +10,11 @@ use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenCreateArgs};
 use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfo, TokenMaybeOwner};
+use many_types::Memo;
 use std::path::Path;
 
 #[derive(World, Debug, Default, LedgerWorld, TokenWorld, AccountWorld)]
@@ -74,6 +76,11 @@ fn given_token_ticker(w: &mut CreateWorld, ticker: String) {
 #[given(expr = "a decimals of {int}")]
 fn given_token_decimals(w: &mut CreateWorld, decimals: u64) {
     w.args.summary.decimals = decimals;
+}
+
+#[given(expr = "a memo {string}")]
+fn given_memo(w: &mut CreateWorld, memo: String) {
+    w.args.memo = Some(Memo::try_from(memo).unwrap());
 }
 
 #[given(expr = "{id} as owner")]
@@ -162,6 +169,26 @@ fn then_circulating_supply(w: &mut CreateWorld, circulating_supply: u64) {
 #[then(expr = "the token maximum supply has no maximum")]
 fn then_maximum_supply(w: &mut CreateWorld) {
     assert_eq!(w.info.supply.maximum, None);
+}
+
+#[then(expr = "the memo is {string}")]
+fn then_memo(w: &mut CreateWorld, memo: String) {
+    let res = EventsModuleBackend::list(
+        &w.setup.module_impl,
+        ListArgs {
+            filter: Some(EventFilter {
+                kind: Some(vec![EventKind::TokenCreate].into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    )
+    .expect("Unable to list TokenCreate event");
+    let memo = Memo::try_from(memo).unwrap();
+    assert!(res.nb_events >= 1);
+    let event = res.events.into_iter().next().expect("Expected an event");
+    assert!(event.content.memo().is_some());
+    assert_eq!(event.content.memo().unwrap(), &memo);
 }
 
 #[tokio::main]
