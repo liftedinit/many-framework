@@ -1,5 +1,5 @@
 {
-  "checksum": "8160a0de762a9ed722ce7fff4b1b7418fa3fc0eb3e9175a9bf6cc10aaf1be1e9",
+  "checksum": "29d55c1c137f7fd972e3dab375540e9c4c6f377d2eb133080831c2722a0ddd7d",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -13418,7 +13418,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-client"
         }
@@ -13611,7 +13611,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -13664,7 +13664,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-error"
         }
@@ -13730,7 +13730,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-identity"
         }
@@ -13831,7 +13831,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -13965,7 +13965,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -14058,7 +14058,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -14650,7 +14650,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-macros"
         }
@@ -14715,7 +14715,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-migration"
         }
@@ -14780,7 +14780,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-modules"
         }
@@ -14885,7 +14885,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -14999,7 +14999,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-server"
         }
@@ -15216,7 +15216,7 @@
         "Git": {
           "remote": "https://github.com/fmorency/many-rs.git",
           "commitish": {
-            "Branch": "ledger-tokens-with-memo"
+            "Branch": "ledger-mint-burn"
           },
           "strip_prefix": "src/many-types"
         }

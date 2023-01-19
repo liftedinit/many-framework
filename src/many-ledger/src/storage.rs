@@ -6,7 +6,7 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
-use many_types::ledger::{Symbol, TokenAmount};
+use many_types::ledger::Symbol;
 use many_types::Timestamp;
 use merk::Op;
 use std::collections::{BTreeMap, BTreeSet};
@@ -69,7 +69,7 @@ impl LedgerStorage {
         assert_eq!(self.current_hash, None);
 
         let key = key_for_account_balance(&account, &symbol);
-        let amount = TokenAmount::from(amount);
+        let amount = many_types::ledger::TokenAmount::from(amount);
 
         self.persistent_store
             .apply(&[(key, Op::Put(amount.to_vec()))])
