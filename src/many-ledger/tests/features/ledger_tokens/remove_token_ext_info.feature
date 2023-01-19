@@ -1,6 +1,6 @@
 Feature: Remove token extended info
 
-@token
+@tokens
 Scenario: Remove token memo extended info as myself
 	Given a default token owned by myself
 	And the token has a memo
@@ -9,14 +9,14 @@ Scenario: Remove token memo extended info as myself
 	Then the token has no memo
 	And the event memo is "Fun"
 
-@token
+@tokens
 Scenario: Remove token logo extended info as myself
 	Given a default token owned by myself
 	And the token has a logo
 	When I remove the logo as myself
 	Then the token has no logo
 
-@token
+@tokens
 Scenario: Remove token memo and logo extended info as myself
 	Given a default token owned by myself
 	And the token has a memo
