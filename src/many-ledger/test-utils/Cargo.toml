@@ -1,5 +1,5 @@
 [package]
-name = "test-utils"
+name = "many-ledger-test-utils"
 version = "0.1.0"
 edition = "2021"
 authors = ["The Lifted Initiative"]
@@ -7,6 +7,7 @@ license = "Apache-2.0"
 description = ""
 homepage = "https://liftedinit.org"
 repository = "https://github.com/liftedinit/many-framework"
+publish = false
 
 [dependencies]
 coset = "0.3"
