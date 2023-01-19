@@ -2692,6 +2692,8 @@ dependencies = [
  "many-identity-dsa",
  "many-identity-webauthn",
  "many-ledger",
+ "many-ledger-test-macros",
+ "many-ledger-test-utils",
  "many-migration",
  "many-modules",
  "many-protocol",
@@ -2712,14 +2714,45 @@ dependencies = [
  "strum",
  "syslog-tracing",
  "tempfile",
- "test-macros",
- "test-utils",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "typenum",
  "typetag",
  "vergen",
+]
+
+[[package]]
+name = "many-ledger-test-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "many-ledger-test-utils"
+version = "0.1.0"
+dependencies = [
+ "coset",
+ "cucumber",
+ "itertools",
+ "many-error",
+ "many-identity",
+ "many-identity-dsa",
+ "many-ledger",
+ "many-ledger-test-macros",
+ "many-migration",
+ "many-modules",
+ "many-protocol",
+ "many-types",
+ "merk",
+ "minicbor",
+ "once_cell",
+ "proptest",
+ "serde_json",
+ "tempfile",
+ "tracing",
 ]
 
 [[package]]
@@ -4546,39 +4579,6 @@ checksum = "cb20089a8ba2b69debd491f8d2d023761cbf196e999218c591fa1e7e15a21907"
 dependencies = [
  "rustix",
  "windows-sys",
-]
-
-[[package]]
-name = "test-macros"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
-]
-
-[[package]]
-name = "test-utils"
-version = "0.1.0"
-dependencies = [
- "coset",
- "cucumber",
- "itertools",
- "many-error",
- "many-identity",
- "many-identity-dsa",
- "many-ledger",
- "many-migration",
- "many-modules",
- "many-protocol",
- "many-types",
- "merk",
- "minicbor",
- "once_cell",
- "proptest",
- "serde_json",
- "tempfile",
- "test-macros",
- "tracing",
 ]
 
 [[package]]

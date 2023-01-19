@@ -67,8 +67,8 @@ many-ledger = { path = ".", features = ["balance_testing", "migration_testing", 
 proptest = "1"
 tempfile = "3.3.0"
 tokio = "1.13.0"
-test-utils = { path = "test-utils" }
-test-macros = { path = "test-macros" }
+many-ledger-test-utils = { path = "test-utils" }
+many-ledger-test-macros = { path = "test-macros" }
 
 [[test]]
 name = "create_token"
