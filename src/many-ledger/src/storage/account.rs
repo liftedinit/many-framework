@@ -1,10 +1,11 @@
 use crate::error;
+use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::module::account::validate_account;
 use crate::storage::multisig::{
     MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY, MULTISIG_DEFAULT_TIMEOUT_IN_SECS,
     MULTISIG_MAXIMUM_TIMEOUT_IN_SECS,
 };
-use crate::storage::LedgerStorage;
+use crate::storage::{LedgerStorage, IDENTITY_ROOT};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::account::features::{FeatureInfo, FeatureSet};
@@ -13,6 +14,9 @@ use many_modules::{account, events};
 use many_types::Either;
 use merk::Op;
 use std::collections::{BTreeMap, BTreeSet};
+
+pub const ACCOUNT_IDENTITY_ROOT: &str = "/config/account_identity";
+pub const ACCOUNT_SUBRESOURCE_ID_ROOT: &str = "/config/account_id";
 
 /// Internal representation of Account metadata
 #[derive(Clone, Debug)]
@@ -30,7 +34,21 @@ pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
 
 impl LedgerStorage {
     /// Create the given accounts in the storage from the Account metadata
-    pub fn with_account(mut self, accounts: Option<Vec<AccountMeta>>) -> Result<Self, ManyError> {
+    pub fn with_account(
+        mut self,
+        identity: Option<Address>,
+        accounts: Option<Vec<AccountMeta>>,
+    ) -> Result<Self, ManyError> {
+        if self.migrations.is_active(&TOKEN_MIGRATION) {
+            let identity = identity.unwrap_or(self.get_identity(IDENTITY_ROOT)?);
+            self.persistent_store
+                .apply(&[(
+                    ACCOUNT_IDENTITY_ROOT.as_bytes().to_vec(),
+                    Op::Put(identity.to_vec()),
+                )])
+                .map_err(error::storage_apply_failed)?;
+        }
+
         if let Some(accounts) = accounts {
             for account in accounts {
                 let id = self._add_account(
@@ -67,7 +85,7 @@ impl LedgerStorage {
         mut account: account::Account,
         add_event: bool,
     ) -> Result<Address, ManyError> {
-        let id = self.new_subresource_id()?;
+        let id = self.get_next_subresource(ACCOUNT_IDENTITY_ROOT, ACCOUNT_SUBRESOURCE_ID_ROOT)?;
 
         // The account MUST own itself.
         account.add_role(&id, account::Role::Owner);
