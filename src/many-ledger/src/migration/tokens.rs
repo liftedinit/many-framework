@@ -85,32 +85,23 @@ fn migrate_token(
         .ok_or_else(|| ManyError::unknown(format!("Symbol {symbol} not found in DB")))
         .cloned()?;
 
-    let owner: Option<Address> = serde_json::from_value(extra["symbol_owner"].clone())
-        .map_err(ManyError::deserialization_error)?;
-    let maximum: Option<TokenAmount> = serde_json::from_value(extra["symbol_maximum"].clone())
-        .map_err(ManyError::deserialization_error)?;
-    let name: String = serde_json::from_value(extra["symbol_name"].clone())
-        .map_err(ManyError::deserialization_error)?;
-    let decimals: u64 = serde_json::from_value(extra["symbol_decimals"].clone())
-        .map_err(ManyError::deserialization_error)?;
-    let total: TokenAmount = serde_json::from_value(extra["symbol_total"].clone())
-        .map_err(ManyError::deserialization_error)?;
-    let circulating: TokenAmount = serde_json::from_value(extra["symbol_circulating"].clone())
-        .map_err(ManyError::deserialization_error)?;
-    let info = TokenInfo {
-        symbol,
-        summary: TokenInfoSummary {
-            name,
-            ticker,
-            decimals,
-        },
-        supply: TokenInfoSupply {
-            total,
-            circulating,
-            maximum,
-        },
-        owner,
-    };
+    let info = (move || {
+        Ok::<_, serde_json::Error>(TokenInfo {
+            symbol,
+            summary: TokenInfoSummary {
+                name: serde_json::from_value(extra["symbol_name"].clone())?,
+                ticker,
+                decimals: serde_json::from_value(extra["symbol_decimals"].clone())?,
+            },
+            supply: TokenInfoSupply {
+                total: serde_json::from_value(extra["symbol_total"].clone())?,
+                circulating: serde_json::from_value(extra["symbol_circulating"].clone())?,
+                maximum: serde_json::from_value(extra["symbol_maximum"].clone())?,
+            },
+            owner: serde_json::from_value(extra["symbol_owner"].clone())?,
+        })
+    })()
+    .map_err(ManyError::deserialization_error)?;
 
     // Add token data to the DB
     storage
