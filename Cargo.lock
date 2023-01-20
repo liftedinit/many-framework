@@ -2583,11 +2583,12 @@ dependencies = [
 [[package]]
 name = "merk"
 version = "2.0.0"
-source = "git+https://github.com/liftedinit/merk.git?rev=3d509c8efd3a68d85a5769f7fff300e10290d137#3d509c8efd3a68d85a5769f7fff300e10290d137"
+source = "git+https://github.com/MavenRain/merk.git?branch=oobi/kvhash#dd787ad8ef11fde8a453b6e82bc1c617b6c699fe"
 dependencies = [
  "blake3",
  "byteorder",
  "colored",
+ "digest 0.9.0",
  "ed",
  "hex",
  "num_cpus",
