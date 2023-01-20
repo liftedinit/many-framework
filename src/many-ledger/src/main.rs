@@ -207,7 +207,6 @@ fn main() {
     let state: Option<InitialStateJson> =
         state.map(|p| InitialStateJson::read(p).expect("Could not read state file."));
 
-    // TODO: Refactor this piece.
     info!("Loading migrations from {migrations_config:?}");
     let maybe_migrations = migrations_config.map(|file| {
         let content = std::fs::read_to_string(file)
@@ -260,11 +259,13 @@ fn main() {
                     args.get(2).expect("No symbol."),
                 );
 
-                module_impl.set_balance_only_for_testing(
-                    Address::from_str(identity).expect("Invalid identity."),
-                    amount.parse::<u64>().expect("Invalid amount."),
-                    Address::from_str(symbol).expect("Invalid symbol."),
-                )
+                module_impl
+                    .set_balance_only_for_testing(
+                        Address::from_str(identity).expect("Invalid identity."),
+                        amount.parse::<u64>().expect("Invalid amount."),
+                        Address::from_str(symbol).expect("Invalid symbol."),
+                    )
+                    .expect("Unable to set balance for testing.");
             }
             module_impl
         }
@@ -302,6 +303,7 @@ fn main() {
             s.add_module(ledger_command_module);
         }
         s.add_module(events::EventsModule::new(module_impl.clone()));
+        s.add_module(ledger::LedgerTokensModule::new(module_impl.clone()));
 
         let idstore_module = idstore::IdStoreModule::new(module_impl.clone());
         #[cfg(feature = "webauthn_testing")]

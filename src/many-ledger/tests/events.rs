@@ -1,9 +1,7 @@
-pub mod common;
-
-use common::*;
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
+use many_ledger_test_utils::*;
 use many_modules::account::features::multisig::{
     self, AccountMultisigModuleBackend, MultisigTransactionState,
 };
@@ -19,7 +17,9 @@ use std::collections::BTreeMap;
 use std::ops::Bound;
 
 fn send(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
-    module_impl.set_balance_only_for_testing(from, 1000, *MFX_SYMBOL);
+    module_impl
+        .set_balance_only_for_testing(from, 1000, *MFX_SYMBOL)
+        .expect("Unable to set balance for testing.");
     send_(module_impl, from, to);
 }
 
@@ -31,6 +31,7 @@ fn send_(module_impl: &mut LedgerModuleImpl, from: Address, to: Address) {
             to,
             amount: 10u16.into(),
             symbol: *MFX_SYMBOL,
+            memo: None,
         },
     );
     assert!(result.is_ok());

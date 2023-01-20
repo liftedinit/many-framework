@@ -1,7 +1,5 @@
-pub mod common;
-
-use common::*;
 use many_identity::Address;
+use many_ledger_test_utils::*;
 use many_modules::ledger;
 use many_modules::ledger::{LedgerCommandsModuleBackend, LedgerModuleBackend, SendArgs};
 use many_types::ledger::TokenAmount;
@@ -24,7 +22,7 @@ proptest! {
             id,
             ..
         } = setup();
-        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL);
+        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL).expect("Unable to set balance for testing");
         verify_balance(&module_impl, id, *MFX_SYMBOL, amount.into());
     }
 }
@@ -37,7 +35,9 @@ fn illegal_address() {
         ..
     } = setup();
 
-    module_impl.set_balance_only_for_testing(id, 10_000, *MFX_SYMBOL);
+    module_impl
+        .set_balance_only_for_testing(id, 10_000, *MFX_SYMBOL)
+        .expect("Unable to set balance for testing");
     module_impl
         .send(
             &id,
@@ -46,6 +46,7 @@ fn illegal_address() {
                 to: Address::illegal(),
                 amount: TokenAmount::from(1_000u32),
                 symbol: *MFX_SYMBOL,
+                memo: None,
             },
         )
         .unwrap();
@@ -67,6 +68,7 @@ fn illegal_address() {
                 to: id,
                 amount: TokenAmount::from(100u32),
                 symbol: *MFX_SYMBOL,
+                memo: None,
             },
         )
         .is_err());

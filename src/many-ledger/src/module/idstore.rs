@@ -53,8 +53,8 @@ impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
             return Err(idstore::invalid_credential_id(hex::encode(&*cred_id.0)));
         }
 
-        let _: CoseKey = CoseKey::from_slice(&public_key.0)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let _: CoseKey =
+            CoseKey::from_slice(&public_key.0).map_err(ManyError::deserialization_error)?;
 
         let mut current_try = 1u8;
         let recall_phrase = loop {
@@ -62,7 +62,7 @@ impl idstore::IdStoreModuleBackend for LedgerModuleImpl {
                 return Err(idstore::recall_phrase_generation_failed());
             }
 
-            let seed = self.storage.inc_idstore_seed();
+            let seed = self.storage.inc_idstore_seed()?;
             // Entropy can only be generated if the seed array contains the
             // EXACT amount of full bytes, i.e., the FB parameter of
             // `generate_recall_phrase`
@@ -183,7 +183,10 @@ mod tests {
         }
 
         // And reset the seed 0
-        module_impl.storage.set_idstore_seed(0);
+        module_impl
+            .storage
+            .set_idstore_seed(0)
+            .expect("Unable to set idstore seed.");
 
         // This should trigger the `recall_phrase_generation_failed()` exception
         let result4 = module_impl.store(
@@ -201,7 +204,10 @@ mod tests {
         );
 
         // Generate a 3-words phrase
-        module_impl.storage.set_idstore_seed(0x10000);
+        module_impl
+            .storage
+            .set_idstore_seed(0x10000)
+            .expect("Unable to set idstore seed.");
         let result = module_impl.store(
             &id,
             idstore::StoreArgs {
@@ -215,7 +221,10 @@ mod tests {
         assert_eq!(rp.len(), 3);
 
         // Generate a 4-words phrase
-        module_impl.storage.set_idstore_seed(0x1000000);
+        module_impl
+            .storage
+            .set_idstore_seed(0x1000000)
+            .expect("Unable to set idstore seed.");
         let result = module_impl.store(
             &id,
             idstore::StoreArgs {
@@ -229,7 +238,10 @@ mod tests {
         assert_eq!(rp.len(), 4);
 
         // Generate a 5-words phrase
-        module_impl.storage.set_idstore_seed(0x100000000);
+        module_impl
+            .storage
+            .set_idstore_seed(0x100000000)
+            .expect("Unable to set idstore seed.");
         let result = module_impl.store(
             &id,
             idstore::StoreArgs {

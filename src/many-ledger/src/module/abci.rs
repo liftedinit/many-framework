@@ -52,6 +52,13 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("data.info".to_string(), EndpointInfo { is_command: false }),
                 ("data.getInfo".to_string(), EndpointInfo { is_command: false }),
                 ("data.query".to_string(), EndpointInfo { is_command: false }),
+
+                // Token attribute
+                ("tokens.create".to_string(), EndpointInfo { is_command : true }),
+                ("tokens.update".to_string(), EndpointInfo { is_command : true }),
+                ("tokens.info".to_string(), EndpointInfo { is_command : false }),
+                ("tokens.addExtendedInfo".to_string(), EndpointInfo { is_command : true }),
+                ("tokens.removeExtendedInfo".to_string(), EndpointInfo { is_command : true }),
             ]),
         })
     }
@@ -66,7 +73,7 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
         info!(
             "abci.block_begin(): time={:?} curr_height={}",
             time,
-            self.storage.get_height()
+            self.storage.get_height()?
         );
 
         if let Some(time) = time {
@@ -79,14 +86,15 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
 
     fn info(&self) -> Result<AbciInfo, ManyError> {
         let storage = &self.storage;
+        let height = storage.get_height()?;
 
         info!(
             "abci.info(): height={} hash={}",
-            storage.get_height(),
+            height,
             hex::encode(storage.hash()).as_str()
         );
         Ok(AbciInfo {
-            height: storage.get_height(),
+            height,
             hash: storage.hash().into(),
         })
     }

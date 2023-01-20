@@ -1,9 +1,7 @@
-pub mod common;
-
-use crate::common::{setup, Setup};
 use many_error::ManyError;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
+use many_ledger_test_utils::*;
 use many_modules::idstore;
 use many_modules::idstore::{CredentialId, IdStoreModuleBackend, PublicKey};
 

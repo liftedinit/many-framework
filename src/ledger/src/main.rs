@@ -8,6 +8,7 @@ use many_modules::r#async::{StatusArgs, StatusReturn};
 use many_modules::{ledger, r#async};
 use many_protocol::ResponseMessage;
 use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Memo;
 use minicbor::data::Tag;
 use minicbor::encode::{Error, Write};
 use minicbor::{Decoder, Encoder};
@@ -21,6 +22,7 @@ use tracing::{debug, error, info, trace};
 use tracing_subscriber::filter::LevelFilter;
 
 mod multisig;
+mod tokens;
 
 #[derive(clap::ArgEnum, Clone, Debug)]
 enum LogStrategy {
@@ -115,6 +117,9 @@ enum SubCommand {
 
     /// Perform a multisig operation.
     Multisig(multisig::CommandOpt),
+
+    /// Perform a token operation
+    Token(tokens::CommandOpt),
 }
 
 #[derive(Parser)]
@@ -147,6 +152,10 @@ pub(crate) struct TargetCommandOpt {
     /// a local name for a symbol. If it doesn't parse to an identity an
     /// additional call will be made to retrieve local names.
     symbol: String,
+
+    /// Optional memo
+    #[clap(long)]
+    memo: Option<String>,
 }
 
 pub fn resolve_symbol(
@@ -255,8 +264,8 @@ pub(crate) fn wait_response(
                     token: attr.token.clone(),
                 },
             )?;
-            let status: StatusReturn = minicbor::decode(&response.data?)
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            let status: StatusReturn =
+                minicbor::decode(&response.data?).map_err(ManyError::deserialization_error)?;
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();
@@ -293,6 +302,7 @@ fn send(
     to: Address,
     amount: BigUint,
     symbol: String,
+    memo: Option<Memo>,
 ) -> Result<(), ManyError> {
     let symbol = resolve_symbol(&client, symbol)?;
 
@@ -304,6 +314,7 @@ fn send(
             to,
             symbol,
             amount: TokenAmount::from(amount),
+            memo,
         };
         let response = client.call("ledger.send", arguments)?;
         let payload = wait_response(client, response)?;
@@ -406,11 +417,20 @@ fn main() {
             identity,
             amount,
             symbol,
+            memo,
         }) => {
             let from = account.unwrap_or(client_address);
-            send(client, from, identity, amount, symbol)
+            send(
+                client,
+                from,
+                identity,
+                amount,
+                symbol,
+                memo.map(|m| Memo::try_from(m.as_str()).unwrap()),
+            )
         }
         SubCommand::Multisig(opts) => multisig::multisig(client, opts),
+        SubCommand::Token(opts) => tokens::tokens(client, opts),
     };
 
     if let Err(err) = result {

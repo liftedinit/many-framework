@@ -17,26 +17,21 @@ fn setup() -> LedgerStorage {
     let balances = BTreeMap::from([(id0, BTreeMap::from([(symbol0, TokenAmount::from(1000u16))]))]);
     let persistent_path = tempfile::tempdir().unwrap();
 
-    let mut storage = LedgerStorage::new(
-        symbols,
-        balances,
-        persistent_path,
-        id2,
-        false,
-        None,
-        None,
-        None,
-    )
-    .unwrap();
+    let mut storage = LedgerStorage::new(&symbols, persistent_path, id2, false)
+        .unwrap()
+        .with_balances(&symbols, &balances)
+        .unwrap()
+        .build()
+        .unwrap();
 
     for _ in 0..5 {
         storage
-            .send(&id0, &id1, &symbol0, TokenAmount::from(100u16))
+            .send(&id0, &id1, &symbol0, TokenAmount::from(100u16), None)
             .unwrap();
     }
 
     // Check that we have 5 events (5 sends).
-    assert_eq!(storage.nb_events(), 5);
+    assert_eq!(storage.nb_events().unwrap(), 5);
 
     storage
 }

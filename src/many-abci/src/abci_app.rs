@@ -56,8 +56,7 @@ impl Application for AbciApp {
 
         let AbciInfo { height, hash } =
             match self.many_client.call_("abci.info", ()).and_then(|payload| {
-                minicbor::decode(&payload)
-                    .map_err(|e| ManyError::deserialization_error(e.to_string()))
+                minicbor::decode(&payload).map_err(ManyError::deserialization_error)
             }) {
                 Ok(x) => x,
                 Err(err) => {

@@ -1,34 +1,83 @@
+use crate::error;
+use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::module::account::validate_account;
 use crate::storage::multisig::{
     MULTISIG_DEFAULT_EXECUTE_AUTOMATICALLY, MULTISIG_DEFAULT_TIMEOUT_IN_SECS,
     MULTISIG_MAXIMUM_TIMEOUT_IN_SECS,
 };
-use crate::storage::LedgerStorage;
+use crate::storage::{LedgerStorage, IDENTITY_ROOT};
 use many_error::ManyError;
 use many_identity::Address;
-use many_modules::account::features::FeatureInfo;
+use many_modules::account::features::{FeatureInfo, FeatureSet};
+use many_modules::account::Role;
 use many_modules::{account, events};
 use many_types::Either;
 use merk::Op;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub const ACCOUNT_IDENTITY_ROOT: &str = "/config/account_identity";
+pub const ACCOUNT_SUBRESOURCE_ID_ROOT: &str = "/config/account_id";
+
+/// Internal representation of Account metadata
+#[derive(Clone, Debug)]
+pub struct AccountMeta {
+    pub id: Option<Address>,
+    pub subresource_id: Option<u32>,
+    pub description: Option<String>,
+    pub roles: BTreeMap<Address, BTreeSet<Role>>,
+    pub features: FeatureSet,
+}
 
 pub(super) fn key_for_account(id: &Address) -> Vec<u8> {
     format!("/accounts/{id}").into_bytes()
 }
 
 impl LedgerStorage {
-    fn new_account_id(&mut self) -> Address {
-        let current_id = self.next_account_id;
-        self.next_account_id += 1;
-        self.persistent_store
-            .apply(&[(
-                b"/config/account_id".to_vec(),
-                Op::Put(self.next_account_id.to_be_bytes().to_vec()),
-            )])
-            .unwrap();
+    /// Create the given accounts in the storage from the Account metadata
+    pub fn with_account(
+        mut self,
+        identity: Option<Address>,
+        accounts: Option<Vec<AccountMeta>>,
+    ) -> Result<Self, ManyError> {
+        if self.migrations.is_active(&TOKEN_MIGRATION) {
+            let identity = identity.unwrap_or(self.get_identity(IDENTITY_ROOT)?);
+            self.persistent_store
+                .apply(&[(
+                    ACCOUNT_IDENTITY_ROOT.as_bytes().to_vec(),
+                    Op::Put(identity.to_vec()),
+                )])
+                .map_err(error::storage_apply_failed)?;
+        }
 
-        self.account_identity
-            .with_subresource_id(current_id)
-            .expect("Too many accounts")
+        if let Some(accounts) = accounts {
+            for account in accounts {
+                let id = self._add_account(
+                    account::Account {
+                        description: account.description.clone(),
+                        roles: account.roles,
+                        features: account.features,
+                        disabled: None,
+                    },
+                    false,
+                )?;
+
+                if account.subresource_id.is_some()
+                    && id.subresource_id().is_some()
+                    && id.subresource_id() != account.subresource_id
+                {
+                    return Err(error::unexpected_subresource_id(
+                        id.subresource_id().unwrap().to_string(),
+                        account.subresource_id.unwrap().to_string(),
+                    ));
+                }
+                if let Some(self_id) = account.id {
+                    if id != self_id {
+                        return Err(error::unexpected_account_id(id, self_id));
+                    }
+                }
+            }
+        }
+        Ok(self)
     }
 
     pub(crate) fn _add_account(
@@ -36,7 +85,7 @@ impl LedgerStorage {
         mut account: account::Account,
         add_event: bool,
     ) -> Result<Address, ManyError> {
-        let id = self.new_account_id();
+        let id = self.get_next_subresource(ACCOUNT_IDENTITY_ROOT, ACCOUNT_SUBRESOURCE_ID_ROOT)?;
 
         // The account MUST own itself.
         account.add_role(&id, account::Role::Owner);
@@ -85,7 +134,7 @@ impl LedgerStorage {
                 description: account.clone().description,
                 roles: account.clone().roles,
                 features: account.clone().features,
-            });
+            })?;
         }
 
         self.commit_account(&id, account)?;
@@ -99,19 +148,15 @@ impl LedgerStorage {
 
     pub fn disable_account(&mut self, id: &Address) -> Result<(), ManyError> {
         let mut account = self
-            .get_account_even_disabled(id)
+            .get_account_even_disabled(id)?
             .ok_or_else(|| account::errors::unknown_account(*id))?;
 
         if account.disabled.is_none() || account.disabled == Some(Either::Left(false)) {
             account.disabled = Some(Either::Left(true));
             self.commit_account(id, account)?;
-            self.log_event(events::EventInfo::AccountDisable { account: *id });
+            self.log_event(events::EventInfo::AccountDisable { account: *id })?;
 
-            if !self.blockchain {
-                self.persistent_store
-                    .commit(&[])
-                    .expect("Could not commit to store.");
-            }
+            self.maybe_commit()?;
 
             Ok(())
         } else {
@@ -128,7 +173,7 @@ impl LedgerStorage {
         self.log_event(events::EventInfo::AccountSetDescription {
             account: args.account,
             description: args.description,
-        });
+        })?;
         self.commit_account(&args.account, account)?;
         Ok(())
     }
@@ -147,7 +192,7 @@ impl LedgerStorage {
         self.log_event(events::EventInfo::AccountAddRoles {
             account: args.account,
             roles: args.clone().roles,
-        });
+        })?;
         self.commit_account(&args.account, account)?;
         Ok(())
     }
@@ -177,7 +222,7 @@ impl LedgerStorage {
         self.log_event(events::EventInfo::AccountRemoveRoles {
             account: args.account,
             roles: args.clone().roles,
-        });
+        })?;
         self.commit_account(&args.account, account)?;
         Ok(())
     }
@@ -206,31 +251,40 @@ impl LedgerStorage {
             account: args.account,
             roles: args.clone().roles.unwrap_or_default(), // TODO: Verify this
             features: args.clone().features,
-        });
+        })?;
         self.commit_account(&args.account, account)?;
         Ok(())
     }
 
-    pub fn get_account(&self, id: &Address) -> Option<account::Account> {
-        self.get_account_even_disabled(id).and_then(|x| {
+    pub fn get_account(&self, id: &Address) -> Result<Option<account::Account>, ManyError> {
+        Ok(self.get_account_even_disabled(id)?.and_then(|x| {
             if x.disabled.is_none() || x.disabled == Some(Either::Left(false)) {
                 Some(x)
             } else {
                 None
             }
-        })
+        }))
     }
 
-    pub fn get_account_even_disabled(&self, id: &Address) -> Option<account::Account> {
-        self.persistent_store
-            .get(&key_for_account(id))
-            .unwrap_or_default()
-            .as_ref()
-            .and_then(|bytes| {
-                minicbor::decode::<account::Account>(bytes)
-                    .map_err(|e| ManyError::deserialization_error(e.to_string()))
-                    .ok()
-            })
+    pub fn get_account_even_disabled(
+        &self,
+        id: &Address,
+    ) -> Result<Option<account::Account>, ManyError> {
+        // TODO: Refactor
+        Ok(
+            if let Some(bytes) = self
+                .persistent_store
+                .get(&key_for_account(id))
+                .unwrap_or_default()
+            {
+                Some(
+                    minicbor::decode::<account::Account>(&bytes)
+                        .map_err(ManyError::deserialization_error)?,
+                )
+            } else {
+                None
+            },
+        )
     }
 
     pub fn commit_account(
@@ -243,18 +297,12 @@ impl LedgerStorage {
         self.persistent_store
             .apply(&[(
                 key_for_account(id),
-                Op::Put(
-                    minicbor::to_vec(account)
-                        .map_err(|e| ManyError::serialization_error(e.to_string()))?,
-                ),
+                Op::Put(minicbor::to_vec(account).map_err(ManyError::serialization_error)?),
             )])
             .map_err(|e| ManyError::unknown(e.to_string()))?;
 
-        if !self.blockchain {
-            self.persistent_store
-                .commit(&[])
-                .expect("Could not commit to store.");
-        }
+        self.maybe_commit()?;
+
         Ok(())
     }
 }

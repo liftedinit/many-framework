@@ -10,5 +10,11 @@
   },
   "symbols": {
     "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "MFX"
+  },
+  "symbols_meta": {
+    "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": {
+      "name": "Manifest Network Token",
+      "decimals": 9
+    }
   }
 }

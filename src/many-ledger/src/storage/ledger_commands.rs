@@ -4,20 +4,31 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
 use many_types::ledger::{Symbol, TokenAmount};
+use many_types::Memo;
 use merk::{BatchEntry, Op};
 use std::cmp::Ordering;
 use tracing::info;
 
 impl LedgerStorage {
-    pub fn get_balance(&self, identity: &Address, symbol: &Symbol) -> TokenAmount {
+    pub fn get_balance(
+        &self,
+        identity: &Address,
+        symbol: &Symbol,
+    ) -> Result<TokenAmount, ManyError> {
         if identity.is_anonymous() {
-            TokenAmount::zero()
+            Ok(TokenAmount::zero())
         } else {
             let key = key_for_account_balance(identity, symbol);
-            match self.persistent_store.get(&key).unwrap() {
-                None => TokenAmount::zero(),
-                Some(amount) => TokenAmount::from(amount),
-            }
+            Ok(
+                match self
+                    .persistent_store
+                    .get(&key)
+                    .map_err(error::storage_get_failed)?
+                {
+                    None => TokenAmount::zero(),
+                    Some(amount) => TokenAmount::from(amount),
+                },
+            )
         }
     }
 
@@ -27,6 +38,7 @@ impl LedgerStorage {
         to: &Address,
         symbol: &Symbol,
         amount: TokenAmount,
+        memo: Option<Memo>,
     ) -> Result<(), ManyError> {
         if from == to {
             return Err(error::destination_is_source());
@@ -40,14 +52,14 @@ impl LedgerStorage {
             return Err(error::anonymous_cannot_hold_funds());
         }
 
-        let mut amount_from = self.get_balance(from, symbol);
+        let mut amount_from = self.get_balance(from, symbol)?;
         if amount > amount_from {
             return Err(error::insufficient_funds());
         }
 
         info!("send({} => {}, {} {})", from, to, &amount, symbol);
 
-        let mut amount_to = self.get_balance(to, symbol);
+        let mut amount_to = self.get_balance(to, symbol)?;
         amount_to += amount.clone();
         amount_from -= amount.clone();
 
@@ -66,20 +78,21 @@ impl LedgerStorage {
             ],
         };
 
-        self.update_account_count(from, to, amount.clone(), symbol);
+        self.update_account_count(from, to, amount.clone(), symbol)?;
 
-        self.persistent_store.apply(&batch).unwrap();
+        self.persistent_store
+            .apply(&batch)
+            .map_err(error::storage_apply_failed)?;
 
         self.log_event(EventInfo::Send {
             from: *from,
             to: *to,
             symbol: *symbol,
             amount,
-        });
+            memo,
+        })?;
 
-        if !self.blockchain {
-            self.persistent_store.commit(&[]).unwrap();
-        }
+        self.maybe_commit()?;
 
         Ok(())
     }

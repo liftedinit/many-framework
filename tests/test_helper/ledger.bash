@@ -1,6 +1,8 @@
 PEM_ROOT="$(mktemp -d)"
 CONFIG_ROOT="$(mktemp -d)"
 
+source "$(dirname "${BASH_SOURCE[0]}")/token.bash"
+
 function start_ledger() {
     local persistent
     local state
@@ -53,7 +55,7 @@ function call_ledger() {
 
     echo "${ledgercmd} $pem_arg http://localhost:${port}/ $*" >&2
     # `run` doesn't handle empty parameters well, i.e., $pem_arg is empty
-    # We need to use `bash -c` to this the issue
+    # We need to use `bash -c` to fix the issue
     run bash -c "${ledgercmd} $pem_arg http://localhost:${port}/ $*"
 }
 

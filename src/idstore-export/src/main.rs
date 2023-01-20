@@ -1,12 +1,14 @@
 extern crate core;
 
 use clap::Parser;
-use merk::rocksdb::{Direction, IteratorMode, ReadOptions};
+use merk::rocksdb;
+use merk::rocksdb::{IteratorMode, ReadOptions};
 use merk::tree::Tree;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 pub(crate) const IDSTORE_ROOT: &[u8] = b"/idstore/";
+pub(crate) const IDSTORE_SEED_ROOT: &[u8] = b"/config/idstore_seed";
 
 #[derive(Parser)]
 struct Opts {
@@ -25,12 +27,9 @@ fn main() {
 
     let merk = merk::Merk::open(store).expect("Could not open the store.");
 
-    let mut upper_bound = IDSTORE_ROOT.to_vec();
-    *upper_bound.last_mut().expect("Unreachable") += 1;
-
     let mut opts = ReadOptions::default();
-    opts.set_iterate_upper_bound(upper_bound);
-    let it = merk.iter_opt(IteratorMode::From(IDSTORE_ROOT, Direction::Forward), opts);
+    opts.set_iterate_range(rocksdb::PrefixRange(IDSTORE_ROOT));
+    let it = merk.iter_opt(IteratorMode::Start, opts);
 
     let mut idstore = BTreeMap::new();
     for item in it {
@@ -43,7 +42,7 @@ fn main() {
 
     let root = JsonRoot {
         id_store_seed: merk
-            .get(b"/config/idstore_seed")
+            .get(IDSTORE_SEED_ROOT)
             .expect("Could not read seed")
             .map_or(0u64, |x| {
                 let mut bytes = [0u8; 8];
