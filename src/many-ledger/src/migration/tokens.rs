@@ -11,7 +11,7 @@ use many_identity::Address;
 use many_migration::InnerMigration;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_types::ledger::{Symbol, TokenInfo, TokenInfoSummary, TokenInfoSupply};
-use merk::Op;
+use merk::{BatchEntry, Op};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use std::str::FromStr;
@@ -103,33 +103,29 @@ fn migrate_token(
     })()
     .map_err(ManyError::deserialization_error)?;
 
-    // Add token data to the DB
+    let mut batch: Vec<BatchEntry> = Vec::new();
+    batch.push((
+        key_for_ext_info(&symbol),
+        Op::Put(
+            minicbor::to_vec(TokenExtendedInfo::default())
+                .map_err(ManyError::serialization_error)?,
+        ),
+    ));
+    batch.push((
+        key_for_symbol(&symbol),
+        Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
+    ));
+    batch.push((
+        TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
+        Op::Put(token_identity.to_vec()),
+    ));
+    batch.push((
+        TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
+        Op::Put(token_next_subresource.to_be_bytes().to_vec()),
+    ));
+
     storage
-        .apply(&[(
-            TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
-            Op::Put(token_identity.to_vec()),
-        )])
-        .map_err(error::storage_apply_failed)?;
-    storage
-        .apply(&[(
-            TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
-            Op::Put(token_next_subresource.to_be_bytes().to_vec()),
-        )])
-        .map_err(error::storage_apply_failed)?;
-    storage
-        .apply(&[(
-            key_for_symbol(&symbol),
-            Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
-        )])
-        .map_err(error::storage_apply_failed)?;
-    storage
-        .apply(&[(
-            key_for_ext_info(&symbol),
-            Op::Put(
-                minicbor::to_vec(TokenExtendedInfo::default())
-                    .map_err(ManyError::serialization_error)?,
-            ),
-        )])
+        .apply(batch.as_slice())
         .map_err(error::storage_apply_failed)?;
 
     Ok(())
