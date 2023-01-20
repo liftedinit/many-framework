@@ -103,26 +103,27 @@ fn migrate_token(
     })()
     .map_err(ManyError::deserialization_error)?;
 
-    let mut batch: Vec<BatchEntry> = Vec::new();
-    batch.push((
-        key_for_ext_info(&symbol),
-        Op::Put(
-            minicbor::to_vec(TokenExtendedInfo::default())
-                .map_err(ManyError::serialization_error)?,
+    let batch: Vec<BatchEntry> = vec![
+        (
+            key_for_ext_info(&symbol),
+            Op::Put(
+                minicbor::to_vec(TokenExtendedInfo::default())
+                    .map_err(ManyError::serialization_error)?,
+            ),
         ),
-    ));
-    batch.push((
-        key_for_symbol(&symbol),
-        Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
-    ));
-    batch.push((
-        TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
-        Op::Put(token_identity.to_vec()),
-    ));
-    batch.push((
-        TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
-        Op::Put(token_next_subresource.to_be_bytes().to_vec()),
-    ));
+        (
+            key_for_symbol(&symbol),
+            Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
+        ),
+        (
+            TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
+            Op::Put(token_identity.to_vec()),
+        ),
+        (
+            TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
+            Op::Put(token_next_subresource.to_be_bytes().to_vec()),
+        ),
+    ];
 
     storage
         .apply(batch.as_slice())
