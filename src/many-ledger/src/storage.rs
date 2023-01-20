@@ -217,14 +217,11 @@ impl LedgerStorage {
     ///     No CBOR decoding needed.
     /// Else symbols are fetched using the legacy method via `get_symbols_and_tickers()`
     pub fn get_symbols(&self) -> Result<BTreeSet<Symbol>, ManyError> {
-        let mut symbols = BTreeSet::new();
-        if self.migrations.is_active(&TOKEN_MIGRATION) {
-            self._get_symbols(&mut symbols)?;
+        Ok(if self.migrations.is_active(&TOKEN_MIGRATION) {
+            self._get_symbols()?
         } else {
-            let symbols_and_tickers = self.get_symbols_and_tickers()?;
-            symbols.extend(symbols_and_tickers.keys())
-        }
-        Ok(symbols)
+            self.get_symbols_and_tickers()?.keys().cloned().collect()
+        })
     }
 
     fn inc_height(&mut self) -> Result<u64, ManyError> {

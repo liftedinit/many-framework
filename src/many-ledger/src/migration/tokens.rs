@@ -10,7 +10,7 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_migration::InnerMigration;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
-use many_types::ledger::{Symbol, TokenAmount, TokenInfo, TokenInfoSummary, TokenInfoSupply};
+use many_types::ledger::{Symbol, TokenInfo, TokenInfoSummary, TokenInfoSupply};
 use merk::Op;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};

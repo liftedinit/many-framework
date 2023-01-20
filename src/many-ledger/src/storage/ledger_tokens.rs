@@ -160,7 +160,8 @@ impl LedgerStorage {
 
     /// Fetch symbols from `/config/symbols/{symbol}`
     ///     No CBOR decoding needed.
-    pub(crate) fn _get_symbols(&self, symbols: &mut BTreeSet<Symbol>) -> Result<(), ManyError> {
+    pub(crate) fn _get_symbols(&self) -> Result<BTreeSet<Symbol>, ManyError> {
+        let mut symbols = BTreeSet::new();
         let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
         for item in it {
             let (k, _) = item.map_err(ManyError::unknown)?;
@@ -169,7 +170,7 @@ impl LedgerStorage {
                     .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
             )?);
         }
-        Ok(())
+        Ok(symbols)
     }
 
     pub fn get_token_info_summary(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
