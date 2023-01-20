@@ -5,6 +5,7 @@ Scenario: Creating a new token as myself
 	Given a ticker FBR
 	And a name Foobar
 	And a decimals of 9
+	And a memo "Fun"
 	And myself as owner
 	Given id 1 has 123 initial tokens
 	And id 2 has 456 initial tokens
@@ -16,6 +17,7 @@ Scenario: Creating a new token as myself
 	And the token total supply is 579
 	And the token circulating supply is 579
 	And the token maximum supply has no maximum
+	And the memo is "Fun"
 
 @tokens
 Scenario: Creating a new token, sender is myself, token owner is random

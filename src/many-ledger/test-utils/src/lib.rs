@@ -62,6 +62,7 @@ pub fn default_token_create_args(
                 .with_visual_logo(logos)
                 .unwrap(),
         ),
+        memo: None,
     }
 }
 

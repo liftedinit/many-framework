@@ -4,13 +4,13 @@ use many_identity::testing::identity;
 use many_ledger::migration::data::{
     ACCOUNT_COUNT_DATA_ATTRIBUTE, ACCOUNT_TOTAL_COUNT_INDEX, NON_ZERO_ACCOUNT_TOTAL_COUNT_INDEX,
 };
+use many_ledger_test_utils::*;
 use many_modules::{
     data::{DataGetInfoArgs, DataModuleBackend, DataQueryArgs},
     EmptyArg,
 };
 use many_types::{ledger::TokenAmount, VecOrSingle};
 use num_bigint::BigInt;
-use test_utils::*;
 
 fn assert_metrics(harness: &Setup, expected_total: u32, expected_non_zero: u32) {
     assert_eq!(

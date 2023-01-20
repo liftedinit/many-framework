@@ -28,8 +28,6 @@ pub mod multisig;
 pub const SYMBOLS_ROOT: &str = "/config/symbols";
 pub const IDENTITY_ROOT: &str = "/config/identity";
 pub const HEIGHT_ROOT: &str = "/height";
-pub const SUBRESOURCE_ID_ROOT: &str = "/config/subresource_id";
-pub const ACCOUNT_ID_ROOT: &str = "/config/account_id";
 
 pub(super) fn key_for_account_balance(id: &Address, symbol: &Symbol) -> Vec<u8> {
     format!("/balances/{id}/{symbol}").into_bytes()
@@ -49,9 +47,6 @@ pub struct LedgerStorage {
 
     current_time: Option<Timestamp>,
     current_hash: Option<Vec<u8>>,
-
-    next_subresource: u32,  // Subresource based on the server identity
-    root_identity: Address, // Server identity
 
     migrations: LedgerMigrations,
 }
@@ -105,14 +100,6 @@ impl LedgerStorage {
         &self.migrations
     }
 
-    fn subresource_db_key(migration_is_active: bool) -> Vec<u8> {
-        if migration_is_active {
-            SUBRESOURCE_ID_ROOT.as_bytes().to_vec()
-        } else {
-            ACCOUNT_ID_ROOT.as_bytes().to_vec()
-        }
-    }
-
     #[inline]
     fn maybe_commit(&mut self) -> Result<(), ManyError> {
         if !self.blockchain {
@@ -129,19 +116,6 @@ impl LedgerStorage {
         Ok(())
     }
 
-    pub fn new_subresource_id(&mut self) -> Result<Address, ManyError> {
-        let current_id = self.next_subresource;
-        self.next_subresource += 1;
-        self.persistent_store
-            .apply(&[(
-                LedgerStorage::subresource_db_key(self.migrations.is_active(&TOKEN_MIGRATION)),
-                Op::Put(self.next_subresource.to_be_bytes().to_vec()),
-            )])
-            .map_err(error::storage_apply_failed)?;
-
-        self.root_identity.with_subresource_id(current_id)
-    }
-
     pub fn load<P: AsRef<Path>>(
         persistent_path: P,
         blockchain: bool,
@@ -149,13 +123,6 @@ impl LedgerStorage {
     ) -> Result<Self, ManyError> {
         let persistent_store =
             InnerStorage::open(persistent_path).map_err(error::storage_open_failed)?;
-
-        let root_identity: Address = Address::from_bytes(
-            &persistent_store
-                .get(IDENTITY_ROOT.as_bytes())
-                .map_err(error::storage_get_failed)?
-                .ok_or_else(|| error::storage_key_not_found(IDENTITY_ROOT))?,
-        )?;
 
         let height = persistent_store
             .get(HEIGHT_ROOT.as_bytes())
@@ -181,25 +148,12 @@ impl LedgerStorage {
             })
             .map_err(error::unable_to_load_migrations)?;
 
-        let next_subresource = persistent_store
-            .get(&LedgerStorage::subresource_db_key(
-                migrations.is_active(&TOKEN_MIGRATION),
-            ))
-            .map_err(error::storage_get_failed)?
-            .map_or(0, |x| {
-                let mut bytes = [0u8; 4];
-                bytes.copy_from_slice(x.as_slice());
-                u32::from_be_bytes(bytes)
-            });
-
         Ok(Self {
             persistent_store,
             blockchain,
             latest_tid,
             current_time: None,
             current_hash: None,
-            next_subresource,
-            root_identity,
             migrations,
         })
     }
@@ -226,14 +180,17 @@ impl LedgerStorage {
             ])
             .map_err(error::storage_apply_failed)?;
 
+        // We need to commit, because we need IDENTITY_ROOT to be available for the next steps, if any.
+        persistent_store
+            .commit(&[])
+            .map_err(error::storage_commit_failed)?;
+
         Ok(Self {
             persistent_store,
             blockchain,
             latest_tid: EventId::from(vec![0]),
             current_time: None,
             current_hash: None,
-            next_subresource: 0,
-            root_identity: identity,
             migrations: MigrationSet::empty().map_err(ManyError::unknown)?, // TODO: Custom error
         })
     }
@@ -261,14 +218,11 @@ impl LedgerStorage {
     ///     No CBOR decoding needed.
     /// Else symbols are fetched using the legacy method via `get_symbols_and_tickers()`
     pub fn get_symbols(&self) -> Result<BTreeSet<Symbol>, ManyError> {
-        let mut symbols = BTreeSet::new();
-        if self.migrations.is_active(&TOKEN_MIGRATION) {
-            self._get_symbols(&mut symbols)?;
+        Ok(if self.migrations.is_active(&TOKEN_MIGRATION) {
+            self._get_symbols()?
         } else {
-            let symbols_and_tickers = self.get_symbols_and_tickers()?;
-            symbols.extend(symbols_and_tickers.keys())
-        }
-        Ok(symbols)
+            self.get_symbols_and_tickers()?.keys().cloned().collect()
+        })
     }
 
     fn inc_height(&mut self) -> Result<u64, ManyError> {
@@ -300,6 +254,55 @@ impl LedgerStorage {
         self.current_hash
             .as_ref()
             .map_or_else(|| self.persistent_store.root_hash().to_vec(), |x| x.clone())
+    }
+
+    /// Get the identity stored at a given DB key
+    pub fn get_identity(&self, identity_root: &str) -> Result<Address, ManyError> {
+        Address::from_bytes(
+            &self
+                .persistent_store
+                .get(identity_root.as_bytes())
+                .map_err(error::storage_get_failed)?
+                .ok_or_else(|| error::storage_key_not_found(identity_root))?,
+        )
+    }
+
+    /// Generate the next subresource from the given identity and counter DB keys.
+    /// Uses the server identity to generate the subresource if the given address is not found in the DB.
+    pub(crate) fn get_next_subresource(
+        &mut self,
+        identity_root: &str,
+        counter_root: &str,
+    ) -> Result<Address, ManyError> {
+        let current_id = self.get_subresource_counter(counter_root)?;
+        let new_id = current_id + 1;
+        self.persistent_store
+            .apply(&[(
+                counter_root.as_bytes().to_vec(),
+                Op::Put(new_id.to_be_bytes().to_vec()),
+            )])
+            .map_err(error::storage_apply_failed)?;
+
+        self.persistent_store
+            .get(identity_root.as_bytes())
+            .map_err(error::storage_get_failed)?
+            .map_or(self.get_identity(IDENTITY_ROOT), |bytes| {
+                Address::from_bytes(&bytes)
+            })?
+            .with_subresource_id(current_id)
+    }
+
+    /// Get the subresource counter from the given DB key.
+    /// Returns 0 if the key is not found in the DB
+    fn get_subresource_counter(&self, key: &str) -> Result<u32, ManyError> {
+        self.persistent_store
+            .get(key.as_bytes())
+            .map_err(error::storage_get_failed)?
+            .map_or(Ok(0), |x| {
+                let mut bytes = [0u8; 4];
+                bytes.copy_from_slice(x.as_slice());
+                Ok(u32::from_be_bytes(bytes))
+            })
     }
 
     pub fn block_hotfix<

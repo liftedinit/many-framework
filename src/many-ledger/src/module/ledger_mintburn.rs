@@ -1,6 +1,7 @@
 use crate::error;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::module::LedgerModuleImpl;
+use crate::storage::ledger_tokens::verify_tokens_sender;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -33,7 +34,12 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
             memo,
         } = args;
         // Only the token identity is able to mint tokens
-        self.storage.verify_tokens_sender(sender)?;
+        verify_tokens_sender(
+            sender,
+            self.storage
+                .get_identity(crate::storage::ledger_tokens::TOKEN_IDENTITY_ROOT)
+                .or_else(|_| self.storage.get_identity(crate::storage::IDENTITY_ROOT))?,
+        )?;
 
         check_symbol_exists(&symbol, self.storage.get_symbols()?)?;
 
@@ -87,7 +93,12 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
             error_on_under_burn,
         } = args;
         // Only the token identity is able to burn tokens
-        self.storage.verify_tokens_sender(sender)?;
+        verify_tokens_sender(
+            sender,
+            self.storage
+                .get_identity(crate::storage::ledger_tokens::TOKEN_IDENTITY_ROOT)
+                .or_else(|_| self.storage.get_identity(crate::storage::IDENTITY_ROOT))?,
+        )?;
 
         check_symbol_exists(&symbol, self.storage.get_symbols()?)?;
 

@@ -1,6 +1,6 @@
 //! Tests regarding blockchain behaviour.
 use many_identity::testing::identity;
-use test_utils::*;
+use many_ledger_test_utils::*;
 
 /// Test that out of order keys at commit in a blockchain don't cause a problem.
 #[test]

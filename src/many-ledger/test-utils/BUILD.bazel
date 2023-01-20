@@ -9,7 +9,7 @@ rust_library(
     name = "many-ledger-test-utils-lib",
     srcs = glob(include = ["src/**/*.rs"]),
     aliases = aliases(),
-    crate_name = "test_utils",
+    crate_name = "many_ledger_test_utils",
     proc_macro_deps = all_crate_deps(
         proc_macro = True,
     ),

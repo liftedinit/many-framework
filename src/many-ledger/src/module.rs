@@ -54,7 +54,7 @@ impl LedgerModuleImpl {
                     state.token_next_subresource,
                     balances,
                 )?
-                .with_account(accounts)?
+                .with_account(state.account_identity, accounts)?
                 .build()?;
 
         if let Some(h) = state.hash {

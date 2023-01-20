@@ -108,6 +108,10 @@ struct CreateTokenOpt {
 
     #[clap(subcommand)]
     extended_info: Option<CreateExtInfoOpt>,
+
+    #[clap(long)]
+    #[clap(parse(try_from_str = Memo::try_from))]
+    memo: Option<Memo>,
 }
 
 #[derive(Parser)]
@@ -172,6 +176,10 @@ struct AddExtInfoOpt {
 
     #[clap(subcommand)]
     ext_info_type: CreateExtInfoOpt,
+
+    #[clap(long)]
+    #[clap(parse(try_from_str = Memo::try_from))]
+    memo: Option<Memo>,
 }
 
 #[derive(Parser)]
@@ -180,6 +188,10 @@ struct RemoveExtInfoOpt {
 
     #[clap(value_parser = attribute_related_index)]
     indices: Vec<AttributeRelatedIndex>,
+
+    #[clap(long)]
+    #[clap(parse(try_from_str = Memo::try_from))]
+    memo: Option<Memo>,
 }
 
 /// Create `TokenMaybeOwner` from CLI `str`
@@ -233,6 +245,7 @@ fn create_token(client: ManyClient<impl Identity>, opts: CreateTokenOpt) -> Resu
         initial_distribution: opts.initial_distribution,
         maximum_supply: opts.maximum_supply.map(TokenAmount::from),
         extended_info,
+        memo: opts.memo,
     };
     let response = client.call("tokens.create", args)?;
     let payload = crate::wait_response(client, response)?;
@@ -266,6 +279,7 @@ fn add_ext_info(client: ManyClient<impl Identity>, opts: AddExtInfoOpt) -> Resul
     let args = TokenAddExtendedInfoArgs {
         symbol: opts.symbol,
         extended_info,
+        memo: opts.memo,
     };
     let response = client.call("tokens.addExtendedInfo", args)?;
     let payload = crate::wait_response(client, response)?;
@@ -281,6 +295,7 @@ fn remove_ext_info(
     let args = TokenRemoveExtendedInfoArgs {
         symbol: opts.symbol,
         extended_info: opts.indices,
+        memo: opts.memo,
     };
     let response = client.call("tokens.removeExtendedInfo", args)?;
     let payload = crate::wait_response(client, response)?;

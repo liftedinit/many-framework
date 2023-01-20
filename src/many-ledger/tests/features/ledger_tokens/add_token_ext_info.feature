@@ -1,20 +1,22 @@
 Feature: Add token extended info
 
-@token
+@tokens
 Scenario: Add token memo extended info as myself
 	Given a default token owned by myself
 	And a memo "Oh my god, it's full of stars"
+	And an event memo "Fun"
 	When I add the extended info to the token as myself
 	Then the token has the memo "Oh my god, it's full of stars"
+	And the event memo is "Fun"
 
-@token
+@tokens
 Scenario: Add token unicode char logo extended info as myself
 	Given a default token owned by myself
 	And an unicode logo ∑
 	When I add the extended info to the token as myself
 	Then the token has the unicode logo ∑
 
-@token
+@tokens
 Scenario: Add token image logo extended info as myself
 	Given a default token owned by myself
 	And a png image logo '010203'

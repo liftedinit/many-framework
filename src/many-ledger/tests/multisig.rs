@@ -2,6 +2,7 @@ use many_error::ManyError;
 use many_identity::testing::identity;
 use many_identity::Address;
 use many_ledger::module::LedgerModuleImpl;
+use many_ledger_test_utils::*;
 use many_modules::account::features::multisig::AccountMultisigModuleBackend;
 use many_modules::account::features::{multisig, TryCreateFeature};
 use many_modules::{account, events, ledger};
@@ -9,7 +10,6 @@ use many_types::ledger::TokenAmount;
 use proptest::prelude::*;
 use proptest::test_runner::Config;
 use std::collections::{BTreeMap, BTreeSet};
-use test_utils::*;
 
 /// Returns informations about the given account
 fn account_info(

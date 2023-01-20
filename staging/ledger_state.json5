@@ -18,6 +18,11 @@
   // E.g., the MFX symbol in this file has subresource 1.
   token_next_subresource: 2,
 
+  // Optional.
+  // Default will use the server identity.
+  // Identity from which new account identities will be derived.
+  account_identity: "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow",
+
   // Initial balances for this ledger. The symbols can be either the identity or
   // the name of the symbol. The symbol is validated during initialization so it
   // must match an existing symbol.
@@ -95,5 +100,5 @@
 
   // Hash calculated after the initial state is created.
   // Note: This will change depending on the migration activated at load
-//  hash: "fc0041ca4f7d959fe9e5a337e175bd8a68942cad76745711a3daf820a159f7eb"
+  hash: "fc0041ca4f7d959fe9e5a337e175bd8a68942cad76745711a3daf820a159f7eb"
 }

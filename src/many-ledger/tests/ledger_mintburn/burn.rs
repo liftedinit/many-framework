@@ -3,6 +3,12 @@ use many_error::ManyError;
 use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
+use many_ledger_test_macros::*;
+use many_ledger_test_utils::cucumber::{
+    refresh_token_info, verify_error_addr, verify_error_code, AccountWorld, LedgerWorld, SomeError,
+    SomeId, TokenWorld,
+};
+use many_ledger_test_utils::Setup;
 use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_modules::ledger::{
@@ -11,12 +17,6 @@ use many_modules::ledger::{
 use many_types::ledger::{TokenAmount, TokenInfo};
 use many_types::Memo;
 use std::path::Path;
-use test_macros::*;
-use test_utils::cucumber::{
-    refresh_token_info, verify_error_addr, verify_error_code, AccountWorld, LedgerWorld, SomeError,
-    SomeId, TokenWorld,
-};
-use test_utils::Setup;
 
 #[derive(World, Debug, Default, LedgerWorld, TokenWorld, AccountWorld)]
 #[world(init = Self::new)]
@@ -47,7 +47,7 @@ fn fail_burn_token(w: &mut BurnWorld, sender: &Address) {
 
 #[given(expr = "a default token owned by {id}")]
 fn create_default_token(w: &mut BurnWorld, id: SomeId) {
-    test_utils::cucumber::create_default_token(w, id);
+    many_ledger_test_utils::cucumber::create_default_token(w, id);
     w.args.symbol = w.info.symbol;
 }
 

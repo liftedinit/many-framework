@@ -1,7 +1,7 @@
 use crate::error;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::storage::iterator::LedgerIterator;
-use crate::storage::{key_for_account_balance, LedgerStorage, SYMBOLS_ROOT};
+use crate::storage::{key_for_account_balance, LedgerStorage, IDENTITY_ROOT, SYMBOLS_ROOT};
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -36,19 +36,22 @@ pub struct SymbolMeta {
     pub maximum: Option<TokenAmount>,
 }
 
+pub fn verify_tokens_sender(sender: &Address, token_identity: Address) -> Result<(), ManyError> {
+    if *sender != token_identity {
+        return Err(error::invalid_sender());
+    }
+    Ok(())
+}
+
 impl LedgerStorage {
     #[inline]
     fn _total_supply(
         initial_balance: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
         let mut total_supply = BTreeMap::new();
-        for (_, v) in initial_balance.into_iter() {
+        for v in initial_balance.into_values() {
             for (symbol, tokens) in v.into_iter() {
-                if let Some(x) = total_supply.get_mut(&symbol) {
-                    *x += tokens;
-                } else {
-                    total_supply.insert(symbol, tokens);
-                }
+                *total_supply.entry(symbol).or_default() += tokens;
             }
         }
         Ok(total_supply)
@@ -87,9 +90,6 @@ impl LedgerStorage {
         token_next_subresource: Option<u32>,
         initial_balances: BTreeMap<Address, BTreeMap<Symbol, TokenAmount>>,
     ) -> Result<Self, ManyError> {
-        let token_identity = token_identity.unwrap_or(self.root_identity);
-        let token_next_subresource = token_next_subresource.unwrap_or(0);
-
         if self.migrations.is_active(&TOKEN_MIGRATION) {
             let symbols_meta = symbols_meta
                 .ok_or_else(|| ManyError::unknown("Symbols metadata needs to be provided"))?; // TODO: Custom error
@@ -131,11 +131,15 @@ impl LedgerStorage {
 
             batch.push((
                 TOKEN_IDENTITY_ROOT.as_bytes().to_vec(),
-                Op::Put(token_identity.to_vec()),
+                Op::Put(
+                    token_identity
+                        .unwrap_or(self.get_identity(IDENTITY_ROOT)?)
+                        .to_vec(),
+                ),
             ));
             batch.push((
                 TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
-                Op::Put(token_next_subresource.to_be_bytes().to_vec()),
+                Op::Put(token_next_subresource.unwrap_or(0).to_be_bytes().to_vec()),
             ));
 
             self.persistent_store
@@ -163,7 +167,8 @@ impl LedgerStorage {
 
     /// Fetch symbols from `/config/symbols/{symbol}`
     ///     No CBOR decoding needed.
-    pub(crate) fn _get_symbols(&self, symbols: &mut BTreeSet<Symbol>) -> Result<(), ManyError> {
+    pub(crate) fn _get_symbols(&self) -> Result<BTreeSet<Symbol>, ManyError> {
+        let mut symbols = BTreeSet::new();
         let it = LedgerIterator::all_symbols(&self.persistent_store, SortOrder::Indeterminate);
         for item in it {
             let (k, _) = item.map_err(ManyError::unknown)?;
@@ -172,35 +177,7 @@ impl LedgerStorage {
                     .map_err(ManyError::deserialization_error)?, // TODO: We could safely use from_utf8_unchecked() if performance is an issue
             )?);
         }
-        Ok(())
-    }
-
-    pub fn verify_tokens_sender(&self, sender: &Address) -> Result<(), ManyError> {
-        if sender != &self.get_token_identity()? {
-            return Err(error::invalid_sender());
-        }
-        Ok(())
-    }
-
-    pub fn get_token_next_subresource_counter(&self) -> Result<u32, ManyError> {
-        let x = self
-            .persistent_store
-            .get(TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes())
-            .map_err(error::storage_get_failed)?
-            .ok_or_else(|| error::storage_key_not_found(TOKEN_SUBRESOURCE_COUNTER_ROOT))?;
-        let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(x.as_slice());
-        Ok(u32::from_be_bytes(bytes))
-    }
-
-    pub fn get_token_identity(&self) -> Result<Address, ManyError> {
-        Address::from_bytes(
-            &self
-                .persistent_store
-                .get(TOKEN_IDENTITY_ROOT.as_bytes())
-                .map_err(error::storage_get_failed)?
-                .ok_or_else(|| error::storage_key_not_found(TOKEN_IDENTITY_ROOT))?,
-        )
+        Ok(symbols)
     }
 
     pub fn get_token_info_summary(&self) -> Result<BTreeMap<Symbol, TokenInfoSummary>, ManyError> {
@@ -223,20 +200,6 @@ impl LedgerStorage {
             tracing::warn!("`get_token_info_summary()` called while TOKEN_MIGRATION is NOT active. Returning empty TokenInfoSummary.")
         }
         Ok(info_summary)
-    }
-
-    /// Create new token symbol derived from the token identity
-    fn new_token_subresource(&mut self) -> Result<Address, ManyError> {
-        let current_id = self.get_token_next_subresource_counter()?;
-        let new_id = current_id + 1;
-        self.persistent_store
-            .apply(&[(
-                TOKEN_SUBRESOURCE_COUNTER_ROOT.as_bytes().to_vec(),
-                Op::Put(new_id.to_be_bytes().to_vec()),
-            )])
-            .map_err(error::storage_apply_failed)?;
-
-        self.get_token_identity()?.with_subresource_id(current_id)
     }
 
     fn update_symbols(&mut self, symbol: Symbol, ticker: String) -> Result<(), ManyError> {
@@ -264,10 +227,12 @@ impl LedgerStorage {
             initial_distribution,
             maximum_supply,
             extended_info,
+            memo,
         } = args;
 
         // Create a new token symbol and store in memory and in the persistent store
-        let symbol = self.new_token_subresource()?;
+        let symbol =
+            self.get_next_subresource(TOKEN_IDENTITY_ROOT, TOKEN_SUBRESOURCE_COUNTER_ROOT)?;
         self.update_symbols(symbol, summary.ticker.clone())?;
 
         // Initialize the total supply following the initial token distribution, if any
@@ -291,12 +256,7 @@ impl LedgerStorage {
         };
 
         // Create the token information and store it in the persistent storage
-        let maybe_owner = owner
-            .as_ref()
-            .map_or(Some(*sender), |maybe_owner| match maybe_owner {
-                Either::Left(addr) => Some(*addr),
-                Either::Right(_) => None,
-            });
+        let maybe_owner = owner.clone().map_or(Some(*sender), Either::left);
         let info = TokenInfo {
             symbol,
             summary: summary.clone(),
@@ -323,6 +283,7 @@ impl LedgerStorage {
             initial_distribution,
             maximum_supply,
             extended_info,
+            memo,
         })?;
 
         batch.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
@@ -445,6 +406,7 @@ impl LedgerStorage {
         let TokenAddExtendedInfoArgs {
             symbol,
             extended_info,
+            memo,
         } = args;
 
         // Fetch existing extended info, if any
@@ -478,6 +440,7 @@ impl LedgerStorage {
         self.log_event(EventInfo::TokenAddExtendedInfo {
             symbol,
             extended_info: indices,
+            memo,
         })?;
 
         self.maybe_commit()?;
@@ -492,6 +455,7 @@ impl LedgerStorage {
         let TokenRemoveExtendedInfoArgs {
             symbol,
             extended_info,
+            memo,
         } = args;
 
         // Fetch existing extended info, if any
@@ -520,6 +484,7 @@ impl LedgerStorage {
         self.log_event(EventInfo::TokenRemoveExtendedInfo {
             symbol,
             extended_info,
+            memo,
         })?;
 
         self.maybe_commit()?;

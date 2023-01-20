@@ -1,9 +1,9 @@
-use test_macros::*;
-use test_utils::cucumber::{
+use many_ledger_test_macros::*;
+use many_ledger_test_utils::cucumber::{
     verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError, SomeId,
     SomePermission, TokenWorld,
 };
-use test_utils::Setup;
+use many_ledger_test_utils::Setup;
 
 use cucumber::{given, then, when, World};
 use many_error::ManyError;
@@ -47,22 +47,22 @@ fn fail_update_token(w: &mut UpdateWorld, sender: &Address) {
 
 #[given(expr = "a token account")]
 fn given_token_account(w: &mut UpdateWorld) {
-    test_utils::cucumber::given_token_account(w);
+    many_ledger_test_utils::cucumber::given_token_account(w);
 }
 
 #[given(expr = "{id} as the account owner")]
 fn given_account_id_owner(w: &mut UpdateWorld, id: SomeId) {
-    test_utils::cucumber::given_account_id_owner(w, id);
+    many_ledger_test_utils::cucumber::given_account_id_owner(w, id);
 }
 
 #[given(expr = "{id} has {permission} permission")]
 fn given_account_part_of_can_create(w: &mut UpdateWorld, id: SomeId, permission: SomePermission) {
-    test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
+    many_ledger_test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
 }
 
 #[given(expr = "a default token owned by {id}")]
 fn create_default_token(w: &mut UpdateWorld, id: SomeId) {
-    test_utils::cucumber::create_default_token(w, id);
+    many_ledger_test_utils::cucumber::create_default_token(w, id);
     w.args.symbol = w.info.symbol;
 }
 

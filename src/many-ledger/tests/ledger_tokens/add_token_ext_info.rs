@@ -1,16 +1,17 @@
-use std::path::Path;
-use test_macros::*;
-use test_utils::cucumber::{
+use many_ledger_test_macros::*;
+use many_ledger_test_utils::cucumber::{
     refresh_token_info, verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError,
     SomeId, SomePermission, TokenWorld,
 };
-use test_utils::Setup;
+use many_ledger_test_utils::Setup;
+use std::path::Path;
 
 use cucumber::{given, then, when, World};
 use many_error::ManyError;
 use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
+use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenAddExtendedInfoArgs};
@@ -49,12 +50,12 @@ fn fail_add_ext_info_token(w: &mut AddExtInfoWorld, sender: &Address) {
 }
 #[given(expr = "a token account")]
 fn given_token_account(w: &mut AddExtInfoWorld) {
-    test_utils::cucumber::given_token_account(w);
+    many_ledger_test_utils::cucumber::given_token_account(w);
 }
 
 #[given(expr = "{id} as the account owner")]
 fn given_account_id_owner(w: &mut AddExtInfoWorld, id: SomeId) {
-    test_utils::cucumber::given_account_id_owner(w, id);
+    many_ledger_test_utils::cucumber::given_account_id_owner(w, id);
 }
 
 #[given(expr = "{id} has {permission} permission")]
@@ -63,12 +64,12 @@ fn given_account_part_of_can_create(
     id: SomeId,
     permission: SomePermission,
 ) {
-    test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
+    many_ledger_test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
 }
 
 #[given(expr = "a default token owned by {id}")]
 fn create_default_token(w: &mut AddExtInfoWorld, id: SomeId) {
-    test_utils::cucumber::create_default_token(w, id);
+    many_ledger_test_utils::cucumber::create_default_token(w, id);
     w.args.symbol = w.info.symbol;
     refresh_token_info(w);
 }
@@ -96,6 +97,11 @@ fn given_string_logo(w: &mut AddExtInfoWorld, content_type: String, data: String
     w.args.extended_info = TokenExtendedInfo::new()
         .with_visual_logo(logo)
         .expect("Unable to set extended info logo");
+}
+
+#[given(expr = "an event memo {string}")]
+fn given_event_memo(w: &mut AddExtInfoWorld, memo: String) {
+    w.args.memo = Some(Memo::try_from(memo).unwrap());
 }
 
 #[when(expr = "I add the extended info to the token as {id}")]
@@ -141,6 +147,26 @@ fn then_add_ext_info_token_fail_acl(w: &mut AddExtInfoWorld, id: SomeId, error: 
 #[then(expr = "the error role is {word}")]
 fn then_error_role(w: &mut AddExtInfoWorld, role: String) {
     verify_error_role(w, role.as_str());
+}
+
+#[then(expr = "the event memo is {string}")]
+fn then_memo(w: &mut AddExtInfoWorld, memo: String) {
+    let res = EventsModuleBackend::list(
+        &w.setup.module_impl,
+        ListArgs {
+            filter: Some(EventFilter {
+                kind: Some(vec![EventKind::TokenAddExtendedInfo].into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+    )
+    .expect("Unable to list TokenAddExtendedInfo event");
+    let memo = Memo::try_from(memo).unwrap();
+    assert!(res.nb_events >= 1);
+    let event = res.events.into_iter().next().expect("Expected an event");
+    assert!(event.content.memo().is_some());
+    assert_eq!(event.content.memo().unwrap(), &memo);
 }
 
 #[tokio::main]
