@@ -38,23 +38,6 @@ incremental = false
 #many-server = { path = "../many-rs/src/many-server" }
 #many-types = { path = "../many-rs/src/many-types" }
 
-[patch."https://github.com/liftedinit/many-rs.git"]
-many = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-client = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-client-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-error = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity-dsa = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity-hsm = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-identity-webauthn = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-macros = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-migration = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-mock = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-modules = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-protocol = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-server = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-many-types = { git = "https://github.com/fmorency/many-rs.git", branch = "ledger-tokens-with-memo" }
-
 [patch.crates-io]
 ciborium = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
 ciborium-io = { git = "https://github.com/enarx/ciborium", rev = "2ca375e6b33d1ade5a5798792278b35a807b748e" }
