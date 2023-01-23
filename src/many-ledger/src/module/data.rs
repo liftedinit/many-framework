@@ -11,7 +11,7 @@ impl DataModuleBackend for LedgerModuleImpl {
         Ok(DataInfoReturns {
             indices: self
                 .storage
-                .data_attributes()
+                .data_attributes()?
                 .unwrap_or_default()
                 .into_keys()
                 .collect(),
@@ -25,7 +25,7 @@ impl DataModuleBackend for LedgerModuleImpl {
     ) -> Result<DataGetInfoReturns, ManyError> {
         let filtered = self
             .storage
-            .data_info()
+            .data_info()?
             .unwrap_or_default()
             .into_iter()
             .filter(|(k, _)| args.indices.0.contains(k))
@@ -36,7 +36,7 @@ impl DataModuleBackend for LedgerModuleImpl {
     fn query(&self, _sender: &Address, args: DataQueryArgs) -> Result<DataQueryReturns, ManyError> {
         let filtered = self
             .storage
-            .data_attributes()
+            .data_attributes()?
             .unwrap_or_default()
             .into_iter()
             .filter(|(k, _)| args.indices.0.contains(k))

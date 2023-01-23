@@ -16,6 +16,7 @@ mod idstore;
 pub mod idstore_webauthn;
 mod ledger;
 mod ledger_commands;
+mod ledger_tokens;
 mod multisig;
 
 /// A simple ledger that keeps transactions in memory.
@@ -31,34 +32,29 @@ impl LedgerModuleImpl {
         persistence_store_path: P,
         blockchain: bool,
     ) -> Result<Self, ManyError> {
-        let mut storage = LedgerStorage::new(
-            state.symbols(),
-            state.balances()?,
-            persistence_store_path,
-            state.identity,
-            blockchain,
-            state.id_store_seed,
-            state.id_store_keys.map(|keys| {
-                keys.iter()
-                    .map(|(k, v)| {
-                        let k = base64::decode(k).expect("Invalid base64 for key");
-                        let v = base64::decode(v).expect("Invalid base64 for value");
-                        (k, v)
-                    })
-                    .collect()
-            }),
-            migration_config,
-        )
-        .map_err(ManyError::unknown)?;
+        let symbols = state.symbols();
+        let balances = state.balances()?;
+        let symbols_meta = state
+            .symbols_meta
+            .map(|b| b.into_iter().map(|(k, v)| (k, v.into())).collect());
+        let accounts = state
+            .accounts
+            .map(|a| a.into_iter().map(|v| v.into()).collect());
 
-        if let Some(accounts) = state.accounts {
-            for account in accounts {
-                account
-                    .create_account(&mut storage)
-                    .expect("Could not create accounts");
-            }
-            storage.commit_persistent_store().expect("Could not commit");
-        }
+        let storage =
+            LedgerStorage::new(&symbols, persistence_store_path, state.identity, blockchain)?
+                .with_migrations(migration_config)?
+                .with_balances(&symbols, &balances)?
+                .with_idstore(state.id_store_seed, state.id_store_keys)?
+                .with_tokens(
+                    &symbols,
+                    symbols_meta,
+                    state.token_identity,
+                    state.token_next_subresource,
+                    balances,
+                )?
+                .with_account(state.account_identity, accounts)?
+                .build()?;
 
         if let Some(h) = state.hash {
             // Verify the hash.
@@ -69,7 +65,7 @@ impl LedgerModuleImpl {
         }
 
         info!(
-            height = storage.get_height(),
+            height = storage.get_height()?,
             hash = hex::encode(storage.hash()).as_str()
         );
 
@@ -96,8 +92,9 @@ impl LedgerModuleImpl {
         account: many_identity::Address,
         balance: u64,
         symbol: many_types::ledger::Symbol,
-    ) {
+    ) -> Result<(), ManyError> {
         self.storage
-            .set_balance_only_for_testing(account, balance, symbol);
+            .set_balance_only_for_testing(account, balance, symbol)?;
+        Ok(())
     }
 }

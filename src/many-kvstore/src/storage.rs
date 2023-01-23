@@ -38,8 +38,8 @@ pub struct KvStoreStorage {
     latest_event_id: EventId,
     current_time: Option<Timestamp>,
     current_hash: Option<Vec<u8>>,
-    next_account_id: u32,
-    account_identity: Address,
+    next_subresource: u32,
+    root_identity: Address,
 }
 
 impl std::fmt::Debug for KvStoreStorage {
@@ -58,11 +58,24 @@ impl KvStoreStorage {
         self.current_time.unwrap_or_else(Timestamp::now)
     }
 
+    pub fn new_subresource_id(&mut self) -> Result<Address, ManyError> {
+        let current_id = self.next_subresource;
+        self.next_subresource += 1;
+        self.persistent_store
+            .apply(&[(
+                b"/config/subresource_id".to_vec(),
+                Op::Put(self.next_subresource.to_be_bytes().to_vec()),
+            )])
+            .map_err(error::storage_apply_failed)?;
+
+        self.root_identity.with_subresource_id(current_id)
+    }
+
     pub fn load<P: AsRef<Path>>(persistent_path: P, blockchain: bool) -> Result<Self, String> {
         let persistent_store = merk::Merk::open(persistent_path).map_err(|e| e.to_string())?;
 
-        let next_account_id = persistent_store
-            .get(b"/config/account_id")
+        let next_subresource = persistent_store
+            .get(b"/config/subresource_id")
             .unwrap()
             .map_or(0, |x| {
                 let mut bytes = [0u8; 4];
@@ -70,7 +83,7 @@ impl KvStoreStorage {
                 u32::from_be_bytes(bytes)
             });
 
-        let account_identity: Address = Address::from_bytes(
+        let root_identity: Address = Address::from_bytes(
             &persistent_store
                 .get(b"/config/identity")
                 .expect("Could not open storage.")
@@ -92,8 +105,8 @@ impl KvStoreStorage {
             current_time: None,
             current_hash: None,
             latest_event_id,
-            next_account_id,
-            account_identity,
+            next_subresource,
+            root_identity,
         })
     }
 
@@ -137,8 +150,8 @@ impl KvStoreStorage {
             current_time: None,
             current_hash: None,
             latest_event_id,
-            next_account_id: 0,
-            account_identity: identity,
+            next_subresource: 0,
+            root_identity: identity,
         })
     }
 

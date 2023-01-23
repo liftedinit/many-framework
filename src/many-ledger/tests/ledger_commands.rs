@@ -1,8 +1,6 @@
-pub mod common;
-
-use common::*;
 use many_identity::testing::identity;
 use many_ledger::error;
+use many_ledger_test_utils::*;
 use many_modules::ledger;
 use many_modules::ledger::LedgerCommandsModuleBackend;
 use proptest::prelude::*;
@@ -16,12 +14,13 @@ proptest! {
             ..
         } = setup();
         let half = amount / 2;
-        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL);
+        module_impl.set_balance_only_for_testing(id, amount, *MFX_SYMBOL).expect("Unable to set balance for testing.");
         let result = module_impl.send(&id, ledger::SendArgs {
             from: Some(id),
             to: identity(1),
             amount: half.into(),
-            symbol: *MFX_SYMBOL
+            symbol: *MFX_SYMBOL,
+            memo: None,
         });
         assert!(result.is_ok());
         verify_balance(&module_impl, id, *MFX_SYMBOL, (amount - half).into());
@@ -36,12 +35,13 @@ proptest! {
             id,
         } = setup_with_account(AccountType::Ledger);
         let half = amount / 2;
-        module_impl.set_balance_only_for_testing(account_id, amount, *MFX_SYMBOL);
+        module_impl.set_balance_only_for_testing(account_id, amount, *MFX_SYMBOL).expect("Unable to set balance for testing.");
         let result = module_impl.send(&id, ledger::SendArgs {
             from: Some(account_id),
             to: identity(1),
             amount: half.into(),
-            symbol: *MFX_SYMBOL
+            symbol: *MFX_SYMBOL,
+            memo: None,
         });
         assert!(result.is_ok());
         verify_balance(&module_impl, account_id, *MFX_SYMBOL, (amount - half).into());
@@ -63,6 +63,7 @@ fn send_account_missing_feature() {
             to: identity(1),
             amount: 10u16.into(),
             symbol: *MFX_SYMBOL,
+            memo: None,
         },
     );
     assert!(result.is_err());
@@ -83,6 +84,7 @@ fn send_invalid_account() {
             to: identity(1),
             amount: 10u16.into(),
             symbol: *MFX_SYMBOL,
+            memo: None,
         },
     );
     assert!(result.is_err());

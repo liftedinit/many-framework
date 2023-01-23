@@ -1,6 +1,9 @@
+use crate::error;
+use crate::error::storage_commit_failed;
 use crate::migration::MIGRATIONS;
-use crate::storage::event::LedgerIterator;
+use crate::storage::iterator::LedgerIterator;
 use crate::storage::multisig::MultisigTransactionStorage;
+use crate::storage::InnerStorage;
 use linkme::distributed_slice;
 use many_error::ManyError;
 use many_migration::InnerMigration;
@@ -8,9 +11,12 @@ use many_modules::account::features::multisig::InfoReturn;
 use many_modules::events::{EventInfo, EventLog};
 use many_types::{Memo, SortOrder};
 use merk::Op;
+use serde_json::Value;
+use std::borrow::BorrowMut;
+use std::collections::HashMap;
 
 fn iter_through_events(
-    storage: &merk::Merk,
+    storage: &InnerStorage,
 ) -> impl Iterator<Item = Result<(Vec<u8>, EventLog), ManyError>> + '_ {
     LedgerIterator::all_events(storage).map(|r| match r {
         Ok((k, v)) => {
@@ -23,7 +29,7 @@ fn iter_through_events(
 }
 
 fn iter_through_multisig_storage(
-    storage: &merk::Merk,
+    storage: &InnerStorage,
 ) -> impl Iterator<Item = Result<(Vec<u8>, MultisigTransactionStorage), ManyError>> + '_ {
     LedgerIterator::all_multisig(storage, SortOrder::Ascending).map(|r| match r {
         Ok((k, v)) => {
@@ -35,7 +41,7 @@ fn iter_through_multisig_storage(
     })
 }
 
-fn update_multisig_submit_events(storage: &mut merk::Merk) -> Result<(), ManyError> {
+fn update_multisig_submit_events(storage: &mut InnerStorage) -> Result<(), ManyError> {
     let mut batch = Vec::new();
 
     for log in iter_through_events(storage) {
@@ -98,12 +104,12 @@ fn update_multisig_submit_events(storage: &mut merk::Merk) -> Result<(), ManyErr
     // be sorted at this point.
     storage
         .apply(batch.as_slice())
-        .map_err(ManyError::unknown)?;
-    storage.commit(&[]).map_err(ManyError::unknown)?;
+        .map_err(error::storage_apply_failed)?;
+    storage.commit(&[]).map_err(storage_commit_failed)?;
     Ok(())
 }
 
-fn update_multisig_storage(storage: &mut merk::Merk) -> Result<(), ManyError> {
+fn update_multisig_storage(storage: &mut InnerStorage) -> Result<(), ManyError> {
     let mut batch = Vec::new();
 
     for multisig in iter_through_multisig_storage(storage) {
@@ -157,19 +163,19 @@ fn update_multisig_storage(storage: &mut merk::Merk) -> Result<(), ManyError> {
     // be sorted at this point.
     storage
         .apply(batch.as_slice())
-        .map_err(ManyError::unknown)?;
-    storage.commit(&[]).map_err(ManyError::unknown)?;
+        .map_err(error::storage_apply_failed)?;
+    storage.commit(&[]).map_err(storage_commit_failed)?;
     Ok(())
 }
 
-fn initialize(storage: &mut merk::Merk) -> Result<(), ManyError> {
-    update_multisig_submit_events(storage)?;
+fn initialize(storage: &mut InnerStorage, _: &HashMap<String, Value>) -> Result<(), ManyError> {
+    update_multisig_submit_events(storage.borrow_mut())?;
     update_multisig_storage(storage)?;
     Ok(())
 }
 
 #[distributed_slice(MIGRATIONS)]
-pub static MEMO_MIGRATION: InnerMigration<merk::Merk, ManyError> = InnerMigration::new_initialize(
+pub static MEMO_MIGRATION: InnerMigration<InnerStorage, ManyError> = InnerMigration::new_initialize(
     initialize,
     "Memo Migration",
     "Move the database from legacy memo and data to the new memo data type.",

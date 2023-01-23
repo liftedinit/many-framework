@@ -8,13 +8,10 @@ function setup() {
 
     skip_if_missing_background_utilities
 
-    if ! [ $CI ]; then
-        (
-          cd "$GIT_ROOT"
-          cargo build --all-features
-        )
-    fi
-
+    (
+      cd "$GIT_ROOT"
+      cargo build --features migration_testing
+    )
 }
 
 function teardown() {
@@ -41,6 +38,11 @@ function teardown() {
       },
       {
         "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Token Migration",
         "block_height": 0,
         "disabled": true
       }
@@ -153,6 +155,11 @@ function teardown() {
       },
       {
         "name": "Memo Migration",
+        "block_height": 0,
+        "disabled": true
+      },
+      {
+        "name": "Token Migration",
         "block_height": 0,
         "disabled": true
       }

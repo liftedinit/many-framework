@@ -1,3 +1,5 @@
+pub mod cucumber;
+
 use coset::CborSerializable;
 use itertools::Itertools;
 use many_error::ManyError;
@@ -14,10 +16,16 @@ use many_modules::account::features::multisig::{
 use many_modules::account::features::FeatureInfo;
 use many_modules::account::AccountModuleBackend;
 use many_modules::idstore::{CredentialId, PublicKey};
-use many_modules::ledger::{BalanceArgs, LedgerCommandsModuleBackend, LedgerModuleBackend};
+use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
+use many_modules::ledger::extended_info::TokenExtendedInfo;
+use many_modules::ledger::{
+    BalanceArgs, LedgerCommandsModuleBackend, LedgerModuleBackend, TokenCreateArgs,
+};
 use many_modules::{account, events, ledger};
 use many_protocol::ResponseMessage;
-use many_types::ledger::{Symbol, TokenAmount};
+use many_types::ledger::{
+    LedgerTokensAddressMap, Symbol, TokenAmount, TokenInfoSummary, TokenMaybeOwner,
+};
 use many_types::Memo;
 use merk::Merk;
 use minicbor::bytes::ByteVec;
@@ -27,6 +35,33 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
 };
+
+pub fn default_token_create_args(owner: Option<TokenMaybeOwner>) -> TokenCreateArgs {
+    let mut logos = VisualTokenLogo::new();
+    logos.unicode_front('∑');
+    TokenCreateArgs {
+        summary: TokenInfoSummary {
+            name: "Test Token".to_string(),
+            ticker: "TT".to_string(),
+            decimals: 9,
+        },
+        owner,
+        initial_distribution: Some(LedgerTokensAddressMap::from([
+            (identity(1), TokenAmount::from(123u64)),
+            (identity(2), TokenAmount::from(456u64)),
+            (identity(3), TokenAmount::from(789u64)),
+        ])),
+        maximum_supply: Some(TokenAmount::from(100000000u64)),
+        extended_info: Some(
+            TokenExtendedInfo::new()
+                .with_memo("Foofoo".try_into().unwrap())
+                .unwrap()
+                .with_visual_logo(logos)
+                .unwrap(),
+        ),
+        memo: None,
+    }
+}
 
 pub struct MigrationHarness {
     inner: &'static InnerMigration<merk::Merk, ManyError>,
@@ -108,6 +143,16 @@ pub fn create_account_args(account_type: AccountType) -> account::CreateArgs {
             ]);
             (roles, features)
         }
+        AccountType::Tokens => {
+            let roles = Some(BTreeMap::from_iter([(
+                identity(2),
+                BTreeSet::from_iter([account::Role::CanTokensCreate]),
+            )]));
+            let features = account::features::FeatureSet::from_iter([
+                account::features::tokens::TokenAccountLedger.as_feature(),
+            ]);
+            (roles, features)
+        }
     };
 
     account::CreateArgs {
@@ -117,6 +162,7 @@ pub fn create_account_args(account_type: AccountType) -> account::CreateArgs {
     }
 }
 
+#[derive(Debug)]
 pub struct Setup {
     pub module_impl: LedgerModuleImpl,
     pub id: Address,
@@ -133,23 +179,27 @@ impl Default for Setup {
 }
 
 impl Setup {
-    fn _new(blockchain: bool, migration_config: Option<MigrationConfig>) -> Self {
+    fn _new(
+        blockchain: bool,
+        migration_config: Option<MigrationConfig>,
+        skip_hash_check: bool, // If true, skip the staging file hash check
+    ) -> Self {
         let id = generate_random_ed25519_identity();
         let public_key = PublicKey(id.public_key().to_vec().unwrap().into());
 
         let store_path = tempfile::tempdir().expect("Could not create a temporary dir.");
         tracing::debug!("Store path: {:?}", store_path.path());
+        let mut state = InitialStateJson::read("../../staging/ledger_state.json5")
+            .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
+            .expect("Could not read initial state.");
+
+        if skip_hash_check {
+            state.hash = None;
+        }
 
         Self {
-            module_impl: LedgerModuleImpl::new(
-                InitialStateJson::read("../../staging/ledger_state.json5")
-                    .or_else(|_| InitialStateJson::read("staging/ledger_state.json5"))
-                    .expect("Could not read initial state."),
-                migration_config,
-                store_path,
-                blockchain,
-            )
-            .unwrap(),
+            module_impl: LedgerModuleImpl::new(state, migration_config, store_path, blockchain)
+                .unwrap(),
             id: id.address(),
             cred_id: CredentialId(vec![1; 16].into()),
             public_key,
@@ -158,12 +208,13 @@ impl Setup {
     }
 
     pub fn new(blockchain: bool) -> Self {
-        Setup::_new(blockchain, None)
+        Setup::_new(blockchain, None, false)
     }
 
     pub fn new_with_migrations(
         blockchain: bool,
         migrations: impl IntoIterator<Item = impl Into<MigrationHarness>>,
+        skip_hash_check: bool,
     ) -> Self {
         let migrations = format!(
             r#"{{ "migrations": [{}] }}"#,
@@ -173,12 +224,17 @@ impl Setup {
                 .join(",")
         );
 
-        Setup::_new(blockchain, Some(serde_json::from_str(&migrations).unwrap()))
+        Setup::_new(
+            blockchain,
+            Some(serde_json::from_str(&migrations).unwrap()),
+            skip_hash_check,
+        )
     }
 
     pub fn set_balance(&mut self, id: Address, amount: u64, symbol: Symbol) {
         self.module_impl
-            .set_balance_only_for_testing(id, amount, symbol);
+            .set_balance_only_for_testing(id, amount, symbol)
+            .expect("Unable to set balance for testing.");
     }
 
     pub fn balance(&self, account: Address, symbol: Symbol) -> Result<TokenAmount, ManyError> {
@@ -226,6 +282,7 @@ impl Setup {
                 to,
                 amount: amount.into(),
                 symbol,
+                memo: None,
             },
         )?;
         Ok(())
@@ -242,7 +299,7 @@ impl Setup {
         account_type: AccountType,
     ) -> Result<Address, ManyError> {
         let args = create_account_args(account_type);
-        self.module_impl.create(&id, args).map(|x| x.id)
+        AccountModuleBackend::create(&mut self.module_impl, &id, args).map(|x| x.id)
     }
 
     pub fn create_account(&mut self, account_type: AccountType) -> Result<Address, ManyError> {
@@ -362,6 +419,7 @@ impl Setup {
                 to,
                 symbol,
                 amount: amount.into(),
+                memo: None,
             }),
         )
     }
@@ -441,6 +499,7 @@ pub struct SetupWithArgs {
 pub enum AccountType {
     Multisig,
     Ledger,
+    Tokens,
 }
 
 pub fn setup_with_args(account_type: AccountType) -> SetupWithArgs {
@@ -466,7 +525,7 @@ pub fn setup_with_account(account_type: AccountType) -> SetupWithAccount {
         id,
         args,
     } = setup_with_args(account_type);
-    let account = module_impl.create(&id, args).unwrap();
+    let account = AccountModuleBackend::create(&mut module_impl, &id, args).unwrap();
     SetupWithAccount {
         module_impl,
         id,
@@ -494,6 +553,7 @@ fn event_from_kind(
         to: identity(3),
         symbol: *MFX_SYMBOL,
         amount: TokenAmount::from(10u16),
+        memo: None,
     });
 
     match event {

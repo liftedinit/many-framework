@@ -3,8 +3,25 @@
   // and comments.
 
   // The identity that is used to create new accounts. The server does not need to
-  // know the private key for this, just that its not reused.
+  // know the private key for this, just that it's not reused.
   identity: "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow",
+
+  // Optional.
+  // Default will use the server identity.
+  // Identity from which new token symbols will be derived.
+  // This identity will be the only identity able to create new tokens
+  token_identity: "maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp",
+
+  // Optional.
+  // Default will start from 0.
+  // Generate new token symbols starting at the given subresource.
+  // E.g., the MFX symbol in this file has subresource 1.
+  token_next_subresource: 2,
+
+  // Optional.
+  // Default will use the server identity.
+  // Identity from which new account identities will be derived.
+  account_identity: "mahukzwuwgt3porn6q4vq4xu3mwy5gyskhouryzbscq7wb2iow",
 
   // Initial balances for this ledger. The symbols can be either the identity or
   // the name of the symbol. The symbol is validated during initialization so it
@@ -21,6 +38,17 @@
   // List of symbols that this ledger supports.
   symbols: {
     "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": "MFX"
+  },
+
+  // List of symbols metadata
+  // Ignored by default.
+  // Triggered by the "Token Migration"
+  // TODO: Unify initial, symbols and symbols_meta
+  symbols_meta: {
+   "mqbfbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wiaaaaqnz": {
+     name: "Manifest Network Token",
+     decimals: 9,
+   }
   },
 
   // List of accounts to create at start time.
@@ -71,5 +99,6 @@
   ],
 
   // Hash calculated after the initial state is created.
+  // Note: This will change depending on the migration activated at load
   hash: "fc0041ca4f7d959fe9e5a337e175bd8a68942cad76745711a3daf820a159f7eb"
 }

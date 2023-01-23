@@ -1,4 +1,4 @@
-use many_error::define_attribute_many_error;
+use many_error::{define_application_many_error, define_attribute_many_error};
 
 define_attribute_many_error!(
     attribute 3 => {
@@ -10,5 +10,12 @@ define_attribute_many_error!(
         5: pub fn subres_alt_unsupported() => "Subresource alternative owner unsupported.",
         6: pub fn key_not_found() => "The key was not found.",
         7: pub fn cannot_disable_empty_key() => "Unable to disable an empty key.",
+    }
+);
+
+define_application_many_error!(
+    {
+        1: pub fn storage_apply_failed(desc) => "Unable to apply change to persistent storage: {desc}.",
+        2: pub fn storage_get_failed(desc) => "Unable to get data from persistent storage: {desc}."
     }
 );

@@ -15,7 +15,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
 
         // Hash the storage.
         let hash = storage.hash();
-        let symbols = storage.get_symbols();
+        let symbols = storage.get_symbols_and_tickers()?;
 
         info!(
             "info(): hash={} symbols={:?}",
@@ -27,6 +27,7 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
             symbols: symbols.keys().copied().collect(),
             hash: hash.into(),
             local_names: symbols,
+            tokens: storage.get_token_info_summary()?,
         })
     }
 
@@ -43,10 +44,8 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
         let symbols = symbols.unwrap_or_default().0;
 
         let balances = storage
-            .get_multiple_balances(identity, &BTreeSet::from_iter(symbols.clone().into_iter()));
+            .get_multiple_balances(identity, &BTreeSet::from_iter(symbols.clone().into_iter()))?;
         info!("balance({}, {:?}): {:?}", identity, &symbols, &balances);
-        Ok(ledger::BalanceReturns {
-            balances: balances.into_iter().map(|(k, v)| (*k, v)).collect(),
-        })
+        Ok(ledger::BalanceReturns { balances })
     }
 }

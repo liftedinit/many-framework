@@ -152,8 +152,8 @@ fn get(client: ManyClient<impl Identity>, key: &[u8], hex: bool) -> Result<(), M
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
     } else {
-        let result: kvstore::GetReturns = minicbor::decode(&payload)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let result: kvstore::GetReturns =
+            minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
         let value = result.value;
 
         if let Some(value) = value {
@@ -179,8 +179,8 @@ fn query(client: ManyClient<impl Identity>, key: &[u8]) -> Result<(), ManyError>
     if payload.is_empty() {
         Err(ManyError::unexpected_empty_response())
     } else {
-        let result: kvstore::QueryReturns = minicbor::decode(&payload)
-            .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+        let result: kvstore::QueryReturns =
+            minicbor::decode(&payload).map_err(ManyError::deserialization_error)?;
 
         let owner = result.owner.to_string();
 
@@ -281,8 +281,8 @@ pub(crate) fn wait_response(
                     token: attr.token.clone(),
                 },
             )?;
-            let status: StatusReturn = minicbor::decode(&response.data?)
-                .map_err(|e| ManyError::deserialization_error(e.to_string()))?;
+            let status: StatusReturn =
+                minicbor::decode(&response.data?).map_err(ManyError::deserialization_error)?;
             match status {
                 StatusReturn::Done { response } => {
                     progress.finish();

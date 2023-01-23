@@ -1,4 +1,4 @@
-use many_error::define_attribute_many_error;
+use many_error::{define_application_many_error, define_attribute_many_error};
 
 define_attribute_many_error!(
     attribute 2 => {
@@ -16,5 +16,24 @@ define_attribute_many_error!(
             => "Unable to send tokens to a destination (to) that is the same as the source (from).",
         9: pub fn amount_is_zero()
             => "Unable to send zero (0) token.",
+        10: pub fn storage_key_not_found(key) => "Key not found in storage: {key:?}.",
+    }
+);
+
+define_attribute_many_error!(
+    attribute 11 => {
+        1: pub fn token_info_not_found(symbol) => "Token information not found in persistent storage: {symbol}.",
+        2: pub fn ext_info_not_found(symbol) => "Token extended information not found in persistent storage: {symbol}.",
+        3: pub fn invalid_sender() => "Unauthorised Token endpoints sender.",
+    }
+);
+
+define_application_many_error!(
+    {
+        1: pub fn storage_apply_failed(desc) => "Unable to apply change to persistent storage: {desc}.",
+        2: pub fn storage_get_failed(desc) => "Unable to get data from persistent storage: {desc}.",
+        3: pub fn storage_commit_failed(desc) => "Unable to commit data to persistent storage: {desc}.",
+        4: pub fn storage_open_failed(desc) => "Unable to open persistent storage: {desc}.",
+        5: pub fn unable_to_load_migrations(desc) => "Unable to load migrations: {desc}.",
     }
 );

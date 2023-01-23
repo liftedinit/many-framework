@@ -2,7 +2,7 @@ use crate::module::LedgerModuleImpl;
 use coset::CoseSign1;
 use many_error::{ManyError, ManyErrorCode};
 use many_identity::Address;
-use many_modules::account::features::{multisig, FeatureInfo, TryCreateFeature};
+use many_modules::account::features::{multisig, FeatureId, FeatureInfo, TryCreateFeature};
 use many_modules::account::{Account, AccountModuleBackend, Role};
 use many_modules::{account, EmptyReturn, ManyModule, ManyModuleInfo};
 use many_protocol::{RequestMessage, ResponseMessage};
@@ -22,6 +22,9 @@ fn get_roles_for_account(account: &account::Account) -> BTreeSet<account::Role> 
     if features.has_id(account::features::ledger::AccountLedger::ID) {
         roles.append(&mut account::features::ledger::AccountLedger::roles());
     }
+    if features.has_id(account::features::tokens::TokenAccountLedger::ID) {
+        roles.append(&mut account::features::tokens::TokenAccountLedger::roles());
+    }
 
     roles
 }
@@ -36,6 +39,12 @@ pub(crate) fn validate_features_for_account(account: &account::Account) -> Resul
         }
     }
     if let Err(e) = features.get::<account::features::ledger::AccountLedger>() {
+        if e.code() != ManyErrorCode::AttributeNotFound {
+            return Err(e);
+        }
+    }
+
+    if let Err(e) = features.get::<account::features::tokens::TokenAccountLedger>() {
         if e.code() != ManyErrorCode::AttributeNotFound {
             return Err(e);
         }
@@ -63,6 +72,12 @@ pub(crate) fn validate_roles_for_account(account: &account::Account) -> Result<(
     {
         allowed_roles.append(&mut account::features::ledger::AccountLedger::roles());
     }
+    if features
+        .get::<account::features::tokens::TokenAccountLedger>()
+        .is_ok()
+    {
+        allowed_roles.append(&mut account::features::tokens::TokenAccountLedger::roles());
+    }
 
     for r in account_roles {
         if !allowed_roles.contains(&r) {
@@ -86,13 +101,11 @@ pub(crate) fn validate_account(account: &account::Account) -> Result<(), ManyErr
 pub(crate) fn verify_account_role<R: TryInto<Role> + std::fmt::Display + Copy>(
     account: &Account,
     sender: &Address,
+    feature_id: FeatureId,
     role: impl IntoIterator<Item = R>,
 ) -> Result<(), ManyError> {
     if !account.has_role(sender, account::Role::Owner) {
-        if account
-            .features
-            .has_id(account::features::ledger::AccountLedger::ID)
-        {
+        if account.features.has_id(feature_id) {
             account.needs_role(sender, role)?;
         } else {
             return Err(super::error::unauthorized());
@@ -125,7 +138,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         if !account.has_role(sender, account::Role::Owner) {
@@ -143,7 +156,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<account::ListRolesReturn, ManyError> {
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
         Ok(account::ListRolesReturn {
             roles: get_roles_for_account(&account),
@@ -157,7 +170,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<account::GetRolesReturn, ManyError> {
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         let mut roles = BTreeMap::new();
@@ -175,7 +188,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         if !account.has_role(sender, account::Role::Owner) {
@@ -192,7 +205,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         if !account.has_role(sender, account::Role::Owner) {
@@ -214,7 +227,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
             disabled,
         } = self
             .storage
-            .get_account_even_disabled(&args.account)
+            .get_account_even_disabled(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         Ok(account::InfoReturn {
@@ -232,7 +245,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
     ) -> Result<EmptyReturn, ManyError> {
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         if !account.has_role(sender, account::Role::Owner) {
@@ -253,7 +266,7 @@ impl AccountModuleBackend for LedgerModuleImpl {
         }
         let account = self
             .storage
-            .get_account(&args.account)
+            .get_account(&args.account)?
             .ok_or_else(|| account::errors::unknown_account(args.account))?;
 
         account.needs_role(sender, [account::Role::Owner])?;
