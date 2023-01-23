@@ -35,7 +35,7 @@
           };
 
           rustPkgs = final.rustBuilder.makePackageSet {
-            rustVersion = "2023-01-19";
+            rustVersion = "2023-01-03";
             rustChannel = rustToolchain.toolchain.channel;
             extraRustComponents = rustToolchain.toolchain.components ++ [
               "rust-src"
