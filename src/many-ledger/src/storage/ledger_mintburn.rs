@@ -42,8 +42,8 @@ impl LedgerStorage {
                 extended_info: None,
             })?
             .info;
-        info.supply.circulating += circulating;
-        info.supply.total = info.supply.circulating.clone();
+        info.supply.circulating += &circulating;
+        info.supply.total += circulating;
 
         batch.push((
             key_for_symbol(&symbol).into(),
