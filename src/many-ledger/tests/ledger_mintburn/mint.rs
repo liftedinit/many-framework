@@ -57,7 +57,6 @@ fn create_default_token_unlimited(w: &mut MintWorld, id: SomeId) {
     w.args.symbol = w.info.symbol;
 }
 
-// TODO: Use TokenAmount instead of u64
 #[given(expr = "a distribution of {int} tokens to {id}")]
 fn distribution_of(w: &mut MintWorld, amount: u64, id: SomeId) {
     w.args.distribution.insert(id.as_address(w), amount.into());
@@ -76,7 +75,6 @@ fn mint_tokens(w: &mut MintWorld, id: SomeId) {
     refresh_token_info(w);
 }
 
-// TODO: Use TokenAmount instead of u64
 #[then(expr = "{id} has {int} tokens")]
 fn id_has_tokens(w: &mut MintWorld, id: SomeId, amount: u64) {
     let addr = id.as_address(w);
@@ -95,14 +93,12 @@ fn id_has_tokens(w: &mut MintWorld, id: SomeId, amount: u64) {
     assert_eq!(*balance, amount);
 }
 
-// TODO: Use TokenAmount instead of u64
 #[then(expr = "the circulating supply is {int} tokens")]
 fn circulating_supply(w: &mut MintWorld, amount: u64) {
     let amount: TokenAmount = amount.into();
     assert_eq!(w.info.supply.circulating, amount);
 }
 
-// TODO: Use TokenAmount instead of u64
 #[then(expr = "the total supply is {int} tokens")]
 fn total_supply(w: &mut MintWorld, amount: u64) {
     let amount: TokenAmount = amount.into();

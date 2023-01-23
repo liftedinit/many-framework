@@ -76,6 +76,7 @@ impl SomeId {
             SomeId::Anonymous => Address::anonymous(),
             SomeId::Random => generate_random_ecdsa_identity().address(),
             SomeId::Account => w.account(),
+            // `id1` Address
             SomeId::TokenIdentity => {
                 Address::from_str("maffbahksdwaqeenayy2gxke32hgb7aq4ao4wt745lsfs6wijp").unwrap()
             }
