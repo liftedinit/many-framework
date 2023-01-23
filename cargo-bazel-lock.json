@@ -1,5 +1,5 @@
 {
-  "checksum": "3f5264735f21eb81f744dbaaac1a2e46ab7a62b84d5fb9d285f740cd65787ee4",
+  "checksum": "7cc0851ab866f0be29560aa031528a60b54a40f0f5f2d005fafd40b1fe52cd9c",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -1357,13 +1357,13 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "async-trait 0.1.62": {
+    "async-trait 0.1.63": {
       "name": "async-trait",
-      "version": "0.1.62",
+      "version": "0.1.63",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/async-trait/0.1.62/download",
-          "sha256": "689894c2db1ea643a50834b999abf1c110887402542955ff5451dab8f861f9ed"
+          "url": "https://crates.io/api/v1/crates/async-trait/0.1.63/download",
+          "sha256": "eff18d764974428cf3a9328e23fc5c986f5fbed46e6cd4cdf42544df5d297ec1"
         }
       },
       "targets": [
@@ -1400,7 +1400,7 @@
         "deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "build_script_build"
             },
             {
@@ -1419,7 +1419,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.1.62"
+        "version": "0.1.63"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -4074,13 +4074,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "colored 1.9.3": {
+    "colored 2.0.0": {
       "name": "colored",
-      "version": "1.9.3",
+      "version": "2.0.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/colored/1.9.3/download",
-          "sha256": "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
+          "url": "https://crates.io/api/v1/crates/colored/2.0.0/download",
+          "sha256": "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
         }
       },
       "targets": [
@@ -4123,7 +4123,7 @@
           }
         },
         "edition": "2015",
-        "version": "1.9.3"
+        "version": "2.0.0"
       },
       "license": "MPL-2.0"
     },
@@ -5494,7 +5494,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             },
             {
@@ -7078,15 +7078,13 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "ed 0.2.2-alpha.0": {
+    "ed 0.3.0": {
       "name": "ed",
-      "version": "0.2.2-alpha.0",
+      "version": "0.3.0",
       "repository": {
-        "Git": {
-          "remote": "https://github.com/nomic-io/ed",
-          "commitish": {
-            "Rev": "dd28e9f9e7c97827dde943ee8decfcdf25b3cc83"
-          }
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/ed/0.3.0/download",
+          "sha256": "0f205c65ec89e8fdd41f5a522eb5721818dc84c732634a6e48eb1a7b92e0169d"
         }
       },
       "targets": [
@@ -7121,23 +7119,23 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "ed-derive 0.2.3",
+              "id": "ed-derive 0.3.0",
               "target": "ed_derive"
             }
           ],
           "selects": {}
         },
-        "version": "0.2.2-alpha.0"
+        "version": "0.3.0"
       },
       "license": "MIT"
     },
-    "ed-derive 0.2.3": {
+    "ed-derive 0.3.0": {
       "name": "ed-derive",
-      "version": "0.2.3",
+      "version": "0.3.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/ed-derive/0.2.3/download",
-          "sha256": "06a91d774f4b861acaa791bc6165e66d72d3a5d1aa85fc8c0956f5580f863161"
+          "url": "https://crates.io/api/v1/crates/ed-derive/0.3.0/download",
+          "sha256": "e9907e1f07d6b49fc8cfc92870aae890618671e932db9b7b9224d530eddde2cb"
         }
       },
       "targets": [
@@ -7177,7 +7175,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.2.3"
+        "version": "0.3.0"
       },
       "license": "MIT"
     },
@@ -9549,7 +9547,7 @@
               "target": "libc"
             },
             {
-              "id": "libgit2-sys 0.14.1+1.5.0",
+              "id": "libgit2-sys 0.14.2+1.5.1",
               "target": "libgit2_sys"
             },
             {
@@ -11248,7 +11246,7 @@
               "target": "clap"
             },
             {
-              "id": "merk 1.0.0",
+              "id": "merk 2.0.0",
               "target": "merk"
             },
             {
@@ -12420,7 +12418,7 @@
               "target": "many_types"
             },
             {
-              "id": "merk 1.0.0",
+              "id": "merk 2.0.0",
               "target": "merk"
             },
             {
@@ -12499,13 +12497,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "libgit2-sys 0.14.1+1.5.0": {
+    "libgit2-sys 0.14.2+1.5.1": {
       "name": "libgit2-sys",
-      "version": "0.14.1+1.5.0",
+      "version": "0.14.2+1.5.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/libgit2-sys/0.14.1+1.5.0/download",
-          "sha256": "4a07fb2692bc3593bda59de45a502bb3071659f2c515e28c71e728306b038e17"
+          "url": "https://crates.io/api/v1/crates/libgit2-sys/0.14.2+1.5.1/download",
+          "sha256": "7f3d95f6b51075fe9810a7ae22c7095f12b98005ab364d8544797a825ce946a4"
         }
       },
       "targets": [
@@ -12546,7 +12544,7 @@
               "target": "libc"
             },
             {
-              "id": "libgit2-sys 0.14.1+1.5.0",
+              "id": "libgit2-sys 0.14.2+1.5.1",
               "target": "build_script_build"
             },
             {
@@ -12557,7 +12555,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.14.1+1.5.0"
+        "version": "0.14.2+1.5.1"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -13424,7 +13422,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             }
           ],
@@ -13623,7 +13621,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             },
             {
@@ -14327,7 +14325,7 @@
               "target": "many_types"
             },
             {
-              "id": "merk 1.0.0",
+              "id": "merk 2.0.0",
               "target": "merk"
             },
             {
@@ -14398,7 +14396,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             }
           ],
@@ -14557,7 +14555,7 @@
               "target": "many_types"
             },
             {
-              "id": "merk 1.0.0",
+              "id": "merk 2.0.0",
               "target": "merk"
             },
             {
@@ -14656,7 +14654,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             }
           ],
@@ -14787,7 +14785,7 @@
               "target": "many_types"
             },
             {
-              "id": "merk 1.0.0",
+              "id": "merk 2.0.0",
               "target": "merk"
             },
             {
@@ -15039,7 +15037,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             },
             {
@@ -15366,7 +15364,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             },
             {
@@ -15616,14 +15614,14 @@
       },
       "license": "MIT"
     },
-    "merk 1.0.0": {
+    "merk 2.0.0": {
       "name": "merk",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "repository": {
         "Git": {
           "remote": "https://github.com/liftedinit/merk.git",
           "commitish": {
-            "Rev": "da0b660abbfd58abd4a942773f205d2c079f3b27"
+            "Rev": "3d509c8efd3a68d85a5769f7fff300e10290d137"
           }
         }
       },
@@ -15670,11 +15668,11 @@
               "target": "byteorder"
             },
             {
-              "id": "colored 1.9.3",
+              "id": "colored 2.0.0",
               "target": "colored"
             },
             {
-              "id": "ed 0.2.2-alpha.0",
+              "id": "ed 0.3.0",
               "target": "ed"
             },
             {
@@ -15701,7 +15699,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.0"
+        "version": "2.0.0"
       },
       "license": "MIT"
     },
@@ -24333,7 +24331,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             },
             {
@@ -24726,7 +24724,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.62",
+              "id": "async-trait 0.1.63",
               "target": "async_trait"
             }
           ],
