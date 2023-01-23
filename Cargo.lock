@@ -671,9 +671,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec7a4128863c188deefe750ac1d1dfe66c236909f845af04beed823638dc1b2"
+checksum = "0e638668a62aced2c9fb72b5135a33b4a500485ccf2a0e402e09aa04ab2fc115"
 dependencies = [
  "bitflags",
  "clap_derive 4.1.0",
@@ -975,7 +975,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 4.1.1",
+ "clap 4.1.2",
  "console",
  "cucumber-codegen",
  "cucumber-expressions",
@@ -2483,7 +2483,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2526,7 +2526,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2536,7 +2536,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2547,7 +2547,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "base32",
  "coset",
@@ -2567,7 +2567,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2595,7 +2595,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2615,7 +2615,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
@@ -2765,7 +2765,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2778,7 +2778,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2791,7 +2791,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "async-trait",
  "coset",
@@ -2812,7 +2812,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2836,7 +2836,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2885,7 +2885,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 dependencies = [
  "base64 0.20.0",
  "coset",
@@ -5391,9 +5391,9 @@ dependencies = [
 [[patch.unused]]
 name = "many"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"
 
 [[patch.unused]]
 name = "many-mock"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#035dea301a2d88f5881e6803913cb65acfd0a187"

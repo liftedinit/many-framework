@@ -43,11 +43,7 @@ impl LedgerStorage {
             })?
             .info;
         info.supply.circulating += circulating;
-
-        // Update the supply total if the circulating supply is greater than the current total
-        if info.supply.circulating > info.supply.total {
-            info.supply.total = info.supply.circulating.clone();
-        }
+        info.supply.total = info.supply.circulating.clone();
 
         batch.push((
             key_for_symbol(&symbol).into(),
