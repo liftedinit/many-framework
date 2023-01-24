@@ -61,7 +61,7 @@ fn filter_account<'a>(
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(t) => account.iter().any(|id| t.is_about(id)),
+            Ok(t) => account.iter().any(|id| t.is_about(*id)),
         }))
     } else {
         it

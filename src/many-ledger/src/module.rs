@@ -16,6 +16,7 @@ mod idstore;
 pub mod idstore_webauthn;
 mod ledger;
 mod ledger_commands;
+mod ledger_mintburn;
 mod ledger_tokens;
 mod multisig;
 

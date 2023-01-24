@@ -59,6 +59,8 @@ impl ManyAbciModuleBackend for LedgerModuleImpl {
                 ("tokens.info".to_string(), EndpointInfo { is_command : false }),
                 ("tokens.addExtendedInfo".to_string(), EndpointInfo { is_command : true }),
                 ("tokens.removeExtendedInfo".to_string(), EndpointInfo { is_command : true }),
+                ("tokens.mint".to_string(), EndpointInfo { is_command : true }),
+                ("tokens.burn".to_string(), EndpointInfo { is_command : true }),
             ]),
         })
     }

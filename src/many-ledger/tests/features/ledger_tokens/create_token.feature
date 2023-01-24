@@ -40,7 +40,8 @@ Scenario: Creating a new token, sender is myself, token owner is account I'm not
 	Given a token account
 	And id 5 as the account owner
 	And setting the account as the owner
-	Then creating the token as myself fails with missing permission token creation
+	Then creating the token as myself fails with missing permission
+	And the error role is canTokensCreate
 
 @tokens
 Scenario: Creating a new token, sender is myself, token owner is account I'm the owner of
@@ -63,7 +64,8 @@ Scenario: Creating a new token, sender is some id, token owner is account where 
 	Given a token account
 	And id 6 has token mint permission
 	And setting the account as the owner
-	Then creating the token as id 6 fails with missing permission token creation
+	Then creating the token as id 6 fails with missing permission
+	And the error role is canTokensCreate
 
 @tokens
 Scenario: Creating a new token without owner (owner is sender)

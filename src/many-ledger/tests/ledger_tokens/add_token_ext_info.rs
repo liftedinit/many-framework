@@ -1,6 +1,7 @@
 use many_ledger_test_macros::*;
 use many_ledger_test_utils::cucumber::{
-    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+    refresh_token_info, verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError,
+    SomeId, SomePermission, TokenWorld,
 };
 use many_ledger_test_utils::Setup;
 use std::path::Path;
@@ -13,7 +14,7 @@ use many_ledger::module::LedgerModuleImpl;
 use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::extended_info::visual_logo::VisualTokenLogo;
 use many_modules::ledger::extended_info::TokenExtendedInfo;
-use many_modules::ledger::{LedgerTokensModuleBackend, TokenAddExtendedInfoArgs, TokenInfoArgs};
+use many_modules::ledger::{LedgerTokensModuleBackend, TokenAddExtendedInfoArgs};
 use many_types::ledger::TokenInfo;
 use many_types::Memo;
 
@@ -35,20 +36,6 @@ impl AddExtInfoWorld {
             ..Default::default()
         }
     }
-}
-
-fn refresh_token_info(w: &mut AddExtInfoWorld) {
-    let result = LedgerTokensModuleBackend::info(
-        &w.setup.module_impl,
-        &w.setup.id,
-        TokenInfoArgs {
-            symbol: w.info.symbol,
-            ..Default::default()
-        },
-    )
-    .expect("Unable to query token info");
-    w.info = result.info;
-    w.ext_info = result.extended_info;
 }
 
 fn fail_add_ext_info_token(w: &mut AddExtInfoWorld, sender: &Address) {
@@ -154,10 +141,12 @@ fn then_has_image_logo(w: &mut AddExtInfoWorld, content_type: String, data: Stri
 fn then_add_ext_info_token_fail_acl(w: &mut AddExtInfoWorld, id: SomeId, error: SomeError) {
     let id = id.as_address(w);
     fail_add_ext_info_token(w, &id);
-    assert_eq!(
-        w.error.as_ref().expect("Expecting an error"),
-        &error.as_many()
-    );
+    verify_error_code(w, error.as_many_code())
+}
+
+#[then(expr = "the error role is {word}")]
+fn then_error_role(w: &mut AddExtInfoWorld, role: String) {
+    verify_error_role(w, role.as_str());
 }
 
 #[then(expr = "the event memo is {string}")]

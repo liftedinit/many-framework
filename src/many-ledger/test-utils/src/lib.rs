@@ -36,7 +36,10 @@ use std::{
     str::FromStr,
 };
 
-pub fn default_token_create_args(owner: Option<TokenMaybeOwner>) -> TokenCreateArgs {
+pub fn default_token_create_args(
+    owner: Option<TokenMaybeOwner>,
+    maximum_supply: Option<TokenAmount>,
+) -> TokenCreateArgs {
     let mut logos = VisualTokenLogo::new();
     logos.unicode_front('∑');
     TokenCreateArgs {
@@ -51,7 +54,7 @@ pub fn default_token_create_args(owner: Option<TokenMaybeOwner>) -> TokenCreateA
             (identity(2), TokenAmount::from(456u64)),
             (identity(3), TokenAmount::from(789u64)),
         ])),
-        maximum_supply: Some(TokenAmount::from(100000000u64)),
+        maximum_supply,
         extended_info: Some(
             TokenExtendedInfo::new()
                 .with_memo("Foofoo".try_into().unwrap())

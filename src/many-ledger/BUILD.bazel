@@ -99,6 +99,7 @@ rust_test_suite(
     srcs = glob(
         include = [
             "tests/ledger_tokens/*.rs",
+            "tests/ledger_mintburn/*.rs",
         ],
     ),
     crate_features = ["balance_testing"],

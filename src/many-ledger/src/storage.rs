@@ -20,6 +20,7 @@ mod idstore;
 pub mod iterator;
 mod ledger;
 mod ledger_commands;
+pub mod ledger_mintburn;
 pub mod ledger_tokens;
 mod migrations;
 pub mod multisig;
