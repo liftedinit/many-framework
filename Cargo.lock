@@ -2918,7 +2918,7 @@ dependencies = [
 [[package]]
 name = "merk"
 version = "2.0.0"
-source = "git+https://github.com/MavenRain/merk.git?branch=oobi/kvhash#dd787ad8ef11fde8a453b6e82bc1c617b6c699fe"
+source = "git+https://github.com/MavenRain/merk.git?rev=857bf81963d9282ab03438da5013e1f816bd9da1#857bf81963d9282ab03438da5013e1f816bd9da1"
 dependencies = [
  "blake3",
  "byteorder",

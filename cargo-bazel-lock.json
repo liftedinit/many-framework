@@ -1,5 +1,5 @@
 {
-  "checksum": "4fa8a9fccd7fbf175c84adda92b55575632fed054e7f9dc0c8c4f6cb2c5ec628",
+  "checksum": "9d87b17bc20428b6e86104f9e268aa8be2dff7d3d94d060f645a774ed5771a06",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -3770,13 +3770,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "clap 4.1.3": {
+    "clap 4.1.4": {
       "name": "clap",
-      "version": "4.1.3",
+      "version": "4.1.4",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/clap/4.1.3/download",
-          "sha256": "d8d93d855ce6a0aa87b8473ef9169482f40abaa2e9e0993024c35c902cbd5920"
+          "url": "https://crates.io/api/v1/crates/clap/4.1.4/download",
+          "sha256": "f13b9c79b5d1dd500d20ef541215a6423c75829ef43117e1b4d17fd8af0b5d76"
         }
       },
       "targets": [
@@ -3864,7 +3864,7 @@
           ],
           "selects": {}
         },
-        "version": "4.1.3"
+        "version": "4.1.4"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -5424,7 +5424,7 @@
               "target": "atty"
             },
             {
-              "id": "clap 4.1.3",
+              "id": "clap 4.1.4",
               "target": "clap"
             },
             {
@@ -15023,7 +15023,7 @@
               "target": "num_bigint"
             },
             {
-              "id": "num_enum 0.5.7",
+              "id": "num_enum 0.5.9",
               "target": "num_enum"
             },
             {
@@ -15621,7 +15621,7 @@
         "Git": {
           "remote": "https://github.com/MavenRain/merk.git",
           "commitish": {
-            "Branch": "oobi/kvhash"
+            "Rev": "857bf81963d9282ab03438da5013e1f816bd9da1"
           }
         }
       },
@@ -16130,7 +16130,7 @@
                 "target": "libc"
               },
               {
-                "id": "security-framework 2.8.0",
+                "id": "security-framework 2.8.1",
                 "target": "security_framework"
               },
               {
@@ -16857,13 +16857,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "num_enum 0.5.7": {
+    "num_enum 0.5.9": {
       "name": "num_enum",
-      "version": "0.5.7",
+      "version": "0.5.9",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/num_enum/0.5.7/download",
-          "sha256": "cf5395665662ef45796a4ff5486c5d41d29e0c09640af4c5f17fd94ee2c119c9"
+          "url": "https://crates.io/api/v1/crates/num_enum/0.5.9/download",
+          "sha256": "8d829733185c1ca374f17e52b762f24f535ec625d2cc1f070e34c8a9068f341b"
         }
       },
       "targets": [
@@ -16893,23 +16893,23 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "num_enum_derive 0.5.7",
+              "id": "num_enum_derive 0.5.9",
               "target": "num_enum_derive"
             }
           ],
           "selects": {}
         },
-        "version": "0.5.7"
+        "version": "0.5.9"
       },
       "license": "BSD-3-Clause OR MIT OR Apache-2.0"
     },
-    "num_enum_derive 0.5.7": {
+    "num_enum_derive 0.5.9": {
       "name": "num_enum_derive",
-      "version": "0.5.7",
+      "version": "0.5.9",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/num_enum_derive/0.5.7/download",
-          "sha256": "3b0498641e53dd6ac1a4f22547548caa6864cc4933784319cd1775271c5a46ce"
+          "url": "https://crates.io/api/v1/crates/num_enum_derive/0.5.9/download",
+          "sha256": "2be1598bf1c313dcdd12092e3f1920f463462525a21b7b4e11b4168353d0123e"
         }
       },
       "targets": [
@@ -16957,7 +16957,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.5.7"
+        "version": "0.5.9"
       },
       "license": "BSD-3-Clause OR MIT OR Apache-2.0"
     },
@@ -21158,7 +21158,7 @@
             ],
             "cfg(target_os = \"macos\")": [
               {
-                "id": "security-framework 2.8.0",
+                "id": "security-framework 2.8.1",
                 "target": "security_framework"
               }
             ],
@@ -21697,13 +21697,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "security-framework 2.8.0": {
+    "security-framework 2.8.1": {
       "name": "security-framework",
-      "version": "2.8.0",
+      "version": "2.8.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/security-framework/2.8.0/download",
-          "sha256": "645926f31b250a2dca3c232496c2d898d91036e45ca0e97e0e2390c54e11be36"
+          "url": "https://crates.io/api/v1/crates/security-framework/2.8.1/download",
+          "sha256": "7c4437699b6d34972de58652c68b98cb5b53a4199ab126db8e20ec8ded29a721"
         }
       },
       "targets": [
@@ -21755,7 +21755,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "2.8.0"
+        "version": "2.8.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -29747,7 +29747,7 @@
     "bindgen 0.60.1",
     "cc 1.0.78",
     "clap 3.2.23",
-    "clap 4.1.3",
+    "clap 4.1.4",
     "minicbor 0.18.0",
     "peg-macros 0.6.3",
     "peg-macros 0.7.0",
