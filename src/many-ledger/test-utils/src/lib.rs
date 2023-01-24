@@ -1,5 +1,6 @@
 pub mod cucumber;
 
+use async_channel::unbounded;
 use coset::CborSerializable;
 use itertools::Itertools;
 use many_error::ManyError;
@@ -22,7 +23,7 @@ use many_modules::ledger::{
     BalanceArgs, LedgerCommandsModuleBackend, LedgerModuleBackend, TokenCreateArgs,
 };
 use many_modules::{account, events, ledger};
-use many_protocol::ResponseMessage;
+use many_protocol::{RequestMessage, ResponseMessage};
 use many_types::ledger::{
     LedgerTokensAddressMap, Symbol, TokenAmount, TokenInfoSummary, TokenMaybeOwner,
 };
@@ -249,6 +250,7 @@ impl Setup {
                     account: None,
                     symbols: Some(vec![symbol].into()),
                 },
+                (RequestMessage::default(), unbounded().0).into()
             )?
             .balances
             .get(&symbol)
@@ -756,6 +758,7 @@ pub fn verify_balance(
             account: Some(id),
             symbols: Some(vec![symbol].into()),
         },
+        (RequestMessage::default(), unbounded().0).into()
     );
     assert!(result.is_ok());
     let balances = result.unwrap();

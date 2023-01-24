@@ -2,6 +2,7 @@ use crate::module::LedgerModuleImpl;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::ledger;
+use many_protocol::context::Context;
 use std::collections::BTreeSet;
 use tracing::info;
 
@@ -34,9 +35,9 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
     fn balance(
         &self,
         sender: &Address,
-        args: ledger::BalanceArgs,
+        ledger::BalanceArgs { account, symbols }: ledger::BalanceArgs,
+        _: Context
     ) -> Result<ledger::BalanceReturns, ManyError> {
-        let ledger::BalanceArgs { account, symbols } = args;
 
         let identity = account.as_ref().unwrap_or(sender);
 
