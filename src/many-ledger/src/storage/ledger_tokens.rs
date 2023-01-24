@@ -2,6 +2,7 @@ use crate::error;
 use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::storage::iterator::LedgerIterator;
 use crate::storage::{key_for_account_balance, LedgerStorage, IDENTITY_ROOT, SYMBOLS_ROOT};
+use itertools::Itertools;
 use many_error::ManyError;
 use many_identity::Address;
 use many_modules::events::EventInfo;
@@ -360,6 +361,9 @@ impl LedgerStorage {
                 info.summary.name = name.clone();
             }
             if let Some(ticker) = ticker.as_ref() {
+                if self.get_symbols_and_tickers()?.values().contains(ticker) {
+                    return Err(error::ticker_exists(ticker));
+                };
                 self.update_symbols(symbol, ticker.clone())?;
                 info.summary.ticker = ticker.clone();
             }
