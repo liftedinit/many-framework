@@ -1,5 +1,5 @@
 {
-  "checksum": "7cc0851ab866f0be29560aa031528a60b54a40f0f5f2d005fafd40b1fe52cd9c",
+  "checksum": "65db024bdba42cc6a109fc102408caf0f6ea6f2e25f8ca45c0ebb06b3e4821b6",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -1357,13 +1357,13 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "async-trait 0.1.63": {
+    "async-trait 0.1.62": {
       "name": "async-trait",
-      "version": "0.1.63",
+      "version": "0.1.62",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/async-trait/0.1.63/download",
-          "sha256": "eff18d764974428cf3a9328e23fc5c986f5fbed46e6cd4cdf42544df5d297ec1"
+          "url": "https://crates.io/api/v1/crates/async-trait/0.1.62/download",
+          "sha256": "689894c2db1ea643a50834b999abf1c110887402542955ff5451dab8f861f9ed"
         }
       },
       "targets": [
@@ -1400,7 +1400,7 @@
         "deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "build_script_build"
             },
             {
@@ -1419,7 +1419,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.1.63"
+        "version": "0.1.62"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -5494,7 +5494,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             },
             {
@@ -9547,7 +9547,7 @@
               "target": "libc"
             },
             {
-              "id": "libgit2-sys 0.14.2+1.5.1",
+              "id": "libgit2-sys 0.14.1+1.5.0",
               "target": "libgit2_sys"
             },
             {
@@ -12497,13 +12497,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "libgit2-sys 0.14.2+1.5.1": {
+    "libgit2-sys 0.14.1+1.5.0": {
       "name": "libgit2-sys",
-      "version": "0.14.2+1.5.1",
+      "version": "0.14.1+1.5.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/libgit2-sys/0.14.2+1.5.1/download",
-          "sha256": "7f3d95f6b51075fe9810a7ae22c7095f12b98005ab364d8544797a825ce946a4"
+          "url": "https://crates.io/api/v1/crates/libgit2-sys/0.14.1+1.5.0/download",
+          "sha256": "4a07fb2692bc3593bda59de45a502bb3071659f2c515e28c71e728306b038e17"
         }
       },
       "targets": [
@@ -12544,7 +12544,7 @@
               "target": "libc"
             },
             {
-              "id": "libgit2-sys 0.14.2+1.5.1",
+              "id": "libgit2-sys 0.14.1+1.5.0",
               "target": "build_script_build"
             },
             {
@@ -12555,7 +12555,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.14.2+1.5.1"
+        "version": "0.14.1+1.5.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -13422,7 +13422,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             }
           ],
@@ -13451,9 +13451,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-client"
         }
@@ -13621,7 +13621,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             },
             {
@@ -13644,9 +13644,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -13697,9 +13697,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-error"
         }
@@ -13763,9 +13763,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-identity"
         }
@@ -13864,9 +13864,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -13998,9 +13998,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -14091,9 +14091,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -14396,7 +14396,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             }
           ],
@@ -14654,7 +14654,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             }
           ],
@@ -14825,9 +14825,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-macros"
         }
@@ -14890,9 +14890,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-migration"
         }
@@ -14955,9 +14955,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-modules"
         }
@@ -15037,7 +15037,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             },
             {
@@ -15060,9 +15060,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -15174,9 +15174,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-server"
         }
@@ -15364,7 +15364,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             },
             {
@@ -15391,9 +15391,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "ledger-mint-burn"
+            "Rev": "ce03b88dea51232ca578d19d52cfc263cfc4080b"
           },
           "strip_prefix": "src/many-types"
         }
@@ -24331,7 +24331,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             },
             {
@@ -24724,7 +24724,7 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "async-trait 0.1.63",
+              "id": "async-trait 0.1.62",
               "target": "async_trait"
             }
           ],

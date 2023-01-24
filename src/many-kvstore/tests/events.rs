@@ -100,23 +100,7 @@ fn list_filter_kind() {
     assert_eq!(list_return.nb_events, 1);
     assert_eq!(list_return.events.len(), 1);
     assert_eq!(list_return.events[0].kind(), events::EventKind::KvStorePut);
-    assert!(list_return.events[0].is_about(&id));
-}
-
-#[test]
-fn list_filter_symbol() {
-    let setup = setup();
-    let result = setup.module_impl.list(events::ListArgs {
-        count: None,
-        order: None,
-        filter: Some(events::EventFilter {
-            symbol: Some(vec![*MFX_SYMBOL].into()),
-            ..events::EventFilter::default()
-        }),
-    });
-    assert!(result.is_ok());
-    let list_return = result.unwrap();
-    assert_eq!(list_return.nb_events, 0);
+    assert!(list_return.events[0].is_about(id));
 }
 
 #[test]
@@ -146,7 +130,7 @@ fn list_filter_date() {
     assert_eq!(list_return.nb_events, 1);
     assert_eq!(list_return.events.len(), 1);
     assert_eq!(list_return.events[0].kind(), events::EventKind::KvStorePut);
-    assert!(list_return.events[0].is_about(&id));
+    assert!(list_return.events[0].is_about(id));
 
     // TODO: Remove this when we support factional seconds
     // See https://github.com/liftedinit/many-rs/issues/110

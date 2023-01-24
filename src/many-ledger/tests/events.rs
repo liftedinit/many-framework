@@ -224,45 +224,8 @@ fn list_filter_kind() {
     assert_eq!(list_return.nb_events, 1);
     assert_eq!(list_return.events.len(), 1);
     assert_eq!(list_return.events[0].kind(), events::EventKind::Send);
-    assert_eq!(list_return.events[0].symbol(), Some(&*MFX_SYMBOL));
-    assert!(list_return.events[0].is_about(&id));
-}
-
-#[test]
-fn list_filter_symbol() {
-    let Setup {
-        mut module_impl,
-        id,
-        ..
-    } = setup();
-    send(&mut module_impl, id, identity(1));
-    let result = module_impl.list(events::ListArgs {
-        count: None,
-        order: None,
-        filter: Some(events::EventFilter {
-            symbol: Some(vec![*MFX_SYMBOL].into()),
-            ..events::EventFilter::default()
-        }),
-    });
-    assert!(result.is_ok());
-    let list_return = result.unwrap();
-    assert_eq!(list_return.nb_events, 1);
-    assert_eq!(list_return.events.len(), 1);
-    assert_eq!(list_return.events[0].kind(), events::EventKind::Send);
-    assert_eq!(list_return.events[0].symbol(), Some(&*MFX_SYMBOL));
-    assert!(list_return.events[0].is_about(&id));
-
-    let result = module_impl.list(events::ListArgs {
-        count: None,
-        order: None,
-        filter: Some(events::EventFilter {
-            symbol: Some(vec![identity(100)].into()),
-            ..events::EventFilter::default()
-        }),
-    });
-    assert!(result.is_ok());
-    let list_return = result.unwrap();
-    assert_eq!(list_return.events.len(), 0);
+    assert!(list_return.events[0].is_about(*MFX_SYMBOL));
+    assert!(list_return.events[0].is_about(id));
 }
 
 #[test]
@@ -294,8 +257,8 @@ fn list_filter_date() {
     assert_eq!(list_return.nb_events, 1);
     assert_eq!(list_return.events.len(), 1);
     assert_eq!(list_return.events[0].kind(), events::EventKind::Send);
-    assert_eq!(list_return.events[0].symbol(), Some(&*MFX_SYMBOL));
-    assert!(list_return.events[0].is_about(&id));
+    assert!(list_return.events[0].is_about(*MFX_SYMBOL));
+    assert!(list_return.events[0].is_about(id));
 
     // TODO: Remove this when we support factional seconds
     // See https://github.com/liftedinit/many-rs/issues/110

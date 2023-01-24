@@ -25,8 +25,24 @@ impl LedgerStorage {
     ) -> Result<(), ManyError> {
         let mut batch: Vec<BatchEntry> = Vec::new();
         let mut circulating = TokenAmount::zero();
+        let current_supply = self.get_token_supply(&symbol)?;
+
         for (address, amount) in distribution.iter() {
+            if amount.is_zero() {
+                return Err(error::unable_to_distribute_zero(address));
+            }
+
             circulating += amount;
+
+            // Make sure we don't bust the maximum, if any
+            match &current_supply.maximum {
+                Some(x) if &(&current_supply.circulating + &circulating) > x => {
+                    return Err(error::over_maximum_supply(symbol, circulating, x))
+                }
+                _ => {}
+            }
+
+            // Store the new balance to the DB
             let new_balance = self
                 .get_multiple_balances(address, &BTreeSet::from([symbol]))?
                 .get(&symbol)
@@ -63,16 +79,30 @@ impl LedgerStorage {
         &mut self,
         symbol: Symbol,
         distribution: &LedgerTokensAddressMap,
-        balances: LedgerTokensAddressMap,
     ) -> Result<(), ManyError> {
         let mut batch: Vec<BatchEntry> = Vec::new();
         let mut circulating = TokenAmount::zero();
-        for ((d_addr, d_amount), (_, ref b_amount)) in distribution.iter().zip(balances.into_iter())
-        {
-            circulating += d_amount;
-            let new_balance = b_amount - d_amount;
-            let key = key_for_account_balance(d_addr, &symbol);
+
+        for (address, amount) in distribution.iter() {
+            if amount.is_zero() {
+                return Err(error::unable_to_distribute_zero(address));
+            }
+
+            // Check if we have enough funds
+            let balance_amount = match self
+                .get_multiple_balances(address, &BTreeSet::from_iter([symbol]))?
+                .get(&symbol)
+            {
+                Some(x) if x < amount => Err(error::missing_funds(symbol, amount, x)),
+                Some(x) => Ok(x.clone()),
+                None => Err(error::missing_funds(symbol, amount, TokenAmount::zero())),
+            }?;
+
+            // Store new balance in DB
+            let new_balance = &balance_amount - amount;
+            let key = key_for_account_balance(address, &symbol);
             batch.push((key, Op::Put(new_balance.to_vec())));
+            circulating += amount;
         }
 
         // Update circulating supply

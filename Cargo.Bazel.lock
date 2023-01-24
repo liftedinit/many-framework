@@ -250,9 +250,9 @@ checksum = "7a40729d2133846d9ed0ea60a8b9541bccddab49cd30f0715a1da672fe9a2524"
 
 [[package]]
 name = "async-trait"
-version = "0.1.63"
+version = "0.1.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eff18d764974428cf3a9328e23fc5c986f5fbed46e6cd4cdf42544df5d297ec1"
+checksum = "689894c2db1ea643a50834b999abf1c110887402542955ff5451dab8f861f9ed"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2325,9 +2325,9 @@ checksum = "201de327520df007757c1f0adce6e827fe8562fbc28bfd9c15571c66ca1f5f79"
 
 [[package]]
 name = "libgit2-sys"
-version = "0.14.2+1.5.1"
+version = "0.14.1+1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3d95f6b51075fe9810a7ae22c7095f12b98005ab364d8544797a825ce946a4"
+checksum = "4a07fb2692bc3593bda59de45a502bb3071659f2c515e28c71e728306b038e17"
 dependencies = [
  "cc",
  "libc",
@@ -2483,7 +2483,7 @@ dependencies = [
 [[package]]
 name = "many-client"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2526,7 +2526,7 @@ dependencies = [
 [[package]]
 name = "many-client-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2536,7 +2536,7 @@ dependencies = [
 [[package]]
 name = "many-error"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "minicbor",
  "num-derive",
@@ -2547,7 +2547,7 @@ dependencies = [
 [[package]]
 name = "many-identity"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "base32",
  "coset",
@@ -2567,7 +2567,7 @@ dependencies = [
 [[package]]
 name = "many-identity-dsa"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "asn1 0.8.7",
  "base32",
@@ -2595,7 +2595,7 @@ dependencies = [
 [[package]]
 name = "many-identity-hsm"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "asn1 0.10.0",
  "coset",
@@ -2615,7 +2615,7 @@ dependencies = [
 [[package]]
 name = "many-identity-webauthn"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "authenticator-ctap2-2021",
  "base64 0.13.1",
@@ -2765,7 +2765,7 @@ dependencies = [
 [[package]]
 name = "many-macros"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "inflections",
  "proc-macro2",
@@ -2778,7 +2778,7 @@ dependencies = [
 [[package]]
 name = "many-migration"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "many-error",
  "minicbor",
@@ -2791,7 +2791,7 @@ dependencies = [
 [[package]]
 name = "many-modules"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "async-trait",
  "coset",
@@ -2812,7 +2812,7 @@ dependencies = [
 [[package]]
 name = "many-protocol"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "base64 0.13.1",
  "coset",
@@ -2836,7 +2836,7 @@ dependencies = [
 [[package]]
 name = "many-server"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "anyhow",
  "asn1 0.11.0",
@@ -2885,7 +2885,7 @@ dependencies = [
 [[package]]
 name = "many-types"
 version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
+source = "git+https://github.com/liftedinit/many-rs.git?rev=ce03b88dea51232ca578d19d52cfc263cfc4080b#ce03b88dea51232ca578d19d52cfc263cfc4080b"
 dependencies = [
  "base64 0.20.0",
  "coset",
@@ -5387,15 +5387,3 @@ dependencies = [
  "syn",
  "synstructure",
 ]
-
-[[patch.unused]]
-name = "many"
-version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
-
-
-[[patch.unused]]
-name = "many-mock"
-version = "0.1.0"
-source = "git+https://github.com/fmorency/many-rs.git?branch=ledger-mint-burn#f6cd1a2803e62d9364ecbb8ebf8f3156f3d1341f"
-

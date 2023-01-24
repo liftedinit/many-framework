@@ -6,9 +6,8 @@ use many_modules::events;
 use many_modules::events::{
     EventFilterAttributeSpecific, EventFilterAttributeSpecificIndex, EventInfo, EventLog,
 };
-use many_types::ledger::Symbol;
 use many_types::{CborRange, Timestamp, VecOrSingle};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 const MAXIMUM_EVENT_COUNT: usize = 100;
 
@@ -23,7 +22,7 @@ fn filter_account<'a>(
         Box::new(it.filter(move |t| match t {
             // Propagate the errors.
             Err(_) => true,
-            Ok(t) => account.iter().any(|id| t.is_about(id)),
+            Ok(t) => account.iter().any(|id| t.is_about(*id)),
         }))
     } else {
         it
@@ -39,22 +38,6 @@ fn filter_event_kind<'a>(
         Box::new(it.filter(move |t| match t {
             Err(_) => true,
             Ok(t) => k.contains(&t.kind()),
-        }))
-    } else {
-        it
-    }
-}
-
-fn filter_symbol<'a>(
-    it: Box<dyn Iterator<Item = EventLogResult> + 'a>,
-    symbol: Option<VecOrSingle<Symbol>>,
-) -> Box<dyn Iterator<Item = EventLogResult> + 'a> {
-    if let Some(s) = symbol {
-        let s: BTreeSet<Symbol> = s.into();
-        Box::new(it.filter(move |t| match t {
-            // Propagate the errors.
-            Err(_) => true,
-            Ok(t) => t.symbol().map_or(false, |x| s.contains(x)),
         }))
     } else {
         it
@@ -151,7 +134,6 @@ impl events::EventsModuleBackend for LedgerModuleImpl {
 
         let iter = filter_account(iter, filter.account);
         let iter = filter_event_kind(iter, filter.kind);
-        let iter = filter_symbol(iter, filter.symbol);
         let iter = filter_date(iter, filter.date_range.unwrap_or_default());
         let iter = filter_attribute_specific(iter, &filter.events_filter_attribute_specific);
 

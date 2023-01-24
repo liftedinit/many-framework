@@ -1,6 +1,6 @@
 Feature: Mint token
 
-@token
+@tokens
 Scenario: Mint new tokens as token identity
 	Given a default token owned by myself
 	And a distribution of 1000 tokens to id 10
@@ -17,7 +17,7 @@ Scenario: Mint new tokens as token identity
 	And the total supply is 2618 tokens
 	And the memo is "Foobar"
 
-@token
+@tokens
 Scenario: Mint new tokens as myself/random/anonymous
 	Given a default token owned by myself
 	And a distribution of 1000 tokens to id 10
@@ -31,7 +31,7 @@ Scenario: Mint new tokens as myself/random/anonymous
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Unable to mint zero
 	Given a default token owned by myself
 	And a distribution of 0 tokens to id 10
@@ -43,7 +43,7 @@ Scenario: Unable to mint zero
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Mint more than maximum supply
 	Given a default token owned by myself
 	And a distribution of 99998633 tokens to id 10
@@ -54,7 +54,7 @@ Scenario: Mint more than maximum supply
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Mint the maximum supply
 	Given a default token owned by myself
 	And a distribution of 99998632 tokens to id 10
@@ -66,7 +66,7 @@ Scenario: Mint the maximum supply
 	And the circulating supply is 100000000 tokens
 	And the total supply is 100000000 tokens
 
-@token
+@tokens
 Scenario: Unlimited maximum supply
 	Given a default token of unlimited supply owned by myself
 	And a distribution of 100000000 tokens to id 10

@@ -1,6 +1,6 @@
 Feature: Burn token
 
-@token
+@tokens
 Scenario: Burn tokens
 	Given a default token owned by myself
 	And a distribution of 12 tokens to id 2
@@ -14,7 +14,7 @@ Scenario: Burn tokens
 	And the total supply is 1333 tokens
 	And the memo is "Barfoo"
 
-@token
+@tokens
 Scenario: Burn tokens as myself/random/anonymous
 	Given a default token owned by myself
 	And a distribution of 12 tokens to id 2
@@ -28,7 +28,7 @@ Scenario: Burn tokens as myself/random/anonymous
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Unable to burn zero
 	Given a default token owned by myself
 	And a distribution of 0 tokens to id 2
@@ -40,7 +40,7 @@ Scenario: Unable to burn zero
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Partial burn is disabled
 	Given a default token owned by myself
 	And a distribution of 1234 tokens to id 2
@@ -52,7 +52,7 @@ Scenario: Partial burn is disabled
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Burn more funds than held
 	Given a default token owned by myself
 	And a distribution of 1234 tokens to id 2
@@ -63,7 +63,7 @@ Scenario: Burn more funds than held
 	And the circulating supply is 1368 tokens
 	And the total supply is 1368 tokens
 
-@token
+@tokens
 Scenario: Burn all circulating supply
 	Given a default token owned by myself
 	And a distribution of 123 tokens to id 1
@@ -76,7 +76,7 @@ Scenario: Burn all circulating supply
 	And the circulating supply is 0 tokens
 	And the total supply is 0 tokens
 
-@token
+@tokens
 Scenario: Burn more than circulating supply
 	Given a default token owned by myself
 	And a distribution of 124 tokens to id 1
