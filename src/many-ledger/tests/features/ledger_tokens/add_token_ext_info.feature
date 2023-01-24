@@ -55,7 +55,8 @@ Scenario: Adding ext. info to a token, sender is myself, token owner is account 
 	Given a token account
 	And id 5 as the account owner
 	And a default token owned by the account
-	Then adding extended info to the token as myself fails with missing permission token add extended info
+	Then adding extended info to the token as myself fails with missing permission
+	And the error role is canTokensAddExtendedInfo
 
 @tokens
 Scenario: Adding ext. info to a token, sender is myself, token owner is account I'm the owner of
@@ -80,4 +81,5 @@ Scenario: Adding ext. info to a token, sender is some id, token owner is account
 	Given a token account
 	And id 6 has token mint permission
 	And a default token owned by the account
-	Then adding extended info to the token as id 6 fails with missing permission token add extended info
+	Then adding extended info to the token as id 6 fails with missing permission
+	And the error role is canTokensAddExtendedInfo

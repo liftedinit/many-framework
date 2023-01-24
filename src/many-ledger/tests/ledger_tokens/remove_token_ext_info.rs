@@ -1,6 +1,7 @@
 use many_ledger_test_macros::*;
 use many_ledger_test_utils::cucumber::{
-    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+    refresh_token_info, verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError,
+    SomeId, SomePermission, TokenWorld,
 };
 use many_ledger_test_utils::Setup;
 use std::path::Path;
@@ -13,7 +14,7 @@ use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
 use many_modules::ledger::extended_info::{ExtendedInfoKey, TokenExtendedInfo};
-use many_modules::ledger::{LedgerTokensModuleBackend, TokenInfoArgs, TokenRemoveExtendedInfoArgs};
+use many_modules::ledger::{LedgerTokensModuleBackend, TokenRemoveExtendedInfoArgs};
 use many_types::ledger::TokenInfo;
 use many_types::{AttributeRelatedIndex, Memo};
 
@@ -96,20 +97,6 @@ fn given_account_part_of_can_create(
     many_ledger_test_utils::cucumber::given_account_part_of_can_create(w, id, permission);
 }
 
-fn refresh_token_info(w: &mut RemoveExtInfoWorld) {
-    let result = LedgerTokensModuleBackend::info(
-        &w.setup.module_impl,
-        &w.setup.id,
-        TokenInfoArgs {
-            symbol: w.info.symbol,
-            ..Default::default()
-        },
-    )
-    .expect("Unable to query token info");
-    w.info = result.info;
-    w.ext_info = result.extended_info;
-}
-
 #[given(expr = "a default token owned by {id}")]
 fn create_default_token(w: &mut RemoveExtInfoWorld, id: SomeId) {
     many_ledger_test_utils::cucumber::create_default_token(w, id);
@@ -168,10 +155,12 @@ fn then_rm_ext_info_token_fail_acl(
     ))];
     let id = id.as_address(w);
     fail_remove_ext_info_token(w, &id);
-    assert_eq!(
-        w.error.as_ref().expect("Expecting an error"),
-        &error.as_many()
-    );
+    verify_error_code(w, error.as_many_code())
+}
+
+#[then(expr = "the error role is {word}")]
+fn then_error_role(w: &mut RemoveExtInfoWorld, role: String) {
+    verify_error_role(w, role.as_str());
 }
 
 #[then(expr = "the event memo is {string}")]

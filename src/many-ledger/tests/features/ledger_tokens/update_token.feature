@@ -62,7 +62,8 @@ Scenario: Updating a token, sender is myself, token owner is account I'm not par
 	Given a token account
 	And id 5 as the account owner
 	And a default token owned by the account
-	Then updating the token as myself fails with missing permission token update
+	Then updating the token as myself fails with missing permission
+	And the error role is canTokensUpdate
 
 @tokens
 Scenario: Updating a token, sender is myself, token owner is account I'm the owner of
@@ -85,7 +86,8 @@ Scenario: Updating a token, sender is some id, token owner is account where some
 	Given a token account
 	And id 6 has token mint permission
 	And a default token owned by the account
-	Then updating the token as id 6 fails with missing permission token update
+	Then updating the token as id 6 fails with missing permission
+	And the error role is canTokensUpdate
 
 @tokens
 Scenario: Removing a token's owner

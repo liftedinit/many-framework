@@ -119,6 +119,12 @@ function teardown() {
     call_ledger --pem=1 --port=8000 token remove-ext-info maa 0
     assert_output --partial "Invalid method name"
 
+    call_ledger --pem=1 --port=8000 token mint MFX ''\''{"'$(identity 2)'": 123, "'$(identity 3)'": 456}'\'''
+    assert_output --partial "Invalid method name"
+
+    call_ledger --pem=1 --port=8000 token burn MFX ''\''{"'$(identity 2)'": 123, "'$(identity 3)'": 456}'\''' --error-on-under-burn
+    assert_output --partial "Invalid method name"
+
     wait_for_block 30
 
     # Make sure MFX token info are present
@@ -126,6 +132,9 @@ function teardown() {
     assert_output --partial "name: \"Manifest Network Token\""
     assert_output --partial "ticker: \"MFX\""
     assert_output --partial "decimals: 9"
+    assert_output --regexp "total:.*(.*100000000000000000,.*)"
+    assert_output --regexp "circulating:.*(.*100000000000000000,.*)"
+    assert_output --regexp "maximum:.*None,.*"
 
     # Test token update
     # Change the token owner to `identity 2`
@@ -154,6 +163,20 @@ function teardown() {
     for port in 8000 8001 8002 8003; do
         call_ledger --port=${port} token info "${SYMBOL}"
         refute_output --partial "Some memo"
+    done
+
+    call_ledger --pem=1 --port=8000 token mint ${SYMBOL} ''\''{"'$(identity 2)'": 123, "'$(identity 3)'": 456}'\'''
+    for port in 8000 8001 8002 8003; do
+        call_ledger --port=${port} token info "${SYMBOL}"
+        assert_output --regexp "total:.*(.*579,.*)"
+        assert_output --regexp "circulating:.*(.*579,.*)"
+    done
+
+    call_ledger --pem=1 --port=8000 token burn ${SYMBOL} ''\''{"'$(identity 2)'": 122, "'$(identity 3)'": 455}'\''' --error-on-under-burn
+    for port in 8000 8001 8002 8003; do
+        call_ledger --port=${port} token info "${SYMBOL}"
+        assert_output --regexp "total:.*(.*2,.*)"
+        assert_output --regexp "circulating:.*(.*2,.*)"
     done
 }
 

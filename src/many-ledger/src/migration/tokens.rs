@@ -112,7 +112,7 @@ fn migrate_token(
             ),
         ),
         (
-            key_for_symbol(&symbol),
+            key_for_symbol(&symbol).into_bytes(),
             Op::Put(minicbor::to_vec(info).map_err(ManyError::serialization_error)?),
         ),
         (

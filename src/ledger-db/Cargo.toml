@@ -19,6 +19,6 @@ doc = false
 clap = { version = "3.0.0", features = ["derive"] }
 hex = "0.4.3"
 merk = { git = "https://github.com/liftedinit/merk.git", rev = "3d509c8efd3a68d85a5769f7fff300e10290d137" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "71eba1a1cfee506505acec865f5984afab0d3e74" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "71eba1a1cfee506505acec865f5984afab0d3e74" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b" }
 minicbor = "0.18.0"

@@ -1,6 +1,7 @@
 use many_ledger_test_macros::*;
 use many_ledger_test_utils::cucumber::{
-    AccountWorld, LedgerWorld, SomeError, SomeId, SomePermission, TokenWorld,
+    verify_error_code, verify_error_role, AccountWorld, LedgerWorld, SomeError, SomeId,
+    SomePermission, TokenWorld,
 };
 use many_ledger_test_utils::Setup;
 
@@ -11,6 +12,7 @@ use many_identity::Address;
 use many_ledger::migration::tokens::TOKEN_MIGRATION;
 use many_ledger::module::LedgerModuleImpl;
 use many_modules::events::{EventFilter, EventKind, EventsModuleBackend, ListArgs};
+use many_modules::ledger::extended_info::TokenExtendedInfo;
 use many_modules::ledger::{LedgerTokensModuleBackend, TokenCreateArgs};
 use many_types::cbor::CborNull;
 use many_types::ledger::{LedgerTokensAddressMap, TokenAmount, TokenInfo, TokenMaybeOwner};
@@ -23,6 +25,7 @@ struct CreateWorld {
     setup: Setup,
     args: TokenCreateArgs,
     info: TokenInfo,
+    ext_info: TokenExtendedInfo,
     account: Address,
     error: Option<ManyError>,
 }
@@ -122,10 +125,12 @@ fn when_create_token(w: &mut CreateWorld, id: SomeId) {
 fn then_create_token_fail_acl(w: &mut CreateWorld, id: SomeId, error: SomeError) {
     let id = id.as_address(w);
     fail_create_token(w, &id);
-    assert_eq!(
-        w.error.as_ref().expect("Expecting an error"),
-        &error.as_many()
-    );
+    verify_error_code(w, error.as_many_code())
+}
+
+#[then(expr = "the error role is {word}")]
+fn then_error_role(w: &mut CreateWorld, role: String) {
+    verify_error_role(w, role.as_str());
 }
 
 #[then(expr = "the token symbol is a subresource")]

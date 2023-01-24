@@ -1,11 +1,9 @@
-use crate::error;
 use crate::migration::tokens::TOKEN_MIGRATION;
-use crate::module::account::verify_account_role;
 use crate::module::LedgerModuleImpl;
-use crate::storage::LedgerStorage;
+use crate::storage::account::verify_acl;
 use many_error::ManyError;
 use many_identity::Address;
-use many_modules::account;
+use many_modules::account::features::tokens::TokenAccountLedger;
 use many_modules::account::features::TryCreateFeature;
 use many_modules::account::Role;
 use many_modules::ledger::{
@@ -15,35 +13,6 @@ use many_modules::ledger::{
     TokenUpdateReturns,
 };
 use many_types::Either;
-
-fn verify_tokens_acl(
-    storage: &LedgerStorage,
-    sender: &Address,
-    addr: &Address,
-    roles: impl IntoIterator<Item = Role>,
-) -> Result<(), ManyError> {
-    if addr != sender {
-        if let Some(account) = storage.get_account(addr)? {
-            verify_account_role(
-                &account,
-                sender,
-                account::features::tokens::TokenAccountLedger::ID,
-                roles,
-            )?;
-        } else {
-            return Err(error::unauthorized());
-        }
-    }
-    Ok(())
-}
-
-#[cfg(not(feature = "disable_token_sender_check"))]
-fn verify_tokens_sender(sender: &Address, token_identity: Address) -> Result<(), ManyError> {
-    if *sender != token_identity {
-        return Err(error::invalid_sender());
-    }
-    Ok(())
-}
 
 impl LedgerTokensModuleBackend for LedgerModuleImpl {
     fn create(
@@ -56,7 +25,7 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         }
 
         #[cfg(not(feature = "disable_token_sender_check"))]
-        verify_tokens_sender(
+        crate::storage::ledger_tokens::verify_tokens_sender(
             sender,
             self.storage
                 .get_identity(crate::storage::ledger_tokens::TOKEN_IDENTITY_ROOT)
@@ -64,7 +33,13 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         )?;
 
         if let Some(Either::Left(addr)) = &args.owner {
-            verify_tokens_acl(&self.storage, sender, addr, [Role::CanTokensCreate])?;
+            verify_acl(
+                &self.storage,
+                sender,
+                addr,
+                [Role::CanTokensCreate],
+                TokenAccountLedger::ID,
+            )?;
         }
 
         let ticker = &args.summary.ticker;
@@ -109,7 +84,13 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         let current_owner = self.storage.get_owner(&args.symbol)?;
         match current_owner {
             Some(addr) => {
-                verify_tokens_acl(&self.storage, sender, &addr, [Role::CanTokensUpdate])?;
+                verify_acl(
+                    &self.storage,
+                    sender,
+                    &addr,
+                    [Role::CanTokensUpdate],
+                    TokenAccountLedger::ID,
+                )?;
             }
             None => {
                 return Err(ManyError::unknown(
@@ -141,11 +122,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         let current_owner = self.storage.get_owner(&args.symbol)?;
         match current_owner {
             Some(addr) => {
-                verify_tokens_acl(
+                verify_acl(
                     &self.storage,
                     sender,
                     &addr,
                     [Role::CanTokensAddExtendedInfo],
+                    TokenAccountLedger::ID,
                 )?;
             }
             None => {
@@ -170,11 +152,12 @@ impl LedgerTokensModuleBackend for LedgerModuleImpl {
         let current_owner = self.storage.get_owner(&args.symbol)?;
         match current_owner {
             Some(addr) => {
-                verify_tokens_acl(
+                verify_acl(
                     &self.storage,
                     sender,
                     &addr,
                     [Role::CanTokensRemoveExtendedInfo],
+                    TokenAccountLedger::ID,
                 )?;
             }
             None => {
