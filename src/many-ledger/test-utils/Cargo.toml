@@ -13,14 +13,14 @@ publish = false
 coset = "0.3"
 cucumber = { version = "0.17.0", features = ["libtest"] }
 itertools = "0.10.3"
-many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b" }
-many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b", features = ["default", "serde", "testing"] }
-many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b", features = ["ed25519", "ecdsa", "testing"]  }
+many-error = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801" }
+many-identity = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801", features = ["default", "serde", "testing"] }
+many-identity-dsa = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801", features = ["ed25519", "ecdsa", "testing"]  }
 many-ledger = { path = "..", features = ["balance_testing"] }
-many-migration = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b" }
-many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b", features = ["cucumber"] }
-many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b" }
-many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "ce03b88dea51232ca578d19d52cfc263cfc4080b", features = ["cucumber"] }
+many-migration = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801" }
+many-modules = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801", features = ["cucumber"] }
+many-protocol = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801" }
+many-types = { git = "https://github.com/liftedinit/many-rs.git", rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801", features = ["cucumber"] }
 merk = { git = "https://github.com/liftedinit/merk.git", rev = "3d509c8efd3a68d85a5769f7fff300e10290d137" }
 minicbor = { version = "0.18.0", features = ["derive", "std"] }
 once_cell = "1.12"
