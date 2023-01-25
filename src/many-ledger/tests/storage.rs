@@ -59,7 +59,7 @@ fn load() {
                 account: Some(identity(5)),
                 symbols: Some(vec![identity(1000)].into()),
             },
-            (RequestMessage::default(), unbounded().0).into()
+            (RequestMessage::default(), unbounded().0).into(),
         )
         .unwrap();
     assert_eq!(
@@ -153,7 +153,7 @@ fn load_symbol_meta() {
                 account: Some(identity(5)),
                 symbols: Some(vec![identity(1000)].into()),
             },
-            (RequestMessage::default(), unbounded().0).into()
+            (RequestMessage::default(), unbounded().0).into(),
         )
         .unwrap();
     assert_eq!(

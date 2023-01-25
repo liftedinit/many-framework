@@ -36,16 +36,18 @@ impl ledger::LedgerModuleBackend for LedgerModuleImpl {
         &self,
         sender: &Address,
         ledger::BalanceArgs { account, symbols }: ledger::BalanceArgs,
-        _: Context
+        context: Context,
     ) -> Result<ledger::BalanceReturns, ManyError> {
-
         let identity = account.as_ref().unwrap_or(sender);
 
         let storage = &self.storage;
         let symbols = symbols.unwrap_or_default().0;
 
-        let balances = storage
-            .get_multiple_balances(identity, &BTreeSet::from_iter(symbols.clone().into_iter()))?;
+        let balances = storage.get_multiple_balances(
+            identity,
+            &BTreeSet::from_iter(symbols.clone().into_iter()),
+            context,
+        )?;
         info!("balance({}, {:?}): {:?}", identity, &symbols, &balances);
         Ok(ledger::BalanceReturns { balances })
     }

@@ -250,7 +250,7 @@ impl Setup {
                     account: None,
                     symbols: Some(vec![symbol].into()),
                 },
-                (RequestMessage::default(), unbounded().0).into()
+                (RequestMessage::default(), unbounded().0).into(),
             )?
             .balances
             .get(&symbol)
@@ -758,7 +758,7 @@ pub fn verify_balance(
             account: Some(id),
             symbols: Some(vec![symbol].into()),
         },
-        (RequestMessage::default(), unbounded().0).into()
+        (RequestMessage::default(), unbounded().0).into(),
     );
     assert!(result.is_ok());
     let balances = result.unwrap();

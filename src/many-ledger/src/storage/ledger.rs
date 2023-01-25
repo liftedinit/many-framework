@@ -2,8 +2,9 @@ use crate::error;
 use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
+use many_protocol::context::Context;
 use many_types::ledger::{Symbol, TokenAmount};
-use merk::{BatchEntry, Op};
+use merk::{proofs::Query, BatchEntry, Op};
 use std::collections::{BTreeMap, BTreeSet};
 
 impl LedgerStorage {
@@ -36,42 +37,51 @@ impl LedgerStorage {
     fn get_all_balances(
         &self,
         identity: &Address,
+        context: impl AsRef<Context>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
-        if identity.is_anonymous() {
+        Ok(if identity.is_anonymous() {
             // Anonymous cannot hold funds.
-            Ok(BTreeMap::new())
+            BTreeMap::new()
         } else {
             let mut result = BTreeMap::new();
             for symbol in self.get_symbols()? {
-                match self
-                    .persistent_store
-                    .get(&key_for_account_balance(identity, &symbol))
-                    .map_err(error::storage_get_failed)?
-                {
-                    None => {}
-                    Some(value) => {
-                        result.insert(symbol, TokenAmount::from(value));
-                    }
-                }
+                match context.as_ref().prove(|| {
+                    self.persistent_store
+                        .prove({
+                            let mut query = Query::new();
+                            query.insert_key(key_for_account_balance(identity, &symbol));
+                            query
+                        })
+                        .map_err(|error| ManyError::unknown(error.to_string()))
+                }) {
+                    Some(error) => Err(ManyError::unknown(error.to_string())),
+                    None => Ok(self
+                        .persistent_store
+                        .get(&key_for_account_balance(identity, &symbol))
+                        .map_err(error::storage_get_failed)?
+                        .map(|value| result.insert(symbol, TokenAmount::from(value)))
+                        .map(|_| ())
+                        .unwrap_or_default()),
+                }?
             }
 
-            Ok(result)
-        }
+            result
+        })
     }
 
     pub fn get_multiple_balances(
         &self,
         identity: &Address,
         symbols: &BTreeSet<Symbol>,
+        context: impl AsRef<Context>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
-        if symbols.is_empty() {
-            Ok(self.get_all_balances(identity)?)
+        Ok(if symbols.is_empty() {
+            self.get_all_balances(identity, context)?
         } else {
-            Ok(self
-                .get_all_balances(identity)?
+            self.get_all_balances(identity, context)?
                 .into_iter()
                 .filter(|(k, _v)| symbols.contains(k))
-                .collect())
-        }
+                .collect()
+        })
     }
 }
