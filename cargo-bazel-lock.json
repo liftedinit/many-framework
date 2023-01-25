@@ -1,5 +1,5 @@
 {
-  "checksum": "dbb11fa08f0bd8049c27031743dd821be7a69319b20ad829e8749a353e680b02",
+  "checksum": "1e6929ba0ff21e744b6772d18e4b1c6f6820fe4c299425834711cd471b22d497",
   "crates": {
     "aes 0.7.5": {
       "name": "aes",
@@ -13451,9 +13451,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-client"
         }
@@ -13644,9 +13644,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-client-macros"
         }
@@ -13697,9 +13697,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-error"
         }
@@ -13763,9 +13763,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-identity"
         }
@@ -13864,9 +13864,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-identity-dsa"
         }
@@ -13998,9 +13998,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-identity-hsm"
         }
@@ -14091,9 +14091,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-identity-webauthn"
         }
@@ -14825,9 +14825,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-macros"
         }
@@ -14890,9 +14890,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-migration"
         }
@@ -14955,9 +14955,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-modules"
         }
@@ -15060,9 +15060,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-protocol"
         }
@@ -15174,9 +15174,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-server"
         }
@@ -15391,9 +15391,9 @@
       "version": "0.1.0",
       "repository": {
         "Git": {
-          "remote": "https://github.com/fmorency/many-rs.git",
+          "remote": "https://github.com/liftedinit/many-rs.git",
           "commitish": {
-            "Branch": "pub_max_subresource_id"
+            "Rev": "0db81ac956bc68c5c43f3f16ede9435ecceb4801"
           },
           "strip_prefix": "src/many-types"
         }

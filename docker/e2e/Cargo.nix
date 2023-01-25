@@ -33,7 +33,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "db314a84f9ce6190cc3ec30c8c64238ddece91c8c5bedcb4b783e00419933023";
+  nixifiedLockHash = "1a87713c57153723006a6ff81a6d4c09eb0eb6664a955f680cc776ac5c9a8c9e";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -2766,11 +2766,11 @@ in
     dependencies = {
       clap = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.23" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_client = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_client = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
       many_kvstore = (rustPackages."unknown".many-kvstore."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       new_mime_guess = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".new_mime_guess."4.0.1" { inherit profileName; }).out;
       syslog_tracing = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".syslog-tracing."0.1.0" { inherit profileName; }).out;
@@ -3144,13 +3144,13 @@ in
       clap = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.23" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
       indicatif = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".indicatif."0.16.2" { inherit profileName; }).out;
-      many_client = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_client = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       syslog_tracing = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".syslog-tracing."0.1.0" { inherit profileName; }).out;
       tokio = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tokio."1.24.2" { inherit profileName; }).out;
@@ -3186,14 +3186,14 @@ in
       indicatif = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".indicatif."0.16.2" { inherit profileName; }).out;
       itertools = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".itertools."0.10.5" { inherit profileName; }).out;
       lazy_static = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".lazy_static."1.4.0" { inherit profileName; }).out;
-      many_client = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_identity_hsm = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-hsm."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_client = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_identity_hsm = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-hsm."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       mime_guess = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".mime_guess."2.0.4" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
@@ -3216,8 +3216,8 @@ in
     dependencies = {
       clap = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.23" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       merk = (rustPackages."git+https://github.com/liftedinit/merk.git".merk."2.0.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
     };
@@ -3413,15 +3413,15 @@ in
       itertools = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".itertools."0.10.5" { inherit profileName; }).out;
       json5 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".json5."0.4.1" { inherit profileName; }).out;
       lazy_static = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".lazy_static."1.4.0" { inherit profileName; }).out;
-      many_client = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_identity_webauthn = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-webauthn."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_server = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_client = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_identity_webauthn = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-webauthn."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_server = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_integer = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-integer."0.1.45" { inherit profileName; }).out;
       reqwest = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".reqwest."0.11.14" { inherit profileName; }).out;
@@ -3442,16 +3442,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-client."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-client";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-client";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "default" ]
     ];
@@ -3469,13 +3468,13 @@ in
       fixed = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".fixed."1.21.0" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
       lazy_static = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".lazy_static."1.4.0" { inherit profileName; }).out;
-      many_client_macros = (buildRustPackages."git+https://github.com/fmorency/many-rs.git".many-client-macros."0.1.0" { profileName = "__noProfile"; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_server = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_client_macros = (buildRustPackages."git+https://github.com/liftedinit/many-rs.git".many-client-macros."0.1.0" { profileName = "__noProfile"; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_server = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
       num_derive = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".num-derive."0.3.3" { profileName = "__noProfile"; }).out;
@@ -3495,16 +3494,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-client-macros."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-client-macros."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-client-macros";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-client-macros";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     dependencies = {
       proc_macro2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.50" { inherit profileName; }).out;
       quote = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.23" { inherit profileName; }).out;
@@ -3512,16 +3510,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-error";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-error";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "default" ]
       [ "minicbor" ]
@@ -3534,16 +3531,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-identity";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "coset" ]
       [ "default" ]
@@ -3557,7 +3553,7 @@ in
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
       crc_any = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".crc-any."2.4.3" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.152" { inherit profileName; }).out;
@@ -3569,16 +3565,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-identity-dsa";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity-dsa";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "coset" ]
       [ "default" ]
@@ -3596,8 +3591,8 @@ in
       ed25519 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".ed25519."1.5.3" { inherit profileName; }).out;
       ed25519_dalek = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".ed25519-dalek."1.0.1" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
       p256 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".p256."0.9.0" { inherit profileName; }).out;
@@ -3612,25 +3607,24 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-identity-hsm."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-identity-hsm."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-identity-hsm";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity-hsm";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     dependencies = {
       asn1 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".asn1."0.10.0" { inherit profileName; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
       cryptoki = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".cryptoki."0.3.0" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
       p256 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".p256."0.9.0" { inherit profileName; }).out;
       sha2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".sha2."0.10.6" { inherit profileName; }).out;
@@ -3639,16 +3633,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-identity-webauthn."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-identity-webauthn."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-identity-webauthn";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-identity-webauthn";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "default" ]
       [ "identity" ]
@@ -3658,12 +3651,12 @@ in
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
       base64urlsafedata = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64urlsafedata."0.1.2" { inherit profileName; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
       rand = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".rand."0.8.5" { inherit profileName; }).out;
@@ -3692,13 +3685,13 @@ in
       itertools = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".itertools."0.10.5" { inherit profileName; }).out;
       json5 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".json5."0.4.1" { inherit profileName; }).out;
       lazy_static = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".lazy_static."1.4.0" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_server = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_server = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       merk = (rustPackages."git+https://github.com/liftedinit/merk.git".merk."2.0.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
@@ -3714,8 +3707,8 @@ in
       tracing_subscriber = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tracing-subscriber."0.3.16" { inherit profileName; }).out;
     };
     devDependencies = {
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
       tempfile = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tempfile."3.3.0" { inherit profileName; }).out;
     };
@@ -3747,15 +3740,15 @@ in
       itertools = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".itertools."0.10.5" { inherit profileName; }).out;
       json5 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".json5."0.4.1" { inherit profileName; }).out;
       linkme = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".linkme."0.3.7" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
-      many_identity_webauthn = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-webauthn."0.1.0" { inherit profileName; }).out;
-      many_migration = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-migration."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_server = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_identity_webauthn = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-webauthn."0.1.0" { inherit profileName; }).out;
+      many_migration = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-migration."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_server = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-server."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       merk = (rustPackages."git+https://github.com/liftedinit/merk.git".merk."2.0.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
@@ -3776,14 +3769,14 @@ in
     };
     devDependencies = {
       cucumber = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".cucumber."0.17.0" { inherit profileName; }).out;
-      many_client = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_client = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-client."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
       many_ledger = (rustPackages."unknown".many-ledger."0.1.0" { inherit profileName; }).out;
       many_ledger_test_macros = (buildRustPackages."unknown".many-ledger-test-macros."0.1.0" { profileName = "__noProfile"; }).out;
       many_ledger_test_utils = (rustPackages."unknown".many-ledger-test-utils."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
       proptest = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proptest."1.0.0" { inherit profileName; }).out;
       tempfile = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tempfile."3.3.0" { inherit profileName; }).out;
@@ -3814,15 +3807,15 @@ in
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
       cucumber = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".cucumber."0.17.0" { inherit profileName; }).out;
       itertools = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".itertools."0.10.5" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_identity_dsa = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_identity_dsa = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity-dsa."0.1.0" { inherit profileName; }).out;
       many_ledger = (rustPackages."unknown".many-ledger."0.1.0" { inherit profileName; }).out;
       many_ledger_test_macros = (buildRustPackages."unknown".many-ledger-test-macros."0.1.0" { profileName = "__noProfile"; }).out;
-      many_migration = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-migration."0.1.0" { inherit profileName; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_migration = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-migration."0.1.0" { inherit profileName; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       merk = (rustPackages."git+https://github.com/liftedinit/merk.git".merk."2.0.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.17.0" { inherit profileName; }).out;
@@ -3833,16 +3826,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-macros."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-macros."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-macros";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-macros";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     dependencies = {
       inflections = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".inflections."1.1.1" { inherit profileName; }).out;
       proc_macro2 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.50" { inherit profileName; }).out;
@@ -3853,18 +3845,17 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-migration."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-migration."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-migration";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-migration";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     dependencies = {
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.152" { inherit profileName; }).out;
       serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.91" { inherit profileName; }).out;
@@ -3873,16 +3864,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-modules";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-modules";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "cucumber" ]
     ];
@@ -3891,11 +3881,11 @@ in
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
       derive_builder = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".derive_builder."0.11.2" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_macros = (buildRustPackages."git+https://github.com/fmorency/many-rs.git".many-macros."0.1.0" { profileName = "__noProfile"; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_macros = (buildRustPackages."git+https://github.com/liftedinit/many-rs.git".many-macros."0.1.0" { profileName = "__noProfile"; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
       num_enum = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num_enum."0.5.7" { inherit profileName; }).out;
@@ -3904,24 +3894,23 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-protocol";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-protocol";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     dependencies = {
       base64 = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.1" { inherit profileName; }).out;
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
       derive_builder = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".derive_builder."0.10.2" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
       num_derive = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".num-derive."0.3.3" { profileName = "__noProfile"; }).out;
@@ -3935,16 +3924,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-server."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-server."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-server";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-server";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "default" ]
     ];
@@ -3964,12 +3952,12 @@ in
       fixed = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".fixed."1.21.0" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
       lazy_static = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".lazy_static."1.4.0" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
-      many_macros = (buildRustPackages."git+https://github.com/fmorency/many-rs.git".many-macros."0.1.0" { profileName = "__noProfile"; }).out;
-      many_modules = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
-      many_protocol = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
-      many_types = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_macros = (buildRustPackages."git+https://github.com/liftedinit/many-rs.git".many-macros."0.1.0" { profileName = "__noProfile"; }).out;
+      many_modules = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-modules."0.1.0" { inherit profileName; }).out;
+      many_protocol = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-protocol."0.1.0" { inherit profileName; }).out;
+      many_types = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
       num_derive = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".num-derive."0.3.3" { profileName = "__noProfile"; }).out;
@@ -3994,16 +3982,15 @@ in
     };
   });
   
-  "git+https://github.com/fmorency/many-rs.git".many-types."0.1.0" = overridableMkRustCrate (profileName: rec {
+  "git+https://github.com/liftedinit/many-rs.git".many-types."0.1.0" = overridableMkRustCrate (profileName: rec {
     name = "many-types";
     version = "0.1.0";
-    registry = "git+https://github.com/fmorency/many-rs.git";
+    registry = "git+https://github.com/liftedinit/many-rs.git";
     src = fetchCrateGit {
-      url = https://github.com/fmorency/many-rs.git;
+      url = https://github.com/liftedinit/many-rs.git;
       name = "many-types";
       version = "0.1.0";
-      rev = "d550236dda05937ddecf042bcda71b86e17ed0ee";
-      ref = "pub_max_subresource_id";};
+      rev = "0db81ac956bc68c5c43f3f16ede9435ecceb4801";};
     features = builtins.concatLists [
       [ "cucumber" ]
     ];
@@ -4012,8 +3999,8 @@ in
       coset = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".coset."0.3.3" { inherit profileName; }).out;
       fixed = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".fixed."1.21.0" { inherit profileName; }).out;
       hex = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hex."0.4.3" { inherit profileName; }).out;
-      many_error = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
-      many_identity = (rustPackages."git+https://github.com/fmorency/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
+      many_error = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-error."0.1.0" { inherit profileName; }).out;
+      many_identity = (rustPackages."git+https://github.com/liftedinit/many-rs.git".many-identity."0.1.0" { inherit profileName; }).out;
       minicbor = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".minicbor."0.18.0" { inherit profileName; }).out;
       num_bigint = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".num-bigint."0.4.3" { inherit profileName; }).out;
       num_derive = (buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".num-derive."0.3.3" { profileName = "__noProfile"; }).out;
