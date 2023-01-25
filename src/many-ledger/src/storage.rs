@@ -3,7 +3,7 @@ use crate::migration::tokens::TOKEN_MIGRATION;
 use crate::migration::{LedgerMigrations, MIGRATIONS};
 use crate::storage::event::HEIGHT_EVENTID_SHIFT;
 use many_error::ManyError;
-use many_identity::Address;
+use many_identity::{Address, MAX_SUBRESOURCE_ID};
 use many_migration::{MigrationConfig, MigrationSet};
 use many_modules::events::EventId;
 use many_types::ledger::Symbol;
@@ -274,12 +274,35 @@ impl LedgerStorage {
         identity_root: &str,
         counter_root: &str,
     ) -> Result<Address, ManyError> {
-        let current_id = self.get_subresource_counter(counter_root)?;
-        let new_id = current_id + 1;
+        let mut current_id = self.get_subresource_counter(counter_root)?;
+        // The last subresource ID we can use is == MAX_SUBRESOURCE_ID
+        // Check if the next counter is over the maximum
+        if current_id > MAX_SUBRESOURCE_ID {
+            return Err(error::subresource_exhausted(counter_root));
+        }
+        let symbols = self.get_symbols()?;
+        let subresource_identity = self
+            .persistent_store
+            .get(identity_root.as_bytes())
+            .map_err(error::storage_get_failed)?
+            .map_or(self.get_identity(IDENTITY_ROOT), |bytes| {
+                Address::from_bytes(&bytes)
+            })?;
+        let mut next_subresource = subresource_identity.with_subresource_id(current_id)?;
+
+        while symbols.contains(&next_subresource) {
+            current_id += 1;
+            // Check if the next counter is over the maximum
+            if current_id > MAX_SUBRESOURCE_ID {
+                return Err(error::subresource_exhausted(counter_root));
+            }
+            next_subresource = subresource_identity.with_subresource_id(current_id)?;
+        }
+
         self.persistent_store
             .apply(&[(
                 counter_root.as_bytes().to_vec(),
-                Op::Put(new_id.to_be_bytes().to_vec()),
+                Op::Put((current_id + 1).to_be_bytes().to_vec()),
             )])
             .map_err(error::storage_apply_failed)?;
 
