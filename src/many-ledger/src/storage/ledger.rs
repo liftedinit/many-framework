@@ -3,8 +3,19 @@ use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
 use many_protocol::context::Context;
-use many_types::ledger::{Symbol, TokenAmount};
-use merk::{proofs::Query, BatchEntry, Op};
+use many_types::{
+    ledger::{Symbol, TokenAmount},
+    ProofOperation,
+};
+use merk::{
+    proofs::{
+        Decoder,
+        Node::{Hash, KVHash, KV},
+        Op::{Child, Parent, Push},
+        Query,
+    },
+    BatchEntry, Op,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 impl LedgerStorage {
@@ -44,26 +55,44 @@ impl LedgerStorage {
             BTreeMap::new()
         } else {
             let mut result = BTreeMap::new();
+            let mut query = Query::new();
             for symbol in self.get_symbols()? {
-                match context.as_ref().prove(|| {
+                let key = key_for_account_balance(identity, &symbol);
+                self.persistent_store
+                    .get(&key)
+                    .map_err(error::storage_get_failed)?
+                    .map(|value| result.insert(symbol, TokenAmount::from(value)))
+                    .map(|_| ())
+                    .unwrap_or_default();
+                query.insert_key(key)
+            }
+            context
+                .as_ref()
+                .prove(|| {
                     self.persistent_store
-                        .prove({
-                            let mut query = Query::new();
-                            query.insert_key(key_for_account_balance(identity, &symbol));
-                            query
+                        .prove(query)
+                        .and_then(|proof| {
+                            Decoder::new(proof.as_slice())
+                                .into_iter()
+                                .map(|fallible_operation| {
+                                    fallible_operation.map(|operation| match operation {
+                                        Child => ProofOperation::Child,
+                                        Parent => ProofOperation::Parent,
+                                        Push(Hash(hash)) => ProofOperation::NodeHash(hash.to_vec()),
+                                        Push(KV(key, value)) => {
+                                            ProofOperation::KeyValuePair(key.into(), value.into())
+                                        }
+                                        Push(KVHash(hash)) => {
+                                            ProofOperation::KeyValueHash(hash.to_vec())
+                                        }
+                                    })
+                                })
+                                .collect::<Result<Vec<_>, _>>()
                         })
                         .map_err(|error| ManyError::unknown(error.to_string()))
-                }) {
-                    Some(error) => Err(ManyError::unknown(error.to_string())),
-                    None => Ok(self
-                        .persistent_store
-                        .get(&key_for_account_balance(identity, &symbol))
-                        .map_err(error::storage_get_failed)?
-                        .map(|value| result.insert(symbol, TokenAmount::from(value)))
-                        .map(|_| ())
-                        .unwrap_or_default()),
-                }?
-            }
+                })
+                .map(|error| Err(ManyError::unknown(error.to_string())))
+                .unwrap_or(Ok(()))?;
 
             result
         })
