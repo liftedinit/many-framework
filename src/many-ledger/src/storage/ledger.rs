@@ -103,10 +103,11 @@ impl LedgerStorage {
         symbols: &BTreeSet<Symbol>,
         context: impl AsRef<Context>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
+        let balances = self.get_all_balances(identity, context)?;
         Ok(if symbols.is_empty() {
-            self.get_all_balances(identity, context)?
+            balances
         } else {
-            self.get_all_balances(identity, context)?
+            balances
                 .into_iter()
                 .filter(|(k, _v)| symbols.contains(k))
                 .collect()
