@@ -7,15 +7,17 @@ use many_identity::Address;
 use many_modules::events::EventInfo;
 use many_modules::ledger;
 use many_modules::ledger::{TokenBurnArgs, TokenBurnReturns, TokenMintArgs, TokenMintReturns};
+use many_protocol::context::Context;
 use many_types::ledger::Symbol;
 use std::collections::BTreeSet;
 
 /// Check if a symbol exists in the storage
 fn check_symbol_exists(symbol: &Symbol, symbols: BTreeSet<Symbol>) -> Result<(), ManyError> {
     if !symbols.contains(symbol) {
-        return Err(error::symbol_not_found(symbol.to_string()));
+        Err(error::symbol_not_found(symbol.to_string()))
+    } else {
+        Ok(())
     }
-    Ok(())
 }
 
 impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
@@ -23,6 +25,7 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
         &mut self,
         sender: &Address,
         args: TokenMintArgs,
+        context: Context,
     ) -> Result<TokenMintReturns, ManyError> {
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
             return Err(ManyError::invalid_method_name("tokens.mint"));
@@ -44,7 +47,7 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
         check_symbol_exists(&symbol, self.storage.get_symbols()?)?;
 
         // Mint into storage
-        self.storage.mint_token(symbol, &distribution)?;
+        self.storage.mint_token(symbol, &distribution, context)?;
 
         // Log event
         self.storage.log_event(EventInfo::TokenMint {
@@ -60,6 +63,7 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
         &mut self,
         sender: &Address,
         args: TokenBurnArgs,
+        context: Context,
     ) -> Result<TokenBurnReturns, ManyError> {
         if !self.storage.migrations().is_active(&TOKEN_MIGRATION) {
             return Err(ManyError::invalid_method_name("tokens.burn"));
@@ -89,7 +93,7 @@ impl ledger::LedgerMintBurnModuleBackend for LedgerModuleImpl {
         }
 
         // Burn from storage
-        self.storage.burn_token(symbol, &distribution)?;
+        self.storage.burn_token(symbol, &distribution, context)?;
 
         // Log event
         self.storage.log_event(EventInfo::TokenBurn {

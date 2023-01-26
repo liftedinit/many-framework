@@ -3,6 +3,7 @@ use crate::storage::ledger_tokens::key_for_symbol;
 use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_modules::ledger::TokenInfoArgs;
+use many_protocol::context::Context;
 use many_types::ledger::{LedgerTokensAddressMap, Symbol, TokenAmount, TokenInfoSupply};
 use merk::{BatchEntry, Op};
 use std::collections::BTreeSet;
@@ -22,6 +23,7 @@ impl LedgerStorage {
         &mut self,
         symbol: Symbol,
         distribution: &LedgerTokensAddressMap,
+        context: impl AsRef<Context>,
     ) -> Result<(), ManyError> {
         let mut batch: Vec<BatchEntry> = Vec::new();
         let mut circulating = TokenAmount::zero();
@@ -44,7 +46,7 @@ impl LedgerStorage {
 
             // Store the new balance to the DB
             let new_balance = self
-                .get_multiple_balances(address, &BTreeSet::from([symbol]))?
+                .get_multiple_balances(address, &BTreeSet::from([symbol]), context.as_ref())?
                 .get(&symbol)
                 .map_or(amount.clone(), |b| b + amount);
             let key = key_for_account_balance(address, &symbol);
@@ -79,6 +81,7 @@ impl LedgerStorage {
         &mut self,
         symbol: Symbol,
         distribution: &LedgerTokensAddressMap,
+        context: impl AsRef<Context>,
     ) -> Result<(), ManyError> {
         let mut batch: Vec<BatchEntry> = Vec::new();
         let mut circulating = TokenAmount::zero();
@@ -90,7 +93,7 @@ impl LedgerStorage {
 
             // Check if we have enough funds
             let balance_amount = match self
-                .get_multiple_balances(address, &BTreeSet::from_iter([symbol]))?
+                .get_multiple_balances(address, &BTreeSet::from_iter([symbol]), context.as_ref())?
                 .get(&symbol)
             {
                 Some(x) if x < amount => Err(error::missing_funds(symbol, amount, x)),

@@ -2,8 +2,20 @@ use crate::error;
 use crate::storage::{key_for_account_balance, LedgerStorage};
 use many_error::ManyError;
 use many_identity::Address;
-use many_types::ledger::{Symbol, TokenAmount};
-use merk::{BatchEntry, Op};
+use many_protocol::context::Context;
+use many_types::{
+    ledger::{Symbol, TokenAmount},
+    ProofOperation,
+};
+use merk::{
+    proofs::{
+        Decoder,
+        Node::{Hash, KVHash, KV},
+        Op::{Child, Parent, Push},
+        Query,
+    },
+    BatchEntry, Op,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 impl LedgerStorage {
@@ -36,42 +48,69 @@ impl LedgerStorage {
     fn get_all_balances(
         &self,
         identity: &Address,
+        context: impl AsRef<Context>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
-        if identity.is_anonymous() {
+        Ok(if identity.is_anonymous() {
             // Anonymous cannot hold funds.
-            Ok(BTreeMap::new())
+            BTreeMap::new()
         } else {
             let mut result = BTreeMap::new();
+            let mut query = Query::new();
             for symbol in self.get_symbols()? {
-                match self
-                    .persistent_store
-                    .get(&key_for_account_balance(identity, &symbol))
+                let key = key_for_account_balance(identity, &symbol);
+                self.persistent_store
+                    .get(&key)
                     .map_err(error::storage_get_failed)?
-                {
-                    None => {}
-                    Some(value) => {
-                        result.insert(symbol, TokenAmount::from(value));
-                    }
-                }
+                    .map(|value| result.insert(symbol, TokenAmount::from(value)))
+                    .map(|_| ())
+                    .unwrap_or_default();
+                query.insert_key(key)
             }
+            context
+                .as_ref()
+                .prove(|| {
+                    self.persistent_store
+                        .prove(query)
+                        .and_then(|proof| {
+                            Decoder::new(proof.as_slice())
+                                .map(|fallible_operation| {
+                                    fallible_operation.map(|operation| match operation {
+                                        Child => ProofOperation::Child,
+                                        Parent => ProofOperation::Parent,
+                                        Push(Hash(hash)) => ProofOperation::NodeHash(hash.to_vec()),
+                                        Push(KV(key, value)) => {
+                                            ProofOperation::KeyValuePair(key.into(), value.into())
+                                        }
+                                        Push(KVHash(hash)) => {
+                                            ProofOperation::KeyValueHash(hash.to_vec())
+                                        }
+                                    })
+                                })
+                                .collect::<Result<Vec<_>, _>>()
+                        })
+                        .map_err(|error| ManyError::unknown(error.to_string()))
+                })
+                .map(|error| Err(ManyError::unknown(error.to_string())))
+                .unwrap_or(Ok(()))?;
 
-            Ok(result)
-        }
+            result
+        })
     }
 
     pub fn get_multiple_balances(
         &self,
         identity: &Address,
         symbols: &BTreeSet<Symbol>,
+        context: impl AsRef<Context>,
     ) -> Result<BTreeMap<Symbol, TokenAmount>, ManyError> {
-        if symbols.is_empty() {
-            Ok(self.get_all_balances(identity)?)
+        let balances = self.get_all_balances(identity, context)?;
+        Ok(if symbols.is_empty() {
+            balances
         } else {
-            Ok(self
-                .get_all_balances(identity)?
+            balances
                 .into_iter()
                 .filter(|(k, _v)| symbols.contains(k))
-                .collect())
-        }
+                .collect()
+        })
     }
 }
