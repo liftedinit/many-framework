@@ -73,7 +73,6 @@ impl LedgerStorage {
                         .prove(query)
                         .and_then(|proof| {
                             Decoder::new(proof.as_slice())
-                                .into_iter()
                                 .map(|fallible_operation| {
                                     fallible_operation.map(|operation| match operation {
                                         Child => ProofOperation::Child,
